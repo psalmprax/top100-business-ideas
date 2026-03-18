@@ -1,0 +1,92 @@
+"""
+Top100 Business Ideas - Python AI/ML Backend
+FastAPI application for AI/ML processing
+"""
+
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+import logging
+
+from app.api import agents, compliance, deepfake, health, auth_verify, extended
+from app.core.config import settings
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for startup and shutdown events"""
+    logger.info("Starting Python AI/ML Backend...")
+    logger.info(f"Environment: {settings.ENVIRONMENT}")
+    
+    # Initialize ML models on startup
+    try:
+        from app.ml import deepfake_detector, compliance_analyzer
+        logger.info("ML models loaded successfully")
+    except Exception as e:
+        logger.warning(f"ML models not loaded: {e}")
+    
+    yield
+    
+    logger.info("Shutting down Python AI/ML Backend...")
+
+
+# Create FastAPI application
+app = FastAPI(
+    title="Top100 Business Ideas - AI/ML Backend",
+    description="Python backend for AI/ML processing including deepfake detection and compliance analysis",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    lifespan=lifespan,
+)
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include routers
+app.include_router(health.router, prefix="/health", tags=["Health"])
+app.include_router(agents.router, prefix="/agents", tags=["Agents"])
+app.include_router(compliance.router, prefix="/compliance", tags=["Compliance"])
+app.include_router(deepfake.router, prefix="/deepfake", tags=["Deepfake"])
+app.include_router(auth_verify.router, prefix="/auth/verify", tags=["Liveness Authentication"])
+app.include_router(extended.router, prefix="/api/v1", tags=["Extended API - Full Sync"])
+
+
+from app.core.database import init_db
+
+@app.on_event("startup")
+async def startup_event():
+    """Run startup tasks"""
+    init_db()
+
+@app.get("/")
+async def root():
+    """Root endpoint"""
+    return {
+        "service": "ai-ml-backend",
+        "version": "1.0.0",
+        "status": "running"
+    }
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "main:app",
+        host=settings.HOST,
+        port=settings.PORT,
+        reload=settings.ENVIRONMENT == "development",
+    )
