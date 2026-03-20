@@ -115,3 +115,12 @@ __pycache__/
 test-results/
 playwright-report/
 client/src/test-results/
+
+# Sensitive / Design
+*.pen
+.system_generated/
+.agents/
+.agent/
+_agents/
+_agent/
+brain/

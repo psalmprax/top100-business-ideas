@@ -24,8 +24,65 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { 
+    Table, 
+    TableBody, 
+    TableCell, 
+    TableHead, 
+    TableHeader, 
+    TableRow 
+} from '@/components/ui/table';
+import { toast } from 'sonner';
+import { storage } from '@/lib/storage';
 
 export default function DenialDefense() {
+    const [activeClaims, setActiveClaims] = useState(storage.get("dd_claims", [
+        { id: "CLM-9021", payer: "BlueShield", amount: 1250, status: "Pending", risk: "High" },
+        { id: "CLM-8812", payer: "Medicare", amount: 4500, status: "Scrubbed", risk: "Low" },
+        { id: "CLM-7723", payer: "Aetna", amount: 890, status: "Flagged", risk: "Medium" },
+    ]));
+    const [newClaim, setNewClaim] = useState({ id: "", payer: "", amount: "" });
+    const [isScrubbing, setIsScrubbing] = useState(false);
+
+    const handleAddClaim = () => {
+        if (!newClaim.id || !newClaim.payer) {
+            toast.error("Please fill in Claim ID and Payer");
+            return;
+        }
+        const updated = [{
+            ...newClaim,
+            amount: parseFloat(newClaim.amount) || 0,
+            status: "New",
+            risk: "Calculating..."
+        }, ...activeClaims];
+        setActiveClaims(updated);
+        storage.set("dd_claims", updated);
+        setNewClaim({ id: "", payer: "", amount: "" });
+        toast.success("Claim submitted to Engine");
+    };
+
+    const runScrubber = (id: string) => {
+        setIsScrubbing(true);
+        toast.promise(
+            new Promise((resolve) => setTimeout(resolve, 2000)),
+            {
+                loading: `AI Agent 'Scrubber-1' analyzing claim ${id}...`,
+                success: () => {
+                    const updated = activeClaims.map(c => 
+                        c.id === id ? { ...c, status: "Scrubbed", risk: "Low" } : c
+                    );
+                    setActiveClaims(updated);
+                    storage.set("dd_claims", updated);
+                    setIsScrubbing(false);
+                    return "Scrubbing complete: No CCI edits found.";
+                },
+                error: "Scrubbing failed.",
+            }
+        );
+    };
+
     return (
         <div className="min-h-screen bg-[#0a0c10] text-slate-200 font-sans selection:bg-cyan-500/30">
             {/* Header */}
@@ -109,73 +166,175 @@ export default function DenialDefense() {
                         </TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="overview">
+                    <TabsContent value="claims">
                         <div className="grid gap-6 md:grid-cols-3">
-                            <Card className="md:col-span-2 bg-black/40 border-white/5">
+                            <Card className="bg-black/40 border-white/5 h-fit">
                                 <CardHeader>
-                                    <CardTitle>Autonomous Denial Resolution</CardTitle>
-                                    <CardDescription>AI agents currently appealing denied claims in real-time</CardDescription>
+                                    <CardTitle className="text-sm">Submit New Claim</CardTitle>
+                                    <CardDescription>Direct injection into the AI Scrubber Engine</CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
-                                    {[
-                                        { payer: "BlueShield", id: "CLM-9021", reason: "Medical Necessity", status: "Appealing", confidence: 92 },
-                                        { payer: "UnitedHealth", id: "CLM-4432", reason: "Coding Mismatch", status: "Resolved", confidence: 100 },
-                                        { payer: "Aetna", id: "CLM-1182", reason: "Missing Documentation", status: "Gathering Evidence", confidence: 64 }
-                                    ].map((claim, idx) => (
-                                        <div key={idx} className="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-colors">
-                                            <div className="flex items-center gap-4">
-                                                <div className={`w-2 h-2 rounded-full ${claim.status === 'Resolved' ? 'bg-emerald-500' : 'bg-cyan-500 animate-pulse'}`} />
-                                                <div>
-                                                    <div className="font-bold text-sm text-white">{claim.payer} - {claim.id}</div>
-                                                    <div className="text-xs text-muted-foreground">{claim.reason}</div>
-                                                </div>
-                                            </div>
-                                            <div className="text-right">
-                                                <Badge variant="outline" className={`${claim.status === 'Resolved' ? 'border-emerald-500/30 text-emerald-400' : 'border-cyan-500/30 text-cyan-400'}`}>
-                                                    {claim.status}
-                                                </Badge>
-                                                <div className="text-[10px] text-muted-foreground mt-1">AI Confidence: {claim.confidence}%</div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                    <Button variant="ghost" className="w-full text-xs text-cyan-500 hover:bg-cyan-500/10" data-testid="btn-view-all-appeals">VIEW ALL ACTIVE APPEALS</Button>
+                                    <div className="space-y-2">
+                                        <Label className="text-xs">Claim ID</Label>
+                                        <Input 
+                                            placeholder="e.g. CLM-XXXX" 
+                                            className="bg-white/5 border-white/10"
+                                            value={newClaim.id}
+                                            onChange={(e) => setNewClaim(prev => ({ ...prev, id: e.target.value }))}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-xs">Payer</Label>
+                                        <Input 
+                                            placeholder="e.g. BlueShield" 
+                                            className="bg-white/5 border-white/10"
+                                            value={newClaim.payer}
+                                            onChange={(e) => setNewClaim(prev => ({ ...prev, payer: e.target.value }))}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label className="text-xs">Billed Amount ($)</Label>
+                                        <Input 
+                                            type="number" 
+                                            placeholder="0.00" 
+                                            className="bg-white/5 border-white/10"
+                                            value={newClaim.amount}
+                                            onChange={(e) => setNewClaim(prev => ({ ...prev, amount: e.target.value }))}
+                                        />
+                                    </div>
+                                    <Button className="w-full bg-cyan-600 hover:bg-cyan-700" onClick={handleAddClaim}>
+                                        SUBMIT TO ENGINE
+                                    </Button>
                                 </CardContent>
                             </Card>
 
-                            <Card className="bg-gradient-to-br from-cyan-600/20 to-blue-600/10 border-cyan-500/20" data-testid="card-payer-intelligence">
+                            <Card className="md:col-span-2 bg-black/40 border-white/5">
                                 <CardHeader>
-                                    <CardTitle className="text-white">Payer Intelligence</CardTitle>
-                                    <CardDescription>Predicted denial trends for Q4 2026</CardDescription>
+                                    <CardTitle className="text-sm">Engine Queue</CardTitle>
+                                    <CardDescription>Live tracking of claims entering the denial defense layer</CardDescription>
                                 </CardHeader>
-                                <CardContent className="space-y-6">
-                                    <div className="space-y-4">
-                                        <div className="space-y-2">
-                                            <div className="flex justify-between text-xs">
-                                                <span>Aetna Tightening Rules</span>
-                                                <span className="text-orange-400">+15% Risk</span>
-                                            </div>
-                                            <Progress value={85} className="h-1.5 bg-white/5" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <div className="flex justify-between text-xs">
-                                                <span>Medicare Policy Shift</span>
-                                                <span className="text-emerald-400">Neutral</span>
-                                            </div>
-                                            <Progress value={40} className="h-1.5 bg-white/5" />
-                                        </div>
-                                    </div>
-                                    <div className="p-4 rounded-xl bg-black/40 border border-white/10">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <Zap className="w-4 h-4 text-cyan-400" />
-                                            <span className="text-xs font-bold text-white uppercase">AI Advisory</span>
-                                        </div>
-                                        <p className="text-[10px] text-slate-400 leading-relaxed" data-testid="ai-advisory-text">
-                                            Redirect oncology billing to the specialized compliance agent. Increased denial velocity detected for CPT code 99214.
-                                        </p>
-                                    </div>
+                                <CardContent>
+                                    <Table>
+                                        <TableHeader className="border-white/10">
+                                            <TableRow className="hover:bg-transparent border-white/10">
+                                                <TableHead className="text-xs">ID</TableHead>
+                                                <TableHead className="text-xs">Payer</TableHead>
+                                                <TableHead className="text-xs">Status</TableHead>
+                                                <TableHead className="text-xs">AI Risk</TableHead>
+                                                <TableHead className="text-xs text-right">Action</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {activeClaims.map((claim: any) => (
+                                                <TableRow key={claim.id} className="border-white/5 hover:bg-white/[0.02]">
+                                                    <TableCell className="font-mono text-xs">{claim.id}</TableCell>
+                                                    <TableCell className="text-xs">{claim.payer}</TableCell>
+                                                    <TableCell>
+                                                        <Badge variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-400">
+                                                            {claim.status}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <span className={`text-[10px] font-bold ${
+                                                            claim.risk === 'High' ? 'text-red-400' : 
+                                                            claim.risk === 'Low' ? 'text-emerald-400' : 'text-orange-400'
+                                                        }`}>
+                                                            {claim.risk}
+                                                        </span>
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <Button 
+                                                            size="sm" 
+                                                            variant="ghost" 
+                                                            className="h-7 text-[10px] text-cyan-500 hover:bg-cyan-500/10"
+                                                            disabled={isScrubbing || claim.status === 'Scrubbed'}
+                                                            onClick={() => runScrubber(claim.id)}
+                                                        >
+                                                            {claim.status === 'Scrubbed' ? 'VERIFIED' : 'RUN SCRUBBER'}
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
                                 </CardContent>
                             </Card>
                         </div>
+                    </TabsContent>
+
+                    <TabsContent value="coding">
+                        <div className="grid gap-6 md:grid-cols-2">
+                            <Card className="bg-black/40 border-white/5 border-l-2 border-l-purple-500">
+                                <CardHeader>
+                                    <CardTitle className="text-sm flex items-center gap-2">
+                                        <Zap className="w-4 h-4 text-purple-400" />
+                                        Autonomous CPT Optimization
+                                    </CardTitle>
+                                    <CardDescription>AI agents scanning for under-coded encounters</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                     <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
+                                        <div className="flex justify-between mb-2">
+                                            <span className="text-xs font-bold">Optimization Lift</span>
+                                            <span className="text-xs text-emerald-400">+$12,450 projected</span>
+                                        </div>
+                                        <Progress value={65} className="h-2 bg-white/5" />
+                                     </div>
+                                     <Button className="w-full variant-outline border-purple-500/30 text-purple-400 hover:bg-purple-500/10">
+                                         START GLOBAL RE-CODE SCAN
+                                     </Button>
+                                </CardContent>
+                            </Card>
+
+                            <Card className="bg-black/40 border-white/5 border-l-2 border-l-blue-500">
+                                <CardHeader>
+                                    <CardTitle className="text-sm flex items-center gap-2">
+                                        <ShieldCheck className="w-4 h-4 text-blue-400" />
+                                        Audit Shield
+                                    </CardTitle>
+                                    <CardDescription>Ensuring 100% compliance with RAC audits</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                     <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                                         <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                                         <div className="text-xs font-bold text-emerald-500">Audit Readiness: 100%</div>
+                                     </div>
+                                     <p className="text-[10px] text-muted-foreground">
+                                         All recent high-value claims have been cross-referenced with Payer-specific medical policy bulletins.
+                                     </p>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="settings">
+                        <Card className="bg-black/40 border-white/5 max-w-2xl">
+                            <CardHeader>
+                                <CardTitle className="text-sm">Engine Configuration</CardTitle>
+                                <CardDescription>Calibrate the AI detection sensitivity and autonomy levels</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <div className="text-sm font-bold">Aggressive Recoding</div>
+                                            <div className="text-xs text-muted-foreground">Maximize revenue lift by pushing CPT boundaries</div>
+                                        </div>
+                                        <Badge>HIGH RISK</Badge>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <div className="text-sm font-bold">Auto-Appeal Threshold</div>
+                                            <div className="text-xs text-muted-foreground">Automatically appeal if recovery projection exceeds $500</div>
+                                        </div>
+                                        <Badge variant="outline">ENABLED</Badge>
+                                    </div>
+                                </div>
+                                <div className="pt-4 border-t border-white/5">
+                                    <Button className="bg-cyan-600 hover:bg-cyan-700">SAVE CONFIGURATION</Button>
+                                </div>
+                            </CardContent>
+                        </Card>
                     </TabsContent>
                 </Tabs>
             </main>

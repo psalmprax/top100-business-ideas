@@ -24,6 +24,7 @@ import {
   type MultiCloudStatus,
   type SelfHealingEvent,
 } from "@/lib/api";
+import { storage } from "@/lib/storage";
 import {
   Activity,
   AlertCircle,
@@ -646,8 +647,8 @@ export default function AlphaAgentOps() {
   const [agents, setAgents] = useState<DashboardAgent[]>([]);
   const [clusterNodes, setClusterNodes] = useState<any[]>([]);
   const [auditLog, setAuditLog] = useState<AuditEntry[]>([]);
-  const [alertConfigs, setAlertConfigs] = useState<AlertConfig[]>([]);
-  const [budgetRules, setBudgetRules] = useState<BudgetRule[]>([]);
+  const [alertConfigs, setAlertConfigs] = useState<AlertConfig[]>(storage.get("alert_configs", mockAlertConfigs));
+  const [budgetRules, setBudgetRules] = useState<BudgetRule[]>(storage.get("budget_rules", mockBudgetRules));
   const [showAlertDialog, setShowAlertDialog] = useState(false);
   const [showBudgetDialog, setShowBudgetDialog] = useState(false);
   const [showBudgetRuleDialog, setShowBudgetRuleDialog] = useState(false); // Renamed for clarity
@@ -663,6 +664,7 @@ export default function AlphaAgentOps() {
   const [showModelConfigDialog, setShowModelConfigDialog] = useState(false);
   const [complianceStatus, setComplianceStatus] = useState<{hipaa: any, sox: any}>({hipaa: null, sox: null});
   const [retentionDays, setRetentionDays] = useState(30);
+  const [activeSlaTier, setActiveSlaTier] = useState<string>(storage.get("active_sla_tier", "Enterprise"));
 
   // New Agent Form State
   const [newAgentData, setNewAgentData] = useState<{
@@ -840,14 +842,16 @@ export default function AlphaAgentOps() {
         cloudRes,
         healingRes,
         llmRes,
+        alertsRes,
       ] = await Promise.all([
         agentsApi.list().catch(() => mockAgents),
         extendedApi.agentOps.getAuditLogs().catch(() => mockAuditLog),
-        extendedApi.agentOps.listRules().catch(() => mockBudgetRules),
+        extendedApi.agentOps.listRules().catch(() => storage.get("budget_rules", mockBudgetRules)),
         extendedApi.agentOps.listWebhooks().catch(() => []),
         extendedApi.agentOps.getCloudHealth().catch(() => null),
         extendedApi.sentinel.getHealingStatus().catch(() => ({ recent_recoveries: [] })),
         extendedApi.agentOps.listLLMConfigs().catch(() => []),
+        extendedApi.alerts.list().catch(() => storage.get("alert_configs", mockAlertConfigs)),
       ]);
 
       setAgents(agentsRes as any);
@@ -861,9 +865,13 @@ export default function AlphaAgentOps() {
       setSelfHealingEvents((healingRes.recent_recoveries || []).map((ev: any) => ({
         ...ev,
         timestamp: new Date(ev.timestamp)
-      })));
-      if (healingRes.nodes) setClusterNodes(healingRes.nodes);
+      })));       if (healingRes.nodes) setClusterNodes(healingRes.nodes);
       setLlmConfigs(llmRes as any);
+      setAlertConfigs(alertsRes as any);
+      // Cache for demo offline mode
+      storage.set("budget_rules", rulesRes);
+      storage.set("alert_configs", alertsRes);
+
     } catch (error) {
       console.error("Critical Sentinel Sync Failure:", error);
       toast.error("Failed to sync with Sentinel Backend.");
@@ -1260,19 +1268,19 @@ export default function AlphaAgentOps() {
 
     try {
       await extendedApi.alerts.update(alertId, { enabled: newEnabled });
-      setAlertConfigs(
-        alertConfigs.map(a =>
-          a.id === alertId ? ({ ...a, enabled: newEnabled } as AlertConfig) : a
-        )
+      const updated = alertConfigs.map(a =>
+        a.id === alertId ? ({ ...a, enabled: newEnabled } as AlertConfig) : a
       );
+      setAlertConfigs(updated);
+      storage.set("alert_configs", updated);
       toast.success(`Alert ${newEnabled ? "enabled" : "disabled"}`);
     } catch (error) {
       // Fallback: update locally
-      setAlertConfigs(
-        alertConfigs.map(a =>
-          a.id === alertId ? ({ ...a, enabled: newEnabled } as AlertConfig) : a
-        )
+      const updated = alertConfigs.map(a =>
+        a.id === alertId ? ({ ...a, enabled: newEnabled } as AlertConfig) : a
       );
+      setAlertConfigs(updated);
+      storage.set("alert_configs", updated);
       toast.success(`Alert ${newEnabled ? "enabled" : "disabled"}`);
     }
   };
@@ -1285,19 +1293,19 @@ export default function AlphaAgentOps() {
 
     try {
       await rulesApi.toggle(ruleId, newEnabled);
-      setBudgetRules(
-        budgetRules.map(r =>
-          r.id === ruleId ? ({ ...r, enabled: newEnabled } as BudgetRule) : r
-        )
+      const updated = budgetRules.map(r =>
+        r.id === ruleId ? ({ ...r, enabled: newEnabled } as BudgetRule) : r
       );
+      setBudgetRules(updated);
+      storage.set("budget_rules", updated);
       toast.success(`Budget rule ${newEnabled ? "enabled" : "disabled"}`);
     } catch (error) {
       // Fallback: update locally
-      setBudgetRules(
-        budgetRules.map(r =>
-          r.id === ruleId ? ({ ...r, enabled: newEnabled } as BudgetRule) : r
-        )
+      const updated = budgetRules.map(r =>
+        r.id === ruleId ? ({ ...r, enabled: newEnabled } as BudgetRule) : r
       );
+      setBudgetRules(updated);
+      storage.set("budget_rules", updated);
       toast.success(`Budget rule ${newEnabled ? "enabled" : "disabled"}`);
     }
   };
@@ -2380,42 +2388,50 @@ export default function AlphaAgentOps() {
             <TabsContent value="sla">
               <div className="grid gap-6 md:grid-cols-3">
                 {[
-                  { title: "Standard", price: "$499/mo", features: ["10 Agents", "8/5 Support", "Public Cloud Only"], active: false },
-                  { title: "Enterprise", price: "$2,499/mo", features: ["Unlimited Agents", "24/7 Priority", "Multi-Cloud Proxy", "SLA: 99.99%"], active: true },
-                  { title: "Sovereign", price: "Custom", features: ["Air-Gapped Ops", "Dedicated Hardware", "White-label Portal", "SLA: 99.999%"], active: false },
-                ].map((tier, idx) => (
-                  <Card key={idx} className={tier.active ? "border-primary ring-1 ring-primary/20" : "opacity-70"}>
-                    <CardHeader>
-                      <div className="flex justify-between items-center">
-                        <CardTitle>{tier.title}</CardTitle>
-                        {tier.active && <Badge className="bg-emerald-500 hover:bg-emerald-600">ACTIVE</Badge>}
-                      </div>
-                      <CardDescription>{tier.price}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <ul className="space-y-2">
-                        {tier.features.map((f, i) => (
-                          <li key={i} className="text-xs flex items-center gap-2">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-500" /> {f}
-                          </li>
-                        ))}
-                      </ul>
-                      <Button 
-                        className="w-full" 
-                        variant={tier.active ? "secondary" : "default"}
-                        onClick={() => {
-                          if (!tier.active) {
-                            extendedApi.enterprise.updateSlaTier(tier.title)
-                              .then(() => toast.success(`${tier.title} Tier Requested`))
-                              .catch(() => toast.error("Request failed"));
-                          }
-                        }}
-                      >
-                        {tier.active ? "Current Plan" : "Request Upgrade"}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
+                  { title: "Standard", price: "$499/mo", features: ["10 Agents", "8/5 Support", "Public Cloud Only"] },
+                  { title: "Enterprise", price: "$2,499/mo", features: ["Unlimited Agents", "24/7 Priority", "Multi-Cloud Proxy", "SLA: 99.99%"] },
+                  { title: "Sovereign", price: "Custom", features: ["Air-Gapped Ops", "Dedicated Hardware", "White-label Portal", "SLA: 99.999%"] },
+                ].map((tier, idx) => {
+                  const isActive = activeSlaTier === tier.title;
+                  return (
+                    <Card key={idx} className={isActive ? "border-primary ring-1 ring-primary/20" : "opacity-70"}>
+                      <CardHeader>
+                        <div className="flex justify-between items-center">
+                          <CardTitle>{tier.title}</CardTitle>
+                          {isActive && <Badge className="bg-emerald-500 hover:bg-emerald-600">ACTIVE</Badge>}
+                        </div>
+                        <CardDescription>{tier.price}</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <ul className="space-y-2">
+                          {tier.features.map((f, i) => (
+                            <li key={i} className="text-xs flex items-center gap-2">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-500" /> {f}
+                            </li>
+                          ))}
+                        </ul>
+                        <Button 
+                          className="w-full" 
+                          variant={isActive ? "secondary" : "default"}
+                          onClick={async () => {
+                            if (!isActive) {
+                              try {
+                                await extendedApi.enterprise.updateSlaTier(tier.title);
+                                setActiveSlaTier(tier.title);
+                                storage.set("active_sla_tier", tier.title);
+                                toast.success(`${tier.title} Tier Activated`);
+                              } catch (e) {
+                                toast.error("Activation failed");
+                              }
+                            }
+                          }}
+                        >
+                          {isActive ? "Current Plan" : "Activate Tier"}
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             </TabsContent>
 

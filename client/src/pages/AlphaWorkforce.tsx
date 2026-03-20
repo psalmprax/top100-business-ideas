@@ -68,6 +68,28 @@ import {
     DialogFooter
 } from "@/components/ui/dialog";
 import { extendedApi, workforceSync } from '@/lib/api';
+import { storage } from "@/lib/storage";
+
+const INITIAL_AGENT_ROSTER = [
+    { id: 'CEO', name: 'CEO AI', framework: 'Agent Zero', status: 'ACTIVE' },
+    { id: 'CFO', name: 'CFO AI', framework: 'Agent Zero', status: 'ACTIVE' },
+    { id: 'Legal', name: 'Legal Compliance', framework: 'Autogen', status: 'ACTIVE' },
+    { id: 'Growth', name: 'Growth Lead', framework: 'CrewAI', status: 'ACTIVE' },
+    { id: 'CMO', name: 'CMO AI', framework: 'LlamaIndex', status: 'ACTIVE' },
+    { id: 'Security', name: 'Security/Ops', framework: 'OpenClaw', status: 'ACTIVE' },
+    { id: 'Red-Team', name: 'Defense Red-Teamer', framework: 'OpenClaw', status: 'ACTIVE' },
+    { id: 'Data', name: 'Data Analyst', framework: 'Autogen', status: 'ACTIVE' },
+    { id: 'Insights', name: 'Customer Insights', framework: 'CrewAI', status: 'ACTIVE' },
+    { id: 'Receptionist', name: 'Inbound Receptionist', framework: 'Concierge AI', status: 'ACTIVE' },
+    { id: 'AI-Assistant', name: 'AI Personal Assistant', framework: 'Agent Zero', status: 'ACTIVE' },
+    { id: 'SEO', name: 'SEO Strategy Manager', framework: 'CrewAI', status: 'ACTIVE' },
+    { id: 'Crisis', name: 'Crisis Commander', framework: 'Sovereign OS', status: 'ACTIVE' },
+];
+
+const INITIAL_FISCAL_REQUESTS = [
+    { id: 1, purpose: 'Q3 Freelance Payroll', amount: '$12,400', priority: 'HIGH', status: 'PENDING' },
+    { id: 2, purpose: 'GPU Cluster Expansion (Cluster 7)', amount: '$5,000', priority: 'MEDIUM', status: 'PENDING' },
+];
 
 const SovereignStageItem = ({ stage, name, status, description, isAutonomous, onDecision, currentDecision }: { 
     stage: number, 
@@ -116,7 +138,7 @@ const SovereignStageItem = ({ stage, name, status, description, isAutonomous, on
 );
 
 const AlphaWorkforce = () => {
-    const [isAutonomous, setIsAutonomous] = useState(false);
+    const [isAutonomous, setIsAutonomous] = useState(storage.get("workforce_autonomous", false));
     const [performanceMetric, setPerformanceMetric] = useState(78);
     const [revenueGrowth, setRevenueGrowth] = useState(12.4);
     const [workforceData, setWorkforceData] = useState<any>(null);
@@ -126,27 +148,10 @@ const AlphaWorkforce = () => {
         telegram: '',
         discord: ''
     });
-    const [governanceDecisions, setGovernanceDecisions] = useState<Record<number, string>>({});
-    const [agentRoster, setAgentRoster] = useState([
-        { id: 'CEO', name: 'CEO AI', framework: 'Agent Zero', status: 'ACTIVE' },
-        { id: 'CFO', name: 'CFO AI', framework: 'Agent Zero', status: 'ACTIVE' },
-        { id: 'Legal', name: 'Legal Compliance', framework: 'Autogen', status: 'ACTIVE' },
-        { id: 'Growth', name: 'Growth Lead', framework: 'CrewAI', status: 'ACTIVE' },
-        { id: 'CMO', name: 'CMO AI', framework: 'LlamaIndex', status: 'ACTIVE' },
-        { id: 'Security', name: 'Security/Ops', framework: 'OpenClaw', status: 'ACTIVE' },
-        { id: 'Red-Team', name: 'Defense Red-Teamer', framework: 'OpenClaw', status: 'ACTIVE' },
-        { id: 'Data', name: 'Data Analyst', framework: 'Autogen', status: 'ACTIVE' },
-        { id: 'Insights', name: 'Customer Insights', framework: 'CrewAI', status: 'ACTIVE' },
-        { id: 'Receptionist', name: 'Inbound Receptionist', framework: 'Concierge AI', status: 'ACTIVE' },
-        { id: 'AI-Assistant', name: 'AI Personal Assistant', framework: 'Agent Zero', status: 'ACTIVE' },
-        { id: 'SEO', name: 'SEO Strategy Manager', framework: 'CrewAI', status: 'ACTIVE' },
-        { id: 'Crisis', name: 'Crisis Commander', framework: 'Sovereign OS', status: 'ACTIVE' },
-    ]);
-    const [activeEmployees, setActiveEmployees] = useState(13);
-    const [fiscalRequests, setFiscalRequests] = useState([
-        { id: 1, purpose: 'Q3 Freelance Payroll', amount: '$12,400', priority: 'HIGH', status: 'PENDING' },
-        { id: 2, purpose: 'GPU Cluster Expansion (Cluster 7)', amount: '$5,000', priority: 'MEDIUM', status: 'PENDING' },
-    ]);
+    const [governanceDecisions, setGovernanceDecisions] = useState<Record<number, string>>(storage.get("governance_decisions", {}));
+    const [agentRoster, setAgentRoster] = useState(storage.get("agent_roster", INITIAL_AGENT_ROSTER));
+    const [activeEmployees, setActiveEmployees] = useState(storage.get("agent_roster", INITIAL_AGENT_ROSTER).length);
+    const [fiscalRequests, setFiscalRequests] = useState(storage.get("fiscal_requests", INITIAL_FISCAL_REQUESTS));
 
     const [isRunningMarketing, setIsRunningMarketing] = useState(false);
     const [isSourcingLeads, setIsSourcingLeads] = useState(false);
@@ -154,6 +159,11 @@ const AlphaWorkforce = () => {
     useEffect(() => {
         const fetchData = async () => {
             const data = await workforceSync();
+            // Merge with local strategy refinements if any
+            const localRefinements = storage.get("strategy_refinements", null);
+            if (localRefinements && data) {
+                data.strategyRefinements = localRefinements;
+            }
             setWorkforceData(data);
         };
         fetchData();
@@ -265,6 +275,7 @@ const AlphaWorkforce = () => {
         try {
             await extendedApi.workforce.toggleAutonomy(nextState);
             setIsAutonomous(nextState);
+            storage.set("workforce_autonomous", nextState);
             if (nextState) {
                 toast.success("Autonomous Company Mode Active. AI Executives are now managing operations.");
             } else {
@@ -272,6 +283,7 @@ const AlphaWorkforce = () => {
             }
         } catch (e) {
             setIsAutonomous(nextState);
+            storage.set("workforce_autonomous", nextState);
             if (nextState) {
                 toast.success("Autonomous Company Mode Active (Simulated).");
             } else {
@@ -281,11 +293,17 @@ const AlphaWorkforce = () => {
     };
 
     const handleGovernanceDecision = (stage: number, decision: string) => {
-        setGovernanceDecisions(prev => ({ ...prev, [stage]: decision }));
+        const updatedDecisions = { ...governanceDecisions, [stage]: decision };
+        setGovernanceDecisions(updatedDecisions);
+        storage.set("governance_decisions", updatedDecisions);
         
         // Auto-approve the top fiscal request if Stage 1 is approved
         if (stage === 1 && decision === 'APPROVED') {
-            setFiscalRequests(prev => prev.map((req, i) => i === 0 ? { ...req, status: 'APPROVED' } : req));
+            setFiscalRequests(prev => {
+                const updated = prev.map((req, i) => i === 0 ? { ...req, status: 'APPROVED' } : req);
+                storage.set("fiscal_requests", updated);
+                return updated;
+            });
         }
 
         if (decision === 'APPROVED') {
@@ -300,7 +318,11 @@ const AlphaWorkforce = () => {
     };
 
     const handleFiscalApproval = (id: number, decision: 'APPROVED' | 'DENIED') => {
-        setFiscalRequests(prev => prev.map(req => req.id === id ? { ...req, status: decision } : req));
+        setFiscalRequests(prev => {
+            const updated = prev.map(req => req.id === id ? { ...req, status: decision } : req);
+            storage.set("fiscal_requests", updated);
+            return updated;
+        });
         if (decision === 'APPROVED') {
             toast.success(`Fund Disbursement Authorized: ${fiscalRequests.find(r => r.id === id)?.amount}`);
         } else {
@@ -309,7 +331,11 @@ const AlphaWorkforce = () => {
     };
 
     const handleHireAgent = (agent: any) => {
-        setAgentRoster(prev => [...prev, { ...agent, id: `Agent-${Date.now()}`, status: 'ACTIVE' }]);
+        setAgentRoster(prev => {
+            const updated = [...prev, { ...agent, id: `Agent-${Date.now()}`, status: 'ACTIVE' }];
+            storage.set("agent_roster", updated);
+            return updated;
+        });
         setActiveEmployees(prev => prev + 1);
         setIsHiringOpen(false);
         toast.success(`New Agent Hired: ${agent.name}`, {
