@@ -229,7 +229,7 @@ cd client && npm run dev
 cd server/go && go run cmd/api/main.go
 
 # Python ML
-cd server/python && python -m uvicorn app.main:app --reload
+cd server/python && PYTHONPATH=. python3 -m uvicorn app.main:app --host 0.0.0.0 --port 7002 --reload
 ```
 
 ### Ports
@@ -238,8 +238,8 @@ cd server/python && python -m uvicorn app.main:app --reload
 | Frontend | http://localhost:7000 | Vite + React + Lucide |
 | API Gateway | http://localhost:7001 | Go (Gin) |
 | AI Backend | http://localhost:7002 | Python (FastAPI) |
-- PostgreSQL: localhost:5432
-- Redis: localhost:6379
+- PostgreSQL: localhost:7003
+- Redis: localhost:7004
 
 ---
 
@@ -262,12 +262,19 @@ cd server/python && python -m uvicorn app.main:app --reload
 - `POST /api/v1/billing/webhook` - Stripe webhook
 
 ### ML Inference (Direct Gateway Proxy)
--   **Python 3.10+**: Core language
--   **FastAPI**: Web framework for AI/ML inference
--   **PyTorch / Transformers**: Deep learning and LLM interaction
--   **OpenCV**: Image and video processing
--   **NumPy / Pandas**: Numerical and data analysis
--   **CrewAI / LangChain**: Multi-agent orchestration
+- `POST /ml/infer` - Run inference
+- `GET /ml/models` - List models
+- `POST /ml/agent-ops/classify` - Classify agent operation
+- `POST /ml/ai-compliance/check` - Check compliance
+- `POST /ml/deepfake/detect` - Detect deepfake
+
+#### ML Tech Stack
+- **Python 3.10+**: Core language
+- **FastAPI**: Web framework
+- **PyTorch / Transformers**: Deep learning
+- **OpenCV**: Image Processing
+- **NumPy / Pandas**: Data Analysis
+- **CrewAI / LangChain**: Multi-agent orchestration
 
 ---
 
@@ -309,8 +316,8 @@ cd server/python && python -m uvicorn app.main:app --reload
 
 ```env
 # Database
-DATABASE_URL=postgresql://user:pass@localhost:5432/alphaai
-REDIS_URL=redis://localhost:6379
+DATABASE_URL=postgresql://user:pass@localhost:7003/alphaai
+REDIS_URL=redis://localhost:7004
 
 # Auth
 JWT_SECRET=your-secret-key

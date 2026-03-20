@@ -20,7 +20,7 @@
 
 ## About AlphaAI
 
-AlphaAI is an enterprise AI company providing production-ready AI solutions. Our platform offers three core products:
+AlphaAI is an enterprise AI company providing production-ready AI solutions. Our platform offers five core products:
 
 - **AgentOps** - Autonomous AI workforce management & Sentinel Guard
 - **AI Compliance Hub** - EU AI Act compliance automation & Risk Assessment
@@ -33,13 +33,13 @@ AlphaAI is an enterprise AI company providing production-ready AI solutions. Our
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        Frontend (React)                         │
-│                    http://localhost:3000                        │
+│                    http://localhost:7000                        │
 └──────────────────────────┬──────────────────────────────────────┘
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                  API Gateway (Go/Gin)                          │
-│                    http://localhost:8081                        │
+│                    http://localhost:7001                        │
 │  ┌──────────────┐  ┌──────────────┐  ┌───────────────────────┐ │
 │  │   Auth       │  │   Proxy      │  │   WebSocket          │ │
 │  │   (JWT)      │  │   Service    │  │   Hub                │ │
@@ -93,10 +93,10 @@ AlphaAI is an enterprise AI company providing production-ready AI solutions. Our
    cd client && pnpm dev
    
    # Terminal 2: Go API Gateway
-   cd server/go && PORT=8081 go run cmd/api/main.go
+   cd server/go && PORT=7001 go run cmd/api/main.go
    
    # Terminal 3: Python ML Backend
-   cd server/python && PYTHONPATH=. python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+   cd server/python && PYTHONPATH=. python3 -m uvicorn app.main:app --host 0.0.0.0 --port 7002
    ```
 
 3. **Or use Docker Compose:**
@@ -148,16 +148,16 @@ The Alpha suite features a **namespaced persistence layer** using `localStorage`
 
 ```bash
 # Login and get token
-curl -X POST http://localhost:8081/api/auth/login \
+curl -X POST http://localhost:7001/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@alphaai.com","password":"admin"}'
 
-# Get compliance score (with token)
-curl -X GET http://localhost:8081/api/compliance/score \
+# Get agents list (with token)
+curl -X GET http://localhost:7001/api/v1/agents \
   -H "Authorization: Bearer YOUR_TOKEN"
 
 # Analyze media for deepfakes
-curl -X POST http://localhost:8081/api/deepfake/analyze \
+curl -X POST http://localhost:7001/api/v1/deepfake/analyze \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -F "file=@video.mp4"
 ```
@@ -278,7 +278,7 @@ JWT_EXPIRY=24h
 
 ### Python Backend (.env)
 ```env
-PORT=8000
+PORT=7002
 LOG_LEVEL=info
 ```
 
@@ -297,5 +297,5 @@ MIT License - see LICENSE for details.
 ## Support
 
 - Email: support@alphaai.com
-- Documentation: http://localhost:3000/docs
-- API Docs: http://localhost:8000/docs
+- Documentation: http://localhost:7000/docs
+- API Docs: http://localhost:7002/docs
