@@ -11,6 +11,10 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
+                script {
+                    // Dynamically resolve the host path if running in a container with nested Docker
+                    env.HOST_WORKSPACE = WORKSPACE.replace("/var/jenkins_home", "/home/ubuntu/jenkins_home")
+                }
             }
         }
 
@@ -18,17 +22,17 @@ pipeline {
             parallel {
                stage('Frontend') {
                     steps {
-                        sh 'docker run --rm -v /home/ubuntu/jenkins_home/workspace/${JOB_NAME}:/app -w /app/client node:20-alpine npm install'
+                        sh 'docker run --rm -v ${HOST_WORKSPACE}:/app -w /app/client node:20-alpine npm install'
                     }
                 }
                 stage('Backend (Python)') {
                     steps {
-                        sh 'docker run --rm -v /home/ubuntu/jenkins_home/workspace/${JOB_NAME}:/app -w /app/server/python python:3.11-slim pip install --no-cache-dir -r requirements.txt'
+                        sh 'docker run --rm -v ${HOST_WORKSPACE}:/app -w /app/server/python python:3.11-slim pip install --no-cache-dir -r requirements.txt'
                     }
                 }
                 stage('Backend (Go)') {
                     steps {
-                        sh 'docker run --rm -v /home/ubuntu/jenkins_home/workspace/${JOB_NAME}:/app -w /app/server/go golang:1.22-alpine go mod download'
+                        sh 'docker run --rm -v ${HOST_WORKSPACE}:/app -w /app/server/go golang:1.22-alpine go mod download'
                     }
                 }
             }
@@ -37,7 +41,7 @@ pipeline {
         stage('E2E Infrastructure Setup') {
             steps {
                 // Ensure browsers are installed in the playwright-ready container
-                sh 'docker run --rm -v /home/ubuntu/jenkins_home/workspace/${JOB_NAME}:/app -w /app mcr.microsoft.com/playwright:v1.43.0-jammy npx playwright install chromium'
+                sh 'docker run --rm -v ${HOST_WORKSPACE}:/app -w /app mcr.microsoft.com/playwright:v1.43.0-jammy npx playwright install chromium'
             }
         }
 
@@ -46,7 +50,7 @@ pipeline {
                 script {
                     try {
                         // Run specifically the Sentinel functional suite inside Playwright container
-                        sh 'docker run --rm -v /home/ubuntu/jenkins_home/workspace/${JOB_NAME}:/app -w /app mcr.microsoft.com/playwright:v1.43.0-jammy npx playwright test client/src/test/sentinel-functional.spec.ts --project=chromium --reporter=list'
+                        sh 'docker run --rm -v ${HOST_WORKSPACE}:/app -w /app mcr.microsoft.com/playwright:v1.43.0-jammy npx playwright test client/src/test/sentinel-functional.spec.ts --project=chromium --reporter=list'
                     } finally {
                         // Always collect results
                         junit 'client/src/test-results/**/*.xml'
@@ -61,7 +65,7 @@ pipeline {
                 branch 'main'
             }
             steps {
-                sh 'docker run --rm -v /home/ubuntu/jenkins_home/workspace/${JOB_NAME}:/app -w /app/client node:20-alpine npm run build'
+                sh 'docker run --rm -v ${HOST_WORKSPACE}:/app -w /app/client node:20-alpine npm run build'
             }
         }
     }
