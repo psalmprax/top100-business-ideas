@@ -227,8 +227,10 @@ curl -X POST http://localhost:8081/api/deepfake/analyze \
 ### Backend (ML)
 - **Python 3.10+** - Language
 - **FastAPI** - Web framework
-- **OpenCV** - Image processing (mock)
-- **NumPy** - Numerical computing (mock)
+- **PyTorch / Transformers** - AI/ML Inference
+- **OpenCV** - Image Processing
+- **NumPy / Pandas** - Numerical Computing
+- **CrewAI / LangChain** - Agentic Frameworks
 
 ### DevOps
 - **Docker** - Containerization

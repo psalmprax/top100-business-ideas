@@ -262,12 +262,12 @@ cd server/python && python -m uvicorn app.main:app --reload
 - `POST /api/v1/billing/webhook` - Stripe webhook
 
 ### ML Inference (Direct Gateway Proxy)
-- `POST /ml/infer` - Run inference
-- `POST /ml/batch` - Batch inference
-- `GET /ml/models` - List models
-- `POST /ml/agent-ops/classify` - Classify agent operation
-- `POST /ml/ai-compliance/check` - Check compliance
-- `POST /ml/deepfake/detect` - Detect deepfake
+-   **Python 3.10+**: Core language
+-   **FastAPI**: Web framework for AI/ML inference
+-   **PyTorch / Transformers**: Deep learning and LLM interaction
+-   **OpenCV**: Image and video processing
+-   **NumPy / Pandas**: Numerical and data analysis
+-   **CrewAI / LangChain**: Multi-agent orchestration
 
 ---
 
