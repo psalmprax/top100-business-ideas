@@ -252,6 +252,7 @@ function IdeaCard({ idea, index, onClick, onBookmark, isBookmarked, onCompare, i
         <button
           onClick={(e) => { e.stopPropagation(); onBookmark(); }}
           className="flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all"
+          data-testid={`bookmark-btn-${idea.id}`}
           style={{
             background: isBookmarked ? "oklch(0.22 0.18 145 / 0.3)" : "oklch(0.16 0.02 265)",
             color: isBookmarked ? "#22c55e" : "rgba(255,255,255,0.5)",
@@ -263,6 +264,7 @@ function IdeaCard({ idea, index, onClick, onBookmark, isBookmarked, onCompare, i
         <button
           onClick={(e) => { e.stopPropagation(); onCompare(); }}
           className="flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all"
+          data-testid={`compare-btn-${idea.id}`}
           style={{
             background: isInComparison ? "oklch(0.65 0.2 250 / 0.3)" : "oklch(0.16 0.02 265)",
             color: isInComparison ? "#3b82f6" : "rgba(255,255,255,0.5)",
@@ -612,7 +614,7 @@ export default function Home() {
             <div className="hidden md:flex items-center gap-6 text-xs text-white/50">
               <span>US · UK · EU · Canada</span>
               <span className="px-2 py-1 rounded-full text-emerald-400 font-semibold" style={{ background: "oklch(0.72 0.18 145 / 0.15)" }}>
-                2025 Research Report
+                2026 Research Report
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -649,7 +651,7 @@ export default function Home() {
                 )}
               </button>
               <div className="relative group">
-                <button className="p-2 rounded-lg transition-all hover:bg-white/10">
+                <button className="p-2 rounded-lg transition-all hover:bg-white/10" data-testid="export-dropdown-btn">
                   <Download className="w-4 h-4 text-white/60" />
                 </button>
                 <div className="absolute right-0 mt-2 w-56 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50" style={{ background: "oklch(0.14 0.02 265)", border: "1px solid oklch(0.25 0.04 265)" }}>
@@ -694,7 +696,7 @@ export default function Home() {
             </div>
             <h1 className="text-5xl md:text-6xl font-black text-white mb-5 leading-none" style={{ fontFamily: "'Syne', sans-serif" }}>
               Top 100 <span className="gradient-text">High-Earning</span>
-              <br />Business Ideas 2025
+              <br />Business Ideas 2026
             </h1>
             <p className="text-white/60 text-lg mb-10 max-w-2xl leading-relaxed">
               Comprehensive gap analysis of the most profitable, fast-rollout business opportunities across the US, UK, EU, and Canada — with market size, earning potential, and actionable insights.
@@ -714,12 +716,13 @@ export default function Home() {
       <div className="container pb-20">
         {/* Charts Toggle */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-white" style={{ fontFamily: "'Syne', sans-serif" }}>
+          <h2 data-testid="market-intel-header" className="text-xl font-bold text-white" style={{ fontFamily: "'Syne', sans-serif" }}>
             Market Intelligence
           </h2>
           <button
             onClick={() => setShowCharts(v => !v)}
             className="flex items-center gap-2 text-sm text-white/50 hover:text-white transition-colors"
+            data-testid="charts-toggle-btn"
           >
             <BarChart2 className="w-4 h-4" />
             {showCharts ? "Hide Charts" : "Show Charts"}
@@ -739,21 +742,22 @@ export default function Home() {
                 onChange={e => { setSearch(e.target.value); setVisibleCount(24); }}
                 placeholder="Search ideas, categories, tags..."
                 className="pl-9 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-blue-500/50"
+                data-testid="search-input"
               />
             </div>
 
             <Select value={selectedCategory} onValueChange={v => { setSelectedCategory(v); setVisibleCount(24); }}>
-              <SelectTrigger className="w-48 bg-white/5 border-white/10 text-white">
+              <SelectTrigger className="w-48 bg-white/5 border-white/10 text-white" data-testid="category-select">
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent style={{ background: "oklch(0.14 0.02 265)", border: "1px solid oklch(0.25 0.04 265)" }}>
                 <SelectItem value="all">All Categories</SelectItem>
-                {ALL_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                {ALL_CATEGORIES.map(c => <SelectItem key={c} value={c} data-testid={`category-item-${c.toLowerCase()}`}>{c}</SelectItem>)}
               </SelectContent>
             </Select>
 
             <Select value={selectedMarket} onValueChange={v => { setSelectedMarket(v); setVisibleCount(24); }}>
-              <SelectTrigger className="w-36 bg-white/5 border-white/10 text-white">
+              <SelectTrigger className="w-36 bg-white/5 border-white/10 text-white" data-testid="market-select">
                 <SelectValue placeholder="All Markets" />
               </SelectTrigger>
               <SelectContent style={{ background: "oklch(0.14 0.02 265)", border: "1px solid oklch(0.25 0.04 265)" }}>
@@ -763,7 +767,7 @@ export default function Home() {
             </Select>
 
             <Select value={selectedTrend} onValueChange={v => { setSelectedTrend(v); setVisibleCount(24); }}>
-              <SelectTrigger className="w-40 bg-white/5 border-white/10 text-white">
+              <SelectTrigger className="w-40 bg-white/5 border-white/10 text-white" data-testid="trend-select">
                 <SelectValue placeholder="All Trends" />
               </SelectTrigger>
               <SelectContent style={{ background: "oklch(0.14 0.02 265)", border: "1px solid oklch(0.25 0.04 265)" }}>
@@ -772,7 +776,7 @@ export default function Home() {
               </SelectContent>
             </Select>
 
-            <Select value={sortBy} onValueChange={setSortBy}>
+            <Select value={sortBy} onValueChange={setSortBy} data-testid="sort-select">
               <SelectTrigger className="w-44 bg-white/5 border-white/10 text-white">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
@@ -789,6 +793,7 @@ export default function Home() {
               <button
                 onClick={clearFilters}
                 className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 transition-colors px-3 py-2 rounded-lg hover:bg-red-500/10"
+                data-testid="clear-filters-btn"
               >
                 <X className="w-3.5 h-3.5" /> Clear Filters
               </button>
@@ -851,7 +856,7 @@ export default function Home() {
         {/* Footer */}
         <div className="mt-16 pt-8 border-t border-white/8 text-center">
           <p className="text-white/30 text-xs">
-            Research compiled from US Chamber of Commerce, McKinsey Global Institute, Deloitte, PwC, EU Commission reports, and industry databases. Data reflects 2025 market conditions.
+            Research compiled from US Chamber of Commerce, McKinsey Global Institute, Deloitte, PwC, EU Commission reports, and industry databases. Data reflects 2026 market conditions.
           </p>
           <p className="text-white/20 text-xs mt-2">
             Markets covered: United States · United Kingdom · European Union · Canada

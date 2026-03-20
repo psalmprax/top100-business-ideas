@@ -429,3 +429,35 @@ type Vendor struct {
 	LastAudit        time.Time `json:"last_audit" db:"last_audit"`
 	CreatedAt        time.Time `json:"created_at" db:"created_at"`
 }
+
+// WorkforceStatus represents the status of the digital workforce
+type WorkforceStatus struct {
+	TotalAgents     int            `json:"total_agents"`
+	ActiveAgents    int            `json:"active_agents"`
+	TotalROI        float64        `json:"total_roi"`
+	MonthlyBurn     float64        `json:"monthly_burn"`
+	AutonomyLevel   string         `json:"autonomy_level"` // partial, full
+	SovereignStages []SovereignStage `json:"sovereign_stages"`
+	LastSync        time.Time      `json:"last_sync"`
+}
+
+// SovereignStage represents a stage in the Sovereign Autonomy Matrix
+type SovereignStage struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Level       string `json:"level"` // review_required, fully_autonomous
+	Status      string `json:"status"` // healthy, pending_review, alert
+	Description string `json:"description"`
+}
+
+// SovereignRequest represents a request for human approval
+type SovereignRequest struct {
+	ID        string    `json:"id"`
+	StageID   string    `json:"stage_id"`
+	Action    string    `json:"action"`
+	Reasoning string    `json:"reasoning"`
+	Context   string    `json:"context"` // JSON string or text
+	Status    string    `json:"status"`  // pending, approved, denied
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}

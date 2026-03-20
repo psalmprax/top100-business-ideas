@@ -82,14 +82,15 @@ export default function Login() {
                         onClick={handleDemoLogin}
                         variant="outline"
                         className="w-full mb-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0"
+                        data-testid="btn-demo-mode"
                     >
                         <Rocket className="w-4 h-4 mr-2" />
-                        Try Demo Mode (Full Access)
+                        Try Demo Mode (Client Preview)
                     </Button>
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                         <TabsList className="grid w-full grid-cols-2 mb-6">
-                            <TabsTrigger value="login">Sign In</TabsTrigger>
-                            <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                            <TabsTrigger value="login" data-testid="tab-signin">Sign In</TabsTrigger>
+                            <TabsTrigger value="signup" data-testid="tab-signup">Sign Up</TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="login">
@@ -100,12 +101,14 @@ export default function Login() {
                                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                                         <Input
                                             id="email"
+                                            name="email"
                                             type="email"
                                             placeholder="you@company.com"
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value)}
                                             className="pl-10 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
                                             required
+                                            data-testid="input-email"
                                         />
                                     </div>
                                 </div>
@@ -121,17 +124,20 @@ export default function Login() {
                                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                                         <Input
                                             id="password"
+                                            name="password"
                                             type={showPassword ? 'text' : 'password'}
                                             placeholder="Enter your password"
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
                                             className="pl-10 pr-10 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
                                             required
+                                            data-testid="input-password"
                                         />
                                         <button
                                             type="button"
                                             onClick={() => setShowPassword(!showPassword)}
                                             className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                                            data-testid="btn-toggle-password"
                                         >
                                             {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                         </button>
@@ -144,7 +150,7 @@ export default function Login() {
                                     </div>
                                 )}
 
-                                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
+                                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading} data-testid="btn-signin">
                                     {isLoading ? (
                                         <>
                                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -172,6 +178,7 @@ export default function Login() {
                                         onChange={(e) => setName(e.target.value)}
                                         className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
                                         required
+                                        data-testid="input-name"
                                     />
                                 </div>
 
@@ -187,6 +194,7 @@ export default function Login() {
                                             onChange={(e) => setEmail(e.target.value)}
                                             className="pl-10 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
                                             required
+                                            data-testid="input-signup-email"
                                         />
                                     </div>
                                 </div>
@@ -204,11 +212,13 @@ export default function Login() {
                                             className="pl-10 pr-10 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
                                             required
                                             minLength={8}
+                                            data-testid="input-signup-password"
                                         />
                                         <button
                                             type="button"
                                             onClick={() => setShowPassword(!showPassword)}
                                             className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                                            data-testid="btn-toggle-signup-password"
                                         >
                                             {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                         </button>
@@ -222,7 +232,7 @@ export default function Login() {
                                     </div>
                                 )}
 
-                                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
+                                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading} data-testid="btn-signup">
                                     {isLoading ? (
                                         <>
                                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -257,7 +267,7 @@ export default function Login() {
                         </div>
 
                         <div className="mt-4 grid grid-cols-2 gap-3">
-                            <Button variant="outline" className="bg-slate-800 border-slate-700 hover:bg-slate-700">
+                            <Button variant="outline" className="bg-slate-800 border-slate-700 hover:bg-slate-700" data-testid="btn-oauth-google">
                                 <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
                                     <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                                     <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
@@ -266,7 +276,7 @@ export default function Login() {
                                 </svg>
                                 Google
                             </Button>
-                            <Button variant="outline" className="bg-slate-800 border-slate-700 hover:bg-slate-700">
+                            <Button variant="outline" className="bg-slate-800 border-slate-700 hover:bg-slate-700" data-testid="btn-oauth-apple">
                                 <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701" />
                                 </svg>

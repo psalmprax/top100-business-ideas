@@ -81,6 +81,51 @@ POST   /api/v1/human-in-loop/resume # Inject human feedback and unpause agent
 
 ---
 
+## 🤖 Multi-Provider LLM Router
+
+### Supported Providers
+| Provider | Model | Status | Priority |
+|----------|-------|--------|----------|
+| OpenAI | GPT-4o, GPT-4o-mini | Default | 1 |
+| Anthropic | Claude 3.5 Sonnet | Secondary | 2 |
+| DeepSeek | DeepSeek V3 | Testing | 3 |
+| Google Gemini | Gemini 1.5 Pro | Testing | 4 |
+| Cohere | Command R+ | Beta | 5 |
+| Mistral | Mistral Large | Beta | 6 |
+
+### Failover Configuration
+```yaml
+llm_providers:
+  primary: openai
+  failover_chain:
+    - provider: anthropic
+      trigger: "openai_error OR rate_limit"
+    - provider: deepseek
+      trigger: "cost_optimization OR anthropic_error"
+    - provider: google
+      trigger: "multimodal_request"
+```
+
+### Performance Testing Mode
+```yaml
+performance_testing:
+  enabled: true
+  round_robin: true
+  metrics: [latency, accuracy, cost, tokens]
+  auto_select_best: true
+  update_interval: hourly
+```
+
+### Provider Selection API
+```
+GET  /api/v1/providers              # List all providers and status
+POST /api/v1/providers/:id/test   # Run benchmark test
+GET  /api/v1/providers/recommend   # Get best provider for task
+POST /api/v1/providers/failover    # Trigger manual failover
+```
+
+---
+
 ## 📈 Scaling Strategy
 
 ### Low-Latency Guarantee

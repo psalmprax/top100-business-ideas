@@ -77,43 +77,81 @@ func (h *ComplianceHandler) RunCheck(c *gin.Context) {
 }
 
 func (h *ComplianceHandler) GetCategories(c *gin.Context) {
-	// Return predefined AI Act categories
-	categories := []models.ComplianceCategory{
-		{
-			ID:          "unacceptable",
-			Name:        "Unacceptable Risk",
-			Color:       "red",
-			Description: "Banned AI systems that pose unacceptable risk to people",
-		},
-		{
-			ID:          "high",
-			Name:        "High Risk",
-			Color:       "orange",
-			Description: "AI systems that pose high risk to fundamental rights",
-		},
-		{
-			ID:          "limited",
-			Name:        "Limited Risk",
-			Color:       "yellow",
-			Description: "AI systems with limited transparency obligations",
-		},
-		{
-			ID:          "minimal",
-			Name:        "Minimal Risk",
-			Color:       "green",
-			Description: "Low-risk AI systems with minimal requirements",
-		},
+	response, err := h.proxyService.Forward("GET", "/compliance/categories", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch categories", Details: err.Error()})
+		return
 	}
-
-	c.JSON(http.StatusOK, categories)
+	c.Data(http.StatusOK, "application/json", response)
 }
 
 func (h *ComplianceHandler) ExportReport(c *gin.Context) {
-	// TODO: Generate and export compliance report
-	c.JSON(http.StatusOK, models.SuccessResponse{
-		Message: "Report export initiated",
-		Data: map[string]interface{}{
-			"download_url": "/api/v1/compliance/reports/download/report-123.pdf",
-		},
-	})
+	response, err := h.proxyService.Forward("GET", "/compliance/reports/export", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to export report", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+func (h *ComplianceHandler) ListModels(c *gin.Context) {
+	response, err := h.proxyService.ListComplianceModels()
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch compliance models", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+func (h *ComplianceHandler) RegisterModel(c *gin.Context) {
+	var req interface{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request body"})
+		return
+	}
+	response, err := h.proxyService.RegisterComplianceModel(req)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to register model", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusCreated, "application/json", response)
+}
+
+func (h *ComplianceHandler) UpdateGuardrails(c *gin.Context) {
+	id := c.Param("id")
+	var req interface{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request body"})
+		return
+	}
+	response, err := h.proxyService.UpdateComplianceGuardrails(id, req)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to update guardrails", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+func (h *ComplianceHandler) GetBiasReports(c *gin.Context) {
+	id := c.Param("id")
+	response, err := h.proxyService.GetBiasReports(id)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch bias reports", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+func (h *ComplianceHandler) TriggerBiasScan(c *gin.Context) {
+	var req interface{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request body"})
+		return
+	}
+	response, err := h.proxyService.TriggerBiasScan(req)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to trigger bias scan", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
 }

@@ -35,11 +35,21 @@ import {
     Unlock,
     HelpCircle,
     MessageCircle,
-    Hash
+    Hash,
+    UserPlus,
+    Crown,
+    Wallet,
+    PieChart,
+    ArrowUpRight,
+    ArrowDownRight,
+    Plus,
+    X,
+    Check,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -48,14 +58,98 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+    DialogFooter
+} from "@/components/ui/dialog";
 import { extendedApi, workforceSync } from '@/lib/api';
+
+const SovereignStageItem = ({ stage, name, status, description, isAutonomous, onDecision, currentDecision }: { 
+    stage: number, 
+    name: string, 
+    status: string, 
+    description: string, 
+    isAutonomous: boolean,
+    onDecision?: (stage: number, decision: string) => void,
+    currentDecision?: string
+}) => (
+    <div className={`p-3 rounded-lg border transition-all ${isAutonomous ? 'bg-indigo-500/10 border-indigo-500/30 shadow-inner' : 'bg-background/40 border-border'} ${currentDecision ? 'opacity-80' : ''}`}>
+        <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+                <span className={`w-5 h-5 flex items-center justify-center rounded-full text-[10px] font-bold ${isAutonomous ? 'bg-indigo-500 text-white' : 'bg-muted text-muted-foreground'}`}>
+                    {stage}
+                </span>
+                <span className="font-bold text-sm tracking-tight">{name}</span>
+            </div>
+            <Badge variant="outline" className={`text-[9px] px-1.5 py-0 h-4 ${currentDecision === 'APPROVED' ? 'bg-green-500/20 text-green-500 border-green-500/30' : currentDecision === 'DENIED' ? 'bg-red-500/20 text-red-500 border-red-500/30' : isAutonomous ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'}`}>
+                {currentDecision || status.replace('_', ' ')}
+            </Badge>
+        </div>
+        <p className="text-[10px] text-muted-foreground leading-tight pl-7">{description}</p>
+        
+        {!isAutonomous && !currentDecision && onDecision && (
+            <div className="flex gap-2 mt-3 pl-7">
+                <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="h-6 px-2 text-[9px] border-green-500/30 text-green-500 hover:bg-green-500/10"
+                    onClick={() => onDecision(stage, 'APPROVED')}
+                >
+                    APPROVE
+                </Button>
+                <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="h-6 px-2 text-[9px] border-red-500/30 text-red-500 hover:bg-red-500/10"
+                    onClick={() => onDecision(stage, 'DENIED')}
+                >
+                    DENY
+                </Button>
+            </div>
+        )}
+    </div>
+);
 
 const AlphaWorkforce = () => {
     const [isAutonomous, setIsAutonomous] = useState(false);
     const [performanceMetric, setPerformanceMetric] = useState(78);
-    const [activeEmployees, setActiveEmployees] = useState(9);
     const [revenueGrowth, setRevenueGrowth] = useState(12.4);
     const [workforceData, setWorkforceData] = useState<any>(null);
+    const [isHiringOpen, setIsHiringOpen] = useState(false);
+    const [webhooks, setWebhooks] = useState({
+        slack: '',
+        telegram: '',
+        discord: ''
+    });
+    const [governanceDecisions, setGovernanceDecisions] = useState<Record<number, string>>({});
+    const [agentRoster, setAgentRoster] = useState([
+        { id: 'CEO', name: 'CEO AI', framework: 'Agent Zero', status: 'ACTIVE' },
+        { id: 'CFO', name: 'CFO AI', framework: 'Agent Zero', status: 'ACTIVE' },
+        { id: 'Legal', name: 'Legal Compliance', framework: 'Autogen', status: 'ACTIVE' },
+        { id: 'Growth', name: 'Growth Lead', framework: 'CrewAI', status: 'ACTIVE' },
+        { id: 'CMO', name: 'CMO AI', framework: 'LlamaIndex', status: 'ACTIVE' },
+        { id: 'Security', name: 'Security/Ops', framework: 'OpenClaw', status: 'ACTIVE' },
+        { id: 'Red-Team', name: 'Defense Red-Teamer', framework: 'OpenClaw', status: 'ACTIVE' },
+        { id: 'Data', name: 'Data Analyst', framework: 'Autogen', status: 'ACTIVE' },
+        { id: 'Insights', name: 'Customer Insights', framework: 'CrewAI', status: 'ACTIVE' },
+        { id: 'Receptionist', name: 'Inbound Receptionist', framework: 'Concierge AI', status: 'ACTIVE' },
+        { id: 'AI-Assistant', name: 'AI Personal Assistant', framework: 'Agent Zero', status: 'ACTIVE' },
+        { id: 'SEO', name: 'SEO Strategy Manager', framework: 'CrewAI', status: 'ACTIVE' },
+        { id: 'Crisis', name: 'Crisis Commander', framework: 'Sovereign OS', status: 'ACTIVE' },
+    ]);
+    const [activeEmployees, setActiveEmployees] = useState(13);
+    const [fiscalRequests, setFiscalRequests] = useState([
+        { id: 1, purpose: 'Q3 Freelance Payroll', amount: '$12,400', priority: 'HIGH', status: 'PENDING' },
+        { id: 2, purpose: 'GPU Cluster Expansion (Cluster 7)', amount: '$5,000', priority: 'MEDIUM', status: 'PENDING' },
+    ]);
+
+    const [isRunningMarketing, setIsRunningMarketing] = useState(false);
+    const [isSourcingLeads, setIsSourcingLeads] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -67,13 +161,161 @@ const AlphaWorkforce = () => {
         return () => clearInterval(interval);
     }, []);
 
-    const handleToggleAutonomy = () => {
-        setIsAutonomous(!isAutonomous);
-        if (!isAutonomous) {
-            toast.success("Autonomous Company Mode Active. AI Executives are now managing operations.");
-        } else {
-            toast.info("Autonomous Mode Disabled. Manual oversight required.");
+    const [isAnalyzingInsights, setIsAnalyzingInsights] = useState(false);
+    const [isHandlingInbound, setIsHandlingInbound] = useState(false);
+    const [insightResults, setInsightResults] = useState<any>(null);
+    const [inboundResponse, setInboundResponse] = useState<string>("");
+    const [lastInboundInteractionId, setLastInboundInteractionId] = useState<string>("");
+    const [lastInsightInteractionId, setLastInsightInteractionId] = useState<string>("");
+
+    const handleApplyFeedback = async (interactionId: string, status: string, notes: string = "") => {
+        if (!interactionId) return;
+        try {
+            await extendedApi.workforce.provideFeedback(interactionId, status, notes);
+            if (status === 'approved') {
+                toast.success("Feedback Logged: Agent performance approved.");
+            } else {
+                toast.info("Feedback Logged: Agent will learn from this discard.");
+            }
+        } catch (e) {
+            console.error("Error logging feedback", e);
         }
+    };
+
+    const handleRunMarketing = async () => {
+        setIsRunningMarketing(true);
+        toast.info("Marketing Crew Kicked Off: Researching trends...", {
+            icon: <Brain className="w-4 h-4 text-purple-500" />
+        });
+        try {
+            const result = await extendedApi.workforce.runCampaign("AI Compliance Blitz", "Financial Services SMBs");
+            if (result.status === 'success' || result.status === 'mock_success') {
+                toast.success("Marketing Campaign Complete!", {
+                    description: "SEO Strategy and LinkedIn drafts generated."
+                });
+            } else {
+                toast.error("Marketing Campaign Failed", { description: result.message });
+            }
+        } catch (e) {
+            toast.error("Error triggering Marketing Crew");
+        } finally {
+            setIsRunningMarketing(false);
+        }
+    };
+
+    const handleAnalyzeInsights = async (feedback: string) => {
+        setIsAnalyzingInsights(true);
+        toast.info("Insights Agent Active: Correlating feedback patterns...", {
+            icon: <PieChart className="w-4 h-4 text-orange-500" />
+        });
+        try {
+            const result = await extendedApi.workforce.analyzeInsights(feedback);
+            setInsightResults(result);
+            if (result.interaction_id) setLastInsightInteractionId(result.interaction_id);
+            toast.success("Sentiment Analysis Complete", {
+                description: `Churn Risk identified: ${result.churn_risk || 'Low'}`
+            });
+        } catch (e) {
+            toast.error("Error analyzing insights");
+        } finally {
+            setIsAnalyzingInsights(false);
+        }
+    };
+
+    const handleInboundQuery = async (query: string) => {
+        setIsHandlingInbound(true);
+        toast.info("Receptionist Agent: Drafting high-quality response...", {
+            icon: <MessageCircle className="w-4 h-4 text-emerald-500" />
+        });
+        try {
+            const result = await extendedApi.workforce.handleInbound(query);
+            setInboundResponse(result.response);
+            if (result.interaction_id) setLastInboundInteractionId(result.interaction_id);
+            toast.success("Inbound Response Ready", {
+                description: "Drafted with 99% accuracy."
+            });
+        } catch (e) {
+            toast.error("Error handling inbound query");
+        } finally {
+            setIsHandlingInbound(false);
+        }
+    };
+
+    const handleSourceLeads = async () => {
+        setIsSourcingLeads(true);
+        toast.info("Prospector Agent Active: Scraping signals...", {
+            icon: <Search className="w-4 h-4 text-blue-500" />
+        });
+        try {
+            const result = await extendedApi.workforce.sourceLeads("FinTech startups in Europe");
+            if (result.leads) {
+                toast.success(`Found ${result.count} high-value prospects!`, {
+                    description: "Signals identified and mapped to CRM."
+                });
+            }
+        } catch (e) {
+            toast.error("Error sourcing leads");
+        } finally {
+            setIsSourcingLeads(false);
+        }
+    };
+
+    const handleToggleAutonomy = async () => {
+        const nextState = !isAutonomous;
+        try {
+            await extendedApi.workforce.toggleAutonomy(nextState);
+            setIsAutonomous(nextState);
+            if (nextState) {
+                toast.success("Autonomous Company Mode Active. AI Executives are now managing operations.");
+            } else {
+                toast.info("Autonomous Mode Disabled. Manual oversight required.");
+            }
+        } catch (e) {
+            setIsAutonomous(nextState);
+            if (nextState) {
+                toast.success("Autonomous Company Mode Active (Simulated).");
+            } else {
+                toast.info("Autonomous Mode Disabled (Simulated).");
+            }
+        }
+    };
+
+    const handleGovernanceDecision = (stage: number, decision: string) => {
+        setGovernanceDecisions(prev => ({ ...prev, [stage]: decision }));
+        
+        // Auto-approve the top fiscal request if Stage 1 is approved
+        if (stage === 1 && decision === 'APPROVED') {
+            setFiscalRequests(prev => prev.map((req, i) => i === 0 ? { ...req, status: 'APPROVED' } : req));
+        }
+
+        if (decision === 'APPROVED') {
+            toast.success(`Stage ${stage} Protocol Approved. Executing...`, {
+                icon: <ShieldCheck className="w-4 h-4 text-green-500" />
+            });
+        } else {
+            toast.error(`Stage ${stage} Protocol Denied. Escalating to Board...`, {
+                icon: <AlertCircle className="w-4 h-4 text-red-500" />
+            });
+        }
+    };
+
+    const handleFiscalApproval = (id: number, decision: 'APPROVED' | 'DENIED') => {
+        setFiscalRequests(prev => prev.map(req => req.id === id ? { ...req, status: decision } : req));
+        if (decision === 'APPROVED') {
+            toast.success(`Fund Disbursement Authorized: ${fiscalRequests.find(r => r.id === id)?.amount}`);
+        } else {
+            toast.error(`Expenditure Denied: ${fiscalRequests.find(r => r.id === id)?.purpose}`);
+        }
+    };
+
+    const handleHireAgent = (agent: any) => {
+        setAgentRoster(prev => [...prev, { ...agent, id: `Agent-${Date.now()}`, status: 'ACTIVE' }]);
+        setActiveEmployees(prev => prev + 1);
+        setIsHiringOpen(false);
+        toast.success(`New Agent Hired: ${agent.name}`, {
+            description: `Specialization: ${agent.specialization || 'Generalist'} via ${agent.framework}`,
+            icon: <UserPlus className="w-4 h-4 text-indigo-500" />
+        });
     };
 
     const handleDeployWorkforce = () => {
@@ -123,6 +365,7 @@ const AlphaWorkforce = () => {
                                 checked={isAutonomous} 
                                 onCheckedChange={handleToggleAutonomy}
                                 className="data-[state=checked]:bg-green-500"
+                                data-testid="auto-mode-toggle"
                             />
                         </div>
                         <div className="h-8 w-px bg-border hidden md:block" />
@@ -135,6 +378,7 @@ const AlphaWorkforce = () => {
                             size="sm" 
                             className="bg-indigo-600 hover:bg-indigo-700 h-9"
                             onClick={handleDeployWorkforce}
+                            data-testid="deploy-workforce-btn"
                         >
                             <Rocket className="w-4 h-4 mr-2" />
                             Deploy Workforce
@@ -145,44 +389,48 @@ const AlphaWorkforce = () => {
 
             <main className="flex-grow container mx-auto px-4 py-8">
                 <Tabs defaultValue="boardroom" className="space-y-6">
-                    <div className="flex items-center justify-between overflow-x-auto pb-2 scrollbar-hide">
-                        <TabsList className="h-12 p-1 bg-muted/20 backdrop-blur-sm border border-border/50">
-                            <TabsTrigger value="boardroom" className="px-6 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                                <Users className="w-4 h-4 mr-2" /> Boardroom
+                    <ScrollArea className="w-full whitespace-nowrap">
+                        <TabsList className="h-12 w-max p-1 bg-muted/20 backdrop-blur-sm border border-border/50 gap-2">
+                            <TabsTrigger value="boardroom" className="px-6 data-[state=active]:bg-background data-[state=active]:shadow-sm" data-testid="tab-boardroom">
+                                <Users className="w-4 h-4 mr-3" /> Boardroom
                             </TabsTrigger>
-                            <TabsTrigger value="ceo" className="px-6">
-                                <Brain className="w-4 h-4 mr-2" /> CEO
+                            <TabsTrigger value="ceo" className="px-6" data-testid="tab-ceo">
+                                <Brain className="w-4 h-4 mr-3" /> CEO
                             </TabsTrigger>
-                            <TabsTrigger value="growth" className="px-6">
-                                <TrendingUp className="w-4 h-4 mr-2" /> Growth
+                            <TabsTrigger value="growth" className="px-6" data-testid="tab-growth">
+                                <TrendingUp className="w-4 h-4 mr-3" /> Growth
                             </TabsTrigger>
-                            <TabsTrigger value="ops" className="px-6">
-                                <Zap className="w-4 h-4 mr-2" /> Operations
+                            <TabsTrigger value="ops" className="px-6" data-testid="tab-ops">
+                                <Zap className="w-4 h-4 mr-3" /> Ops
                             </TabsTrigger>
-                            <TabsTrigger value="finance" className="px-6">
-                                <DollarSign className="w-4 h-4 mr-2" /> Finance
+                            <TabsTrigger value="finance" className="px-6" data-testid="tab-finance">
+                                <DollarSign className="w-4 h-4 mr-3" /> Finance
                             </TabsTrigger>
-                            <TabsTrigger value="hr" className="px-6">
-                                <ShieldCheck className="w-4 h-4 mr-2" /> HR & Governance
+                            <TabsTrigger value="hr" className="px-6" data-testid="tab-hr">
+                                <Users className="w-4 h-4 mr-3" /> Workforce
                             </TabsTrigger>
-                            <TabsTrigger value="comms" className="px-6">
-                                <MessageSquare className="w-4 h-4 mr-2" /> Communications
+                            <TabsTrigger value="comms" className="px-6" data-testid="tab-comms">
+                                <MessageSquare className="w-4 h-4 mr-3" /> Discourse
+                            </TabsTrigger>
+                            <TabsTrigger value="channels" className="px-6" data-testid="tab-channels">
+                                <Settings2 className="w-4 h-4 mr-3" /> Channels
                             </TabsTrigger>
                         </TabsList>
-                    </div>
+                        <ScrollBar orientation="horizontal" />
+                    </ScrollArea>
 
                     {/* Boardroom Tab - Overview of Autonomous Swarm */}
                     <TabsContent value="boardroom" className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <MetricCard title="Workforce Health" value="98%" icon={ShieldCheck} footer="All agents synced" />
-                            <MetricCard title="Decisions Made" value="1,284" icon={Zap} footer="+242 in the last week" />
-                            <MetricCard title="Time Saved" value="156 hrs" icon={Activity} footer="Weekly manual work offset" />
-                            <MetricCard title="Conflict Resolution" value="99.9%" icon={Building2} footer="Automated consensus" />
+                            <MetricCard title="Workforce Health" value="98%" icon={ShieldCheck} footer="All agents synced" data-testid="metric-workforce-health" />
+                            <MetricCard title="Decisions Made" value="1,284" icon={Zap} footer="+242 in the last week" data-testid="metric-decisions-made" />
+                            <MetricCard title="Time Saved" value="156 hrs" icon={Activity} footer="Weekly manual work offset" data-testid="metric-time-saved" />
+                            <MetricCard title="Conflict Resolution" value="99.9%" icon={Building2} footer="Automated consensus" data-testid="metric-conflict-resolution" />
                         </div>
 
                         <div className="mt-8">
                             <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-4 flex items-center gap-2">
-                                <Cpu className="w-4 h-4" /> Alpha Trio: Product Management Engine
+                                <Cpu className="w-4 h-4" /> Alpha Quartet: Product Management Engine
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <Card className="bg-blue-500/5 border-blue-500/20 shadow-sm">
@@ -233,6 +481,23 @@ const AlphaWorkforce = () => {
                                         <div className="text-right">
                                             <div className="text-xs font-bold text-green-500">100% Health</div>
                                             <div className="text-[10px] text-muted-foreground">Stable</div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                                <Card className="bg-amber-500/5 border-amber-500/20 shadow-sm">
+                                    <CardContent className="p-4 flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="bg-amber-500/20 p-2 rounded-lg">
+                                                <UserPlus className="w-5 h-5 text-amber-500" />
+                                            </div>
+                                            <div>
+                                                <div className="font-bold text-sm leading-none mb-1">AI Receptionist</div>
+                                                <div className="text-[10px] text-muted-foreground uppercase">Inbound: 1.2k/wk</div>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-xs font-bold text-green-500">99% Health</div>
+                                            <div className="text-[10px] text-muted-foreground">Active</div>
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -300,6 +565,72 @@ const AlphaWorkforce = () => {
                                 </CardContent>
                             </Card>
                         </div>
+                        <Card className="bg-gradient-to-br from-indigo-900/20 to-purple-900/20 border-indigo-500/30 shadow-2xl mt-6">
+                            <CardHeader>
+                                <div className="flex items-center justify-between">
+                                    <CardTitle className="flex items-center gap-2 text-indigo-400">
+                                        <Crown className="w-6 h-6" />
+                                        Sovereign Control Center
+                                    </CardTitle>
+                                    <Badge className="bg-indigo-500/20 text-indigo-400 border-indigo-500/30 font-mono text-[10px]">
+                                        STRATEGY: SOVEREIGN
+                                    </Badge>
+                                </div>
+                                <CardDescription className="text-indigo-300/60">Tiered autonomy governance matrix</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <SovereignStageItem 
+                                    stage={1} 
+                                    name="Financial Settlement" 
+                                    status="REVIEW_REQUIRED" 
+                                    description="AI suggests; Human signs off on Slack."
+                                    isAutonomous={false}
+                                    onDecision={handleGovernanceDecision}
+                                    currentDecision={governanceDecisions[1]}
+                                />
+                                <SovereignStageItem 
+                                    stage={2} 
+                                    name="Legal Personality" 
+                                    status="REVIEW_REQUIRED" 
+                                    description="AI negotiates; Human executes signature."
+                                    isAutonomous={false}
+                                    onDecision={handleGovernanceDecision}
+                                    currentDecision={governanceDecisions[2]}
+                                />
+                                <SovereignStageItem 
+                                    stage={3} 
+                                    name="Crisis Resilience" 
+                                    status="FULLY_AUTONOMOUS" 
+                                    description="Auto-failover on ban/attack (Stage 3)."
+                                    isAutonomous={true}
+                                />
+                                <SovereignStageItem 
+                                    stage={4} 
+                                    name="Strategic R&D" 
+                                    status="FULLY_AUTONOMOUS" 
+                                    description="Autonomous recursive venture launching (Stage 4)."
+                                    isAutonomous={true}
+                                />
+                                <SovereignStageItem 
+                                    stage={5} 
+                                    name="Ethical Alignment" 
+                                    status="REVIEW_REQUIRED" 
+                                    description="Human override for moral boundary cases."
+                                    isAutonomous={false}
+                                    onDecision={handleGovernanceDecision}
+                                    currentDecision={governanceDecisions[5]}
+                                />
+                                <div className="pt-4 mt-4 border-t border-indigo-500/20">
+                                    <div className="flex items-center justify-between text-[11px] text-indigo-400/80 uppercase font-bold mb-3">
+                                        <span>Active Governance Link</span>
+                                        <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" /> Slack #governance-bridge</span>
+                                    </div>
+                                    <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-xs py-1.5 h-auto" onClick={() => toast.info("Testing Sovereign Escalation Protocol...")}>
+                                        Test Sovereign Escalation
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
                     </TabsContent>
 
                     {/* CEO AI Tab */}
@@ -402,10 +733,11 @@ const AlphaWorkforce = () => {
                             </Badge>
                         </div>
                         <Tabs defaultValue="sales" className="w-full">
-                            <TabsList className="grid w-full grid-cols-3 mb-6 bg-muted/10 border border-border/50">
-                                <TabsTrigger value="sales"><TrendingUp className="w-4 h-4 mr-2" />Sales & Closing</TabsTrigger>
-                                <TabsTrigger value="marketing"><Zap className="w-4 h-4 mr-2" />Marketing & Content</TabsTrigger>
-                                <TabsTrigger value="outreach"><Send className="w-4 h-4 mr-2" />Cold Outreach</TabsTrigger>
+                            <TabsList className="grid w-full grid-cols-4 mb-6 bg-muted/10 border border-border/50 gap-2">
+                                <TabsTrigger value="sales"><TrendingUp className="w-4 h-4 mr-3" />Sales & Closing</TabsTrigger>
+                                <TabsTrigger value="marketing"><Zap className="w-4 h-4 mr-3" />Marketing & Content</TabsTrigger>
+                                <TabsTrigger value="outreach"><Send className="w-4 h-4 mr-3" />Cold Outreach</TabsTrigger>
+                                <TabsTrigger value="retention"><Activity className="w-4 h-4 mr-3" />Retention & Churn</TabsTrigger>
                             </TabsList>
 
                             <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -497,8 +829,14 @@ const AlphaWorkforce = () => {
                                             <ContentDraftItem title="The EU AI Act Survival Guide" type="Blog" status="Published" roi="450 views" />
                                             <ContentDraftItem title="How Sentinel Saved $50k" type="Case Study" status="In Progress" roi="N/A" />
                                             <ContentDraftItem title="Why Manual Compliance is Dying" type="LinkedIn" status="Ready" roi="Simulated: 2k reach" />
-                                            <Button className="w-full mt-2" variant="outline">
-                                                <RefreshCw className="w-4 h-4 mr-2" /> Generate New Content Batch
+                                            <Button 
+                                                className="w-full mt-2" 
+                                                variant="outline"
+                                                onClick={handleRunMarketing}
+                                                disabled={isRunningMarketing}
+                                            >
+                                                <RefreshCw className={`w-4 h-4 mr-2 ${isRunningMarketing ? 'animate-spin' : ''}`} /> 
+                                                {isRunningMarketing ? 'Executing Crew...' : 'Generate New Content Batch'}
                                             </Button>
                                         </CardContent>
                                     </Card>
@@ -576,6 +914,160 @@ const AlphaWorkforce = () => {
                                                 </TableRow>
                                             </TableBody>
                                         </Table>
+                                        <div className="mt-4 flex justify-end">
+                                            <Button 
+                                                variant="outline" 
+                                                size="sm" 
+                                                className="border-blue-500/20 text-blue-500 hover:bg-blue-500/5"
+                                                onClick={handleSourceLeads}
+                                                disabled={isSourcingLeads}
+                                            >
+                                                <Search className={`w-4 h-4 mr-2 ${isSourcingLeads ? 'animate-pulse' : ''}`} />
+                                                {isSourcingLeads ? 'Scanning Web...' : 'Source Real Leads'}
+                                            </Button>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
+
+                            <TabsContent value="retention" className="space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <Card className="bg-emerald-500/5 border-emerald-500/20 shadow-lg">
+                                        <CardHeader>
+                                            <CardTitle className="flex items-center gap-2">
+                                                <PieChart className="w-5 h-5 text-emerald-500" />
+                                                Customer Insights Analyst
+                                            </CardTitle>
+                                            <CardDescription>Real-time churn risk & sentiment analysis</CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="space-y-4">
+                                            <div className="space-y-2">
+                                                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Inbound Feedback Data</Label>
+                                                <textarea 
+                                                    id="feedback-input"
+                                                    placeholder="Paste customer discourse or support logs..." 
+                                                    className="w-full min-h-[100px] p-3 rounded-lg bg-background/50 border border-emerald-500/10 text-xs focus:ring-1 focus:ring-emerald-500/30 outline-none"
+                                                />
+                                            </div>
+                                            <Button 
+                                                className="w-full bg-emerald-600 hover:bg-emerald-700 h-9 text-xs"
+                                                disabled={isAnalyzingInsights}
+                                                onClick={() => {
+                                                    const input = document.getElementById('feedback-input') as HTMLTextAreaElement;
+                                                    handleAnalyzeInsights(input?.value || "Default: User is inquiring about migration paths.");
+                                                }}
+                                            >
+                                                {isAnalyzingInsights ? (
+                                                    <RefreshCw className="w-3 h-3 mr-2 animate-spin" />
+                                                ) : (
+                                                    <Brain className="w-3 h-3 mr-2" />
+                                                )}
+                                                Analyze Sentiment & Churn Risk
+                                            </Button>
+
+                                            {insightResults && (
+                                                <div className="p-4 rounded-xl bg-background border border-emerald-500/20 animate-in fade-in slide-in-from-top-2">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <Badge className="bg-emerald-500/20 text-emerald-500 border-emerald-500/30 text-[10px]">
+                                                            RISK: {insightResults.churn_risk || 'DETECTED'}
+                                                        </Badge>
+                                                        <span className="text-[9px] text-muted-foreground italic">98% confidence</span>
+                                                    </div>
+                                                    <p className="text-[11px] leading-relaxed text-muted-foreground">
+                                                        {insightResults.analysis || insightResults.recommendation || insightResults.analysis_result}
+                                                    </p>
+                                                    <div className="mt-4 flex justify-end gap-2">
+                                                        <Button variant="ghost" size="sm" className="h-7 text-[10px]" onClick={() => {
+                                                            handleApplyFeedback(lastInsightInteractionId, 'discarded');
+                                                            setInsightResults(null);
+                                                        }}>Discard</Button>
+                                                        <Button size="sm" className="h-7 text-[10px] bg-emerald-600" onClick={() => {
+                                                            handleApplyFeedback(lastInsightInteractionId, 'approved');
+                                                        }}>Approve Analysis</Button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+
+                                    <Card className="bg-indigo-500/5 border-indigo-500/20 shadow-lg">
+                                        <CardHeader>
+                                            <CardTitle className="flex items-center gap-2">
+                                                <MessageCircle className="w-5 h-5 text-indigo-500" />
+                                                Inbound Receptionist
+                                            </CardTitle>
+                                            <CardDescription>Autonomous query handling & Concierge</CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="space-y-4">
+                                            <div className="space-y-2">
+                                                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Inbound Customer Query</Label>
+                                                <Input 
+                                                    id="query-input"
+                                                    placeholder="e.g. 'How do I export my HIPAA logs?'" 
+                                                    className="h-9 text-xs bg-background/50 border-indigo-500/10 focus-visible:ring-indigo-500/20"
+                                                />
+                                            </div>
+                                            <Button 
+                                                className="w-full bg-indigo-600 hover:bg-indigo-700 h-9 text-xs"
+                                                disabled={isHandlingInbound}
+                                                onClick={() => {
+                                                    const input = document.getElementById('query-input') as HTMLInputElement;
+                                                    handleInboundQuery(input?.value || "I need a summary of my account status.");
+                                                }}
+                                            >
+                                                {isHandlingInbound ? (
+                                                    <RefreshCw className="w-3 h-3 mr-2 animate-spin" />
+                                                ) : (
+                                                    <Zap className="w-3 h-3 mr-2" />
+                                                )}
+                                                Draft Autonomous Response
+                                            </Button>
+
+                                            {inboundResponse && (
+                                                <div className="p-4 rounded-xl bg-background border border-indigo-500/20 animate-in zoom-in-95">
+                                                    <h5 className="text-[10px] font-bold text-indigo-400 mb-2 uppercase flex items-center gap-1">
+                                                        <ShieldCheck className="w-3 h-3" /> AI Concierge Response Draft
+                                                    </h5>
+                                                    <div className="p-3 rounded-lg bg-muted/30 border border-indigo-500/5 text-xs text-muted-foreground leading-relaxed italic">
+                                                        "{inboundResponse}"
+                                                    </div>
+                                                    <div className="mt-3 flex justify-end gap-2">
+                                                        <Button variant="ghost" size="sm" className="h-7 text-[10px]" onClick={() => {
+                                                            handleApplyFeedback(lastInboundInteractionId, 'discarded');
+                                                            setInboundResponse('');
+                                                        }}>Discard</Button>
+                                                        <Button size="sm" className="h-7 text-[10px] bg-indigo-600" onClick={() => {
+                                                            handleApplyFeedback(lastInboundInteractionId, 'approved');
+                                                            setInboundResponse('');
+                                                            toast.success("Response sent to customer!");
+                                                        }}>Send Response</Button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+                                </div>
+                                <Card className="mt-6 border-emerald-500/10 bg-emerald-500/5 shadow-inner">
+                                    <CardHeader className="py-4">
+                                        <CardTitle className="text-sm flex items-center gap-2 italic text-emerald-600">
+                                            <Shield className="w-4 h-4" /> Service Stickiness: Regulatory Compliance Moat Active
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="pb-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                            <div className="p-3 rounded-lg border bg-background/50">
+                                                <div className="text-[10px] font-bold uppercase text-muted-foreground mb-1">Audit Trails</div>
+                                                <div className="text-xs text-emerald-500 font-mono">HIPAA/SOX: COMPLIANT</div>
+                                            </div>
+                                            <div className="p-3 rounded-lg border bg-background/50">
+                                                <div className="text-[10px] font-bold uppercase text-muted-foreground mb-1">EU AI Act</div>
+                                                <div className="text-xs text-emerald-500 font-mono">CONTINUOUS_MONITORING</div>
+                                            </div>
+                                            <div className="p-3 rounded-lg border bg-background/50">
+                                                <div className="text-[10px] font-bold uppercase text-muted-foreground mb-1">Switching Cost</div>
+                                                <div className="text-xs text-orange-500 font-bold">HIGH (Infrastructure Lock)</div>
+                                            </div>
+                                        </div>
                                     </CardContent>
                                 </Card>
                             </TabsContent>
@@ -615,31 +1107,177 @@ const AlphaWorkforce = () => {
                                                     <span>Regional Failover Simulation: Agent Ops</span>
                                                     <span className="text-blue-500 font-mono italic">IN_PROGRESS</span>
                                                 </div>
+                                                <div className="flex items-center justify-between text-xs p-2 bg-indigo-500/5 rounded border border-indigo-500/20 leading-none">
+                                                    <span className="flex items-center gap-1"><Search className="w-3 h-3" /> Stealth Pulse: Competitor Pricing Leak Detected</span>
+                                                    <span className="text-indigo-500 font-mono">INTERNAL_SYNC</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </CardContent>
                             </Card>
-                            <Card>
+                        </div>
+                    </TabsContent>
+                    
+                    {/* Finance & Treasury Tab */}
+                    <TabsContent value="finance" className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <MetricCard 
+                                title="Total Enterprise Capital" 
+                                value="$12,482,000" 
+                                icon={Wallet} 
+                                footer="Liquidity: 85%" 
+                                color="bg-blue-500/10"
+                            />
+                            <MetricCard 
+                                title="Net Burn Rate" 
+                                value="$240/hr" 
+                                icon={Activity} 
+                                footer="Projected Runway: 18m" 
+                                color="bg-amber-500/10"
+                            />
+                            <MetricCard 
+                                title="Avg Venture ROI" 
+                                value="+248%" 
+                                icon={TrendingUp} 
+                                footer="Top Performer: V121" 
+                                color="bg-green-500/10"
+                            />
+                            <MetricCard 
+                                title="Strategic Allocation" 
+                                value="OPTIMIZED" 
+                                icon={PieChart} 
+                                footer="Last Rebalance: 2h ago" 
+                                color="bg-purple-500/10"
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+                            <Card className="lg:col-span-1 border-indigo-500/20 bg-indigo-500/5">
+                                <CardHeader className="py-4">
+                                    <div className="flex items-center justify-between">
+                                        <CardTitle className="text-xs flex items-center gap-2">
+                                            <FileText className="w-4 h-4 text-indigo-500" /> Fiscal Request Queue
+                                        </CardTitle>
+                                        <Badge className="bg-indigo-500/20 text-indigo-500 text-[9px]">CFO PENDING</Badge>
+                                    </div>
+                                    <CardDescription className="text-[10px]">Daily spend authorization required</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-3">
+                                    {fiscalRequests.map((req) => (
+                                        <div key={req.id} className="p-3 rounded-lg border border-border bg-background/50 space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <div className="text-[10px] font-bold truncate max-w-[100px]">{req.purpose}</div>
+                                                <div className="text-[9px] font-mono font-bold text-indigo-500">{req.amount}</div>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <Badge variant="outline" className={`text-[8px] ${req.priority === 'HIGH' ? 'text-red-500 border-red-500/20 animate-pulse' : 'text-blue-500'}`}>
+                                                    {req.priority}
+                                                </Badge>
+                                                <div className="flex gap-1">
+                                                    {req.status === 'PENDING' ? (
+                                                        <>
+                                                            <Button size="icon" variant="outline" className="h-6 w-6 text-red-500 hover:text-red-600" onClick={() => handleFiscalApproval(req.id, 'DENIED')}>
+                                                                <X className="w-3 h-3" />
+                                                            </Button>
+                                                            <Button size="icon" variant="outline" className="h-6 w-6 text-green-500 hover:text-green-600" onClick={() => handleFiscalApproval(req.id, 'APPROVED')}>
+                                                                <Check className="w-3 h-3" />
+                                                            </Button>
+                                                        </>
+                                                    ) : (
+                                                        <Badge className={req.status === 'APPROVED' ? 'bg-green-500 text-white text-[8px]' : 'bg-red-500 text-white text-[8px]'}>
+                                                            {req.status}
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <p className="text-[9px] text-muted-foreground italic text-center pt-2">
+                                        "CFO AI identifies liquidity requirements daily at 00:00 UTC."
+                                    </p>
+                                </CardContent>
+                            </Card>
+
+                            <div className="lg:col-span-3 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <Card className="lg:col-span-2 border-primary/10">
                                 <CardHeader>
-                                    <CardTitle>Technical Health</CardTitle>
+                                    <CardTitle>Venture Performance Index</CardTitle>
+                                    <CardDescription>ROI Tracking for active autonomous ventures</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Venture ID</TableHead>
+                                                <TableHead>Sector</TableHead>
+                                                <TableHead>Status</TableHead>
+                                                <TableHead className="text-right">ROI</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {[
+                                                { id: "V121", name: "Alpha Compliance", sector: "LegalTech", roi: "+420%", status: "PROFITABLE", trend: "up" },
+                                                { id: "V117", name: "Deepfake Defense", sector: "Cybersecurity", roi: "+180%", status: "SCALING", trend: "up" },
+                                                { id: "V120", name: "Agentic Ops", sector: "Infrastructure", roi: "-12.4%", status: "R&D", trend: "down" },
+                                                { id: "V119", name: "Web3 Sentinel", sector: "DeFi", roi: "+45%", status: "BETA", trend: "up" },
+                                            ].map((v) => (
+                                                <TableRow key={v.id}>
+                                                    <TableCell className="font-bold">{v.id} · {v.name}</TableCell>
+                                                    <TableCell>{v.sector}</TableCell>
+                                                    <TableCell>
+                                                        <Badge variant="outline" className={v.status === 'PROFITABLE' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-muted text-muted-foreground'}>
+                                                            {v.status}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className={`text-right font-mono font-bold ${v.trend === 'up' ? 'text-green-500' : 'text-red-500'}`}>
+                                                        <div className="flex items-center justify-end gap-1">
+                                                            {v.roi}
+                                                            {v.trend === 'up' ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </CardContent>
+                            </Card>
+
+                            <Card className="border-indigo-500/20 shadow-lg bg-gradient-to-br from-background to-indigo-500/5">
+                                <CardHeader>
+                                    <CardTitle className="text-sm uppercase tracking-widest text-indigo-500 font-black">Capital Allocation</CardTitle>
+                                    <CardDescription>Global department budget split</CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-6">
-                                    <div className="text-center">
-                                        <div className="text-4xl font-black text-blue-500">99.99%</div>
-                                        <div className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">Global Uptime</div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between text-[10px] uppercase font-bold text-muted-foreground">
-                                            <span>OpenClaw Tool Latency</span>
-                                            <span>45ms</span>
+                                    {[
+                                        { label: "Research & Development", value: 45, color: "bg-blue-500" },
+                                        { label: "Compliance & Legal", value: 20, color: "bg-green-500" },
+                                        { label: "Marketing & Growth", value: 15, color: "bg-purple-500" },
+                                        { label: "Operations & Infrastructure", value: 20, color: "bg-amber-500" }
+                                    ].map((dept) => (
+                                        <div key={dept.label} className="space-y-2">
+                                            <div className="flex justify-between text-xs font-mono">
+                                                <span>{dept.label}</span>
+                                                <span className="font-bold">{dept.value}%</span>
+                                            </div>
+                                            <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                                                <div 
+                                                    className={`h-full ${dept.color} shadow-[0_0_10px_rgba(0,0,0,0.1)]`} 
+                                                    style={{ width: `${dept.value}%` }} 
+                                                />
+                                            </div>
                                         </div>
-                                        <Progress value={95} className="h-1 bg-blue-500/10" />
+                                    ))}
+                                    <div className="pt-4 mt-6 border-t border-indigo-500/20">
+                                        <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-xs font-bold tracking-widest" onClick={() => toast.success("Rebalancing initiated...")}>
+                                            REBALANCE LIQUIDITY
+                                        </Button>
                                     </div>
                                 </CardContent>
                             </Card>
                         </div>
-                    </TabsContent>
+                    </div>
+                </TabsContent>
 
                     {/* HR & Governance Tab */}
                     <TabsContent value="hr" className="space-y-6">
@@ -662,31 +1300,36 @@ const AlphaWorkforce = () => {
                                         <div className="p-4 rounded-xl bg-muted/10 border border-primary/5">
                                             <h4 className="text-xs font-bold uppercase tracking-widest mb-4 text-muted-foreground">Active Agent Roster</h4>
                                             <div className="grid sm:grid-cols-2 gap-3">
-                                                <div className="p-3 bg-background rounded-lg border flex items-center justify-between">
-                                                    <div>
-                                                        <div className="font-bold text-sm">CEO AI</div>
-                                                        <div className="text-[10px] text-muted-foreground font-mono">Agent Zero</div>
+                                                {agentRoster.map((agent) => (
+                                                    <div key={agent.id} className="p-3 bg-background rounded-lg border flex items-center justify-between">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                                                                <Briefcase className="w-4 h-4 text-primary" />
+                                                            </div>
+                                                            <div>
+                                                                <div className="font-bold text-sm flex items-center gap-2">
+                                                                    {agent.name}
+                                                                    {agent.id === 'CEO' && <Crown className="w-3 h-3 text-amber-500" />}
+                                                                </div>
+                                                                <div className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest">{agent.framework} Agent</div>
+                                                            </div>
+                                                        </div>
+                                                        <Badge className="bg-green-500/10 text-green-500 border-green-500/20 text-[9px]">{agent.status}</Badge>
                                                     </div>
-                                                    <Badge className="bg-green-500/10 text-green-500 border-green-500/20 text-[9px]">ACTIVE</Badge>
+                                                ))}
+                                                <div className="p-3 bg-background rounded-lg border border-indigo-500/20 shadow-sm flex items-center justify-between col-span-2">
+                                                    <div>
+                                                        <div className="font-bold text-sm flex items-center gap-2">
+                                                            Market Intelligence <Lock className="w-3 h-3 text-indigo-500" />
+                                                        </div>
+                                                        <div className="text-[10px] text-muted-foreground font-mono">CrewAI / Stealth Mode</div>
+                                                    </div>
+                                                    <Badge className="bg-indigo-500/20 text-indigo-500 border-indigo-500/30 text-[9px]">CLASSIFIED / INTERNAL</Badge>
                                                 </div>
                                                 <div className="p-3 bg-background rounded-lg border flex items-center justify-between">
                                                     <div>
-                                                        <div className="font-bold text-sm">Growth Lead</div>
-                                                        <div className="text-[10px] text-muted-foreground font-mono">CrewAI</div>
-                                                    </div>
-                                                    <Badge className="bg-green-500/10 text-green-500 border-green-500/20 text-[9px]">ACTIVE</Badge>
-                                                </div>
-                                                <div className="p-3 bg-background rounded-lg border flex items-center justify-between">
-                                                    <div>
-                                                        <div className="font-bold text-sm">Security/Ops</div>
-                                                        <div className="text-[10px] text-muted-foreground font-mono">OpenClaw</div>
-                                                    </div>
-                                                    <Badge className="bg-green-500/10 text-green-500 border-green-500/20 text-[9px]">ACTIVE</Badge>
-                                                </div>
-                                                <div className="p-3 bg-background rounded-lg border flex items-center justify-between">
-                                                    <div>
-                                                        <div className="font-bold text-sm">Data Analyst</div>
-                                                        <div className="text-[10px] text-muted-foreground font-mono">Autogen</div>
+                                                        <div className="font-bold text-sm">Inbound Receptionist</div>
+                                                        <div className="text-[10px] text-muted-foreground font-mono">Concierge AI</div>
                                                     </div>
                                                     <Badge className="bg-green-500/10 text-green-500 border-green-500/20 text-[9px]">ACTIVE</Badge>
                                                 </div>
@@ -699,19 +1342,152 @@ const AlphaWorkforce = () => {
                             <Card>
                                 <CardHeader>
                                     <CardTitle>Autonomous Expansion</CardTitle>
-                                    <CardDescription>Hire specialized agent trains</CardDescription>
+                                    <CardDescription>Hire specialized agent clusters</CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     <p className="text-sm text-muted-foreground">
-                                        The Governance AI recommends deploying these role-framework pairings:
+                                        The Governance AI recommends deploying these role-framework pairings to reduce current bottlenecks:
                                     </p>
                                     <div className="space-y-3">
-                                        <NewRoleHire name="Market Intelligence" bottleneck="Competitor Tracking" framework="CrewAI" />
-                                        <NewRoleHire name="Compliance Auditor" bottleneck="Article 71 Processing" framework="Agent Zero" />
-                                        <Button className="w-full mt-4 bg-muted text-muted-foreground" disabled>
-                                            <Lock className="w-4 h-4 mr-2" /> Unlock Fleet Scaling
-                                        </Button>
+                                        <div onClick={() => handleHireAgent({ name: 'AI Ethics Board', specialization: 'Bias Mitigation & Safety', framework: 'Autogen' })}>
+                                            <NewRoleHire name="AI Ethics Board" bottleneck="Bias Mitigation & Safety" framework="Autogen" />
+                                        </div>
+                                        <div onClick={() => handleHireAgent({ name: 'SEO Strategy Manager', specialization: 'Search & Growth', framework: 'CrewAI' })}>
+                                            <NewRoleHire name="SEO Strategy Manager" bottleneck="Search & Growth" framework="CrewAI" />
+                                        </div>
+                                        <div onClick={() => handleHireAgent({ name: 'AI Assistant', specialization: 'Agentic Workflow', framework: 'Agent Zero' })}>
+                                            <NewRoleHire name="AI Assistant" bottleneck="Operational Latency" framework="Agent Zero" />
+                                        </div>
+                                        <div onClick={() => handleHireAgent({ name: 'Autonomous M&A Scout', specialization: 'Strategic Acquisitions', framework: 'Agent Zero' })}>
+                                            <NewRoleHire name="Autonomous M&A Scout" bottleneck="Strategic Acquisitions" framework="Agent Zero" />
+                                        </div>
+                                        <Dialog open={isHiringOpen} onOpenChange={setIsHiringOpen}>
+                                            <DialogTrigger asChild>
+                                                <Button className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700">
+                                                    <Plus className="w-4 h-4 mr-2" /> Custom Fleet Scaling
+                                                </Button>
+                                            </DialogTrigger>
+                                            <DialogContent className="sm:max-w-[425px]">
+                                                <DialogHeader>
+                                                    <DialogTitle>Deploy New AI Agent</DialogTitle>
+                                                    <DialogDescription>
+                                                        Specify parameters for your autonomous cluster.
+                                                    </DialogDescription>
+                                                </DialogHeader>
+                                                <div className="grid gap-4 py-4">
+                                                    <div className="grid gap-2">
+                                                        <Label htmlFor="agent-name">Agent Name</Label>
+                                                        <Input 
+                                                            id="agent-name" 
+                                                            placeholder="e.g. Sales Optimizer" 
+                                                            onChange={(e) => {
+                                                                (window as any)._new_agent_name = e.target.value;
+                                                            }}
+                                                        />
+                                                    </div>
+                                                    <div className="grid gap-2">
+                                                        <Label htmlFor="agent-specialization">Specialization</Label>
+                                                        <Input 
+                                                            id="agent-specialization" 
+                                                            placeholder="e.g. Quantitative SEO" 
+                                                            onChange={(e) => {
+                                                                (window as any)._new_agent_spec = e.target.value;
+                                                            }}
+                                                        />
+                                                    </div>
+                                                    <div className="grid gap-2">
+                                                        <Label htmlFor="framework">Framework</Label>
+                                                        <Select 
+                                                            defaultValue="crewai"
+                                                            onValueChange={(val) => {
+                                                                (window as any)._new_agent_framework = val;
+                                                            }}
+                                                        >
+                                                            <SelectTrigger id="framework">
+                                                                <SelectValue placeholder="Select framework" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="crewai">CrewAI</SelectItem>
+                                                                <SelectItem value="autogen">Autogen</SelectItem>
+                                                                <SelectItem value="agentzero">Agent Zero</SelectItem>
+                                                                <SelectItem value="openclaw">OpenClaw</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+                                                </div>
+                                                <DialogFooter>
+                                                    <Button 
+                                                        type="submit" 
+                                                        onClick={() => {
+                                                            const name = (window as any)._new_agent_name || "Tactical Analyst";
+                                                            const spec = (window as any)._new_agent_spec || "Custom Deployment";
+                                                            const framework = (window as any)._new_agent_framework || "Autogen";
+                                                            handleHireAgent({ name, specialization: spec, framework });
+                                                        }}
+                                                    >
+                                                        Deploy Agent
+                                                    </Button>
+                                                </DialogFooter>
+                                            </DialogContent>
+                                        </Dialog>
                                     </div>
+                                </CardContent>
+                            </Card>
+                            <Card className="bg-gradient-to-br from-indigo-900/20 to-purple-900/20 border-indigo-500/30 shadow-2xl md:col-span-2 mt-6">
+                                <CardHeader>
+                                    <div className="flex items-center justify-between">
+                                        <CardTitle className="flex items-center gap-2 text-indigo-400">
+                                            <Crown className="w-6 h-6" />
+                                            Sovereign Control Center
+                                        </CardTitle>
+                                        <Badge className="bg-indigo-500/20 text-indigo-400 border-indigo-500/30 font-mono text-[10px]">
+                                            STRATEGY: SOVEREIGN
+                                        </Badge>
+                                    </div>
+                                    <CardDescription className="text-indigo-300/60">Tiered autonomy governance matrix</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <SovereignStageItem 
+                                        stage={1} 
+                                        name="Financial Settlement" 
+                                        status="REVIEW_REQUIRED" 
+                                        description="AI suggests; Human signs off on Slack."
+                                        isAutonomous={false}
+                                        onDecision={handleGovernanceDecision}
+                                        currentDecision={governanceDecisions[1]}
+                                    />
+                                    <SovereignStageItem 
+                                        stage={2} 
+                                        name="Legal Personality" 
+                                        status="REVIEW_REQUIRED" 
+                                        description="AI negotiates; Human executes signature."
+                                        isAutonomous={false}
+                                        onDecision={handleGovernanceDecision}
+                                        currentDecision={governanceDecisions[2]}
+                                    />
+                                    <SovereignStageItem 
+                                        stage={3} 
+                                        name="Crisis Resilience" 
+                                        status="FULLY_AUTONOMOUS" 
+                                        description="Auto-failover on ban/attack (Stage 3)."
+                                        isAutonomous={true}
+                                    />
+                                    <SovereignStageItem 
+                                        stage={4} 
+                                        name="Strategic R&D" 
+                                        status="FULLY_AUTONOMOUS" 
+                                        description="Autonomous recursive venture launching (Stage 4)."
+                                        isAutonomous={true}
+                                    />
+                                    <SovereignStageItem 
+                                        stage={5} 
+                                        name="Ethical Alignment" 
+                                        status="REVIEW_REQUIRED" 
+                                        description="Human override for moral boundary cases."
+                                        isAutonomous={false}
+                                        onDecision={handleGovernanceDecision}
+                                        currentDecision={governanceDecisions[5]}
+                                    />
                                 </CardContent>
                             </Card>
                         </div>
@@ -719,6 +1495,102 @@ const AlphaWorkforce = () => {
 
                     <TabsContent value="comms" className="space-y-6">
                         <AgentCommsHub messages={workforceData?.agentMessages} />
+                    </TabsContent>
+                    <TabsContent value="channels" className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <Card className="bg-gradient-to-br from-indigo-500/5 to-purple-600/5 border-primary/10">
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Settings2 className="w-5 h-5 text-indigo-500" /> Webhook Configuration
+                                    </CardTitle>
+                                    <CardDescription>Connect AI agent discourse to your corporate channels</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="slack-webhook" className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Slack Webhook URL</Label>
+                                        <div className="flex gap-2">
+                                            <Input 
+                                                id="slack-webhook" 
+                                                placeholder="https://hooks.slack.com/services/..." 
+                                                value={webhooks.slack}
+                                                onChange={(e) => setWebhooks(prev => ({ ...prev, slack: e.target.value }))}
+                                                className="bg-background/50"
+                                            />
+                                            <Button variant="outline" size="icon" onClick={() => toast.success("Slack Bridge Initialized")}><CheckCircle2 className="w-4 h-4 text-green-500" /></Button>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="telegram-webhook" className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Telegram Bot Token</Label>
+                                        <div className="flex gap-2">
+                                            <Input 
+                                                id="telegram-webhook" 
+                                                placeholder="123456789:ABCdef..." 
+                                                value={webhooks.telegram}
+                                                onChange={(e) => setWebhooks(prev => ({ ...prev, telegram: e.target.value }))}
+                                                className="bg-background/50"
+                                            />
+                                            <Button variant="outline" size="icon" onClick={() => toast.success("Telegram Bridge Initialized")}><CheckCircle2 className="w-4 h-4 text-green-500" /></Button>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="discord-webhook" className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Discord Webhook</Label>
+                                        <div className="flex gap-2">
+                                            <Input 
+                                                id="discord-webhook" 
+                                                placeholder="https://discord.com/api/webhooks/..." 
+                                                value={webhooks.discord}
+                                                onChange={(e) => setWebhooks(prev => ({ ...prev, discord: e.target.value }))}
+                                                className="bg-background/50"
+                                            />
+                                            <Button variant="outline" size="icon" onClick={() => toast.success("Discord Bridge Initialized")}><CheckCircle2 className="w-4 h-4 text-green-500" /></Button>
+                                        </div>
+                                    </div>
+                                    <Button className="w-full bg-primary hover:bg-primary/90 mt-4" onClick={() => toast.success("All operational bridges synchronized.")}>
+                                        <Save className="w-4 h-4 mr-2" /> Save Connectivity Profile
+                                    </Button>
+                                </CardContent>
+                            </Card>
+
+                            <Card className="border-primary/10">
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Hash className="w-5 h-5 text-indigo-500" /> Active Discourse Channels
+                                    </CardTitle>
+                                    <CardDescription>Current live status of agent-to-human connectivity</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between p-3 rounded-xl border border-border bg-muted/20">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-3 h-3 rounded-full ${webhooks.slack ? 'bg-green-500 animate-pulse' : 'bg-muted'}`} />
+                                                <span className="font-bold">#boardroom-discourse</span>
+                                            </div>
+                                            <Badge variant="outline" className={webhooks.slack ? 'text-green-500' : 'text-muted-foreground'}>
+                                                {webhooks.slack ? 'LIVE' : 'DISCONNECTED'}
+                                            </Badge>
+                                        </div>
+                                        <div className="flex items-center justify-between p-3 rounded-xl border border-border bg-muted/20">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-3 h-3 rounded-full ${webhooks.telegram ? 'bg-green-500 animate-pulse' : 'bg-muted'}`} />
+                                                <span className="font-bold">AlphaExecutiveBot</span>
+                                            </div>
+                                            <Badge variant="outline" className={webhooks.telegram ? 'text-green-500' : 'text-muted-foreground'}>
+                                                {webhooks.telegram ? 'LIVE' : 'DISCONNECTED'}
+                                            </Badge>
+                                        </div>
+                                        <div className="flex items-center justify-between p-3 rounded-xl border border-border bg-muted/20">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-3 h-3 rounded-full ${webhooks.discord ? 'bg-green-500 animate-pulse' : 'bg-muted'}`} />
+                                                <span className="font-bold">Agent-Alerts-Alpha</span>
+                                            </div>
+                                            <Badge variant="outline" className={webhooks.discord ? 'text-green-500' : 'text-muted-foreground'}>
+                                                {webhooks.discord ? 'LIVE' : 'DISCONNECTED'}
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
                     </TabsContent>
                 </Tabs>
             </main>

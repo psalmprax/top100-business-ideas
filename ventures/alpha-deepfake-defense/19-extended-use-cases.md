@@ -114,17 +114,32 @@
 
 ---
 
+### Use Case 20: 3D Mask & Silicone Material Analysis
+**Scenario**: A criminal uses a high-fidelity silicone mask of a CEO's face to spoof a physical biometric kiosk or an iPhone's FaceID.
+**Solution**: LivenessLink provides "Material Reflectance Analysis." It uses multi-spectral camera data (or a temporal light sequence) to detect the specific light-scattering properties of human skin vs. silicone/latex. Even the most realistic "Hollywood-grade" 3D masks are flagged as "Non-Organic Material," blocking high-stakes physical presence fraud.
+
+### Use Case 21: Video Injection Attack Prevention (SPI)
+**Scenario**: A hacker bypasses the user's camera entirely and "injects" a pre-recorded deepfake video directly into the operating system's virtual camera driver or a browser's MediaDevices API.
+**Solution**: LivenessLink uses "Secure Path Integrity" (SPI). It establishes a hardware-to-cloud attestation that the video feed originates from a physical, non-modified camera sensor. It detects virtual camera hooks, OS-level loopbacks, and browser-side "Stream Replacement" attacks, ensuring the video is truly "Live" and not an injection.
+
+### Use Case 22: Neural Audio Forensics (Voice Clone Detection)
+**Scenario**: A sophisticated deepfake voice clone of a company treasurer is used in a phone conversation to approve a multi-million dollar transfer.
+**Solution**: LivenessLink applies "Neural Audio Forensics." It analyzes the audio signal for GAN-specific artifacts: spectral consistency gaps, unnatural speech rhythm patterns, and the "digital breath" markers typical of AI voice synthesis. It performs real-time audio liveness checks that distinguish between a living vocal fold response and a synthesized waveform.
+
+---
+
 ## Technical Coverage Status
 
 | Gap | Use Case Name | Status | Priority |
 |-----|---------------|--------|----------|
-| IoT | Smart device verification | ✅ COVERED (UC11) | HIGH |
+| 3D Masks | Silicone/Latex Detection | ✅ COVERED (UC20) | HIGH |
+| Injection | Secure Path Integrity (SPI)| ✅ COVERED (UC21) | HIGH |
+| Audio | Neural Audio Forensics | ✅ COVERED (UC22) | HIGH |
 | Crypto | Wallet verification | ✅ COVERED (UC12) | HIGH |
 | Wearables | Vision Pro/Glass detection | ✅ COVERED (UC14) | HIGH |
 | ROI | Fraud-Loss Prevention Dashboard| ✅ COVERED (UC15) | HIGH |
-| Travel | Border/Kiosk verification SDK | ✅ COVERED (UC16) | MEDIUM |
 | SLA | 99.99% Enterprise Guarantee | ✅ COVERED (UC17) | HIGH |
 | Webhooks | Real-time incident triggers | ✅ COVERED (UC18) | HIGH |
-| Multi-tenant| White-label Partner Portal | ✅ COVERED (UC19) | MEDIUM |
 
-*Last updated: 2026-03-17 (Alpha Elite v1.4 - 100% Coverage)*
+*Last updated: 2026-03-19 (Alpha Elite v1.5 - Absolute Coverage)*
+

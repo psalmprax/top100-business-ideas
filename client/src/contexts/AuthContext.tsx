@@ -23,7 +23,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:7001';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 id: 'demo-user-123',
                 email: 'demo@alphaai.example.com',
                 name: 'Demo User',
-                role: 'management',
+                role: 'client',
                 subscriptionTier: 'enterprise',
                 company: 'Demo Corporation',
             };
@@ -140,8 +140,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             id: 'demo-user-123',
             email: 'demo@alphaai.example.com',
             name: 'Demo User',
-            role: 'management',
-            subscriptionTier: 'enterprise',
+            role: 'client',
+            subscriptionTier: 'pro',
             company: 'Demo Corporation',
         };
         localStorage.setItem('auth_token', 'demo-token-for-testing');

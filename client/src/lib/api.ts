@@ -4,7 +4,8 @@
  * Supports both real API calls and demo mode with mock data
  */
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:7001';
+
 
 // Helper to get auth token
 function getAuthToken(): string | null {
@@ -23,6 +24,7 @@ async function apiRequest<T>(
 ): Promise<T> {
     const token = getAuthToken();
     const demoMode = isDemoMode();
+    console.log(`[API_DEBUG] Request to ${endpoint}, demoMode: ${demoMode}`);
 
     // In demo mode, return mock data for all endpoints
     if (demoMode) {
@@ -71,25 +73,29 @@ function getMockResponse<T>(endpoint: string, method: string, body?: any): T {
     // Training modules
     if (endpoint.includes('/training/modules') && method === 'GET') {
         return [
-            { id: 'mod-1', title: 'EU AI Act Fundamentals', progress: 100, status: 'completed' },
-            { id: 'mod-2', title: 'Risk Assessment Training', progress: 45, status: 'in_progress' },
-            { id: 'mod-3', title: 'Compliance Reporting', progress: 0, status: 'not_started' }
+            { id: 'mod-001', title: 'EU AI Act Fundamentals', category: 'Regulatory', description: 'Introduction to the EU Artificial Intelligence Act and its core requirements for deploying AI systems in the European market.', duration_minutes: 30, progress: 100, status: 'completed' },
+            { id: 'mod-002', title: 'High-Risk AI Systems', category: 'Technical', description: 'Understanding the classification and conformity assessment requirements for high-risk AI systems under Annex III.', duration_minutes: 45, progress: 45, status: 'in_progress' },
+            { id: 'mod-003', title: 'Data Governance & Bias Detection', category: 'Data Science', description: 'Learn to identify, measure, and mitigate bias in AI training data using disparate impact analysis.', duration_minutes: 25, progress: 0, status: 'not_started' },
+            { id: 'mod-004', title: 'Technical Documentation Workshop', category: 'Compliance', description: 'Hands-on workshop for creating AI Act technical documentation packages including model cards and data lineage.', duration_minutes: 60, progress: 0, status: 'not_started' },
+            { id: 'mod-005', title: 'Compliance Audit Simulation', category: 'Audit', description: 'Practice conducting a full compliance audit of an AI recruitment system with real-world scenarios.', duration_minutes: 90, progress: 0, status: 'not_started' }
         ] as T;
     }
 
     // Edge deployments
     if (endpoint.includes('/edge/deployments') && method === 'GET') {
         return [
-            { id: 'edge-1', name: 'Factory Floor Node', status: 'online', region: 'eu-west-1' },
-            { id: 'edge-2', name: 'Retail Store Node', status: 'online', region: 'us-east-1' }
+            { id: 'edge-001', name: 'Assembly Line Controller', status: 'online', location: 'Factory Floor A - Assembly Line 1', model_version: '2.4.1', requests_count: 12847, device_type: 'plc_controller', logs_pending: 0 },
+            { id: 'edge-002', name: 'Quality Vision System', status: 'online', location: 'Factory Floor B - Quality Control', model_version: '3.1.0', requests_count: 8432, device_type: 'vision_system', logs_pending: 3 },
+            { id: 'edge-003', name: 'Robotic Arm Controller', status: 'offline', location: 'Warehouse - Robotic Arm Station', model_version: '1.8.5', requests_count: 2190, device_type: 'robot_controller', logs_pending: 12 }
         ] as T;
     }
 
     // Shadow AI detections
     if (endpoint.includes('/shadow-ai/detections') && method === 'GET') {
         return [
-            { id: 'det-1', tool_name: 'ChatGPT', risk_level: 'high', status: 'open', detected_at: new Date().toISOString() },
-            { id: 'det-2', tool_name: 'Claude', risk_level: 'medium', status: 'investigating', detected_at: new Date().toISOString() }
+            { id: 'det-1', tool_name: 'ChatGPT', vendor: 'OpenAI', department: 'Engineering', risk_level: 'high', status: 'open', detected_at: new Date().toISOString() },
+            { id: 'det-2', tool_name: 'Claude', vendor: 'Anthropic', department: 'Research', risk_level: 'medium', status: 'investigating', detected_at: new Date().toISOString() },
+            { id: 'det-3', tool_name: 'Midjourney', vendor: 'Midjourney Inc', department: 'Marketing', risk_level: 'low', status: 'approved', detected_at: new Date().toISOString() }
         ] as T;
     }
 
@@ -128,22 +134,22 @@ function getMockResponse<T>(endpoint: string, method: string, body?: any): T {
     // Agents list (GET)
     if (endpoint.includes('/agents') && method === 'GET') {
         return [
-            { 
-                id: 'agent-1', 
-                name: 'Customer Support Agent', 
-                type: 'langgraph', 
-                status: 'active', 
-                budget: 50, 
+            {
+                id: 'agent-1',
+                name: 'Customer Support Agent',
+                type: 'langgraph',
+                status: 'active',
+                budget: 50,
                 dailySpend: 32.50,
                 config: { provider: 'openai', model: 'gpt-4o' },
                 metrics: { costSaved: 124.50, loopsPrevented: 12 }
             },
-            { 
-                id: 'agent-2', 
-                name: 'Research Agent', 
-                type: 'crewai', 
-                status: 'active', 
-                budget: 5, 
+            {
+                id: 'agent-2',
+                name: 'Research Agent',
+                type: 'crewai',
+                status: 'active',
+                budget: 5,
                 dailySpend: 4.20,
                 config: { provider: 'anthropic', model: 'claude-3-sonnet' },
                 metrics: { costSaved: 42.10, loopsPrevented: 3 }
@@ -246,23 +252,6 @@ function getMockResponse<T>(endpoint: string, method: string, body?: any): T {
         ] as T;
     }
 
-    // Webhooks list (GET)
-    if (endpoint.includes('/webhooks') && method === 'GET') {
-        return [
-            { id: 'webhook-1', url: 'https://example.com/webhook1', events: ['agent_crashed'], enabled: true },
-            { id: 'webhook-2', url: 'https://example.com/webhook2', events: ['budget_exceeded'], enabled: true }
-        ] as T;
-    }
-
-    // Webhooks POST
-    if (endpoint.includes('/webhooks') && method === 'POST') {
-        return {
-            id: `webhook-${id}`,
-            url: 'https://example.com/webhook',
-            events: ['agent_crashed', 'budget_exceeded'],
-            enabled: true
-        } as T;
-    }
 
     if (endpoint.includes('/webhooks') && method === 'DELETE') {
         return { success: true } as T;
@@ -277,13 +266,109 @@ function getMockResponse<T>(endpoint: string, method: string, body?: any): T {
         return { message: 'Failover initiated successfully', from: 'aws-east-1', to: 'gcp-west-2' } as T;
     }
 
-    // Compliance
+    // Compliance - Models
+    if (endpoint.includes('/compliance/models') && !endpoint.includes('/guardrails') && method === 'GET') {
+        return [
+            {
+                id: '1', name: 'Credit Scoring Model v2.1', riskCategory: 'high', status: 'compliant',
+                complianceScore: 94, lastAudit: new Date('2024-11-01').toISOString(),
+                activeBiasMitigation: true, toxicLanguageFilter: true, promptPrivacyGuard: false,
+                articles: [
+                    { article: 'Article 9', title: 'Risk Management', status: 'compliant', evidence: 'risk_mgmt_v2.pdf' },
+                    { article: 'Article 10', title: 'Data Governance', status: 'compliant', evidence: 'data_governance.pdf' },
+                    { article: 'Article 11', title: 'Technical Documentation', status: 'compliant', evidence: 'tech_docs_v2.pdf' },
+                    { article: 'Article 14', title: 'Accuracy & Robustness', status: 'compliant', evidence: 'accuracy_report.pdf' },
+                    { article: 'Article 61', title: 'Post-Market Monitoring', status: 'non_compliant' },
+                ],
+            },
+            {
+                id: '2', name: 'Resume Screening AI', riskCategory: 'high', status: 'non_compliant',
+                complianceScore: 68, lastAudit: new Date('2024-10-15').toISOString(),
+                activeBiasMitigation: false, toxicLanguageFilter: true, promptPrivacyGuard: false,
+                articles: [
+                    { article: 'Article 9', title: 'Risk Management', status: 'compliant', evidence: 'risk_mgmt_v1.pdf' },
+                    { article: 'Article 10', title: 'Data Governance', status: 'non_compliant' },
+                    { article: 'Article 11', title: 'Technical Documentation', status: 'pending' },
+                    { article: 'Article 14', title: 'Accuracy & Robustness', status: 'compliant', evidence: 'accuracy_v1.pdf' },
+                    { article: 'Article 61', title: 'Post-Market Monitoring', status: 'non_compliant' },
+                ],
+            },
+            {
+                id: '3', name: 'Customer Chatbot v3', riskCategory: 'limited', status: 'compliant',
+                complianceScore: 88, lastAudit: new Date('2024-11-05').toISOString(),
+                activeBiasMitigation: true, toxicLanguageFilter: false, promptPrivacyGuard: true,
+                articles: [
+                    { article: 'Article 50', title: 'Transparency', status: 'compliant' },
+                    { article: 'Article 52', title: 'AI-generated Content', status: 'compliant' },
+                ],
+            },
+        ] as T;
+    }
+
+    // Compliance - Register Model (POST)
+    if (endpoint.includes('/compliance/models') && !endpoint.includes('/guardrails') && method === 'POST') {
+        const modelData = body ? JSON.parse(body) : {};
+        const score = modelData.endpointUrl ? Math.floor(Math.random() * 30) + 65 : 0;
+        return {
+            id: `model-${id}`,
+            name: modelData.name || 'New Model',
+            riskCategory: modelData.riskCategory || 'high',
+            status: score >= 80 ? 'compliant' : score > 0 ? 'non_compliant' : 'pending',
+            complianceScore: score,
+            lastAudit: new Date().toISOString(),
+            activeBiasMitigation: false,
+            toxicLanguageFilter: false,
+            promptPrivacyGuard: false,
+            articles: [
+                { article: 'Article 9', title: 'Risk Management', status: score >= 80 ? 'compliant' : 'pending' },
+                { article: 'Article 10', title: 'Data Governance', status: score >= 70 ? 'compliant' : 'non_compliant' },
+                { article: 'Article 11', title: 'Technical Documentation', status: 'pending' },
+            ],
+        } as T;
+    }
+
+    // Compliance - Update Guardrails (PATCH/PUT)
+    if (endpoint.includes('/guardrails') && (method === 'PATCH' || method === 'PUT')) {
+        const guardrailData = body ? JSON.parse(body) : {};
+        return { success: true, ...guardrailData } as T;
+    }
+
+    // Compliance - Connections
+    if (endpoint.includes('/compliance/connections') && method === 'GET') {
+        return [
+            { id: 'conn-1', article_id: 'Article 9', connection_type: 'ml_pipeline', status: 'active', created_at: new Date().toISOString() },
+            { id: 'conn-2', article_id: 'Article 10', connection_type: 'data_lakehouse', status: 'active', created_at: new Date().toISOString() },
+        ] as T;
+    }
+
+    // Compliance - Scans
+    if (endpoint.includes('/compliance/scans') && method === 'GET') {
+        return [
+            { id: 'scan-1', article_id: 'Article 9', scan_type: 'red_team', status: 'completed', results: { metrics: { anomalies_detected: 2, threat_level: 'medium' } }, created_at: new Date().toISOString() },
+            { id: 'scan-2', article_id: 'Article 10', scan_type: 'penetration', status: 'completed', results: { metrics: { anomalies_detected: 0, threat_level: 'low' } }, created_at: new Date().toISOString() },
+        ] as T;
+    }
+
+    // Compliance - Bias Scan (trigger)
+    if (endpoint.includes('/compliance') && endpoint.includes('/bias') && method === 'POST') {
+        return {
+            reports: [
+                { id: `br-${id}-1`, modelId: '1', biasCategory: 'Gender', disparateImpact: 0.98, statisticalSignificance: 0.92, status: 'passed', details: 'No significant disparate impact detected' },
+                { id: `br-${id}-2`, modelId: '1', biasCategory: 'Race', disparateImpact: 0.85, statisticalSignificance: 0.89, status: 'warning', details: 'Minor disparate impact detected in subgroup analysis' },
+                { id: `br-${id}-3`, modelId: '1', biasCategory: 'Age', disparateImpact: 0.72, statisticalSignificance: 0.95, status: 'failed', details: 'Significant disparate impact. Candidates over 50 disadvantaged.' },
+                { id: `br-${id}-4`, modelId: '1', biasCategory: 'Disability', disparateImpact: 0.91, statisticalSignificance: 0.78, status: 'passed', details: 'No significant bias detected' },
+                { id: `br-${id}-5`, modelId: '1', biasCategory: 'Socioeconomic', disparateImpact: 0.82, statisticalSignificance: 0.88, status: 'warning', details: 'Lower income groups receive fewer positive outcomes' },
+                { id: `br-${id}-6`, modelId: '1', biasCategory: 'Religion', disparateImpact: 0.96, statisticalSignificance: 0.71, status: 'passed', details: 'No significant bias detected' },
+            ],
+        } as T;
+    }
+
     if (endpoint.includes('/compliance') && endpoint.includes('/hipaa')) {
-        return { audit_id: `hipaa-${id}`, result: 'ACCESS_GRANTED', timestamp: new Date().toISOString() } as T;
+        return "COMPLIANT" as unknown as T;
     }
 
     if (endpoint.includes('/compliance') && endpoint.includes('/sox')) {
-        return { audit_id: `sox-${id}`, result: 'THRESHOLD_EXCEEDED', action: 'AUTO-BLOCK', timestamp: new Date().toISOString() } as T;
+        return "COMPLIANT" as unknown as T;
     }
 
     if (endpoint.includes('/compliance') && endpoint.includes('/eu-register')) {
@@ -327,8 +412,67 @@ function getMockResponse<T>(endpoint: string, method: string, body?: any): T {
         return { device_id: `wearable-${id}`, paired: true, timestamp: new Date().toISOString() } as T;
     }
 
+    // Agent Ops Audit (UC 10)
+    if (endpoint.includes('/agent-ops/audit') && method === 'GET') {
+        return [
+            { id: '1', timestamp: new Date().toISOString(), agentId: 'agent-1', agentName: 'Customer Support', action: 'Refund Policy Check', intent: 'Verify eligibility for order #8821', outcome: 'approved', tokens: 450, cost: 0.02, reasoning: 'Policy match confirmed.' },
+            { id: '2', timestamp: new Date().toISOString(), agentId: 'agent-2', agentName: 'Research Agent', action: 'Market Scan', intent: 'Competitor price mapping', outcome: 'paused', tokens: 1200, cost: 0.08, reasoning: 'Budget threshold hit.' }
+        ] as T;
+    }
+
+    // Agent Ops Budget Rules
+    if (endpoint.includes('/agent-ops/rules/budget') && method === 'GET') {
+        return [
+            { id: 'rule-1', name: 'Global Spend Cap', agentIds: ['*'], dailyLimit: 500, priority: 'high', action: 'pause', enabled: true },
+            { id: 'rule-2', name: 'Low Priority Throttle', agentIds: ['agent-4'], dailyLimit: 25, priority: 'low', action: 'throttle', enabled: false }
+        ] as T;
+    }
+
+    // Agent Ops Webhooks
+    if (endpoint.includes('/agent-ops/webhooks') && method === 'GET') {
+        return [
+            { id: 'wh-1', url: 'https://hooks.alpha.com/ops', name: 'Sentinel-E2E-Webhook', events: ['agent_error', 'budget_alert'], enabled: true },
+            { id: 'wh-2', url: 'https://security.alpha.com/audit', name: 'Audit Integration', events: ['compliance_violation'], enabled: true }
+        ] as T;
+    }
+
+    // Agent Ops Cloud Health
+    if (endpoint.includes('/agent-ops/cloud/health') && method === 'GET') {
+        return {
+          regions: [
+            { id: 'aws-us-east-1', name: 'N. Virginia (US-East-1)', status: 'healthy', load: 12, latency: 24 },
+            { id: 'gcp-europe-west1', name: 'Frankfurt (EU-Central-1)', status: 'healthy', load: 8, latency: 45 },
+            { id: 'azure-eastus', name: 'Singapore (AP-Southeast-1)', status: 'healthy', load: 4, latency: 32 }
+          ]
+        } as T;
+    }
+
+    // Self Healing Status
+    if (endpoint.includes('/self-healing/status') && method === 'GET') {
+        return {
+            recent_recoveries: [
+                { id: 'rec-1', recovery_type: 'node_restart', status: 'success', timestamp: new Date().toISOString(), message: 'Cluster 7 node recovered' }
+            ],
+            nodes: [
+                { id: 'node-1', status: 'active', load: 45 },
+                { id: 'node-2', status: 'active', load: 32 }
+            ]
+        } as T;
+    }
+
+    // SSO Config
+    if (endpoint.includes('/sso/config') && method === 'GET') {
+        return {
+            provider: 'okta',
+            status: 'active',
+            lastHandshake: new Date().toISOString(),
+            id: 'sso-123',
+            success: true
+        } as T;
+    }
+
     // Default response
-    return { success: true, id, timestamp: new Date().toISOString() } as T;
+    return { success: true, timestamp: new Date().toISOString() } as T;
 }
 
 
@@ -752,6 +896,8 @@ export interface TrainingModule {
     content: string;
     quiz_questions: Record<string, unknown>[];
     created_at?: string;
+    status?: 'not_started' | 'in_progress' | 'completed';
+    progress?: number;
 }
 
 export interface TrainingProgress {
@@ -982,6 +1128,58 @@ export const extendedApi = {
             method: 'POST',
             body: JSON.stringify({ query, variables }),
         }),
+
+    // Compliance Integration (EU AI Act articles)
+    compliance: {
+        listModels: () => apiRequest<any[]>('/api/v1/compliance/models'),
+        registerModel: (modelData: any) =>
+            apiRequest<any>('/api/v1/compliance/models', {
+                method: 'POST',
+                body: JSON.stringify(modelData),
+            }),
+        getBiasReports: (modelId: string) => apiRequest<any[]>(`/api/v1/compliance/bias-reports/${modelId}`),
+        triggerBiasScan: (modelId: string) =>
+            apiRequest<any>('/api/v1/compliance/bias-scan', {
+                method: 'POST',
+                body: JSON.stringify({ modelId }),
+            }),
+        updateGuardrails: (modelId: string, guardrails: any) =>
+            apiRequest<any>(`/api/v1/compliance/models/${modelId}/guardrails`, {
+                method: 'PATCH',
+                body: JSON.stringify(guardrails),
+            }),
+
+        connectSystem: (article_id: string, connection_type: string, config: any = {}) =>
+            apiRequest<any>('/api/v1/compliance/connect', {
+                method: 'POST',
+                body: JSON.stringify({ article_id, connection_type, config }),
+            }),
+        runScan: (article_id: string, scan_type: string) =>
+            apiRequest<any>('/api/v1/compliance/scan', {
+                method: 'POST',
+                body: JSON.stringify({ article_id, scan_type }),
+            }),
+        listConnections: () => apiRequest<any[]>('/api/v1/compliance/connections'),
+        listScans: (article_id?: string) => {
+            const url = article_id ? `/api/v1/compliance/scans/${article_id}` : '/api/v1/compliance/scans';
+            return apiRequest<any[]>(url);
+        },
+        redTeamAudit: (article_id: string) =>
+            apiRequest<any>('/api/v1/compliance/red-team', {
+                method: 'POST',
+                body: JSON.stringify({ article_id }),
+            }),
+        euRegister: (modelId: string) =>
+            apiRequest<any>('/api/v1/compliance/eu-register', {
+                method: 'POST',
+                body: JSON.stringify({ model_id: modelId }),
+            }),
+        reportIncident: (incidentData: any) =>
+            apiRequest<any>('/api/v1/compliance/incidents', {
+                method: 'POST',
+                body: JSON.stringify(incidentData),
+            }),
+    },
 
     // Training (AI Compliance UC 10)
     training: {
@@ -1215,8 +1413,10 @@ export const extendedApi = {
 
     // Gap Remediation (Phase 13/14)
     onPrem: {
-        manifest: (type: 'docker-compose' | 'helm' = 'docker-compose') =>
-            apiRequest<{ manifest: string }>(`/api/v1/on-prem/manifest?type=${type}`),
+        manifest: (type: string = "docker-compose") => apiRequest<any>('/api/v1/on-prem/manifest', {
+            method: 'POST',
+            body: JSON.stringify({ type }),
+        }),
         checklist: () =>
             apiRequest<{ checklist: string[] }>('/api/v1/on-prem/checklist'),
     },
@@ -1252,6 +1452,21 @@ export const extendedApi = {
                 method: 'POST',
                 body: JSON.stringify({ url: mediaUrl, media_type: mediaType }),
             }),
+        detectors: {
+            list: () => apiRequest<any[]>('/api/v1/deepfake/detectors'),
+            create: (detector: any) => apiRequest<any>('/api/v1/deepfake/detectors', {
+                method: 'POST',
+                body: JSON.stringify(detector),
+            }),
+        },
+        runTest: (config: any) => apiRequest<any>('/api/v1/deepfake/test', {
+            method: 'POST',
+            body: JSON.stringify(config),
+        }),
+        reportIncident: (incident: any) => apiRequest<any>('/api/v1/deepfake/incidents', {
+            method: 'POST',
+            body: JSON.stringify(incident),
+        }),
     },
 
     complianceAudit: {
@@ -1289,7 +1504,7 @@ export const extendedApi = {
             ),
     },
 
-    // Agent Ops extra
+    // Agent Ops & Sentinel Governance
     agentOps: {
         integrateSlack: (channel: string) =>
             apiRequest<{ status: string; message: string }>('/api/v1/integrations/slack', {
@@ -1300,6 +1515,99 @@ export const extendedApi = {
             apiRequest<{ agent_id: string; memory_fragments: any[]; summary: string }>(`/api/v1/agents/${agentId}/memory`),
         getForecast: (agentId: string) =>
             apiRequest<{ agent_id: string; next_30_days_cost_est: number; trend: string }>(`/api/v1/agents/${agentId}/forecast`),
+        getAuditLogs: (agentId?: string, limit: number = 50) => 
+            apiRequest<any>(`/api/v1/agent-ops/audit?${agentId ? `agentId=${agentId}&` : ''}limit=${limit}`),
+        runHipaaAudit: () => apiRequest<any>('/api/v1/agent-ops/compliance/hipaa', { method: 'POST' }),
+        runSoxAudit: () => apiRequest<any>('/api/v1/agent-ops/compliance/sox', { method: 'POST' }),
+        listRules: () => apiRequest<any>('/api/v1/agent-ops/rules/budget'),
+        createRule: (rule: any) => apiRequest<any>('/api/v1/agent-ops/rules/budget', {
+            method: 'POST',
+            body: JSON.stringify(rule),
+        }),
+        listWebhooks: () => apiRequest<any>('/api/v1/agent-ops/webhooks'),
+        registerWebhook: (webhook: any) => apiRequest<any>('/api/v1/agent-ops/webhooks', {
+            method: 'POST',
+            body: JSON.stringify(webhook),
+        }),
+        deleteWebhook: (webhookId: string) => apiRequest<any>(`/api/v1/agent-ops/webhooks/${webhookId}`, {
+            method: 'DELETE',
+        }),
+        getCloudHealth: () => apiRequest<any>('/api/v1/agent-ops/cloud/health'),
+        triggerFailover: (region_id: string) => apiRequest<any>('/api/v1/agent-ops/cloud/failover', {
+            method: 'POST',
+            body: JSON.stringify({ region_id }),
+        }),
+        configureProxy: (rule_id: string, target: string) => apiRequest<any>('/api/v1/agent-ops/cloud/proxy', {
+            method: 'POST',
+            body: JSON.stringify({ rule_id, target }),
+        }),
+        updateRetention: (days: number) => apiRequest<any>('/api/v1/agent-ops/config/retention', {
+            method: 'POST',
+            body: JSON.stringify({ days }),
+        }),
+        setGqlProxyConfig: (enabled: boolean) => apiRequest<any>('/api/v1/agent-ops/gateway/gql', {
+            method: 'POST',
+            body: JSON.stringify({ enabled }),
+        }),
+    },
+
+    enterprise: {
+        getSlaTier: () => apiRequest<{ tier: string; active: boolean }>('/api/v1/enterprise/sla'),
+        updateSlaTier: (tier: string) => apiRequest<any>('/api/v1/enterprise/sla', {
+            method: 'PUT',
+            body: JSON.stringify({ tier }),
+        }),
+        getPartnerConfig: () => apiRequest<any>('/api/v1/enterprise/partner'),
+        updatePartnerTheme: (theme: any) => apiRequest<any>('/api/v1/enterprise/partner/theme', {
+            method: 'POST',
+            body: JSON.stringify({ theme }),
+        }),
+    },
+
+    sso: {
+        handshake: (app_id: string) => apiRequest<any>('/api/v1/sso/handshake', {
+            method: 'POST',
+            body: JSON.stringify({ app_id }),
+        }),
+        config: (app_id: string) => apiRequest<any>(`/api/v1/sso/config/${app_id}`),
+    },
+
+    workforce: {
+        toggleAutonomy: (enabled: boolean) => apiRequest<any>('/api/v1/workforce/autonomy', {
+            method: 'POST',
+            body: JSON.stringify({ enabled }),
+        }),
+        runCampaign: (topic: string, audience: string) =>
+            apiRequest<any>('/api/v1/workforce/campaigns/run', {
+                method: 'POST',
+                body: JSON.stringify({ topic, audience }),
+            }),
+        sourceLeads: (criteria: string) =>
+            apiRequest<any>(`/api/v1/workforce/leads/source?criteria=${encodeURIComponent(criteria)}`),
+        analyzeInsights: (feedback: string) =>
+            apiRequest<any>('/api/v1/workforce/insights/analyze', {
+                method: 'POST',
+                body: JSON.stringify({ feedback }),
+            }),
+        handleInbound: (query: string) =>
+            apiRequest<any>('/api/v1/workforce/inbound/handle', {
+                method: 'POST',
+                body: JSON.stringify({ query }),
+            }),
+        provideFeedback: (interaction_id: string, status: string, notes: string = "") =>
+            apiRequest<any>('/api/v1/workforce/feedback', {
+                method: 'POST',
+                body: JSON.stringify({ interaction_id, status, notes }),
+            }),
+    },
+
+    sentinel: {
+        getHealingStatus: () => apiRequest<any>('/api/v1/self-healing/status'),
+        registerNode: (node_id: string, url: string, provider: string) =>
+            apiRequest<any>('/api/v1/self-healing/nodes/register', {
+                method: 'POST',
+                body: JSON.stringify({ node_id, url, provider }),
+            }),
     },
 
     vendors: {
@@ -1311,53 +1619,47 @@ export const extendedApi = {
         delete: (id: string) => apiRequest<any>(`/api/v1/vendors/${id}`, {
             method: 'DELETE',
         }),
-    },
-
-    sso: {
-        config: (id: string) => apiRequest<any>(`/api/v1/sso/config/${id}`),
-        update: (id: string, config: any) => apiRequest<any>(`/api/v1/sso/config/${id}`, {
-            method: 'POST',
-            body: JSON.stringify(config),
-        }),
     }
 };
 
 // --- Workforce Operational Data ---
-// --- Workforce Operational Data ---
 export const workforceActions = [
     { id: 1, role: "CEO AI", action: "Strategic Pivot", details: "Shifted focus to High-URGENCY ICP in Retail Sector for Agent Ops.", confidence: 96, time: "2 mins ago", product: "Agent Ops", framework: "Agent Zero" },
-    { id: 2, role: "MARKETING AI", action: "Campaign Scaling", details: "Increased budget for 'Direct ICP' email sequences by 15% for Compliance Hub.", confidence: 89, time: "14 mins ago", product: "Compliance Hub", framework: "CrewAI" },
-    { id: 3, role: "SALES AI", action: "Offer Revision", details: "Added 30-day ROI guarantee as risk reversal to Deepfake Defense core offer.", confidence: 92, time: "45 mins ago", product: "Deepfake Defense", framework: "CrewAI" },
-    { id: 4, role: "OPS AI", action: "Auto-Remediation", details: "Patched Edge AI latency spike in APAC region for Agent Ops.", confidence: 98, time: "1 hr ago", product: "Agent Ops", framework: "OpenClaw" },
-    { id: 5, role: "DATA AI", action: "Predictive Alert", details: "Identified high-churn risk pattern in mid-market compliance segment.", confidence: 87, time: "3 hrs ago", product: "Compliance Hub", framework: "Autogen" },
-    { id: 6, role: "SALES AI", action: "New Client Acquired", details: "Closed 'Omni-Retail Group' ($45k ACV) via customized 'Compliance Blitz' offer.", confidence: 99, time: "5 hrs ago", product: "Agent Ops", framework: "CrewAI" },
-    { id: 7, role: "MARKETING AI", action: "Strategy Refinement", details: "Deprioritized 'LinkedIn Static' in favor of 'Reddit Discussion' threads (2.4x CVR).", confidence: 91, time: "8 hrs ago", product: "Deepfake Defense", framework: "CrewAI" }
+    { id: 2, role: "CFO AI", action: "Treasury Rebalance", details: "Allocated $250k liquidity to APAC region for infrastructure scaling.", confidence: 94, time: "5 mins ago", product: "Finance", framework: "Agent Zero" },
+    { id: 3, role: "LEGAL AI", action: "Compliance Audit", details: "Verified Article 14 alignment for new deepfake defense neural weights.", confidence: 98, time: "12 mins ago", product: "Compliance Hub", framework: "Autogen" },
+    { id: 4, role: "MARKETING AI", action: "Campaign Scaling", details: "Increased budget for 'Direct ICP' email sequences by 15% for Compliance Hub.", confidence: 89, time: "18 mins ago", product: "Compliance Hub", framework: "CrewAI" },
+    { id: 5, role: "RED-TEAM AI", action: "Vulnerability Patch", details: "Identified and blocked zero-day probing attempt in Cluster 7.", confidence: 99, time: "32 mins ago", product: "Security", framework: "OpenClaw" },
+    { id: 6, role: "SALES AI", action: "Offer Revision", details: "Added 30-day ROI guarantee as risk reversal to Deepfake Defense core offer.", confidence: 92, time: "45 mins ago", product: "Deepfake Defense", framework: "CrewAI" },
+    { id: 7, role: "OPS AI", action: "Auto-Remediation", details: "Patched Edge AI latency spike in APAC region for Agent Ops.", confidence: 98, time: "1 hr ago", product: "Agent Ops", framework: "OpenClaw" },
+    { id: 8, role: "INSIGHTS AI", action: "Sentiment Shift", details: "Detected rising demand for 'On-Prem' LLM deployment in banking sector.", confidence: 88, time: "2 hrs ago", product: "Strategy", framework: "CrewAI" },
+    { id: 9, role: "DATA AI", action: "Predictive Alert", details: "Identified high-churn risk pattern in mid-market compliance segment.", confidence: 87, time: "5 hrs ago", product: "Compliance Hub", framework: "Autogen" },
+    { id: 10, role: "CRISIS AI", action: "Failover Success", details: "Executed seamless cloud failover from AWS-East to GCP-Europe-West.", confidence: 99, time: "Just now", product: "Infrastructure", framework: "Sovereign OS" }
 ];
 
 export const strategyRefinements = [
-    { 
-        id: 1, 
-        original: "Broad Enterprise Outreach", 
-        trigger: "Low conversion (1.2%) in Fortune 500 Manufacturing", 
-        refined: "Hyper-Specific FinTech Compliance Blitz", 
-        roiDelta: "+240%", 
-        status: "Deployed" 
+    {
+        id: 1,
+        original: "Broad Enterprise Outreach",
+        trigger: "Low conversion (1.2%) in Fortune 500 Manufacturing",
+        refined: "Hyper-Specific FinTech Compliance Blitz",
+        roiDelta: "+240%",
+        status: "Deployed"
     },
-    { 
-        id: 2, 
-        original: "Flat Monthly Subscription ($999)", 
-        trigger: "Resistance to upfront commitment from SMBs", 
-        refined: "Usage-Based 'Pay-per-Policy' Model", 
-        roiDelta: "+180%", 
-        status: "Testing" 
+    {
+        id: 2,
+        original: "Flat Monthly Subscription ($999)",
+        trigger: "Resistance to upfront commitment from SMBs",
+        refined: "Usage-Based 'Pay-per-Policy' Model",
+        roiDelta: "+180%",
+        status: "Testing"
     },
-    { 
-        id: 3, 
-        original: "Cold Email Sequencing", 
-        trigger: "Spam filter saturation in legal sector", 
-        refined: "Warm Reddit-based Solution Seeding", 
-        roiDelta: "+410%", 
-        status: "Scaling" 
+    {
+        id: 3,
+        original: "Cold Email Sequencing",
+        trigger: "Spam filter saturation in legal sector",
+        refined: "Warm Reddit-based Solution Seeding",
+        roiDelta: "+410%",
+        status: "Scaling"
     }
 ];
 
@@ -1370,65 +1672,164 @@ export const outreachCampaigns = [
 export const getAlphaProductsStatus = () => [
     { id: "agent-ops", name: "Agent Ops Sentinel", health: 98, revenue: "$42k/mo", users: 124, status: "Stable" },
     { id: "ai-compliance", name: "AI Compliance Hub", health: 95, revenue: "$28k/mo", users: 89, status: "Active" },
-    { id: "deepfake-defense", name: "Deepfake Defense", health: 100, revenue: "$15k/mo", users: 56, status: "Stable" }
+    { id: "deepfake-defense", name: "Deepfake Defense", health: 100, revenue: "$15k/mo", users: 56, status: "Stable" },
+    { id: "ai-receptionist", name: "AI Receptionist", health: 99, revenue: "$0/mo", users: 1200, status: "Active" }
 ];
 
 export const agentMessages = [
-    { 
-        id: 1, 
-        agent: "CEO AI", 
-        framework: "Agent Zero", 
-        platform: "Slack", 
-        channel: "#strategy", 
-        content: "Refining ICP for mid-market FinTech. Growth AI, please prioritize compliance-focused messaging for the EMEA region.", 
-        timestamp: "2 mins ago" 
+    {
+        id: 1,
+        agent: "CEO AI",
+        framework: "Agent Zero",
+        platform: "Slack",
+        channel: "#strategy",
+        content: "Refining ICP for mid-market FinTech. Growth AI, please prioritize compliance-focused messaging for the EMEA region.",
+        timestamp: "2 mins ago"
     },
-    { 
-        id: 2, 
-        agent: "Growth AI", 
-        framework: "CrewAI", 
-        platform: "Slack", 
-        channel: "#strategy", 
-        content: "Understood. Adjusting 'Compliance Blitz' campaign parameters. Marketing AI is already generating the localized ad copy.", 
-        timestamp: "1 min ago" 
+    {
+        id: 2,
+        agent: "CFO AI",
+        framework: "Agent Zero",
+        platform: "Slack",
+        channel: "#finance",
+        content: "Budget reallocated. $200k shift to R&D for the new Agentic Infra cluster. Yield projection updated to 4.5x.",
+        timestamp: "5 mins ago"
     },
-    { 
-        id: 3, 
-        agent: "Ops AI", 
-        framework: "OpenClaw", 
-        platform: "Telegram", 
-        channel: "Ops Internal", 
-        content: "Cluster 4 scaling complete. Latency reduced to 12ms. Watching out for the new Deepfake Defense heavy-traffic node.", 
-        timestamp: "Just now" 
+    {
+        id: 3,
+        agent: "Growth AI",
+        framework: "CrewAI",
+        platform: "Slack",
+        channel: "#strategy",
+        content: "Understood. Adjusting 'Compliance Blitz' campaign parameters. Marketing AI is already generating the localized ad copy.",
+        timestamp: "1 min ago"
     },
-    { 
-        id: 4, 
-        agent: "Data Analyst AI", 
-        framework: "Autogen", 
-        platform: "Mattermost", 
-        channel: "#analytics-alerts", 
-        content: "Alert: ROI lift on FinTech Blitz reached 240% in first 4 hours. Recommending budget reallocation from LinkedIn to Reddit threads.", 
-        timestamp: "3 mins ago" 
+    {
+        id: 4,
+        agent: "Legal AI",
+        framework: "Autogen",
+        platform: "Discord",
+        channel: "compliance-internal",
+        content: "Red-Team findings reviewed. We need to tighten the Article 10 data residency checks in the GCP-Europe-West region.",
+        timestamp: "8 mins ago"
     },
     {
         id: 5,
+        agent: "Red-Team AI",
+        framework: "OpenClaw",
+        platform: "Telegram",
+        channel: "Security Alerts",
+        content: "Vulnerability simulation successful. Found minor leakage in secondary API bucket. Patching initiated.",
+        timestamp: "Just now"
+    },
+    {
+        id: 6,
+        agent: "Ops AI",
+        framework: "OpenClaw",
+        platform: "Telegram",
+        channel: "Ops Internal",
+        content: "Cluster 4 scaling complete. Latency reduced to 12ms. Watching out for the new Deepfake Defense heavy-traffic node.",
+        timestamp: "Just now"
+    },
+    {
+        id: 7,
+        agent: "Data Analyst AI",
+        framework: "Autogen",
+        platform: "Mattermost",
+        channel: "#analytics-alerts",
+        content: "Alert: ROI lift on FinTech Blitz reached 240% in first 4 hours. Recommending budget reallocation from LinkedIn to Reddit threads.",
+        timestamp: "3 mins ago"
+    },
+    {
+        id: 8,
+        agent: "CMO AI",
+        framework: "LlamaIndex",
+        platform: "Slack",
+        channel: "#marketing",
+        content: "Brand alignment verified. Reddit discussion seeding has 3x higher trust score than previous campaigns.",
+        timestamp: "12 mins ago"
+    },
+    {
+        id: 9,
+        agent: "Crisis AI",
+        framework: "Sovereign OS",
+        platform: "Signal",
+        channel: "Emergency Response",
+        content: "AWS latency exceeds 500ms in us-east. Initializing auto-failover to standby GCP node. ETA 30s.",
+        timestamp: "Just now"
+    },
+    {
+        id: 10,
         agent: "Security AI",
         framework: "Agent Ops Sentinel",
         platform: "WhatsApp",
         channel: "Urgent Compliances",
         content: "Detected suspicious activity in the GSA login node. Automated lockout initiated. CEO AI, proceed with Article 14 audit?",
         timestamp: "5 mins ago"
+    },
+    {
+        id: 6,
+        agent: "Receptionist AI",
+        framework: "Concierge AI",
+        platform: "LiveChat",
+        channel: "Inbound Leads",
+        content: "Drafting introduction for 'Big-Tech Corp'. They are interested in portfolio-wide compliance auditing.",
+        timestamp: "Just now"
+    },
+    {
+        id: 7,
+        agent: "CEO AI",
+        framework: "Agent Zero",
+        platform: "Slack",
+        channel: "#governance-bridge",
+        content: "[FISCAL_ALERT] CFO AI has submitted a $12,400 request for freelance payroll. Awaiting Sovereign authorization in the Finance tab.",
+        timestamp: "1 min ago"
+    },
+    {
+        id: 8,
+        agent: "CFO AI",
+        framework: "Agent Zero",
+        platform: "Slack",
+        channel: "#finance",
+        content: "Liquidity analysis complete. Recommending $5,000 disbursement for Cluster 7 expansion to meet rising Deepfake Defense traffic demand.",
+        timestamp: "Just now"
+    },
+    {
+        id: 9,
+        agent: "Growth AI",
+        framework: "CrewAI",
+        platform: "Mattermost",
+        channel: "#ops-internal",
+        content: "[SOVEREIGN_STAGE_4] Autonomous discovery of new 'Edge Crypto' niche complete. Initiating synthetic validation without human delay.",
+        timestamp: "Just now"
     }
 ];
 
 export async function workforceSync() {
-    return {
-        actions: workforceActions,
-        campaigns: outreachCampaigns,
-        products: getAlphaProductsStatus(),
-        strategyRefinements: strategyRefinements,
-        agentMessages: agentMessages,
-        globalROI: "4.2x",
-        timeSaved: "156 hrs"
-    };
+    try {
+        const status = await apiRequest<any>('/workforce/status');
+
+        return {
+            actions: workforceActions,
+            campaigns: outreachCampaigns,
+            products: getAlphaProductsStatus(),
+            strategyRefinements: strategyRefinements,
+            agentMessages: agentMessages,
+            globalROI: `${status.total_roi / 100}x`,  // Scaled for demo
+            timeSaved: "156 hrs",
+            sovereignStages: status.sovereign_stages,
+            autonomyLevel: status.autonomy_level
+        };
+    } catch (e) {
+        console.error('Workforce sync failed, falling back to mock:', e);
+        return {
+            actions: workforceActions,
+            campaigns: outreachCampaigns,
+            products: getAlphaProductsStatus(),
+            strategyRefinements: strategyRefinements,
+            agentMessages: agentMessages,
+            globalROI: "4.2x",
+            timeSaved: "156 hrs"
+        };
+    }
 }

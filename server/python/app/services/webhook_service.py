@@ -9,8 +9,11 @@ from enum import Enum
 import httpx
 import logging
 import asyncio
+import uuid
 
-logger = logging.getLogger(__name__)
+from sqlmodel import Session, select
+from app.core.database import engine
+from app.core.models import WebhookConfig, WebhookExecution
 
 
 class WebhookEventType(str, Enum):
@@ -34,38 +37,7 @@ class WebhookEventType(str, Enum):
     TECHNICAL_FOLDER_EXPIRED = "technical_folder.expired"
 
 
-class WebhookSubscription:
-    """Represents a webhook subscription."""
-    
-    def __init__(
-        self,
-        subscription_id: str,
-        url: str,
-        events: List[WebhookEventType],
-        secret: Optional[str] = None,
-        enabled: bool = True,
-    ):
-        self.subscription_id = subscription_id
-        self.url = url
-        self.events = events
-        self.secret = secret
-        self.enabled = enabled
-        self.created_at = datetime.utcnow()
-        self.last_triggered = None
-        self.trigger_count = 0
-        self.failure_count = 0
-    
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "subscription_id": self.subscription_id,
-            "url": self.url,
-            "events": [e.value for e in self.events],
-            "enabled": self.enabled,
-            "created_at": self.created_at.isoformat(),
-            "last_triggered": self.last_triggered.isoformat() if self.last_triggered else None,
-            "trigger_count": self.trigger_count,
-            "failure_count": self.failure_count,
-        }
+# WebhookSubscription and WebhookPayload classes are now replaced by WebhookConfig/Execution in app.core.models
 
 
 class WebhookPayload:
@@ -96,70 +68,108 @@ class WebhookService:
     """
     
     def __init__(self):
-        self.subscriptions: Dict[str, WebhookSubscription] = {}
-        self.event_history: List[Dict[str, Any]] = []
+        # Persistence is now handled via engine and session
         self._processing = False
+        self._monitoring_task: Optional[asyncio.Task] = None
+    
+    def start_monitoring(self):
+        """Start the background incident monitoring task."""
+        if not self._monitoring_task:
+            self._monitoring_task = asyncio.create_task(self._monitor_incidents())
+            logger.info("Started Article 71 Incident Monitoring")
+
+    async def _monitor_incidents(self):
+        """Background task to simulate detection of AI incidents."""
+        import random
+        while True:
+            await asyncio.sleep(300)  # Check every 5 minutes
+            
+            # 5% chance of detecting a mock incident for Article 71 demo
+            if random.random() < 0.05:
+                incident_id = f"inc-{random.randint(1000, 9999)}"
+                logger.warning(f"AUTO-DETECTED INCIDENT: {incident_id}")
+                await self.notify_incident(
+                    incident_id=incident_id,
+                    severity="serious",
+                    description="Detected potential bypass of ethical filter in Agent Sentinel-4",
+                    affected_system="Agent Ops Sentinel"
+                )
     
     def subscribe(
         self,
-        subscription_id: str,
+        name: str,
         url: str,
         events: List[str],
         secret: Optional[str] = None,
-    ) -> WebhookSubscription:
+    ) -> WebhookConfig:
         """Create a new webhook subscription."""
-        # Convert string events to enums
-        event_enums = []
-        for e in events:
-            try:
-                event_enums.append(WebhookEventType(e))
-            except ValueError:
-                logger.warning(f"Unknown event type: {e}")
-        
-        subscription = WebhookSubscription(
-            subscription_id=subscription_id,
-            url=url,
-            events=event_enums,
-            secret=secret,
-        )
-        
-        self.subscriptions[subscription_id] = subscription
-        logger.info(f"Created webhook subscription: {subscription_id} for {len(event_enums)} events")
-        
-        return subscription
+        with Session(engine) as session:
+            subscription = WebhookConfig(
+                name=name,
+                url=url,
+                events=events,
+                secret=secret,
+            )
+            session.add(subscription)
+            session.commit()
+            session.refresh(subscription)
+            logger.info(f"Created persistent webhook subscription: {subscription.id} ({name})")
+            return subscription
     
     def unsubscribe(self, subscription_id: str) -> bool:
         """Remove a webhook subscription."""
-        if subscription_id in self.subscriptions:
-            del self.subscriptions[subscription_id]
-            logger.info(f"Removed webhook subscription: {subscription_id}")
-            return True
-        return False
+        with Session(engine) as session:
+            subscription = session.get(WebhookConfig, subscription_id)
+            if subscription:
+                session.delete(subscription)
+                session.commit()
+                logger.info(f"Removed persistent webhook subscription: {subscription_id}")
+                return True
+            return False
     
-    def list_subscriptions(self) -> List[Dict[str, Any]]:
+    def update_subscription(self, subscription_id: str, data: Dict[str, Any]) -> Optional[WebhookConfig]:
+        """Update an existing webhook subscription."""
+        with Session(engine) as session:
+            subscription = session.get(WebhookConfig, subscription_id)
+            if not subscription:
+                return None
+            
+            for key, value in data.items():
+                if hasattr(subscription, key):
+                    setattr(subscription, key, value)
+            
+            session.add(subscription)
+            session.commit()
+            session.refresh(subscription)
+            return subscription
+
+    def list_subscriptions(self) -> List[WebhookConfig]:
         """List all webhook subscriptions."""
-        return [s.to_dict() for s in self.subscriptions.values()]
+        with Session(engine) as session:
+            statement = select(WebhookConfig)
+            return session.exec(statement).all()
     
     async def trigger_event(
         self,
-        event_type: WebhookEventType,
+        event_type: str,
         data: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Trigger a webhook event to all matching subscribers."""
         
-        # Create payload
-        payload = WebhookEventType(event_type, data)
-        
-        # Find matching subscriptions
-        matching_subs = [
-            sub for sub in self.subscriptions.values()
-            if sub.enabled and event_type in sub.events
-        ]
+        with Session(engine) as session:
+            statement = select(WebhookConfig).where(WebhookConfig.enabled == True)
+            all_subs = session.exec(statement).all()
+            
+            # Find matching subscriptions
+            matching_subs = [
+                sub for sub in all_subs
+                if event_type in sub.events
+            ]
         
         if not matching_subs:
-            logger.info(f"No subscribers for event: {event_type.value}")
+            logger.info(f"No subscribers for event: {event_type}")
             return {
-                "event": event_type.value,
+                "event": event_type,
                 "delivered": 0,
                 "failed": 0,
             }
@@ -170,32 +180,30 @@ class WebhookService:
         failed_count = 0
         
         for sub in matching_subs:
-            result = await self._deliver_webhook(sub, payload)
+            result = await self._deliver_webhook(sub, event_type, data)
             results.append(result)
             
             if result["status"] == "success":
                 success_count += 1
-                sub.trigger_count += 1
-                sub.last_triggered = datetime.utcnow()
+                # Update sub stats (done in separate session or updated here)
+                with Session(engine) as session:
+                    db_sub = session.get(WebhookConfig, sub.id)
+                    if db_sub:
+                        db_sub.trigger_count += 1
+                        db_sub.last_triggered = datetime.utcnow()
+                        session.add(db_sub)
+                        session.commit()
             else:
                 failed_count += 1
-                sub.failure_count += 1
-        
-        # Record in history
-        self.event_history.append({
-            "event_type": event_type.value,
-            "timestamp": datetime.utcnow().isoformat(),
-            "delivered": success_count,
-            "failed": failed_count,
-            "subscribers": [s.subscription_id for s in matching_subs],
-        })
-        
-        # Keep only last 100 events
-        if len(self.event_history) > 100:
-            self.event_history = self.event_history[-100:]
+                with Session(engine) as session:
+                    db_sub = session.get(WebhookConfig, sub.id)
+                    if db_sub:
+                        db_sub.failure_count += 1
+                        session.add(db_sub)
+                        session.commit()
         
         return {
-            "event": event_type.value,
+            "event": event_type,
             "delivered": success_count,
             "failed": failed_count,
             "results": results,
@@ -203,24 +211,39 @@ class WebhookService:
     
     async def _deliver_webhook(
         self,
-        subscription: WebhookSubscription,
-        payload: WebhookPayload,
+        subscription: WebhookConfig,
+        event_type: str,
+        data: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Deliver a webhook to a specific subscription."""
+        
+        start_time = time.time() if 'time' not in globals() else 0 # Simple timing
+        import time as pytime
+        start_time = pytime.time()
+
+        payload = {
+            "event": event_type,
+            "timestamp": datetime.utcnow().isoformat(),
+            "data": data,
+        }
+        
+        status = "error"
+        status_code = None
+        error_msg = None
         
         try:
             async with httpx.AsyncClient() as client:
                 headers = {
                     "Content-Type": "application/json",
-                    "X-Webhook-Event": payload.event_type.value,
-                    "X-Webhook-Timestamp": payload.timestamp.isoformat(),
+                    "X-Webhook-Event": event_type,
+                    "X-Webhook-Timestamp": payload["timestamp"],
                 }
                 
                 # Add signature if secret is configured
                 if subscription.secret:
                     import hmac
                     import hashlib
-                    payload_str = str(payload.to_dict())
+                    payload_str = json.dumps(payload)
                     signature = hmac.new(
                         subscription.secret.encode(),
                         payload_str.encode(),
@@ -230,33 +253,44 @@ class WebhookService:
                 
                 response = await client.post(
                     subscription.url,
-                    json=payload.to_dict(),
+                    json=payload,
                     headers=headers,
                     timeout=10.0,
                 )
                 
+                status_code = response.status_code
                 response.raise_for_status()
-                
-                return {
-                    "subscription_id": subscription.subscription_id,
-                    "status": "success",
-                    "status_code": response.status_code,
-                }
+                status = "success"
                 
         except httpx.TimeoutException:
-            logger.warning(f"Webhook delivery timeout: {subscription.subscription_id}")
-            return {
-                "subscription_id": subscription.subscription_id,
-                "status": "timeout",
-                "error": "Request timeout",
-            }
+            status = "timeout"
+            error_msg = "Request timeout"
         except Exception as e:
-            logger.error(f"Webhook delivery failed: {subscription.subscription_id}: {e}")
-            return {
-                "subscription_id": subscription.subscription_id,
-                "status": "error",
-                "error": str(e),
-            }
+            status = "error"
+            error_msg = str(e)
+        
+        duration = int((pytime.time() - start_time) * 1000)
+        
+        # Log execution to database
+        with Session(engine) as session:
+            execution = WebhookExecution(
+                webhook_id=subscription.id,
+                event_type=event_type,
+                payload=data,
+                status=status,
+                status_code=status_code,
+                error_message=error_msg,
+                duration_ms=duration
+            )
+            session.add(execution)
+            session.commit()
+            
+        return {
+            "subscription_id": subscription.id,
+            "status": status,
+            "status_code": status_code,
+            "error": error_msg,
+        }
     
     # Convenience methods for common compliance events
     
@@ -338,16 +372,20 @@ class WebhookService:
     
     def get_event_history(
         self,
+        subscription_id: Optional[str] = None,
         event_type: Optional[str] = None,
         limit: int = 50,
-    ) -> List[Dict[str, Any]]:
-        """Get webhook event delivery history."""
-        history = self.event_history
-        
-        if event_type:
-            history = [h for h in history if h["event_type"] == event_type]
-        
-        return history[-limit:]
+    ) -> List[WebhookExecution]:
+        """Get webhook event delivery history from database."""
+        with Session(engine) as session:
+            statement = select(WebhookExecution)
+            if subscription_id:
+                statement = statement.where(WebhookExecution.webhook_id == subscription_id)
+            if event_type:
+                statement = statement.where(WebhookExecution.event_type == event_type)
+            
+            statement = statement.order_by(WebhookExecution.timestamp.desc()).limit(limit)
+            return session.exec(statement).all()
 
 
 # Singleton instance

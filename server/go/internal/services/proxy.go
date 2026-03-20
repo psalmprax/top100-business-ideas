@@ -86,7 +86,19 @@ func (p *ProxyService) GetAgentMetrics() ([]byte, error) {
 }
 
 func (p *ProxyService) GetAgentHistory(id string) ([]byte, error) {
-	return p.Forward("GET", fmt.Sprintf("/metrics/agents/%s/history", id), nil)
+	return p.Forward("GET", fmt.Sprintf("/agents/%s/history", id), nil)
+}
+
+func (p *ProxyService) StopAgent(id string) ([]byte, error) {
+	return p.Forward("POST", fmt.Sprintf("/agents/%s/stop", id), nil)
+}
+
+func (p *ProxyService) RestartAgent(id string) ([]byte, error) {
+	return p.Forward("POST", fmt.Sprintf("/agents/%s/restart", id), nil)
+}
+
+func (p *ProxyService) GetAgentLogs(id string) ([]byte, error) {
+	return p.Forward("GET", fmt.Sprintf("/agents/%s/logs", id), nil)
 }
 
 // Compliance
@@ -129,4 +141,25 @@ func (p *ProxyService) CreateDeepfakeChallenge(userID string) ([]byte, error) {
 
 func (p *ProxyService) VerifyDeepfakeSignature(challengeID, signature, hardwareID string) ([]byte, error) {
 	return p.Forward("POST", fmt.Sprintf("/deepfake/verify?challenge_id=%s&signature=%s&hardware_id=%s", challengeID, signature, hardwareID), nil)
+}
+
+// Extended Compliance (AI Act Models)
+func (p *ProxyService) ListComplianceModels() ([]byte, error) {
+	return p.Forward("GET", "/compliance/models", nil)
+}
+
+func (p *ProxyService) RegisterComplianceModel(data interface{}) ([]byte, error) {
+	return p.Forward("POST", "/compliance/models", data)
+}
+
+func (p *ProxyService) UpdateComplianceGuardrails(id string, data interface{}) ([]byte, error) {
+	return p.Forward("PATCH", fmt.Sprintf("/compliance/models/%s/guardrails", id), data)
+}
+
+func (p *ProxyService) GetBiasReports(modelID string) ([]byte, error) {
+	return p.Forward("GET", fmt.Sprintf("/compliance/bias-reports/%s", modelID), nil)
+}
+
+func (p *ProxyService) TriggerBiasScan(data interface{}) ([]byte, error) {
+	return p.Forward("POST", "/compliance/bias-scan", data)
 }

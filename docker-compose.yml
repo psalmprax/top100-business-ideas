@@ -7,7 +7,7 @@ services:
       context: ./server/go
       dockerfile: Dockerfile
     ports:
-      - "8080:8080"
+      - "7001:8080"
     environment:
       - HOST=0.0.0.0
       - PORT=8080
@@ -28,6 +28,7 @@ services:
       - redis
     networks:
       - app-network
+      - proxied
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
       interval: 30s
@@ -40,7 +41,7 @@ services:
       context: ./server/python
       dockerfile: Dockerfile
     ports:
-      - "8000:8000"
+      - "7002:8000"
     environment:
       - HOST=0.0.0.0
       - PORT=8000
@@ -56,6 +57,7 @@ services:
       - ./models:/models
     networks:
       - app-network
+      - proxied
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
       interval: 30s
@@ -68,15 +70,16 @@ services:
       context: .
       dockerfile: client/Dockerfile
     ports:
-      - "3000:3000"
+      - "7000:3000"
     environment:
-      - VITE_API_URL=http://localhost:8080
-      - VITE_WS_URL=ws://localhost:8080
+      - VITE_API_URL=http://localhost:7001
+      - VITE_WS_URL=ws://localhost:7001
       - VITE_STRIPE_PUBLIC_KEY=${VITE_STRIPE_PUBLIC_KEY:-pk_test_placeholder}
     depends_on:
       - api-gateway
     networks:
       - app-network
+      - proxied
 
   # PostgreSQL Database
   db:
@@ -87,6 +90,8 @@ services:
       - POSTGRES_DB=alphaai
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "7003:5432"
     networks:
       - app-network
     healthcheck:
@@ -99,7 +104,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "7004:6379"
     networks:
       - app-network
     healthcheck:
@@ -108,8 +113,41 @@ services:
       timeout: 5s
       retries: 5
 
+  # Nginx Proxy Manager (NPM) - Reverse Proxy with GUI
+  nginx-proxy-manager:
+    image: jc21/nginx-proxy-manager:latest
+    restart: unless-stopped
+    ports:
+      - "80:80" # HTTP
+      - "443:443" # HTTPS
+      - "81:81" # Admin UI
+    volumes:
+      - ./npm/data:/data
+      - ./npm/letsencrypt:/etc/letsencrypt
+    networks:
+      - proxied
+    depends_on:
+      - npm-db
+
+  # NPM Database (MariaDB)
+  npm-db:
+    image: mariadb:latest
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: npm_root_password
+      MYSQL_DATABASE: npm
+      MYSQL_USER: npm
+      MYSQL_PASSWORD: npm_password
+    volumes:
+      - ./npm/mysql:/var/lib/mysql
+    networks:
+      - proxied
+
 networks:
   app-network:
+    driver: bridge
+  proxied:
+    name: proxied
     driver: bridge
 
 volumes:

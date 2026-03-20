@@ -2,95 +2,86 @@ package handlers
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/top100-business-ideas/api/internal/models"
+	"github.com/top100-business-ideas/api/internal/services"
 )
 
 // WebhookHandler handles webhook CRUD operations for Agent Ops
-type WebhookHandler struct{}
+type WebhookHandler struct {
+	proxy *services.ProxyService
+}
 
-func NewWebhookHandler() *WebhookHandler {
-	return &WebhookHandler{}
+func NewWebhookHandler(proxy *services.ProxyService) *WebhookHandler {
+	return &WebhookHandler{proxy: proxy}
 }
 
 // ListWebhooks returns all webhooks
 // GET /api/v1/webhooks
 func (h *WebhookHandler) ListWebhooks(c *gin.Context) {
-	webhooks := []models.WebhookConfig{
-		{
-			ID:        "wh-001",
-			Name:      "Slack Budget Alert",
-			URL:       "https://hooks.slack.com/services/xxx",
-			EventType: "budget_alert",
-			Secret:    "whsec_xxx",
-			IsActive:  true,
-			CreatedAt: time.Now().Add(-24 * time.Hour),
-			UpdatedAt: time.Now(),
-		},
-		{
-			ID:        "wh-002",
-			Name:      "PagerDuty Incident",
-			URL:       "https://events.pagerduty.com/v2/enqueue",
-			EventType: "agent_failure",
-			Secret:    "xxx",
-			IsActive:  true,
-			CreatedAt: time.Now().Add(-48 * time.Hour),
-			UpdatedAt: time.Now().Add(-12 * time.Hour),
-		},
+	resp, err := h.proxy.Forward("GET", "/webhooks", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch webhooks", Details: err.Error()})
+		return
 	}
-	c.JSON(http.StatusOK, webhooks)
+	c.Data(http.StatusOK, "application/json", resp)
 }
 
 // GetWebhook returns a single webhook by ID
 // GET /api/v1/webhooks/:id
 func (h *WebhookHandler) GetWebhook(c *gin.Context) {
 	id := c.Param("id")
-	webhook := models.WebhookConfig{
-		ID:        id,
-		Name:      "Test Webhook",
-		URL:       "https://example.com/webhook",
-		EventType: "budget_alert",
-		Secret:    "whsec_xxx",
-		IsActive:  true,
-		CreatedAt: time.Now().Add(-24 * time.Hour),
-		UpdatedAt: time.Now(),
+	resp, err := h.proxy.Forward("GET", "/webhooks/"+id, nil)
+	if err != nil {
+		c.JSON(http.StatusNotFound, models.ErrorResponse{Error: "Webhook not found", Details: err.Error()})
+		return
 	}
-	c.JSON(http.StatusOK, webhook)
+	c.Data(http.StatusOK, "application/json", resp)
 }
 
 // CreateWebhook creates a new webhook
 // POST /api/v1/webhooks
 func (h *WebhookHandler) CreateWebhook(c *gin.Context) {
-	var req models.WebhookConfig
+	var req interface{}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request", Details: err.Error()})
 		return
 	}
-	req.ID = "wh-" + generateID()
-	req.CreatedAt = time.Now()
-	req.UpdatedAt = time.Now()
-	c.JSON(http.StatusCreated, req)
+	resp, err := h.proxy.Forward("POST", "/webhooks", req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to create webhook", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusCreated, "application/json", resp)
 }
 
 // UpdateWebhook updates an existing webhook
 // PUT /api/v1/webhooks/:id
 func (h *WebhookHandler) UpdateWebhook(c *gin.Context) {
 	id := c.Param("id")
-	var req models.WebhookConfig
+	var req interface{}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request", Details: err.Error()})
 		return
 	}
-	req.ID = id
-	req.UpdatedAt = time.Now()
-	c.JSON(http.StatusOK, req)
+	resp, err := h.proxy.Forward("PUT", "/webhooks/"+id, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to update webhook", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", resp)
 }
 
 // DeleteWebhook deletes a webhook
 // DELETE /api/v1/webhooks/:id
 func (h *WebhookHandler) DeleteWebhook(c *gin.Context) {
+	id := c.Param("id")
+	_, err := h.proxy.Forward("DELETE", "/webhooks/"+id, nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to delete webhook", Details: err.Error()})
+		return
+	}
 	c.JSON(http.StatusOK, models.SuccessResponse{Message: "Webhook deleted successfully"})
 }
 
@@ -98,151 +89,109 @@ func (h *WebhookHandler) DeleteWebhook(c *gin.Context) {
 // POST /api/v1/webhooks/:id/test
 func (h *WebhookHandler) TestWebhook(c *gin.Context) {
 	id := c.Param("id")
-	exec := models.WebhookExecution{
-		ID:         "exec-" + generateID(),
-		WebhookID:  id,
-		EventType:  "test",
-		Payload:    `{"test": true, "timestamp": "` + time.Now().Format(time.RFC3339) + `"}`,
-		Status:     "success",
-		Response:   `{"success": true}`,
-		HTTPStatus: 200,
-		Duration:   150,
-		Timestamp:  time.Now(),
+	resp, err := h.proxy.Forward("POST", "/webhooks/"+id+"/test", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to test webhook", Details: err.Error()})
+		return
 	}
-	c.JSON(http.StatusOK, exec)
+	c.Data(http.StatusOK, "application/json", resp)
 }
 
 // GetWebhookExecutions returns webhook execution history
 // GET /api/v1/webhooks/:id/executions
 func (h *WebhookHandler) GetWebhookExecutions(c *gin.Context) {
-	webhookID := c.Param("id")
-	executions := []models.WebhookExecution{
-		{
-			ID:         "exec-001",
-			WebhookID:  webhookID,
-			EventType:  "budget_alert",
-			Payload:    `{"agent_id": "agent-001", "budget_used": 95}`,
-			Status:     "success",
-			Response:   `{"ok": true}`,
-			HTTPStatus: 200,
-			Duration:   230,
-			Timestamp:  time.Now().Add(-1 * time.Hour),
-		},
-		{
-			ID:         "exec-002",
-			WebhookID:  webhookID,
-			EventType:  "budget_alert",
-			Payload:    `{"agent_id": "agent-002", "budget_used": 100}`,
-			Status:     "success",
-			Response:   `{"ok": true}`,
-			HTTPStatus: 200,
-			Duration:   180,
-			Timestamp:  time.Now().Add(-30 * time.Minute),
-		},
+	id := c.Param("id")
+	resp, err := h.proxy.Forward("GET", "/webhooks/"+id+"/executions", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch executions", Details: err.Error()})
+		return
 	}
-	c.JSON(http.StatusOK, executions)
+	c.Data(http.StatusOK, "application/json", resp)
 }
 
 // AlertHandler handles alert configuration
-type AlertHandler struct{}
+type AlertHandler struct {
+	proxy *services.ProxyService
+}
 
-func NewAlertHandler() *AlertHandler {
-	return &AlertHandler{}
+func NewAlertHandler(proxy *services.ProxyService) *AlertHandler {
+	return &AlertHandler{proxy: proxy}
 }
 
 // ListAlerts returns all alert configurations
 // GET /api/v1/alerts
 func (h *AlertHandler) ListAlerts(c *gin.Context) {
-	alerts := []models.AlertConfig{
-		{
-			ID:        "alert-001",
-			Name:      "High Budget Usage",
-			Type:      "budget",
-			Threshold: 80,
-			IsActive:  true,
-			Channels:  []string{"slack", "email"},
-			CreatedAt: time.Now().Add(-72 * time.Hour),
-			UpdatedAt: time.Now(),
-		},
-		{
-			ID:        "alert-002",
-			Name:      "Agent Failure",
-			Type:      "agent_failure",
-			Threshold: 1,
-			IsActive:  true,
-			Channels:  []string{"slack", "pagerduty"},
-			CreatedAt: time.Now().Add(-48 * time.Hour),
-			UpdatedAt: time.Now().Add(-24 * time.Hour),
-		},
-		{
-			ID:        "alert-003",
-			Name:      "API Rate Limit",
-			Type:      "rate_limit",
-			Threshold: 90,
-			IsActive:  false,
-			Channels:  []string{"email"},
-			CreatedAt: time.Now().Add(-24 * time.Hour),
-			UpdatedAt: time.Now(),
-		},
+	resp, err := h.proxy.Forward("GET", "/alerts", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch alerts", Details: err.Error()})
+		return
 	}
-	c.JSON(http.StatusOK, alerts)
+	c.Data(http.StatusOK, "application/json", resp)
 }
 
 // CreateAlert creates a new alert configuration
 // POST /api/v1/alerts
 func (h *AlertHandler) CreateAlert(c *gin.Context) {
-	var req models.AlertConfig
+	var req interface{}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request", Details: err.Error()})
 		return
 	}
-	req.ID = "alert-" + generateID()
-	req.CreatedAt = time.Now()
-	req.UpdatedAt = time.Now()
-	c.JSON(http.StatusCreated, req)
+	resp, err := h.proxy.Forward("POST", "/alerts", req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to create alert", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusCreated, "application/json", resp)
 }
 
 // UpdateAlert updates an alert configuration
 // PUT /api/v1/alerts/:id
 func (h *AlertHandler) UpdateAlert(c *gin.Context) {
 	id := c.Param("id")
-	var req models.AlertConfig
+	var req interface{}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request", Details: err.Error()})
 		return
 	}
-	req.ID = id
-	req.UpdatedAt = time.Now()
-	c.JSON(http.StatusOK, req)
+	resp, err := h.proxy.Forward("PUT", "/alerts/"+id, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to update alert", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", resp)
 }
 
 // DeleteAlert deletes an alert
 // DELETE /api/v1/alerts/:id
 func (h *AlertHandler) DeleteAlert(c *gin.Context) {
+	id := c.Param("id")
+	_, err := h.proxy.Forward("DELETE", "/alerts/"+id, nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to delete alert", Details: err.Error()})
+		return
+	}
 	c.JSON(http.StatusOK, models.SuccessResponse{Message: "Alert deleted successfully"})
 }
 
 // MultiCloudHandler handles multi-cloud operations
-type MultiCloudHandler struct{}
+type MultiCloudHandler struct {
+	proxy *services.ProxyService
+}
 
-func NewMultiCloudHandler() *MultiCloudHandler {
-	return &MultiCloudHandler{}
+func NewMultiCloudHandler(proxy *services.ProxyService) *MultiCloudHandler {
+	return &MultiCloudHandler{proxy: proxy}
 }
 
 // GetStatus returns multi-cloud provider status
 // GET /api/v1/multi-cloud/status
 func (h *MultiCloudHandler) GetStatus(c *gin.Context) {
-	status := models.MultiCloudStatus{
-		Primary: "openai",
-		Providers: map[string]models.ProviderStatus{
-			"openai":    {Name: "OpenAI", Status: "healthy", Latency: 45, LastCheck: time.Now()},
-			"anthropic": {Name: "Anthropic", Status: "healthy", Latency: 62, LastCheck: time.Now()},
-			"aws":       {Name: "AWS Bedrock", Status: "degraded", Latency: 120, LastCheck: time.Now()},
-			"azure":     {Name: "Azure OpenAI", Status: "healthy", Latency: 55, LastCheck: time.Now()},
-		},
-		LastUpdated: time.Now(),
+	resp, err := h.proxy.Forward("GET", "/multi-cloud/status", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch cloud status", Details: err.Error()})
+		return
 	}
-	c.JSON(http.StatusOK, status)
+	c.Data(http.StatusOK, "application/json", resp)
 }
 
 // InitiateFailover switches to a backup provider
@@ -256,77 +205,49 @@ func (h *MultiCloudHandler) InitiateFailover(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request", Details: err.Error()})
 		return
 	}
-	result := models.FailoverResult{
-		Success:      true,
-		FromProvider: "openai",
-		ToProvider:   req.TargetProvider,
-		Duration:     250,
-		Timestamp:    time.Now(),
+
+	resp, err := h.proxy.Forward("POST", "/multi-cloud/failover", req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to initiate failover", Details: err.Error()})
+		return
 	}
-	c.JSON(http.StatusOK, result)
+	c.Data(http.StatusOK, "application/json", resp)
 }
 
 // SelfHealingHandler handles self-healing operations
-type SelfHealingHandler struct{}
+type SelfHealingHandler struct {
+	proxy *services.ProxyService
+}
 
-func NewSelfHealingHandler() *SelfHealingHandler {
-	return &SelfHealingHandler{}
+func NewSelfHealingHandler(proxy *services.ProxyService) *SelfHealingHandler {
+	return &SelfHealingHandler{proxy: proxy}
 }
 
 // GetEvents returns self-healing event logs
 // GET /api/v1/self-healing/events
 func (h *SelfHealingHandler) GetEvents(c *gin.Context) {
-	events := []models.SelfHealingEvent{
-		{
-			ID:          "sh-001",
-			EventType:   "connection_recovery",
-			Description: "Auto-reconnected to OpenAI API after 401 error",
-			AgentID:     "agent-001",
-			ActionTaken: "Re-authenticated and retried request",
-			Status:      "resolved",
-			Timestamp:   time.Now().Add(-2 * time.Hour),
-		},
-		{
-			ID:          "sh-002",
-			EventType:   "schema_update",
-			Description: "Detected API schema change in第三方 service",
-			AgentID:     "agent-003",
-			ActionTaken: "Applied cached schema and notified admin",
-			Status:      "resolved",
-			Timestamp:   time.Now().Add(-5 * time.Hour),
-		},
-		{
-			ID:          "sh-003",
-			EventType:   "rate_limit_recovery",
-			Description: "Rate limit detected, backing off",
-			AgentID:     "agent-002",
-			ActionTaken: "Exponential backoff applied",
-			Status:      "resolved",
-			Timestamp:   time.Now().Add(-8 * time.Hour),
-		},
+	resp, err := h.proxy.Forward("GET", "/self-healing/events", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch self-healing events", Details: err.Error()})
+		return
 	}
-	c.JSON(http.StatusOK, events)
+	c.Data(http.StatusOK, "application/json", resp)
 }
 
 // TriggerRecovery manually triggers a recovery action
 // POST /api/v1/self-healing/recover
 func (h *SelfHealingHandler) TriggerRecovery(c *gin.Context) {
-	var req struct {
-		AgentID string `json:"agent_id"`
-		Action  string `json:"action"`
-	}
+	var req interface{}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request", Details: err.Error()})
 		return
 	}
-	result := models.RecoveryResult{
-		Success:   true,
-		AgentID:   req.AgentID,
-		Action:    req.Action,
-		Message:   "Recovery action completed successfully",
-		Timestamp: time.Now(),
+	resp, err := h.proxy.Forward("POST", "/self-healing/recover", req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to trigger recovery", Details: err.Error()})
+		return
 	}
-	c.JSON(http.StatusOK, result)
+	c.Data(http.StatusOK, "application/json", resp)
 }
 
 // generateID generates a simple ID

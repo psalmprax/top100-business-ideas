@@ -67,10 +67,10 @@ func main() {
 	mlHandler := handlers.NewMLHandler(cfg.PythonBackendURL)
 
 	// New handlers for gap closure
-	webhookHandler := handlers.NewWebhookHandler()
-	alertHandler := handlers.NewAlertHandler()
-	multiCloudHandler := handlers.NewMultiCloudHandler()
-	selfHealingHandler := handlers.NewSelfHealingHandler()
+	webhookHandler := handlers.NewWebhookHandler(proxyService)
+	alertHandler := handlers.NewAlertHandler(proxyService)
+	multiCloudHandler := handlers.NewMultiCloudHandler(proxyService)
+	selfHealingHandler := handlers.NewSelfHealingHandler(proxyService)
 	trainingHandler := handlers.NewTrainingHandler()
 	shadowAIHandler := handlers.NewShadowAIHandler()
 	wearableHandler := handlers.NewWearableHandler()
@@ -78,6 +78,7 @@ func main() {
 	travelKioskHandler := handlers.NewTravelKioskHandler()
 	edgeHandler := handlers.NewEdgeHandler()
 	vendorHandler := handlers.NewVendorHandler()
+	workforceHandler := handlers.NewWorkforceHandler(proxyService)
 
 	// Setup Gin router
 	if cfg.Environment == "production" {
@@ -158,6 +159,13 @@ func main() {
 				compliance.POST("/check", complianceHandler.RunCheck)
 				compliance.GET("/categories", complianceHandler.GetCategories)
 				compliance.GET("/reports/export", complianceHandler.ExportReport)
+
+				// Extended AI Model Compliance
+				compliance.GET("/models", complianceHandler.ListModels)
+				compliance.POST("/models", complianceHandler.RegisterModel)
+				compliance.PATCH("/models/:id/guardrails", complianceHandler.UpdateGuardrails)
+				compliance.GET("/bias-reports/:id", complianceHandler.GetBiasReports)
+				compliance.POST("/bias-scan", complianceHandler.TriggerBiasScan)
 			}
 
 			// Deepfake Defense
@@ -291,6 +299,14 @@ func main() {
 			{
 				travel.GET("/kiosks", travelKioskHandler.ListKiosks)
 				travel.POST("/kiosks/:id/verify", travelKioskHandler.VerifyTraveler)
+			}
+
+			// Workforce & Sovereign (Digital Workforce Gap)
+			workforce := protected.Group("/workforce")
+			{
+				workforce.GET("/status", workforceHandler.GetStatus)
+				workforce.POST("/sovereign/request", workforceHandler.RequestApproval)
+				workforce.POST("/sovereign/callback", workforceHandler.HandleCallback)
 			}
 		}
 	}

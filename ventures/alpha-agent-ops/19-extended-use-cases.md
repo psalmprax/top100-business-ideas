@@ -108,16 +108,28 @@
 
 ---
 
+### Use Case 19: On-Premise & Air-Gapped Deployment (Enterprise)
+**Scenario**: Defense contractors, banks, and government agencies require that no metadata ever leaves their internal networks, even for monitoring.
+**Solution**: Sentinel offers a "Sovereign Node" deployment. The entire Rust proxy, Redis cache, and Postgres audit log can be containerized and run on-premise. It supports air-gapped synchronization, where audit logs are manually exported via secure "data diodes," ensuring 100% data sovereignty for the most sensitive environments.
+
+### Use Case 20: Sector-Specific Compliance (HIPAA / SOX / FINRA)
+**Scenario**: Healthcare providers using agents to process patient data (PHI) or financial firms needing Sarbanes-Oxley (SOX) audit trails.
+**Solution**: Sentinel provides "Compliance Shards." You can toggle on the "HIPAA Module" to instantly enforce PII/PHI redaction policies and BAA-compliant logging. The "FINRA Module" activates non-repudiable WORM (Write Once, Read Many) storage for all agentic decisions, meeting strict financial record-keeping mandates.
+
+---
+
 ## Technical Coverage Status
 
 | Gap | Use Case Name | Status | Priority |
 |-----|---------------|--------|----------|
 | API | Public REST API | ✅ COVERED (UC11) | HIGH |
 | Webhooks | Custom event triggers | ✅ COVERED (UC12) | HIGH |
-| SLA | Enterprise uptime guarantees | ✅ COVERED (UC13) | HIGH |
+| On-Premise | Air-Gapped Deployment | ✅ COVERED (UC19) | HIGH |
+| Industry | HIPAA/SOX Modules | ✅ COVERED (UC20) | HIGH |
 | Multi-cloud | Azure/Anthropic support | ✅ COVERED (UC16) | HIGH |
 | ROI | Downtime-to-Dollar mapping| ✅ COVERED (UC15) | HIGH |
 | Self-Healing| Connection Recovery Wizard | ✅ COVERED (UC17) | MEDIUM |
 | Localization| Multi-Language Dashboard | ✅ COVERED (UC18) | MEDIUM |
 
-*Last updated: 2026-03-17 (Alpha Elite v1.4 - 100% Coverage)*
+*Last updated: 2026-03-19 (Alpha Elite v1.5 - Absolute Coverage)*
+

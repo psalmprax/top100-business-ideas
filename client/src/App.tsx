@@ -10,6 +10,10 @@ import AlphaAgentOpsPage from "./pages/AlphaAgentOps";
 import AlphaAIActCompliancePage from "./pages/AlphaAIActCompliance";
 import AlphaDeepfakeDefensePage from "./pages/AlphaDeepfakeDefense";
 import AlphaWorkforcePage from "./pages/AlphaWorkforce";
+import DenialDefensePage from "./pages/DenialDefense";
+import ActionableAIPage from "./pages/ActionableAI";
+import FreelancerWorkflowBotPage from "./pages/FreelancerWorkflowBot";
+import Home from "./pages/Home";
 import LoginPage from "./pages/Login";
 import BillingPage from "./pages/Billing";
 import SettingsPage from "./pages/Settings";
@@ -46,11 +50,15 @@ function Router() {
     <Switch>
       {/* Company Landing Page */}
       <Route path={"/"} component={AlphaAI} />
+      <Route path={"/market-intelligence"} component={Home} />
 
       {/* Product Pages */}
       <Route path={"/products/agent-ops"} component={AlphaAgentOpsPage} />
       <Route path={"/products/ai-compliance"} component={AlphaAIActCompliancePage} />
       <Route path={"/products/deepfake-defense"} component={AlphaDeepfakeDefensePage} />
+      <Route path={"/products/denial-defense"} component={DenialDefensePage} />
+      <Route path={"/products/actionable-ai"} component={ActionableAIPage} />
+      <Route path={"/products/workflow-bot"} component={FreelancerWorkflowBotPage} />
       
       {/* Gated Management Pages */}
       <ManagementRoute path="/products/workforce" component={AlphaWorkforcePage} />

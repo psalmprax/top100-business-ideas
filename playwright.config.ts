@@ -8,9 +8,10 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
     // Test directory
     testDir: './client/src/test',
+    testMatch: ['**/*.spec.ts'],
 
     // Output directory for test results
-    outputDir: './client/src/test-results',
+    outputDir: './client/src/test-results/runs',
 
     // Fully parallel execution
     fullyParallel: true,
@@ -42,7 +43,7 @@ export default defineConfig({
     // Shared settings for all projects
     use: {
         // Base URL - frontend runs on port 3000
-        baseURL: process.env.TEST_BASE_URL || 'http://localhost:3000',
+        baseURL: process.env.TEST_BASE_URL || 'http://localhost:7000',
 
         // Collect traces on failure
         trace: 'on-first-retry',

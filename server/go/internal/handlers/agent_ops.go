@@ -123,20 +123,16 @@ func (h *AgentOpsHandler) DeleteAgent(c *gin.Context) {
 func (h *AgentOpsHandler) GetAgentLogs(c *gin.Context) {
 	id := c.Param("id")
 
-	// TODO: Fetch logs from Python backend
-	logs := []models.AgentLog{
-		{
-			ID:      "log-1",
-			AgentID: id,
-			Level:   "info",
-			Message: "Agent started successfully",
-		},
-		{
-			ID:      "log-2",
-			AgentID: id,
-			Level:   "info",
-			Message: "Processing task queue",
-		},
+	response, err := h.proxyService.GetAgentLogs(id)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch logs", Details: err.Error()})
+		return
+	}
+
+	var logs []models.AgentLog
+	if err := json.Unmarshal(response, &logs); err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to parse response"})
+		return
 	}
 
 	c.JSON(http.StatusOK, logs)
@@ -145,14 +141,24 @@ func (h *AgentOpsHandler) GetAgentLogs(c *gin.Context) {
 func (h *AgentOpsHandler) StopAgent(c *gin.Context) {
 	id := c.Param("id")
 
-	// TODO: Call Python backend to stop agent
+	_, err := h.proxyService.StopAgent(id)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to stop agent", Details: err.Error()})
+		return
+	}
+
 	c.JSON(http.StatusOK, models.SuccessResponse{Message: fmt.Sprintf("Agent %s stopped", id)})
 }
 
 func (h *AgentOpsHandler) RestartAgent(c *gin.Context) {
 	id := c.Param("id")
 
-	// TODO: Call Python backend to restart agent
+	_, err := h.proxyService.RestartAgent(id)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to restart agent", Details: err.Error()})
+		return
+	}
+
 	c.JSON(http.StatusOK, models.SuccessResponse{Message: fmt.Sprintf("Agent %s restarted", id)})
 }
 

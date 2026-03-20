@@ -1,4 +1,4 @@
-from sqlmodel import SQLModel, Field, Column, JSON
+from sqlmodel import SQLModel, Field, Column, JSON, Relationship
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from enum import Enum
@@ -69,6 +69,46 @@ class AgentUpdate(SQLModel):
     config: Optional[Dict[str, Any]] = None
     status: Optional[AgentStatus] = None
     budget: Optional[float] = None
+
+
+# Connection & Integration Models
+class ConnectionType(str, Enum):
+    """System connection types"""
+    CI_CD = "ci_cd"
+    MODEL_REGISTRY = "model_registry"
+    DATA_STORE = "data_store"
+    MONITORING = "monitoring"
+    EU_DATABASE = "eu_database"
+    REGULATORY_PORTAL = "regulatory_portal"
+    VECTOR_DB = "vector_db"
+    COMPUTE_CLUSTER = "compute_cluster"
+    IDENTITY_IAM = "identity_iam"
+    HUMAN_FEEDBACK = "human_feedback"
+    LEGAL_REPOSITORY = "legal_repository"
+    CLOUD_INFRA = "cloud_infra"
+    AI_GATEWAY = "ai_gateway"
+    DATA_LAKEHOUSE = "data_lakehouse"
+
+
+class SystemConnection(SQLModel, table=True):
+    """System connection model for compliance automation"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    article_id: str  # e.g., "Article 5"
+    connection_type: ConnectionType
+    status: str = Field(default="connected")
+    config: Dict[str, Any] = Field(default={}, sa_column=Column(JSON))
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class ArticleScan(SQLModel, table=True):
+    """Results of a compliance scan"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    article_id: str
+    scan_type: str
+    status: str = Field(default="completed")
+    results: Dict[str, Any] = Field(default={}, sa_column=Column(JSON))
+    performed_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 # Compliance Models
@@ -224,3 +264,213 @@ class ErrorResponse(SQLModel):
     error: str
     code: Optional[str] = None
     details: Optional[Any] = None
+
+
+# --- NEW AGENT OPS PERSISTENT MODELS ---
+
+class WebhookConfig(SQLModel, table=True):
+    """Persistent Webhook Subscription"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    name: str
+    url: str
+    events: List[str] = Field(sa_column=Column(JSON))
+    secret: Optional[str] = None
+    enabled: bool = Field(default=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    last_triggered: Optional[datetime] = None
+    trigger_count: int = Field(default=0)
+    failure_count: int = Field(default=0)
+
+
+class WebhookExecution(SQLModel, table=True):
+    """Execution history for webhooks"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    webhook_id: str = Field(index=True)
+    event_type: str
+    payload: Dict[str, Any] = Field(sa_column=Column(JSON))
+    status: str  # success, error, timeout
+    status_code: Optional[int] = None
+    error_message: Optional[str] = None
+    duration_ms: int
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+
+class AlertConfig(SQLModel, table=True):
+    """Persistent AI Alert rules"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    name: str
+    alert_type: str  # budget, failure, rate_limit, bias
+    threshold: float
+    is_active: bool = Field(default=True)
+    channels: List[str] = Field(sa_column=Column(JSON))  # slack, email, pagerduty
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class SovereignStatus(str, Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    DENIED = "denied"
+
+
+class SovereignStage(str, Enum):
+    """Sovereign Matrix stages"""
+    FINANCE = "finance"
+    LEGAL = "legal"
+    CRISIS = "crisis"
+    RD = "rd"
+    ETHICS = "ethics"
+
+
+class SovereignRequest(SQLModel, table=True):
+    """Human-in-the-loop approval request"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    stage: str # finance, legal, crisis, etc.
+    action: str
+    reasoning: str
+    context: Optional[str] = None
+    status: SovereignStatus = Field(default=SovereignStatus.PENDING)
+    reviewer: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class MultiCloudStatus(SQLModel):
+    """Multi-cloud provider status"""
+    last_sync: datetime = Field(default_factory=datetime.utcnow)
+
+
+class SelfHealingEvent(SQLModel, table=True):
+    """Automated self-healing event log"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    agent_id: str
+    event_type: str
+    severity: str
+    description: str
+    action_taken: str
+    resolved: bool = Field(default=False)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class ArticleStatus(SQLModel, table=True):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    modelId: str = Field(foreign_key="aimodel.id")
+    article: str
+    title: str
+    status: str
+    
+    ai_model: Optional["AIModel"] = Relationship(back_populates="articles")
+
+
+class BiasReport(SQLModel, table=True):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    modelId: str = Field(foreign_key="aimodel.id")
+    biasCategory: str
+    disparateImpact: float
+    statisticalSignificance: float
+    status: str
+    details: str
+    
+    ai_model: Optional["AIModel"] = Relationship(back_populates="bias_reports")
+
+
+class AIModel(SQLModel, table=True):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    name: str
+    riskCategory: str
+    status: str = "pending"
+    complianceScore: float = 0.0
+    lastAudit: Optional[datetime] = None
+    nextAudit: Optional[datetime] = None
+    provider: Optional[str] = None
+    endpointUrl: Optional[str] = None
+    apiKey: Optional[str] = None
+    
+    # Ethical Guardrails Configuration
+    activeBiasMitigation: bool = Field(default=False)
+    toxicLanguageFilter: bool = Field(default=False)
+    promptPrivacyGuard: bool = Field(default=False)
+    
+    articles: List["ArticleStatus"] = Relationship(back_populates="ai_model", sa_relationship_kwargs={"lazy": "selectin", "cascade": "all, delete-orphan"})
+    bias_reports: List["BiasReport"] = Relationship(back_populates="ai_model", sa_relationship_kwargs={"lazy": "selectin", "cascade": "all, delete-orphan"})
+
+
+class TrainingModule(SQLModel):
+    id: Optional[str] = None
+    title: str
+    description: str
+    category: str  # ai-act, gdpr, security, ethics
+    duration_minutes: int
+    content: str  # Markdown content
+    quiz_questions: List[Dict[str, Any]] = Field(default=[], sa_column=Column(JSON))
+    created_at: Optional[datetime] = None
+
+
+class AgentAuditLog(SQLModel, table=True):
+    """Comprehensive audit trail for agent actions"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    agent_id: str = Field(index=True)
+    action: str
+    intent: str
+    outcome: str
+    reasoning: Optional[str] = None
+    risk_score: float = Field(default=0.0)
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    metadata_json: Dict[str, Any] = Field(default={}, sa_column=Column(JSON))
+
+
+# --- NEW DEEPFAKE TRAINING & MODEL PERSISTENCE ---
+
+class TrainingStatus(str, Enum):
+    """Status of a training job"""
+    QUEUED = "queued"
+    TRAINING = "training"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class TrainingJob(SQLModel, table=True):
+    """Persistent Training Run"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    dataset_name: str
+    dataset_file_path: str
+    status: TrainingStatus = Field(default=TrainingStatus.QUEUED)
+    progress: int = Field(default=0)
+    error_message: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    completed_at: Optional[datetime] = None
+
+
+
+class CustomModel(SQLModel, table=True):
+    """Persistent Custom Neural Model"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    name: str
+    base_architecture: str
+    dataset_id: Optional[str] = None
+    version: str = Field(default="1.0.0")
+    accuracy: float = Field(default=0.0)
+    status: str = Field(default="deployed")
+    last_trained: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class InteractionStatus(str, Enum):
+    """Status of a workforce agent interaction"""
+    PENDING = "pending"
+    APPROVED = "approved"
+    DISCARDED = "discarded"
+    REFINED = "refined"
+
+
+class WorkforceInteraction(SQLModel, table=True):
+    """Persistent storage for Workforce Agent interactions for learning"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    agent_role: str
+    task_description: str
+    output_content: str
+    user_feedback: InteractionStatus = Field(default=InteractionStatus.PENDING)
+    feedback_notes: Optional[str] = None
+    metadata_json: Dict[str, Any] = Field(default={}, sa_column=Column(JSON))
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)

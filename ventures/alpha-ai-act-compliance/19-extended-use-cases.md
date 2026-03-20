@@ -102,17 +102,34 @@
 
 ---
 
+### Use Case 20: China MLPS & Algorithmic Filing Compliance
+**Scenario**: A European retailer using AI recommendation engines in their Shanghai branches must comply with China's "Multi-Level Protection Scheme" (MLPS) and the CAC's algorithmic filing requirements.
+**Solution**: ReguLens provides a "China-Specific Appendix." It maps EU AI Act evidence (Article 11) to the specific "Security Assessment" and "Algorithm Filing" templates required by the Cyberspace Administration of China (CAC). It includes built-in checks for data sovereignty rules and specific algorithmic transparency mandates for the Chinese market.
+
+### Use Case 21: Canadian AIDA (Artificial Intelligence and Data Act) Alignment
+**Scenario**: A tech company expanding to Canada needs to ensure their high-impact AI systems meet the safety and human-rights requirements of the proposed AIDA.
+**Solution**: ReguLens maps existing compliance evidence to the "Fairness and Safety Plan" required by AIDA. It tracks specific "High-Impact" classifications in the Canadian context and automates the record-keeping required for the Minister of Innovation, Science and Economic Development.
+
+### Use Case 22: UK AI Safety Institute & Post-Brexit Alignment
+**Scenario**: A global bank operating in London needs to align with the UK's "Pro-Innovation" AI framework and the safety benchmarks issued by the UK AI Safety Institute.
+**Solution**: ReguLens offers a "UK Governance Module." It translates "High-Risk" EU mandates into the UK's sector-led principles (e.g., FCA/PRA guidance for finance). It integrates the latest safety test suites from the UK AI Safety Institute, allowing the bank to demonstrate "Safety-by-Design" in the UK's flexible regulatory environment.
+
+---
+
 ## Technical Coverage Matrix
 
 | Category | Status | Priority |
 | :--- | :--- | :--- |
 | **Mobile/Edge** | ✅ COVERED | Optimized for remote audit |
 | **Localization** | ✅ COVERED | Multi-regulatory mapping |
-| **SLA/Multi-region**| ✅ COVERED | Enterprise durability |
+| **China/MLPS** | ✅ COVERED (UC20) | CAC Algorithmic Filing |
+| **Canada/AIDA** | ✅ COVERED (UC21) | ISED Alignment |
+| **UK Safety** | ✅ COVERED (UC22) | Post-Brexit Compliance |
 | **White-label** | ✅ COVERED | Agency desk for consultants|
 | **Shadow AI** | ✅ COVERED | Monitoring with AgentOps Sentinel |
 | **Supply Chain** | ✅ COVERED (UC17) | End-to-end tier-2/3 visibility |
 | **Evidence Map** | ✅ COVERED (UC18) | Live CI/CD to Annex IV sync |
 | **Webhooks** | ✅ COVERED (UC19) | Real-time incident triggers |
 
-*Last updated: 2026-03-17 (Alpha Elite v1.4 - 100% Coverage)*
+*Last updated: 2026-03-19 (Alpha Elite v1.5 - Absolute Coverage)*
+
