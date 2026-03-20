@@ -6,6 +6,27 @@
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:7001';
 
+export interface LLMMetrics {
+  p95LatencyMs: number;
+  avgLatencyMs: number;
+  throughput: number; // tokens/sec
+  errorRate: number;
+  costPer1k: number;
+  uptime: number;
+}
+
+export interface LLMProviderConfig {
+  id: string;
+  name: string;
+  provider: "deepseek" | "google" | "openai" | "anthropic" | "meta" | "local";
+  model: string;
+  status: "active" | "degraded" | "down";
+  isPrimary: boolean;
+  failoverPriority: number;
+  apiKeySet: boolean;
+  metrics: LLMMetrics;
+}
+
 
 // Helper to get auth token
 function getAuthToken(): string | null {
@@ -437,6 +458,65 @@ function getMockResponse<T>(endpoint: string, method: string, body?: any): T {
     }
 
     // Agent Ops Cloud Health
+    if (endpoint.includes('/agent-ops/models/config') && method === 'GET') {
+        return [
+            {
+                id: 'm-1',
+                name: 'DeepSeek V3 (Primary)',
+                provider: 'deepseek',
+                model: 'deepseek-chat',
+                status: 'active',
+                isPrimary: true,
+                failoverPriority: 1,
+                apiKeySet: true,
+                metrics: {
+                    p95LatencyMs: 450,
+                    avgLatencyMs: 380,
+                    throughput: 85,
+                    errorRate: 0.01,
+                    costPer1k: 0.002,
+                    uptime: 99.95
+                }
+            },
+            {
+                id: 'm-2',
+                name: 'Gemini 1.5 Pro (Failover)',
+                provider: 'google',
+                model: 'gemini-1.5-pro',
+                status: 'active',
+                isPrimary: false,
+                failoverPriority: 2,
+                apiKeySet: true,
+                metrics: {
+                    p95LatencyMs: 620,
+                    avgLatencyMs: 510,
+                    throughput: 120,
+                    errorRate: 0.005,
+                    costPer1k: 0.0125,
+                    uptime: 99.99
+                }
+            },
+            {
+                id: 'm-3',
+                name: 'GPT-4o (Emergency)',
+                provider: 'openai',
+                model: 'gpt-4o',
+                status: 'degraded',
+                isPrimary: false,
+                failoverPriority: 3,
+                apiKeySet: false,
+                metrics: {
+                    p95LatencyMs: 1200,
+                    avgLatencyMs: 950,
+                    throughput: 60,
+                    errorRate: 0.08,
+                    costPer1k: 0.03,
+                    uptime: 98.5
+                }
+            }
+        ] as T;
+    }
+
     if (endpoint.includes('/agent-ops/cloud/health') && method === 'GET') {
         return {
           regions: [
@@ -1548,6 +1628,11 @@ export const extendedApi = {
         setGqlProxyConfig: (enabled: boolean) => apiRequest<any>('/api/v1/agent-ops/gateway/gql', {
             method: 'POST',
             body: JSON.stringify({ enabled }),
+        }),
+        listLLMConfigs: () => apiRequest<LLMProviderConfig[]>('/api/v1/agent-ops/models/config'),
+        updateLLMConfig: (config: Partial<LLMProviderConfig>) => apiRequest<any>('/api/v1/agent-ops/models/config', {
+            method: 'POST',
+            body: JSON.stringify(config),
         }),
     },
 

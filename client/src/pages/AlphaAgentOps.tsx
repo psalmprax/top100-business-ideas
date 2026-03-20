@@ -29,6 +29,7 @@ import {
   AlertCircle,
   AlertTriangle,
   ArrowDownRight,
+  ArrowRight,
   ArrowUpRight,
   BarChart3,
   Bell,
@@ -135,7 +136,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 interface DashboardAgent {
   id: string;
   name: string;
-  type: "langgraph" | "crewai" | "autogen" | "custom";
+  type: "langgraph" | "crewai" | "autogen" | "custom" | "openai" | "metagpt" | "pydanticai";
   status: "active" | "paused" | "error" | "stopped";
   environment?: string;
   provider?: string;
@@ -197,6 +198,27 @@ interface AlertConfig {
   channel: string;
   threshold: number; // percentage of budget
   enabled: boolean;
+}
+
+interface LLMMetrics {
+  p95LatencyMs: number;
+  avgLatencyMs: number;
+  throughput: number; // tokens/sec
+  errorRate: number;
+  costPer1k: number;
+  uptime: number;
+}
+
+interface LLMProviderConfig {
+  id: string;
+  name: string;
+  provider: "deepseek" | "google" | "openai" | "anthropic" | "meta" | "local";
+  model: string;
+  status: "active" | "degraded" | "down";
+  isPrimary: boolean;
+  failoverPriority: number;
+  apiKeySet: boolean;
+  metrics: LLMMetrics;
 }
 
 interface BudgetRule {
@@ -618,7 +640,7 @@ export default function AlphaAgentOps() {
     core: ["overview", "agents", "budget"],
     ops: ["infrastructure", "webhooks", "on-prem"],
     gov: ["audit", "alerts", "compliance", "sla", "sso"],
-    advanced: ["forecast", "roi", "localization", "selfheal", "venture"],
+    advanced: ["forecast", "roi", "localization", "selfheal", "venture", "models"],
   };
 
   const [agents, setAgents] = useState<DashboardAgent[]>([]);
@@ -637,6 +659,8 @@ export default function AlphaAgentOps() {
   const [webhooks, setWebhooks] = useState<WebhookConfig[]>([]);
   const [multiCloudStatus, setMultiCloudStatus] = useState<any>(null);
   const [selfHealingEvents, setSelfHealingEvents] = useState<SelfHealingEvent[]>([]);
+  const [llmConfigs, setLlmConfigs] = useState<LLMProviderConfig[]>([]);
+  const [showModelConfigDialog, setShowModelConfigDialog] = useState(false);
   const [complianceStatus, setComplianceStatus] = useState<{hipaa: any, sox: any}>({hipaa: null, sox: null});
   const [retentionDays, setRetentionDays] = useState(30);
 
@@ -671,6 +695,139 @@ export default function AlphaAgentOps() {
     threshold: 75,
   });
 
+  const renderModelPerformance = () => (
+    <div className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-3">
+        <MetricCard
+          title="Avg Model Latency"
+          value={`${(llmConfigs.reduce((acc, c) => acc + (c.metrics?.avgLatencyMs || 0), 0) / (llmConfigs.length || 1)).toFixed(0)}ms`}
+          icon={Zap}
+          color="bg-yellow-500/10 text-yellow-500"
+        />
+        <MetricCard
+          title="Global Throughput"
+          value={`${llmConfigs.reduce((acc, c) => acc + (c.metrics?.throughput || 0), 0)} t/s`}
+          icon={Activity}
+          color="bg-blue-500/10 text-blue-500"
+        />
+        <MetricCard
+          title="Failover Events"
+          value="2"
+          change={-50}
+          icon={RefreshCw}
+          color="bg-purple-500/10 text-purple-500"
+        />
+      </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <CardTitle>LLM Provider Intelligence</CardTitle>
+              <CardDescription>Performance metrics and failover routing across 20+ global regions</CardDescription>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => setShowModelConfigDialog(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Provider
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Model / Provider</TableHead>
+                <TableHead>p95 Latency</TableHead>
+                <TableHead>Throughput</TableHead>
+                <TableHead>Cost/1k</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Failover Priority</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {llmConfigs.map((config) => (
+                <TableRow key={config.id}>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{config.name}</span>
+                      <span className="text-xs text-muted-foreground uppercase">{config.provider} · {config.model}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${(config.metrics?.p95LatencyMs || 0) < 500 ? 'bg-green-500' : 'bg-yellow-500'}`} />
+                      {config.metrics?.p95LatencyMs || 0}ms
+                    </div>
+                  </TableCell>
+                  <TableCell>{config.metrics?.throughput || 0} t/s</TableCell>
+                  <TableCell>${(config.metrics?.costPer1k || 0).toFixed(4)}</TableCell>
+                  <TableCell>
+                    <Badge variant={config.status === 'active' ? 'secondary' : 'destructive'} className="text-[10px]">
+                      {config.status.toUpperCase()}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                       <span className="text-sm font-bold">#{config.failoverPriority}</span>
+                       {config.isPrimary && <Badge className="bg-blue-500/20 text-blue-500 hover:bg-blue-500/30 border-none text-[10px]">PRIMARY</Badge>}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <Settings className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive" title="Simulate Failover">
+                        <RefreshCw className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {llmConfigs.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    No LLM providers configured.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-4 md:grid-cols-2">
+         <Card className="border-blue-500/20 bg-blue-500/5">
+            <CardHeader>
+              <CardTitle className="text-sm flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-blue-500" />
+                Automatic Failover Chain
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-4">
+                <div className="flex-1 p-3 rounded border bg-card text-center text-xs">
+                  <span className="block font-bold truncate">DeepSeek V3</span>
+                  <span className="text-muted-foreground text-[10px]">Primary</span>
+                </div>
+                <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                <div className="flex-1 p-3 rounded border bg-card text-center text-xs">
+                  <span className="block font-bold truncate">Gemini 1.5 Pro</span>
+                  <span className="text-muted-foreground text-[10px]">Warm Spare</span>
+                </div>
+                <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                <div className="flex-1 p-3 rounded border bg-card text-center text-xs">
+                  <span className="block font-bold truncate">GPT-4o</span>
+                  <span className="text-muted-foreground text-[10px]">Emergency</span>
+                </div>
+              </div>
+            </CardContent>
+         </Card>
+      </div>
+    </div>
+  );
+
   // Fetch all real-world data from the Sentinel API
   const refreshData = async () => {
     setIsLoading(true);
@@ -682,6 +839,7 @@ export default function AlphaAgentOps() {
         webhookRes,
         cloudRes,
         healingRes,
+        llmRes,
       ] = await Promise.all([
         agentsApi.list().catch(() => mockAgents),
         extendedApi.agentOps.getAuditLogs().catch(() => mockAuditLog),
@@ -689,6 +847,7 @@ export default function AlphaAgentOps() {
         extendedApi.agentOps.listWebhooks().catch(() => []),
         extendedApi.agentOps.getCloudHealth().catch(() => null),
         extendedApi.sentinel.getHealingStatus().catch(() => ({ recent_recoveries: [] })),
+        extendedApi.agentOps.listLLMConfigs().catch(() => []),
       ]);
 
       setAgents(agentsRes as any);
@@ -704,6 +863,7 @@ export default function AlphaAgentOps() {
         timestamp: new Date(ev.timestamp)
       })));
       if (healingRes.nodes) setClusterNodes(healingRes.nodes);
+      setLlmConfigs(llmRes as any);
     } catch (error) {
       console.error("Critical Sentinel Sync Failure:", error);
       toast.error("Failed to sync with Sentinel Backend.");
@@ -1894,6 +2054,11 @@ export default function AlphaAgentOps() {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Model Performance Tab */}
+            <TabsContent value="models">
+              {renderModelPerformance()}
             </TabsContent>
 
             {/* Infrastructure Tab */}
