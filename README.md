@@ -22,9 +22,11 @@
 
 AlphaAI is an enterprise AI company providing production-ready AI solutions. Our platform offers three core products:
 
-- **AgentOps** - Autonomous AI workforce management
-- **AI Compliance Hub** - EU AI Act compliance automation  
+- **AgentOps** - Autonomous AI workforce management & Sentinel Guard
+- **AI Compliance Hub** - EU AI Act compliance automation & Risk Assessment
 - **Deepfake Defense** - AI-powered media authenticity detection
+- **Alpha Workforce** - Decentralized Autonomous Corporate Management
+- **DenialDefense AI** - Revenue cycle recovery & AI Claims Engine
 
 ## Architecture
 
@@ -142,6 +144,11 @@ AlphaAI is an enterprise AI company providing production-ready AI solutions. Our
 #### WebSocket
 - `ws://localhost:8081/ws` - Real-time updates
 
+### Persistence & Session Continuity
+The Alpha suite features a **namespaced persistence layer** using `localStorage`. This ensures that session-level configurations (e.g., active SLA tiers, agent rosters, fiscal approvals) are preserved across page reloads without requiring immediate backend schema migrations.
+- **Utility**: `client/src/lib/storage.ts`
+- **Prefix**: `alpha_sentinel_`
+
 ### Example Requests
 
 ```bash
@@ -167,11 +174,13 @@ curl -X POST http://localhost:8081/api/deepfake/analyze \
 │   ├── src/
 │   │   ├── pages/            # Page components
 │   │   │   ├── AlphaAI.tsx          # Company landing page
-│   │   │   ├── AlphaAgentOps.tsx    # AgentOps dashboard
+│   │   │   ├── AlphaAgentOps.tsx    # AgentOps dashboard (Sentinel)
 │   │   │   ├── AlphaAIActCompliance.tsx  # Compliance dashboard
-│   │   │   └── AlphaDeepfakeDefense.tsx  # Deepfake dashboard
+│   │   │   ├── AlphaDeepfakeDefense.tsx  # Deepfake dashboard
+│   │   │   ├── AlphaWorkforce.tsx   # Workforce Management
+│   │   │   └── DenialDefense.tsx    # AI Claims Engine
 │   │   ├── components/       # Reusable components
-│   │   ├── lib/              # Utilities
+│   │   ├── lib/              # Utilities (storage.ts, api.ts)
 │   │   └── contexts/         # React contexts
 │   └── index.html
 │
@@ -198,6 +207,7 @@ curl -X POST http://localhost:8081/api/deepfake/analyze \
 │   └── ARCHITECTURE.md
 │
 ├── docker-compose.yml       # Docker orchestration
+├── Jenkinsfile              # CI/CD Pipeline (Sentinel E2E)
 ├── playwright.config.ts     # E2E tests
 └── package.json            # Root package.json
 ```

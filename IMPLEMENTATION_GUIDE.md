@@ -3,9 +3,11 @@
 ## Overview
 
 This guide documents the complete implementation of the first 3 AlphaAI products:
-1. **Agent Ops** - AI-powered agent operations optimization
+1. **Agent Ops** - AI-powered agent operations optimization & Sentinel Guard
 2. **AI Compliance** - Regulatory compliance checking for AI systems
 3. **Deepfake Defense** - Detection and prevention of deepfake media
+4. **Alpha Workforce** - Autonomous corporate management
+5. **DenialDefense AI** - AI-powered revenue cycle & claims engine
 
 ---
 
@@ -26,6 +28,8 @@ top100-business-ideas/
 │   │   │   ├── AlphaAgentOps.tsx
 │   │   │   ├── AlphaAIActCompliance.tsx
 │   │   │   ├── AlphaDeepfakeDefense.tsx
+│   │   │   ├── AlphaWorkforce.tsx
+│   │   │   ├── DenialDefense.tsx
 │   │   │   ├── Login.tsx
 │   │   │   ├── Billing.tsx
 │   │   │   └── Settings.tsx
@@ -177,12 +181,25 @@ Models:
 
 ### Step 11: Testing
 
+**Sentinel Functional Tests**: `client/src/test/sentinel-functional.spec.ts`
+- Verifies persistence of SLA tiers and Alert rules.
+- Valides the AI Scrubber logic in DenialDefense.
+
 **E2E Tests**: `tests/e2e/alpha-products.spec.ts`
 - Landing page tests
 - Authentication tests
 - Billing flow tests
 - Product page tests
 - Responsive design tests
+
+### Step 12: Persistence Layer (localStorage)
+
+**File**: `client/src/lib/storage.ts`
+
+Features:
+- Namespaced storage (`alpha_sentinel_`) to prevent collisions.
+- Session continuity for Alpha products without backend migrations.
+- Automatic JSON serialization/deserialization.
 
 **Unit Tests**:
 - `server/go/internal/services/logger_test.go`
@@ -273,6 +290,16 @@ cd server/python && python -m uvicorn app.main:app --reload
 - Audio deepfake detection
 - Frame-by-frame analysis
 - Biometric verification
+
+### Alpha Workforce
+- Autonomous Agent Roster Management (Hiring/Firing)
+- Fiscal Governance & AI CFO Approval Workflows
+- Decentralized Strategy Refinement
+
+### DenialDefense AI
+- AI Claims Scrubbing (CCI Edit Detection)
+- Denial Prediction & Risk Profiling
+- Autonomous Appeal Generation
 
 ---
 
