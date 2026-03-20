@@ -233,9 +233,11 @@ cd server/python && python -m uvicorn app.main:app --reload
 ```
 
 ### Ports
-- Frontend: http://localhost:3000
-- Go API: http://localhost:8081
-- Python ML: http://localhost:8000
+| Service | URL | Stack |
+|---------|-----|-------|
+| Frontend | http://localhost:7000 | Vite + React + Lucide |
+| API Gateway | http://localhost:7001 | Go (Gin) |
+| AI Backend | http://localhost:7002 | Python (FastAPI) |
 - PostgreSQL: localhost:5432
 - Redis: localhost:6379
 
@@ -244,22 +246,22 @@ cd server/python && python -m uvicorn app.main:app --reload
 ## API Endpoints
 
 ### Authentication
-- `POST /api/auth/login` - User login
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/logout` - User logout
-- `POST /api/auth/refresh` - Refresh token
+- `POST /api/v1/auth/login` - User login
+- `POST /api/v1/auth/register` - User registration
+- `POST /api/v1/auth/logout` - User logout
+- `POST /api/v1/auth/refresh` - Refresh token
 
 ### Products
-- `GET /api/products` - List products
-- `GET /api/products/:id` - Get product details
-- `POST /api/products/:id/validate` - Validate product
+- `GET /api/v1/products` - List products
+- `GET /api/v1/products/:id` - Get product details
+- `POST /api/v1/products/:id/validate` - Validate product
 
 ### Billing
-- `GET /api/billing/subscription` - Get subscription
-- `POST /api/billing/checkout` - Create checkout session
-- `POST /api/billing/webhook` - Stripe webhook
+- `GET /api/v1/billing/subscription` - Get subscription
+- `POST /api/v1/billing/checkout` - Create checkout session
+- `POST /api/v1/billing/webhook` - Stripe webhook
 
-### ML Inference
+### ML Inference (Direct Gateway Proxy)
 - `POST /ml/infer` - Run inference
 - `POST /ml/batch` - Batch inference
 - `GET /ml/models` - List models

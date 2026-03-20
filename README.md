@@ -5,15 +5,15 @@
 </p>
 
 <p align="center">
-  <a href="https://localhost:3000">
-    <img src="https://img.shields.io/badge/Frontend-Live-brightgreen" alt="Frontend Status" />
-  </a>
-  <a href="https://localhost:8081">
-    <img src="https://img.shields.io/badge/API Gateway-Live-brightgreen" alt="API Status" />
-  </a>
-  <a href="https://localhost:8000">
-    <img src="https://img.shields.io/badge/ML Backend-Live-brightgreen" alt="ML Status" />
-  </a>
+-   <a href="http://localhost:7000">
+-     <img src="https://img.shields.io/badge/Frontend-Live-brightgreen" alt="Frontend Status" />
+-   </a>
+-   <a href="http://localhost:7001">
+-     <img src="https://img.shields.io/badge/API Gateway-Live-brightgreen" alt="API Status" />
+-   </a>
+-   <a href="http://localhost:7002">
+-     <img src="https://img.shields.io/badge/ML Backend-Live-brightgreen" alt="ML Status" />
+-   </a>
   <img src="https://img.shields.io/badge/TypeScript-100%25-blue" alt="TypeScript" />
   <img src="https://img.shields.io/badge/License-MIT-green" alt="License" />
 </p>
@@ -52,8 +52,8 @@ AlphaAI is an enterprise AI company providing production-ready AI solutions. Our
 ┌─────────────────────────┐   ┌─────────────────────────────────┐
 │   Python Backend       │   │      External Services          │
 │   (FastAPI)          │   │                                 │
-│   http://localhost:8000│   │   - PostgreSQL (future)        │
-│  ┌─────────────────┐  │   │   - Redis (future)             │
+│   http://localhost:7002│   │   - PostgreSQL :7003           │
+│  ┌─────────────────┐  │   │   - Redis :7004                 │
 │  │ Deepfake        │  │   │   - Auth0 / JWT                │
 │  │ Detection       │  │   └─────────────────────────────────┘
 │  └─────────────────┐  │
@@ -108,41 +108,36 @@ AlphaAI is an enterprise AI company providing production-ready AI solutions. Our
 
 | Service | URL | Description |
 |---------|-----|-------------|
-| Frontend | http://localhost:3000 | React SPA |
-| API Gateway | http://localhost:8081 | Go REST API |
-| ML Backend | http://localhost:8000 | FastAPI /docs |
-| WebSocket | ws://localhost:8081/ws | Real-time |
+| Frontend | http://localhost:7000 | React SPA |
+| API Gateway | http://localhost:7001 | Go REST API |
+| ML Backend | http://localhost:7002 | FastAPI /docs |
+| WebSocket | ws://localhost:7001/api/v1/ws | Real-time |
 
 ## API Documentation
 
 ### REST Endpoints
 
 #### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login (returns JWT)
-- `GET /api/auth/me` - Get current user
+- `POST /api/v1/auth/register` - Register new user
+- `POST /api/v1/auth/login` - Login (returns JWT)
+- `GET /api/v1/auth/me` - Get current user
 
 #### Agents (AgentOps)
-- `GET /api/agents` - List all agents
-- `POST /api/agents` - Create new agent
-- `GET /api/agents/:id` - Get agent details
-- `PUT /api/agents/:id` - Update agent
-- `DELETE /api/agents/:id` - Delete agent
-- `POST /api/agents/:id/execute` - Execute agent task
+- `GET /api/v1/agents` - List all agents
+- `POST /api/v1/agents` - Create new agent
+- `GET /api/v1/agents/:id` - Get agent details
+- `PUT /api/v1/agents/:id` - Update agent
+- `DELETE /api/v1/agents/:id` - Delete agent
 
 #### Compliance
-- `GET /api/compliance/score` - Get compliance score
-- `POST /api/compliance/analyze` - Analyze AI system
-- `GET /api/compliance/reports` - List reports
-- `GET /api/compliance/requirements` - List requirements
+- `GET /api/v1/compliance/reports` - List reports
+- `POST /api/v1/compliance/check` - Analyze AI system
 
 #### Deepfake Detection
-- `POST /api/deepfake/analyze` - Analyze media
-- `GET /api/deepfake/history` - Analysis history
-- `GET /api/deepfake/threats` - Active threats
+- `POST /api/v1/deepfake/analyze` - Analyze media
 
 #### WebSocket
-- `ws://localhost:8081/ws` - Real-time updates
+- `ws://localhost:7001/api/v1/ws` - Real-time updates
 
 ### Persistence & Session Continuity
 The Alpha suite features a **namespaced persistence layer** using `localStorage`. This ensures that session-level configurations (e.g., active SLA tiers, agent rosters, fiscal approvals) are preserved across page reloads without requiring immediate backend schema migrations.
@@ -267,14 +262,14 @@ The test suite covers:
 
 ### Frontend (.env)
 ```env
-VITE_API_URL=http://localhost:8081
-VITE_WS_URL=ws://localhost:8081/ws
+VITE_API_URL=http://localhost:7001
+VITE_WS_URL=ws://localhost:7001/api/v1/ws
 ```
 
 ### Go Backend (.env)
 ```env
-PORT=8081
-PYTHON_API_URL=http://localhost:8000
+PORT=7001
+PYTHON_BACKEND_URL=http://localhost:7002
 JWT_SECRET=your-secret-key
 JWT_EXPIRY=24h
 ```
