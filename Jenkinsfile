@@ -28,7 +28,7 @@ pipeline {
             parallel {
                stage('Frontend') {
                     steps {
-                        sh 'docker run --rm -v ${HOST_WORKSPACE}:/app -w /app/client node:20-alpine npm install'
+                        sh 'docker run --rm -v ${HOST_WORKSPACE}:/app -w /app/client node:20-alpine npm install --legacy-peer-deps'
                     }
                 }
                 stage('Backend (Python)') {
@@ -38,7 +38,7 @@ pipeline {
                 }
                 stage('Backend (Go)') {
                     steps {
-                        sh 'docker run --rm -v ${HOST_WORKSPACE}:/app -w /app/server/go golang:1.22-alpine go mod download'
+                        sh 'docker run --rm -v ${HOST_WORKSPACE}:/app -w /app/server/go golang:1.24-alpine go mod download'
                     }
                 }
             }
