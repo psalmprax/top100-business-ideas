@@ -11,9 +11,15 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
+            }
+        }
+
+        stage('Setup') {
+            steps {
                 script {
-                    // Dynamically resolve the host path if running in a container with nested Docker
+                    // Dynamically resolve the host path to handle DinD volume mounting
                     env.HOST_WORKSPACE = WORKSPACE.replace("/var/jenkins_home", "/home/ubuntu/jenkins_home")
+                    echo "Host Workspace resolved to: ${env.HOST_WORKSPACE}"
                 }
             }
         }
