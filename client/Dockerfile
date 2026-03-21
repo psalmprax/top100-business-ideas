@@ -5,10 +5,9 @@ WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
-COPY pnpm-lock.yaml ./
 
 # Install dependencies
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
+RUN npm install --legacy-peer-deps
 
 # Copy source
 COPY . .
@@ -17,4 +16,4 @@ COPY . .
 EXPOSE 5173
 
 # Start dev server
-CMD ["pnpm", "dev", "--host", "0.0.0.0"]
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
