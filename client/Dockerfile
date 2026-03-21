@@ -20,7 +20,7 @@ COPY tsconfig.json ./tsconfig.json
 COPY tsconfig.node.json ./tsconfig.node.json
 
 # Expose port
-EXPOSE 5173
+EXPOSE 7000
 
 # Start dev server
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "7000"]

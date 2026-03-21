@@ -70,7 +70,7 @@ services:
       context: .
       dockerfile: client/Dockerfile
     ports:
-      - "7000:5173"
+      - "7000:7000"
     environment:
       - VITE_API_URL=http://api-gateway:7001
       - VITE_WS_URL=ws://api-gateway:7001
