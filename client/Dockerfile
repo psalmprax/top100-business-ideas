@@ -13,9 +13,11 @@ RUN npm install --legacy-peer-deps
 COPY client/src ./src
 COPY client/index.html ./client/index.html
 COPY client/public ./public
-COPY client/vite.config.ts ./vite.config.ts
-COPY client/tsconfig.json ./tsconfig.json
-COPY client/tsconfig.node.json ./tsconfig.node.json
+
+# Copy config files from root
+COPY vite.config.ts ./vite.config.ts
+COPY tsconfig.json ./tsconfig.json
+COPY tsconfig.node.json ./tsconfig.node.json
 
 # Expose port
 EXPOSE 5173
