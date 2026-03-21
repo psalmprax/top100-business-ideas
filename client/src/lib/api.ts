@@ -1584,6 +1584,11 @@ export const extendedApi = {
                 method: 'POST',
                 body: JSON.stringify(incidentData),
             }),
+        runBiasScan: (model_id: string) =>
+            apiRequest<any>('/api/v1/compliance/bias-scan', {
+                method: 'POST',
+                body: JSON.stringify({ model_id }),
+            }),
     },
 
     regionalCompliance: {
@@ -1697,6 +1702,13 @@ export const extendedApi = {
                 method: 'POST',
                 body: JSON.stringify({ interaction_id, status, notes }),
             }),
+        cashclaw: {
+            recover: (criteria: string) =>
+                apiRequest<any>('/api/v1/workforce/cashclaw/recover', {
+                    method: 'POST',
+                    body: JSON.stringify({ criteria }),
+                }),
+        },
     },
 
     sentinel: {

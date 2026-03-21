@@ -1470,6 +1470,50 @@ async def register_webhook_subscription(request: Dict[str, Any]):
     webhook_id = governance_service.manage_webhook(name, url, events)
     return {"status": "success", "webhook_id": webhook_id}
 
+@router.post("/workforce/cashclaw/recover")
+async def recover_workforce_revenue(request: Dict[str, Any]):
+    """CashClaw: Trigger autonomous revenue recovery"""
+    criteria = request.get("criteria", "lost revenue")
+    return await workforce_service.recover_revenue(criteria)
+
+@router.post("/compliance/bias-scan")
+async def run_compliance_bias_scan(request: Dict[str, Any]):
+    """Run a real-stubbed bias detection scan"""
+    model_id = request.get("model_id", "default")
+    from app.services.compliance_integration import compliance_integration_service
+    return await compliance_integration_service.run_bias_scan(model_id)
+
+@router.post("/compliance/red-team")
+async def run_compliance_red_team(request: Dict[str, Any]):
+    """Run an adversarial red-team audit"""
+    model_id = request.get("model_id", "default")
+    from app.services.compliance_integration import compliance_integration_service
+    return await compliance_integration_service.run_adversarial_audit(model_id)
+
+@router.post("/compliance/eu-register")
+async def register_compliance_model(request: Dict[str, Any]):
+    """Register a model in the EU database (operational stub)"""
+    model_id = request.get("model_id", "default")
+    from app.services.compliance_integration import compliance_integration_service
+    # Handshake with EU DB type
+    from app.core.models import ConnectionType
+    compliance_integration_service.connect_system(model_id, ConnectionType.EU_DATABASE, {"organization_id": "ALPHA-AI-EXT-99"})
+    return {"status": "success", "registration_id": f"EU-REG-{model_id.upper()}", "timestamp": datetime.utcnow().isoformat()}
+
+@router.post("/verify/document")
+async def verify_deepfake_document(request: Dict[str, Any]):
+    """Real-stubbed Deepfake document forensics"""
+    url = request.get("url", "")
+    from app.services.ml_inference import inference_service
+    return await inference_service.infer("deepfake-defense", {"media_url": url, "media_type": "image"})
+
+@router.post("/verify/voice")
+async def verify_deepfake_voice(request: Dict[str, Any]):
+    """Real-stubbed Deepfake voice forensics"""
+    url = request.get("audio_url", "")
+    from app.services.ml_inference import inference_service
+    return await inference_service.infer("deepfake-defense", {"media_url": url, "media_type": "audio"})
+
 @router.get("/agent-ops/cloud/health")
 async def get_multi_cloud_health():
     """Get real-world health status of multi-cloud regions"""

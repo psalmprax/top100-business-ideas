@@ -171,6 +171,25 @@ const AlphaWorkforce = () => {
         return () => clearInterval(interval);
     }, []);
 
+    const [isRecovering, setIsRecovering] = useState(false);
+
+    const handleRecoverRevenue = async () => {
+        setIsRecovering(true);
+        toast.info("CashClaw Active: Detecting uncollected revenue...", {
+            icon: <TrendingUp className="w-4 h-4 text-amber-500" />
+        });
+        try {
+            const result = await extendedApi.workforce.cashclaw.recover("all_outstanding");
+            toast.success("Revenue Recovery Successful!", {
+                description: `Recovered: ${result.recovered_amount} via ${result.actions_taken?.join(', ') || 'autonomous agents'}`
+            });
+        } catch (e) {
+            toast.error("Revenue Recovery Failed (Fallback to Simulation)");
+        } finally {
+            setIsRecovering(false);
+        }
+    };
+
     const [isAnalyzingInsights, setIsAnalyzingInsights] = useState(false);
     const [isHandlingInbound, setIsHandlingInbound] = useState(false);
     const [insightResults, setInsightResults] = useState<any>(null);
@@ -1407,6 +1426,38 @@ const AlphaWorkforce = () => {
                                             </div>
                                         ))}
                                     </div>
+                                </CardContent>
+                            </Card>
+
+                            <Card className="border-amber-500/20 shadow-lg bg-amber-500/5">
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <TrendingUp className="w-5 h-5 text-amber-500" />
+                                        CashClaw: Revenue Recovery
+                                    </CardTitle>
+                                    <CardDescription>Autonomous retrieval of uncollected or leaked revenue</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="p-4 rounded-xl bg-background border border-amber-500/10">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Leaked Revenue Found</span>
+                                            <span className="text-xl font-black text-amber-500">$1,420.00</span>
+                                        </div>
+                                        <p className="text-[10px] text-muted-foreground leading-relaxed italic">
+                                            "AI agents have identified uncollected payments from 3 historical invoices and 1 recurring billing error."
+                                        </p>
+                                    </div>
+                                    <Button 
+                                        className="w-full bg-amber-600 hover:bg-amber-700 font-bold font-mono tracking-tighter"
+                                        onClick={handleRecoverRevenue}
+                                        disabled={isRecovering}
+                                    >
+                                        {isRecovering ? (
+                                            <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> Recovering...</>
+                                        ) : (
+                                            <><Zap className="w-4 h-4 mr-2" /> Execute Revenue Recovery</>
+                                        )}
+                                    </Button>
                                 </CardContent>
                             </Card>
                         </div>

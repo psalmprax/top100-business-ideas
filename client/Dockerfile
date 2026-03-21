@@ -10,8 +10,8 @@ COPY package*.json pnpm-lock.yaml ./
 RUN npm install --legacy-peer-deps
 
 # Copy source from client/ subdirectory
+COPY client/index.html ./index.html
 COPY client/src ./src
-COPY client/index.html ./client/index.html
 COPY client/public ./public
 
 # Copy config files from root

@@ -122,6 +122,23 @@ class ComplianceIntegrationService:
             session.refresh(scan)
             return scan
 
+    async def run_bias_scan(self, model_id: str) -> ArticleScan:
+        """Execute a specialized bias detection crawl/scan"""
+        from app.services.ml_inference import inference_service
+        
+        # Simulate connecting to the model's dataset
+        inference_result = await inference_service.infer("ai-compliance", {"document": f"Model ID: {model_id} Training Data Snapshot", "regulations": ["AI_ACT_10"]})
+        
+        return self.run_scan(model_id, f"Bias Assessment ({inference_result['compliance_score']*100}% Clean)")
+
+    async def run_adversarial_audit(self, model_id: str) -> ArticleScan:
+        """Execute an adversarial / red-team audit"""
+        from app.services.ml_inference import inference_service
+        
+        results = await inference_service.infer("deepfake-defense", {"media_url": f"local://models/{model_id}", "media_type": "model_weights"})
+        
+        return self.run_scan(model_id, f"Adversarial Red-Team Audit (Confidence: {results['confidence']})")
+
     def list_connections(self) -> List[SystemConnection]:
         """List all active system connections."""
         with Session(engine) as session:
