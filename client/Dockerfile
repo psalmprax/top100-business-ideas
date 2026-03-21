@@ -11,6 +11,7 @@ ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 
 # Copy package files from root
 COPY package.json pnpm-lock.yaml ./
+COPY patches ./patches
 
 # Install dependencies using pnpm
 RUN pnpm install --frozen-lockfile
