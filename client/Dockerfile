@@ -1,5 +1,5 @@
 # Development Dockerfile for frontend
-FROM mcr.microsoft.com/playwright:alpine
+FROM mcr.microsoft.com/playwright:v1.49.1-jammy
 
 WORKDIR /app
 
