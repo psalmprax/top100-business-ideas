@@ -47,12 +47,6 @@ async function apiRequest<T>(
     const demoMode = isDemoMode();
     console.log(`[API_DEBUG] Request to ${endpoint}, demoMode: ${demoMode}`);
 
-    // In demo mode, return mock data for all endpoints
-    if (demoMode) {
-        console.log(`[API Demo Mode] Returning mock data for: ${endpoint}`);
-        return getMockResponse<T>(endpoint, options.method || 'GET', options.body);
-    }
-
     const headers: HeadersInit = {
         'Content-Type': 'application/json',
         ...options.headers,
@@ -74,17 +68,27 @@ async function apiRequest<T>(
 
     console.log(`[API Proxy] Request: ${API_URL}${normalizedEndpoint} (Method: ${options.method || 'GET'})`);
 
-    const response = await fetch(`${API_URL}${normalizedEndpoint}`, {
-        ...options,
-        headers,
-    });
+    try {
+        const response = await fetch(`${API_URL}${normalizedEndpoint}`, {
+            ...options,
+            headers,
+        });
 
-    if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: 'Request failed' }));
-        throw new Error(error.error || error.message || 'Request failed');
+        if (!response.ok) {
+            throw new Error(`HTTP Error ${response.status}: ${response.statusText}`);
+        }
+
+        return await response.json();
+    } catch (e: any) {
+        // Fallback to mock data on ANY network failure, 404, 501, or CORS error if demo mode is enabled
+        if (demoMode) {
+            console.warn(`[API Failover] Request to ${normalizedEndpoint} failed (${e.message}). Falling back to mock/simulation data...`);
+            return getMockResponse<T>(endpoint, options.method || 'GET', options.body);
+        } else {
+            console.error(`[API Error] Request failed and demoMode is false:`, e);
+            throw e;
+        }
     }
-
-    return response.json();
 }
 
 // Mock response generator for demo mode
