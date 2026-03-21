@@ -18,3 +18,4 @@ sqlmodel>=0.0.14
 crewai>=0.83.0
 langchain-community>=0.3.10
 duckduckgo-search>=6.3.3
+ddgs>=2.1.7
