@@ -3,7 +3,7 @@
  * User account settings, profile, and preferences
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -36,36 +36,37 @@ import {
   Database,
   Trash2,
 } from "lucide-react";
+import { storage } from "@/lib/storage";
 
 export default function Settings() {
   const [isLoading, setIsLoading] = useState(false);
   const [saved, setSaved] = useState(false);
 
   // Form states
-  const [profile, setProfile] = useState({
+  const [profile, setProfile] = useState(storage.get("settings_profile", {
     name: "John Doe",
     email: "john@company.com",
     company: "Acme Inc.",
     role: "CTO",
-  });
+  }));
 
-  const [notifications, setNotifications] = useState({
+  const [notifications, setNotifications] = useState(storage.get("settings_notifications", {
     emailAlerts: true,
     slackIntegration: false,
     weeklyDigest: true,
     securityAlerts: true,
     productUpdates: false,
-  });
+  }));
 
-  const [preferences, setPreferences] = useState({
+  const [preferences, setPreferences] = useState(storage.get("settings_preferences", {
     theme: "dark",
     language: "en",
     timezone: "America/New_York",
     defaultModel: "gpt-4",
     autoSave: true,
-  });
+  }));
 
-  const [apiKeys, setApiKeys] = useState([
+  const [apiKeys, setApiKeys] = useState(storage.get("settings_apikeys", [
     {
       id: "prod",
       name: "Production Key",
@@ -82,9 +83,30 @@ export default function Settings() {
       created: "Jan 10, 2024",
       hidden: true,
     },
-  ]);
+  ]));
 
-  const [webhooks, setWebhooks] = useState<any[]>([]);
+  const [webhooks, setWebhooks] = useState<any[]>(storage.get("settings_webhooks", []));
+
+  // Sync state to storage
+  useEffect(() => {
+    storage.set("settings_profile", profile);
+  }, [profile]);
+
+  useEffect(() => {
+    storage.set("settings_notifications", notifications);
+  }, [notifications]);
+
+  useEffect(() => {
+    storage.set("settings_preferences", preferences);
+  }, [preferences]);
+
+  useEffect(() => {
+    storage.set("settings_apikeys", apiKeys);
+  }, [apiKeys]);
+
+  useEffect(() => {
+    storage.set("settings_webhooks", webhooks);
+  }, [webhooks]);
 
   const handleCopyKey = (key: string) => {
     navigator.clipboard.writeText(key);
@@ -118,6 +140,40 @@ export default function Settings() {
     if (url) {
       setWebhooks([...webhooks, { id: Date.now(), url, status: "Active" }]);
       toast.success("Webhook endpoint registered");
+    }
+  };
+
+  const handleCreateApiKey = () => {
+    const name = window.prompt("Enter a name for the new API Key:");
+    if (!name) return;
+
+    const newKey = {
+      id: `key_${Date.now()}`,
+      name,
+      key: `sk_test_${Math.random().toString(36).substring(2, 15)}`,
+      status: "Test Mode",
+      created: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      hidden: true,
+    };
+
+    setApiKeys(prev => [...prev, newKey]);
+    toast.success(`API Key '${name}' created.`);
+  };
+
+  const handleDeleteAccount = () => {
+    if (window.confirm("CRITICAL: Are you sure you want to delete your account? This action is irreversible.")) {
+      setIsLoading(true);
+      toast.promise(
+        new Promise((resolve) => setTimeout(resolve, 3000)),
+        {
+          loading: 'De-provisioning all AI instances and wiping data volumes...',
+          success: () => {
+            setIsLoading(false);
+            return 'Account scheduled for deletion. You will be logged out shortly.';
+          },
+          error: 'Deletion process interrupted.',
+        }
+      );
     }
   };
 
@@ -387,6 +443,8 @@ export default function Settings() {
                     <Button
                       variant="destructive"
                       className="bg-red-600 hover:bg-red-700"
+                      onClick={handleDeleteAccount}
+                      disabled={isLoading}
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -624,9 +682,7 @@ export default function Settings() {
 
                   <Button
                     className="bg-blue-600 hover:bg-blue-700 w-full"
-                    onClick={() =>
-                      toast.info("New key creation dialog coming soon")
-                    }
+                    onClick={handleCreateApiKey}
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Create New Key

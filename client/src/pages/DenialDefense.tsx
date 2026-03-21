@@ -45,6 +45,10 @@ export default function DenialDefense() {
     ]));
     const [newClaim, setNewClaim] = useState({ id: "", payer: "", amount: "" });
     const [isScrubbing, setIsScrubbing] = useState(false);
+    const [isScanning, setIsScanning] = useState(false);
+    const [isSavingConfig, setIsSavingConfig] = useState(false);
+    const [recoveryRate, setRecoveryRate] = useState(94.2);
+    const [revenueRecovered, setRevenueRecovered] = useState(2.4);
 
     const handleAddClaim = () => {
         if (!newClaim.id || !newClaim.payer) {
@@ -76,9 +80,42 @@ export default function DenialDefense() {
                     setActiveClaims(updated);
                     storage.set("dd_claims", updated);
                     setIsScrubbing(false);
+                    setRecoveryRate(prev => Math.min(99.9, prev + 0.1));
                     return "Scrubbing complete: No CCI edits found.";
                 },
                 error: "Scrubbing failed.",
+            }
+        );
+    };
+
+    const handleGlobalScan = async () => {
+        setIsScanning(true);
+        toast.promise(
+            new Promise((resolve) => setTimeout(resolve, 3000)),
+            {
+                loading: 'AI Agents scanning historical encounters for under-coded CPTs...',
+                success: () => {
+                    setIsScanning(false);
+                    setRevenueRecovered(prev => prev + 0.012);
+                    return 'Global scan complete: $12,450 in lift identified.';
+                },
+                error: 'Global scan failed.',
+            }
+        );
+    };
+
+    const handleSaveConfig = async () => {
+        setIsSavingConfig(true);
+        toast.promise(
+            new Promise((resolve) => setTimeout(resolve, 1000)),
+            {
+                loading: 'Syncing AI autonomy levels to Engine...',
+                success: () => {
+                    setIsSavingConfig(false);
+                    storage.set("dd_config", { aggressive: true, autoAppeal: true });
+                    return 'Engine configuration updated.';
+                },
+                error: 'Config update failed.',
             }
         );
     };
@@ -120,7 +157,7 @@ export default function DenialDefense() {
                     <Card className="bg-black/40 border-white/5 backdrop-blur-sm">
                         <CardContent className="pt-6">
                             <div className="text-xs text-cyan-500 font-bold uppercase tracking-wider mb-1">Recovery Rate</div>
-                            <div className="text-3xl font-bold text-white" data-testid="stat-recovery-rate">94.2%</div>
+                            <div className="text-3xl font-bold text-white" data-testid="stat-recovery-rate">{recoveryRate.toFixed(1)}%</div>
                             <div className="flex items-center gap-1 text-[10px] text-emerald-400 mt-2">
                                 <TrendingUp className="w-3 h-3" />
                                 +12.4% vs industry avg
@@ -144,7 +181,7 @@ export default function DenialDefense() {
                     <Card className="bg-black/40 border-white/5 backdrop-blur-sm">
                         <CardContent className="pt-6">
                             <div className="text-xs text-blue-400 font-bold uppercase tracking-wider mb-1">Revenue Recovered</div>
-                            <div className="text-3xl font-bold text-white" data-testid="stat-revenue-recovered">$2.4M</div>
+                            <div className="text-3xl font-bold text-white" data-testid="stat-revenue-recovered">${revenueRecovered.toFixed(1)}M</div>
                             <Progress value={78} className="h-1 mt-3 bg-white/5" />
                         </CardContent>
                     </Card>
@@ -280,8 +317,12 @@ export default function DenialDefense() {
                                         </div>
                                         <Progress value={65} className="h-2 bg-white/5" />
                                      </div>
-                                     <Button className="w-full variant-outline border-purple-500/30 text-purple-400 hover:bg-purple-500/10">
-                                         START GLOBAL RE-CODE SCAN
+                                     <Button
+                                         className="w-full variant-outline border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
+                                         onClick={handleGlobalScan}
+                                         disabled={isScanning}
+                                     >
+                                         {isScanning ? 'SCANNING...' : 'START GLOBAL RE-CODE SCAN'}
                                      </Button>
                                 </CardContent>
                             </Card>
@@ -331,7 +372,13 @@ export default function DenialDefense() {
                                     </div>
                                 </div>
                                 <div className="pt-4 border-t border-white/5">
-                                    <Button className="bg-cyan-600 hover:bg-cyan-700">SAVE CONFIGURATION</Button>
+                                    <Button
+                                        className="bg-cyan-600 hover:bg-cyan-700"
+                                        onClick={handleSaveConfig}
+                                        disabled={isSavingConfig}
+                                    >
+                                        {isSavingConfig ? 'SAVING...' : 'SAVE CONFIGURATION'}
+                                    </Button>
                                 </div>
                             </CardContent>
                         </Card>

@@ -1256,7 +1256,7 @@ export default function AlphaAIActCompliance() {
     const isDemo = !isAuthenticated;
     const [selectedModelForView, setSelectedModelForView] = useState<any>(null);
     const [activeTab, setActiveTab] = useState('dashboard');
-    type CategoryType = 'gov' | 'reg' | 'tech' | 'ops';
+    type CategoryType = 'gov' | 'reg' | 'tech' | 'ops' | 'infra' | 'fin';
     const [activeCategory, setActiveCategory] = useState<CategoryType>('gov');
 
     const categories: { id: CategoryType; label: string; icon: any; description: string }[] = [
@@ -1513,7 +1513,7 @@ export default function AlphaAIActCompliance() {
         try {
             await extendedApi.sso.handshake(ssoConfig.provider);
             toast.success("SSO Handshake verified. Auth callback loop is operational.");
-            setSsoConfig(prev => ({ ...prev, lastHandshake: new Date().toISOString() }));
+            setSsoConfig((prev: any) => ({ ...prev, lastHandshake: new Date().toISOString() }));
         } catch (err) {
             toast.error("SSO Handshake failed.");
         }
@@ -4294,10 +4294,10 @@ Last Audit: ${model.lastAudit ? model.lastAudit.toLocaleDateString() : 'Pending'
                             <h3 className="font-bold">Final Confirmation</h3>
                             <div className="space-y-1">
                                 <p className="text-xs text-muted-foreground">
-                                    {`Risk Category: ${model.riskCategory?.toUpperCase() || 'N/A'}`}
+                                    {`Risk Category: ${selectedModelForView?.riskCategory?.toUpperCase() || 'N/A'}`}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                    {`Status: ${model.status?.toUpperCase() || 'PENDING'}`}
+                                    {`Status: ${selectedModelForView?.status?.toUpperCase() || 'PENDING'}`}
                                 </p>
                             </div>
                             <p className="text-sm text-muted-foreground">

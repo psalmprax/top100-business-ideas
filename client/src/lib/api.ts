@@ -930,6 +930,7 @@ export interface WebhookConfig {
     enabled: boolean;
     secret?: string;
     created_at?: string;
+    type?: string;
 }
 
 export interface WebhookExecution {
@@ -1153,6 +1154,10 @@ export const extendedApi = {
             }),
         test: (id: string) =>
             apiRequest<{ message: string; execution_id: string }>(`/api/v1/webhooks/${id}/test`, {
+                method: 'POST',
+            }),
+        verify: (id: string) =>
+            apiRequest<{ message: string; execution_id: string }>(`/api/v1/webhooks/${id}/verify`, {
                 method: 'POST',
             }),
         executions: (webhookId: string) =>
@@ -1503,15 +1508,15 @@ export const extendedApi = {
 
     // Deepfake Verification (Deepfake UC 1, 4, 6)
     verify: {
-        document: (docUrl: string) =>
+        document: (docUrl: string | any) =>
             apiRequest<{ document_type: string; verified: boolean; timestamp: string }>('/api/v1/verify/document', {
                 method: 'POST',
-                body: JSON.stringify({ url: docUrl }),
+                body: JSON.stringify(typeof docUrl === 'string' ? { url: docUrl } : docUrl),
             }),
-        voice: (userId: string, audioUrl: string) =>
+        voice: (userId: string | any, audioUrl?: string) =>
             apiRequest<{ status: string; confidence: number; timestamp: string }>('/api/v1/verify/voice', {
                 method: 'POST',
-                body: JSON.stringify({ user_id: userId, audio_url: audioUrl }),
+                body: JSON.stringify(typeof userId === 'string' ? { user_id: userId, audio_url: audioUrl } : userId),
             }),
         biometric: (challengeId: string, signature: string) =>
             apiRequest<{ verified: boolean; timestamp: string }>('/api/v1/verify/biometric', {
@@ -1593,12 +1598,12 @@ export const extendedApi = {
             }),
         getMemory: (agentId: string) =>
             apiRequest<{ agent_id: string; memory_fragments: any[]; summary: string }>(`/api/v1/agents/${agentId}/memory`),
-        getForecast: (agentId: string) =>
-            apiRequest<{ agent_id: string; next_30_days_cost_est: number; trend: string }>(`/api/v1/agents/${agentId}/forecast`),
+        getForecast: (agentId?: string) =>
+            apiRequest<{ agent_id: string; next_30_days_cost_est: number; trend: string }>(`/api/v1/agents/${agentId || 'default'}/forecast`),
         getAuditLogs: (agentId?: string, limit: number = 50) => 
             apiRequest<any>(`/api/v1/agent-ops/audit?${agentId ? `agentId=${agentId}&` : ''}limit=${limit}`),
-        runHipaaAudit: () => apiRequest<any>('/api/v1/agent-ops/compliance/hipaa', { method: 'POST' }),
-        runSoxAudit: () => apiRequest<any>('/api/v1/agent-ops/compliance/sox', { method: 'POST' }),
+        runHipaaAudit: (system?: string) => apiRequest<any>('/api/v1/agent-ops/compliance/hipaa', { method: 'POST', body: JSON.stringify({ system }) }),
+        runSoxAudit: (system?: string) => apiRequest<any>('/api/v1/agent-ops/compliance/sox', { method: 'POST', body: JSON.stringify({ system }) }),
         listRules: () => apiRequest<any>('/api/v1/agent-ops/rules/budget'),
         createRule: (rule: any) => apiRequest<any>('/api/v1/agent-ops/rules/budget', {
             method: 'POST',
@@ -1612,7 +1617,7 @@ export const extendedApi = {
         deleteWebhook: (webhookId: string) => apiRequest<any>(`/api/v1/agent-ops/webhooks/${webhookId}`, {
             method: 'DELETE',
         }),
-        getCloudHealth: () => apiRequest<any>('/api/v1/agent-ops/cloud/health'),
+        getCloudHealth: (system?: string) => apiRequest<any>('/api/v1/agent-ops/cloud/health'),
         triggerFailover: (region_id: string) => apiRequest<any>('/api/v1/agent-ops/cloud/failover', {
             method: 'POST',
             body: JSON.stringify({ region_id }),
@@ -1621,9 +1626,13 @@ export const extendedApi = {
             method: 'POST',
             body: JSON.stringify({ rule_id, target }),
         }),
-        updateRetention: (days: number) => apiRequest<any>('/api/v1/agent-ops/config/retention', {
+        updateRetention: (system: any, days?: number) => apiRequest<any>('/api/v1/agent-ops/config/retention', {
             method: 'POST',
-            body: JSON.stringify({ days }),
+            body: JSON.stringify({ system, days }),
+        }),
+        saveRetentionPolicy: (policy: any) => apiRequest<any>('/api/v1/agent-ops/retention', {
+            method: 'POST',
+            body: JSON.stringify(policy),
         }),
         setGqlProxyConfig: (enabled: boolean) => apiRequest<any>('/api/v1/agent-ops/gateway/gql', {
             method: 'POST',

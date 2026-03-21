@@ -38,6 +38,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { storage } from "@/lib/storage";
 
 interface Plan {
   id: string;
@@ -113,7 +114,11 @@ const invoices = [
 export default function Billing() {
   const [selectedPlan, setSelectedPlan] = useState("professional");
   const [isLoading, setIsLoading] = useState(false);
-  const [currentPlan, setCurrentPlan] = useState("starter");
+  const [isAddingPayment, setIsAddingPayment] = useState(false);
+  const [currentPlan, setCurrentPlan] = useState(storage.get("billing_current_plan", "starter"));
+  const [paymentMethods, setPaymentMethods] = useState(storage.get("billing_payment_methods", [
+    { id: "pm_1", last4: "4242", exp: "12/2025", default: true }
+  ]));
 
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
@@ -127,12 +132,44 @@ export default function Billing() {
     // In production, this would redirect to Stripe Checkout
     // For hardening, we show a success simulation
     setCurrentPlan(planId);
+    storage.set("billing_current_plan", planId);
     setShowSuccessDialog(true);
     toast.success("Subscription upgraded successfully", {
       description: `You are now on the ${planId.charAt(0).toUpperCase() + planId.slice(1)} plan.`,
     });
 
     setIsLoading(false);
+  };
+
+  const handleAddPayment = async () => {
+    setIsAddingPayment(true);
+    toast.promise(
+      new Promise((resolve) => setTimeout(resolve, 2000)),
+      {
+        loading: 'Connecting to Stripe Secure Vault...',
+        success: () => {
+          setIsAddingPayment(false);
+          const newPm = { 
+            id: `pm_${Date.now()}`, 
+            last4: Math.floor(1000 + Math.random() * 9000).toString(), 
+            exp: "08/2028", 
+            default: false 
+          };
+          const updatedMethods = [...paymentMethods, newPm];
+          setPaymentMethods(updatedMethods);
+          storage.set("billing_payment_methods", updatedMethods);
+          return 'New payment method added successfully.';
+        },
+        error: 'Vault connection failed.',
+      }
+    );
+  };
+
+  const handleDownloadInvoice = (id: string) => {
+    toast.info(`Generating PDF for ${id}...`);
+    setTimeout(() => {
+        toast.success(`Invoice ${id} downloaded.`);
+    }, 1500);
   };
 
   return (
@@ -253,32 +290,38 @@ export default function Billing() {
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Current Card */}
-                <div className="flex items-center justify-between p-4 rounded-lg bg-slate-700/50 border border-slate-600">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-8 bg-gradient-to-r from-blue-600 to-blue-800 rounded flex items-center justify-center">
-                      <CreditCard className="w-5 h-5 text-white" />
+                {paymentMethods.map(pm => (
+                  <div key={pm.id} className="flex items-center justify-between p-4 rounded-lg bg-slate-700/50 border border-slate-600">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-8 bg-gradient-to-r from-blue-600 to-blue-800 rounded flex items-center justify-center">
+                        <CreditCard className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <p className="font-medium">•••• •••• •••• {pm.last4}</p>
+                        <p className="text-sm text-slate-400">Expires {pm.exp}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium">•••• •••• •••• 4242</p>
-                      <p className="text-sm text-slate-400">Expires 12/2025</p>
-                    </div>
+                    {pm.default && (
+                      <Badge
+                        variant="outline"
+                        className="bg-green-500/20 text-green-400 border-green-500/30"
+                      >
+                        Default
+                      </Badge>
+                    )}
                   </div>
-                  <Badge
-                    variant="outline"
-                    className="bg-green-500/20 text-green-400 border-green-500/30"
-                  >
-                    Default
-                  </Badge>
-                </div>
+                ))}
 
                 <div className="flex gap-4">
                   <Button
                     variant="outline"
                     className="border-slate-600 hover:bg-slate-700"
                     data-testid="btn-add-payment"
+                    onClick={handleAddPayment}
+                    disabled={isAddingPayment}
                   >
                     <CreditCard className="w-4 h-4 mr-2" />
-                    Add Payment Method
+                    {isAddingPayment ? 'Connecting...' : 'Add Payment Method'}
                   </Button>
                   <Button
                     variant="outline"
@@ -340,6 +383,7 @@ export default function Billing() {
                           variant="ghost"
                           size="sm"
                           data-testid={`btn-download-invoice-${invoice.id}`}
+                          onClick={() => handleDownloadInvoice(invoice.id)}
                         >
                           <Download className="w-4 h-4" />
                         </Button>

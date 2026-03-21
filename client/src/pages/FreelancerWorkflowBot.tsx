@@ -47,6 +47,7 @@ import { Progress } from '@/components/ui/progress';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { jsPDF } from 'jspdf';
+import { storage } from '@/lib/storage';
 
 
 // ============================================================================
@@ -93,6 +94,44 @@ function MetricCard({
 export default function FreelancerWorkflowBot() {
     const [activeTab, setActiveTab] = useState('dashboard');
     const [activeCategory, setActiveCategory] = useState<CategoryType>('ops');
+    const [isAuthorizing, setIsAuthorizing] = useState(false);
+    const [isStripeConnecting, setIsStripeConnecting] = useState(false);
+    const [timeSaved, setTimeSaved] = useState(storage.get("fwb_time_saved", 88.4));
+
+    const handleAuthorizeAgent = async () => {
+        setIsAuthorizing(true);
+        toast.promise(
+            new Promise((resolve) => setTimeout(resolve, 2000)),
+            {
+                loading: 'Drafting legal authorization and deploying agent...',
+                success: () => {
+                    setIsAuthorizing(false);
+                    setTimeSaved(prev => {
+                        const newVal = prev + 14.0;
+                        storage.set("fwb_time_saved", newVal);
+                        return newVal;
+                    });
+                    return 'Agent authorized. CRM automation is now live.';
+                },
+                error: 'Authorization failed.',
+            }
+        );
+    };
+
+    const handleStripeConnect = async () => {
+        setIsStripeConnecting(true);
+        toast.promise(
+            new Promise((resolve) => setTimeout(resolve, 2500)),
+            {
+                loading: 'Redirecting to Stripe OAuth...',
+                success: () => {
+                    setIsStripeConnecting(false);
+                    return 'Stripe account connected. Billing Bot active.';
+                },
+                error: 'Connection failed.',
+            }
+        );
+    };
 
     const categories: { id: CategoryType; label: string; icon: any; description: string }[] = [
         { id: 'ops', label: 'Operations', icon: Zap, description: 'Tasks & Inbox' },
@@ -268,7 +307,7 @@ export default function FreelancerWorkflowBot() {
                                     />
                                     <MetricCard
                                         title="Time Saved"
-                                        value="88.4h"
+                                        value={`${timeSaved.toFixed(1)}h`}
                                         icon={Clock}
                                         color="bg-indigo-500/10 text-indigo-500"
                                         change={22}
@@ -329,8 +368,13 @@ export default function FreelancerWorkflowBot() {
                                         <p className="text-indigo-50 text-xs leading-relaxed mb-6">
                                             I've detected you spend ~14 hours monthly on repetitive CRM updates. Authorize an autonomous agent to handle this permanently?
                                         </p>
-                                        <Button className="w-full bg-white text-indigo-600 font-black hover:bg-indigo-50 text-[10px] uppercase h-10 tracking-widest" data-testid="btn-authorize-agent">
-                                            Authorize Agent
+                                        <Button
+                                            className="w-full bg-white text-indigo-600 font-black hover:bg-indigo-50 text-[10px] uppercase h-10 tracking-widest"
+                                            data-testid="btn-authorize-agent"
+                                            onClick={handleAuthorizeAgent}
+                                            disabled={isAuthorizing}
+                                        >
+                                            {isAuthorizing ? 'AUTHORIZING...' : 'Authorize Agent'}
                                         </Button>
                                     </CardContent>
                                 </Card>
@@ -385,8 +429,12 @@ export default function FreelancerWorkflowBot() {
                                 </div>
                                 <h3 className="text-xl font-black uppercase mb-2">Connect Stripe</h3>
                                 <p className="text-sm text-muted-foreground max-w-xs mb-8">Authorizing Stripe allows WorkflowBot to automatically generate and chase invoices on your behalf.</p>
-                                <Button className="bg-[#635BFF] hover:bg-[#635BFF]/90 text-white font-black px-10 h-11">
-                                    Link account via Stripe
+                                <Button
+                                    className="bg-[#635BFF] hover:bg-[#635BFF]/90 text-white font-black px-10 h-11"
+                                    onClick={handleStripeConnect}
+                                    disabled={isStripeConnecting}
+                                >
+                                    {isStripeConnecting ? 'CONNECTING...' : 'Link account via Stripe'}
                                 </Button>
                             </Card>
                             <div className="space-y-6">

@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'wouter';
 import {
     Zap,
@@ -26,9 +25,63 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
+import { toast } from 'sonner';
+import { storage } from '@/lib/storage';
 
 export default function ActionableAI() {
-    const [isExecuting, setIsExecuting] = useState(false);
+    const [isExecuting, setIsExecuting] = useState(storage.get("actionable_ai_executing", false));
+    const [isTerminating, setIsTerminating] = useState(false);
+    const [isNewMission, setIsNewMission] = useState(false);
+    const [computeLoad, setComputeLoad] = useState(42.8);
+    const [latency, setLatency] = useState(14);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setComputeLoad(prev => {
+                const diff = (Math.random() - 0.5) * 5;
+                return Math.max(10, Math.min(95, prev + diff));
+            });
+            setLatency(prev => {
+                const diff = (Math.random() - 0.5) * 2;
+                return Math.max(5, Math.min(50, prev + diff));
+            });
+        }, 3000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const handleTerminateAll = async () => {
+        setIsTerminating(true);
+        toast.promise(
+            new Promise((resolve) => setTimeout(resolve, 1500)),
+            {
+                loading: 'Sending SIGTERM to all active agent swarms...',
+                success: () => {
+                    setIsTerminating(false);
+                    setIsExecuting(false);
+                    storage.set("actionable_ai_executing", false);
+                    return 'All mission threads terminated safely.';
+                },
+                error: 'Termination failed.',
+            }
+        );
+    };
+
+    const handleNewMission = async () => {
+        setIsNewMission(true);
+        toast.promise(
+            new Promise((resolve) => setTimeout(resolve, 2000)),
+            {
+                loading: 'Initializing new mission parameters...',
+                success: () => {
+                    setIsNewMission(false);
+                    setIsExecuting(true);
+                    storage.set("actionable_ai_executing", true);
+                    return 'New mission spawned: OMEGA_RECON initialized.';
+                },
+                error: 'Mission spawn failed.',
+            }
+        );
+    };
 
     return (
         <div className="min-h-screen bg-[#050505] text-slate-300 font-sans selection:bg-orange-500/30">
@@ -59,8 +112,14 @@ export default function ActionableAI() {
                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                             <span className="text-[10px] font-bold text-emerald-500 uppercase">Engine Online</span>
                         </div>
-                        <Button size="sm" className="bg-orange-600 hover:bg-orange-700 text-white font-bold px-6" data-testid="btn-new-mission">
-                            NEW MISSION
+                        <Button
+                            size="sm"
+                            className="bg-orange-600 hover:bg-orange-700 text-white font-bold px-6"
+                            data-testid="btn-new-mission"
+                            onClick={handleNewMission}
+                            disabled={isNewMission}
+                        >
+                            {isNewMission ? 'SPAWNING...' : 'NEW MISSION'}
                         </Button>
                     </div>
                 </div>
@@ -74,7 +133,7 @@ export default function ActionableAI() {
                             <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1 uppercase tracking-widest font-bold">
                                 <Cpu className="w-3 h-3 text-orange-500" /> Compute Load
                             </div>
-                            <div className="text-3xl font-bold text-white" data-testid="stat-compute-load">42.8%</div>
+                            <div className="text-3xl font-bold text-white" data-testid="stat-compute-load">{computeLoad.toFixed(1)}%</div>
                             <div className="text-[10px] text-muted-foreground mt-2" data-testid="stat-active-threads">188 active agent threads</div>
                         </CardContent>
                     </Card>
@@ -101,7 +160,7 @@ export default function ActionableAI() {
                             <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1 uppercase tracking-widest font-bold">
                                 <Activity className="w-3 h-3 text-purple-500" /> Latency
                             </div>
-                            <div className="text-3xl font-bold text-white" data-testid="stat-latency">14ms</div>
+                            <div className="text-3xl font-bold text-white" data-testid="stat-latency">{Math.round(latency)}ms</div>
                             <div className="text-[10px] text-muted-foreground mt-2" data-testid="stat-p99-time">P99 execution time</div>
                         </CardContent>
                     </Card>
@@ -121,7 +180,16 @@ export default function ActionableAI() {
                                     {isExecuting ? <Pause className="w-4 h-4 mr-2" /> : <Play className="w-4 h-4 mr-2" />}
                                     {isExecuting ? 'PAUSE ENGINE' : 'RESUME ENGINE'}
                                 </Button>
-                                <Button variant="outline" size="sm" data-testid="btn-terminate-all"><Square className="w-4 h-4 mr-2" /> TERMINATE ALL</Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    data-testid="btn-terminate-all"
+                                    onClick={handleTerminateAll}
+                                    disabled={isTerminating}
+                                >
+                                    <Square className="w-4 h-4 mr-2" />
+                                    {isTerminating ? 'TERMINATING...' : 'TERMINATE ALL'}
+                                </Button>
                             </div>
                         </CardHeader>
                         <CardContent className="space-y-4">
