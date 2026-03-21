@@ -31,6 +31,7 @@ class Agent(SQLModel, table=True):
     model: str = Field(default="gpt-4o")
     org_id: Optional[str] = None
     control_webhook: Optional[str] = None
+    tier: str = Field(default="industrial") # strategic, tactical, industrial
     api_secret: str = Field(default_factory=lambda: secrets.token_urlsafe(32))
     config: Optional[Dict[str, Any]] = Field(default={}, sa_column=Column(JSON))
     budget: float = Field(default=10.0)
@@ -53,6 +54,7 @@ class AgentCreate(SQLModel):
     model: str = "gpt-4o"
     org_id: Optional[str] = None
     control_webhook: Optional[str] = None
+    tier: str = "industrial"
     config: Optional[Dict[str, Any]] = {}
     budget: float = 10.0
 
@@ -66,6 +68,7 @@ class AgentUpdate(SQLModel):
     model: Optional[str] = None
     org_id: Optional[str] = None
     control_webhook: Optional[str] = None
+    tier: Optional[str] = None
     config: Optional[Dict[str, Any]] = None
     status: Optional[AgentStatus] = None
     budget: Optional[float] = None

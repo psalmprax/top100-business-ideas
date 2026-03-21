@@ -596,6 +596,7 @@ export interface Agent {
     status: 'active' | 'paused' | 'error' | 'stopped';
     budget: number;
     dailySpend: number;
+    tier: 'strategic' | 'tactical' | 'industrial';
     config: {
         provider: string;
         model: string;

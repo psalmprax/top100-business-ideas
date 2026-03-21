@@ -76,6 +76,7 @@ import {
   Trash2,
   TrendingDown,
   TrendingUp,
+  UserCheck,
   Users,
   Wallet,
   Webhook,
@@ -96,6 +97,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -147,6 +149,7 @@ interface DashboardAgent {
   control_webhook?: string;
   budget: number;
   dailySpend: number;
+  tier: "strategic" | "tactical" | "industrial";
   config: {
     provider: string;
     model: string;
@@ -159,6 +162,19 @@ interface DashboardAgent {
   createdAt: Date;
   lastActiveAt: Date;
 }
+
+const getTierColor = (tier: string) => {
+  switch (tier) {
+    case "strategic":
+      return "bg-purple-500/10 text-purple-500 border-purple-500/20 hover:bg-purple-500/20";
+    case "tactical":
+      return "bg-blue-500/10 text-blue-500 border-blue-500/20 hover:bg-blue-500/20";
+    case "industrial":
+      return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20";
+    default:
+      return "secondary";
+  }
+};
 
 interface DashboardAgentRule {
   id: string;
@@ -247,6 +263,7 @@ const mockAgents: DashboardAgent[] = [
     status: "active",
     budget: 50,
     dailySpend: 32.5,
+    tier: "tactical",
     config: {
       provider: "openai",
       model: "gpt-4-turbo",
@@ -290,6 +307,7 @@ const mockAgents: DashboardAgent[] = [
     status: "active",
     budget: 5,
     dailySpend: 4.2,
+    tier: "strategic",
     config: {
       provider: "anthropic",
       model: "claude-3-opus",
@@ -326,6 +344,7 @@ const mockAgents: DashboardAgent[] = [
     status: "active",
     budget: 50,
     dailySpend: 48.9,
+    tier: "strategic",
     config: {
       provider: "openai",
       model: "gpt-4",
@@ -730,6 +749,7 @@ export default function AlphaAgentOps() {
     org_id: string;
     control_webhook: string;
     metadata: Record<string, any>;
+    tier: "strategic" | "tactical" | "industrial";
   }>({
     name: "",
     type: "langgraph",
@@ -741,6 +761,7 @@ export default function AlphaAgentOps() {
     org_id: "",
     control_webhook: "",
     metadata: {},
+    tier: "industrial",
   });
 
   const [newAlertData, setNewAlertData] = useState({
@@ -1220,6 +1241,7 @@ export default function AlphaAgentOps() {
           org_id: "",
           control_webhook: "",
           metadata: {},
+          tier: "industrial",
         });
       }
     } catch (error) {
@@ -1869,8 +1891,17 @@ export default function AlphaAgentOps() {
                         <TableRow key={agent.id}>
                           <TableCell>
                             <div>
-                              <div className="font-medium">{agent.name}</div>
-                              <div className="text-sm text-muted-foreground">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{agent.name}</span>
+                                <Badge
+                                  className={`text-[10px] px-1.5 py-0 h-4 ${getTierColor(
+                                    agent.tier
+                                  )}`}
+                                >
+                                  {agent.tier?.toUpperCase()}
+                                </Badge>
+                              </div>
+                              <div className="text-sm text-muted-foreground uppercase text-[10px] tracking-wide">
                                 {agent.config?.provider} · {agent.config?.model}
                               </div>
                             </div>
@@ -4920,7 +4951,103 @@ export default function AlphaAgentOps() {
             </DialogHeader>
             <div className="grid grid-cols-2 gap-6 py-4">
               <div className="space-y-4" data-testid="new-agent-form">
-                <div className="space-y-2">
+                <div className="space-y-3 pb-4 border-b border-zinc-500/10">
+                  <Label className="text-zinc-400 uppercase text-[10px] font-black tracking-widest">
+                    Intelligence Tier & Performance Profile
+                  </Label>
+                  <RadioGroup
+                    value={newAgentData.tier}
+                    onValueChange={(
+                      val: "strategic" | "tactical" | "industrial"
+                    ) => {
+                      let provider = "openai";
+                      let model = "gpt-4o";
+
+                      if (val === "tactical") {
+                        provider = "deepseek";
+                        model = "deepseek-v3";
+                      } else if (val === "industrial") {
+                        provider = "groq";
+                        model = "llama-3.1-8b-instant";
+                      }
+
+                      setNewAgentData(prev => ({
+                        ...prev,
+                        tier: val,
+                        provider,
+                        model,
+                        maxTokens: val === "industrial" ? 10000 : 100000,
+                      }));
+                    }}
+                    className="grid grid-cols-3 gap-2"
+                  >
+                    <div>
+                      <RadioGroupItem
+                        value="strategic"
+                        id="tier-strategic"
+                        className="peer sr-only"
+                      />
+                      <Label
+                        htmlFor="tier-strategic"
+                        className="flex flex-col items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/50 p-3 hover:bg-zinc-800 peer-data-[state=checked]:border-purple-500 peer-data-[state=checked]:bg-purple-500/5 cursor-pointer transition-all"
+                      >
+                        <ShieldAlert className="mb-2 h-5 w-5 text-purple-500" />
+                        <span className="font-bold text-[10px] uppercase">Strategic</span>
+                      </Label>
+                    </div>
+                    <div>
+                      <RadioGroupItem
+                        value="tactical"
+                        id="tier-tactical"
+                        className="peer sr-only"
+                      />
+                      <Label
+                        htmlFor="tier-tactical"
+                        className="flex flex-col items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/50 p-3 hover:bg-zinc-800 peer-data-[state=checked]:border-blue-500 peer-data-[state=checked]:bg-blue-500/5 cursor-pointer transition-all"
+                      >
+                        <UserCheck className="mb-2 h-5 w-5 text-blue-500" />
+                        <span className="font-bold text-[10px] uppercase">Tactical</span>
+                      </Label>
+                    </div>
+                    <div>
+                      <RadioGroupItem
+                        value="industrial"
+                        id="tier-industrial"
+                        className="peer sr-only"
+                      />
+                      <Label
+                        htmlFor="tier-industrial"
+                        className="flex flex-col items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/50 p-3 hover:bg-zinc-800 peer-data-[state=checked]:border-emerald-500 peer-data-[state=checked]:bg-emerald-500/5 cursor-pointer transition-all"
+                      >
+                        <Zap className="mb-2 h-5 w-5 text-emerald-500" />
+                        <span className="font-bold text-[10px] uppercase">Industrial</span>
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                <div className="p-4 rounded-lg bg-zinc-900 border border-zinc-800">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-[10px] text-zinc-400 uppercase font-bold tracking-tight">Est. Operating Cost</span>
+                    <span className="text-sm font-bold text-emerald-500">
+                      ${newAgentData.tier === "strategic" ? "1,240" : newAgentData.tier === "tactical" ? "210" : "18"}/mo
+                    </span>
+                  </div>
+                  <div className="h-1 w-full bg-zinc-800 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full transition-all duration-500 ${
+                        newAgentData.tier === "strategic" ? "w-[80%] bg-purple-500" : 
+                        newAgentData.tier === "tactical" ? "w-[30%] bg-blue-500" : 
+                        "w-[5%] bg-emerald-500"
+                      }`}
+                    />
+                  </div>
+                  <p className="text-[9px] text-zinc-500 mt-2">
+                    * Estimated based on 50k tokens/day avg volume.
+                  </p>
+                </div>
+
+                <div className="space-y-2 pt-2">
                   <Label>Agent Name</Label>
                   <Input
                     value={newAgentData.name}
@@ -5109,6 +5236,8 @@ export default function AlphaAgentOps() {
                       <SelectContent>
                         <SelectItem value="openai">OpenAI</SelectItem>
                         <SelectItem value="anthropic">Anthropic</SelectItem>
+                        <SelectItem value="groq">Groq</SelectItem>
+                        <SelectItem value="deepseek">DeepSeek</SelectItem>
                         <SelectItem value="cohere">Cohere</SelectItem>
                         <SelectItem value="google">Google</SelectItem>
                       </SelectContent>
