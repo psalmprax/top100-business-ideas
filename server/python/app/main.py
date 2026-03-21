@@ -10,6 +10,7 @@ import logging
 
 from app.api import agents, compliance, deepfake, health, auth_verify, extended
 from app.core.config import settings
+from app.services.billing_service import billing_service
 
 # Configure logging
 logging.basicConfig(
@@ -71,6 +72,9 @@ from app.core.database import init_db
 async def startup_event():
     """Run startup tasks"""
     init_db()
+    # Start the budget enforcement background monitor
+    billing_service.start_budget_enforcement_loop()
+    logger.info("Background monitor services started.")
 
 @app.get("/")
 async def root():

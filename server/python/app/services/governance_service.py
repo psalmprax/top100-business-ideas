@@ -8,7 +8,8 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 from sqlmodel import Session, select
 from app.core.database import engine
-from app.core.models import WebhookConfig, AlertConfig
+from app.core.models import WebhookConfig, AlertConfig, AgentAuditLog
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -65,8 +66,11 @@ class GovernanceService:
 
     def update_retention_policy(self, days: int) -> Dict[str, Any]:
         """Configure the global retention policy for audit logs and execution history"""
-        # Logic to truncate logs beyond 'days' would go here
-        logger.info(f"Updated global retention policy to {days} days")
+        logger.info(f"Updated global retention policy to {days} days. Spawning purge task...")
+        
+        # Fire and forget background DB pruning
+        asyncio.create_task(self._purge_old_logs(days))
+        
         return {
             "status": "success",
             "policy": {
@@ -75,6 +79,21 @@ class GovernanceService:
                 "updated_at": datetime.utcnow().isoformat()
             }
         }
+
+    async def _purge_old_logs(self, days_to_keep: int):
+        """Asynchronously delete audit logs older than the retention policy."""
+        try:
+            cutoff = datetime.utcnow() - timedelta(days=days_to_keep)
+            with Session(engine) as session:
+                # Find old logs and delete them
+                old_logs = session.exec(select(AgentAuditLog).where(AgentAuditLog.timestamp < cutoff)).all()
+                count = len(old_logs)
+                for log in old_logs:
+                    session.delete(log)
+                session.commit()
+                logger.info(f"Purged {count} old AgentAuditLog records exceeding the {days_to_keep} day retention policy.")
+        except Exception as e:
+            logger.error(f"Failed to run retention purge logic: {e}")
 
 # Singleton instance
 governance_service = GovernanceService()
