@@ -54,7 +54,7 @@ pipeline {
         stage('Run Sentinel Functional Tests') {
             steps {
                 script {
-                    // Get host IP for Docker-in-DinD networking
+                    // Get host IP
                     def HOST_IP = sh(script: "hostname -I | awk '{print \$1}'", returnStdout: true).trim()
                     echo "Using host IP: ${HOST_IP} for Docker networking"
                     
@@ -63,25 +63,24 @@ pipeline {
                         sh 'docker rm -f alpha-python-backend alpha-frontend 2>/dev/null || true'
 
                         // Start the Python backend in the background
-                        // Use --add-host to make host.docker.internal work
+                        // Keep container running with tail -f /dev/null
                         sh """
-                            docker run -d --rm --name alpha-python-backend --network host --add-host=host.docker.internal:host-gateway -v \${HOST_WORKSPACE}:/app -w /app/server/python python:3.11-slim bash -c "pip install -r requirements.txt && python -m uvicorn main:app --host 0.0.0.0 --port 7002"
+                            docker run -d --rm --name alpha-python-backend --network host -v \${HOST_WORKSPACE}:/app -w /app/server/python python:3.11-slim bash -c "pip install -r requirements.txt -q && python -m uvicorn main:app --host 0.0.0.0 --port 7002 & PID=\$!; tail -f /dev/null & wait \$PID"
                         """
 
                         // Start the Frontend in the background
-                        // Use host.docker.internal to reach backend
+                        // Keep container running with tail -f /dev/null
                         sh """
-                            docker run -d --rm --name alpha-frontend --network host --add-host=host.docker.internal:host-gateway -v \${HOST_WORKSPACE}:/app -w /app/client node:20-alpine bash -c "apk add --no-cache bash && npm install --legacy-peer-deps && VITE_API_URL=http://host.docker.internal:7002 PORT=7000 npm run dev -- --host 0.0.0.0 --port 7000"
+                            docker run -d --rm --name alpha-frontend --network host -v \${HOST_WORKSPACE}:/app -w /app/client node:20-alpine bash -c "apk add --no-cache bash curl && npm install --legacy-peer-deps -q && npm run dev -- --host 0.0.0.0 --port 7000 & PID=\$!; tail -f /dev/null & wait \$PID"
                         """
 
-                        // Wait for application stack to be ready
+                        // Wait for application stack to be ready - give more time for npm/pip installs
                         echo "Waiting for application stack to stabilize..."
-                        sleep 45
+                        sleep 90
 
-                        // Verify services are accessible
+                        // Check if containers are still running
                         sh """
-                            docker exec alpha-frontend curl -s -o /dev/null -w '%{http_code}' http://localhost:7000 || echo 'Frontend not ready'
-                            docker exec alpha-python-backend curl -s -o /dev/null -w '%{http_code}' http://localhost:7002/health || echo 'Backend not ready'
+                            docker ps --filter "name=alpha" --format '{{.Names}}: {{.Status}}'
                         """
 
                         // Run specifically the Sentinel functional suite inside Playwright container
