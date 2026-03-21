@@ -40,8 +40,9 @@ class BillingService:
 
     def enforce_all_budgets(self):
         """Check all agents against their budgets and active rules."""
+        from app.core.models import AgentStatus
         with Session(engine) as session:
-            agents = session.exec(select(Agent).where(Agent.status == 'active')).all()
+            agents = session.exec(select(Agent).where(Agent.status == AgentStatus.RUNNING)).all()
             rules = session.exec(select(AlertConfig).where(AlertConfig.is_active == True)).all()
             
             # Simple global budget rule parsing for demonstration
@@ -57,7 +58,7 @@ class BillingService:
                 
                 if agent.dailySpend >= effective_limit:
                     logger.warning(f"Agent {agent.id} ({agent.name}) exceeded budget cap of {effective_limit}. Pausing agent...")
-                    agent.status = 'paused_by_budget'
+                    agent.status = AgentStatus.PAUSED
                     
                     # You would insert a new AuditLog here to document the enforcement
             

@@ -8,9 +8,10 @@ import secrets
 
 class AgentStatus(str, Enum):
     """Agent status enum"""
-    RUNNING = "running"
-    STOPPED = "stopped"
-    ERROR = "error"
+    RUNNING = "RUNNING"
+    STOPPED = "STOPPED"
+    ERROR = "ERROR"
+    PAUSED = "PAUSED"
 
 
 class AgentType(str, Enum):
