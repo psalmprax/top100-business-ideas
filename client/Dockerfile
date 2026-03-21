@@ -3,14 +3,19 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy package files from root
+COPY package*.json pnpm-lock.yaml ./
 
 # Install dependencies
 RUN npm install --legacy-peer-deps
 
-# Copy source
-COPY . .
+# Copy source from client/ subdirectory
+COPY client/src ./src
+COPY client/index.html ./client/index.html
+COPY client/public ./public
+COPY client/vite.config.ts ./vite.config.ts
+COPY client/tsconfig.json ./tsconfig.json
+COPY client/tsconfig.node.json ./tsconfig.node.json
 
 # Expose port
 EXPOSE 5173

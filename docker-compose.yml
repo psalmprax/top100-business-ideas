@@ -67,8 +67,8 @@ services:
   # Frontend
   frontend:
     build:
-      context: ./client
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: client/Dockerfile
     ports:
       - "7000:5173"
     environment:
