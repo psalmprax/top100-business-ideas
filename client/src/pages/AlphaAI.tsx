@@ -95,17 +95,17 @@ const products = [
   {
     id: "alpha-workforce",
     name: "Alpha Workforce",
-    tagline: "Autonomous Company Simulation",
+    tagline: "Autonomous Company + CashClaw",
     description:
-      "Deploy an entire C-Suite of AI Executives. Sales, Marketing, and Accounting agents run your business autonomously in your absence.",
+      "Deploy an entire C-Suite of AI Executives that run your business autonomously AND earn revenue via CashClaw freelance integration.",
     icon: Users,
     color: "bg-indigo-600",
     features: [
       "Autonomous C-Suite",
-      "Delegated Authority Mode",
-      "Self-Scaling Operations",
-      "Cross-agent coordination",
-      "Direct KPI alignment",
+      "CashClaw Revenue Generation",
+      "Auto-Job Acceptance",
+      "Skills Marketplace",
+      "Stripe Integration",
     ],
     url: "/products/workforce",
   },
@@ -404,175 +404,100 @@ export default function AlphaAI() {
               Deploy autonomous AI agents, ensure regulatory compliance, and
               protect against deepfake threats — all from one platform.
             </p>
-                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                            <Link href="/signup">
-                                <Button size="lg" className="gap-2" data-testid="btn-start-free-trial">
-                                    Start Free Trial <ArrowRight className="h-4 w-4" />
-                                </Button>
-                            </Link>
-                            <LeadGenDialog
-                                trigger={
-                                    <Button
-                                        size="lg"
-                                        data-testid="btn-schedule-demo"
-                  className="px-10 py-6 text-lg hover:scale-105 transition-transform duration-300"
-                  style={{
-                    background:
-                      "linear-gradient(135deg, oklch(0.65 0.2 250), oklch(0.55 0.2 280))",
-                    border: "none",
-                  }}
-                >
-                  <Sparkles className="w-5 h-5 mr-2" />
-                  Discuss Your AI Needs
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link href="/signup">
+                <Button size="lg" className="gap-2" data-testid="btn-start-free-trial">
+                  Start Free Trial <ArrowRight className="h-4 w-4" />
                 </Button>
-              }
-              title="Custom AI Solutions Inquiry"
-            />
-          </div>
-        </div>
-      </div>
-    </section>
-
-    {/* Our Ventures / Products Section */}
-    <section id="products" className="py-24 px-4 bg-background relative overflow-hidden">
-      <div className="container mx-auto relative z-10">
-        <div className="text-center mb-16">
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-4xl md:text-5xl font-bold mb-6 tracking-tight"
-          >
-            Our <span className="gradient-text">Ventures</span>
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="text-muted-foreground text-lg max-w-2xl mx-auto"
-          >
-            A portfolio of autonomous companies and AI solutions built to solve real-world enterprise challenges.
-          </motion.p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {publicProducts.map((product, idx) => (
-            <motion.div
-              key={product.id}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: idx * 0.1 }}
-              viewport={{ once: true }}
-            >
-              <Card
-                className="group relative overflow-hidden border-border/50 bg-card/50 backdrop-blur-sm hover:border-primary/50 transition-all duration-300 h-full flex flex-col noise-overlay"
-                data-testid="venture-card"
-              >
-                <CardHeader>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className={`p-3 rounded-xl ${product.color}/10 transition-transform group-hover:scale-110 duration-300`}>
-                      <product.icon className={`h-6 w-6 ${product.color.replace('bg-', 'text-')}`} />
-                    </div>
-                    <ArrowRight className="h-5 w-5 text-muted-foreground/30 group-hover:text-primary transition-colors" />
-                  </div>
-                  <CardTitle className="text-2xl font-bold group-hover:text-primary transition-colors">
-                    {product.name}
-                  </CardTitle>
-                  <p className="text-sm font-medium text-primary/80 uppercase tracking-wider mt-1">
-                    {product.tagline}
-                  </p>
-                </CardHeader>
-                <CardContent className="flex-grow">
-                  <p className="text-muted-foreground mb-6 leading-relaxed">
-                    {product.description}
-                  </p>
-                  <ul className="space-y-2 mb-8">
-                    {product.features.map((feature, fIdx) => (
-                      <li key={fIdx} className="flex items-center text-sm text-foreground/80">
-                        <CheckCircle2 className="h-4 w-4 text-primary mr-2 flex-shrink-0" />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="mt-auto pt-6 border-t border-border/50">
-                    <Link href={product.url}>
-                      <Button className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
-                        Learn More
-                      </Button>
-                    </Link>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </section>
-
-    {/* Internal Management Tools Section */}
-    {isManagement && (
-      <section id="internal" className="py-24 px-4 bg-indigo-950/20 border-y border-indigo-500/10 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
-        <div className="container mx-auto relative z-10">
-          <div className="flex flex-col md:flex-row items-center justify-between mb-16 gap-6">
-            <div>
-              <div className="flex items-center gap-2 text-indigo-400 font-semibold mb-2 uppercase tracking-widest text-sm">
-                <Lock className="h-4 w-4" /> Management Only
-              </div>
-              <h2 className="text-4xl font-bold tracking-tight">
-                Internal <span className="text-indigo-500">Management Tools</span>
-              </h2>
+              </Link>
+              <LeadGenDialog
+                trigger={
+                  <Button
+                    size="lg"
+                    data-testid="btn-schedule-demo"
+                    className="px-10 py-6 text-lg hover:scale-105 transition-transform duration-300"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, oklch(0.65 0.2 250), oklch(0.55 0.2 280))",
+                      border: "none",
+                    }}
+                  >
+                    <Sparkles className="w-5 h-5 mr-2" />
+                    Discuss Your AI Needs
+                  </Button>
+                }
+                title="Custom AI Solutions Inquiry"
+              />
             </div>
-            <p className="text-muted-foreground max-w-xl text-lg">
-              Proprietary AlphaAI workforce and intelligence tools reserved for executive operations and strategic analysis.
-            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Our Ventures / Products Section */}
+      <section id="products" className="py-24 px-4 bg-background relative overflow-hidden">
+        <div className="container mx-auto relative z-10">
+          <div className="text-center mb-16">
+            <motion.h2
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="text-4xl md:text-5xl font-bold mb-6 tracking-tight"
+            >
+              Our <span className="gradient-text">Ventures</span>
+            </motion.h2>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="text-muted-foreground text-lg max-w-2xl mx-auto"
+            >
+              A portfolio of autonomous companies and AI solutions built to solve real-world enterprise challenges.
+            </motion.p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl">
-            {internalTools.map((tool, idx) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {publicProducts.map((product, idx) => (
               <motion.div
-                key={tool.id}
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
+                key={product.id}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: idx * 0.1 }}
                 viewport={{ once: true }}
               >
-                <Card 
-                  className="group relative overflow-hidden border-indigo-500/20 bg-indigo-950/30 backdrop-blur-md hover:border-indigo-500/50 transition-all duration-500 h-full flex flex-col"
-                  data-testid="internal-tool-card"
+                <Card
+                  className="group relative overflow-hidden border-border/50 bg-card/50 backdrop-blur-sm hover:border-primary/50 transition-all duration-300 h-full flex flex-col noise-overlay"
+                  data-testid="venture-card"
                 >
                   <CardHeader>
                     <div className="flex items-center justify-between mb-4">
-                      <div className={`p-3 rounded-xl ${tool.color}/20`}>
-                        <tool.icon className={`h-6 w-6 ${tool.color.replace('bg-', 'text-')}`} />
+                      <div className={`p-3 rounded-xl ${product.color}/10 transition-transform group-hover:scale-110 duration-300`}>
+                        <product.icon className={`h-6 w-6 ${product.color.replace('bg-', 'text-')}`} />
                       </div>
-                      <div className="text-[10px] font-bold px-2 py-1 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 uppercase tracking-tighter">
-                        Restricted Access
-                      </div>
+                      <ArrowRight className="h-5 w-5 text-muted-foreground/30 group-hover:text-primary transition-colors" />
                     </div>
-                    <CardTitle className="text-2xl font-bold">
-                      {tool.name}
+                    <CardTitle className="text-2xl font-bold group-hover:text-primary transition-colors">
+                      {product.name}
                     </CardTitle>
-                    <p className="text-sm font-medium text-indigo-400/80 uppercase tracking-wider mt-1">
-                      {tool.tagline}
+                    <p className="text-sm font-medium text-primary/80 uppercase tracking-wider mt-1">
+                      {product.tagline}
                     </p>
                   </CardHeader>
                   <CardContent className="flex-grow">
                     <p className="text-muted-foreground mb-6 leading-relaxed">
-                      {tool.description}
+                      {product.description}
                     </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
-                      {tool.features.map((feature, fIdx) => (
-                        <div key={fIdx} className="flex items-center text-sm text-foreground/70">
-                          <Zap className="h-3 w-3 text-indigo-500 mr-2 flex-shrink-0" />
+                    <ul className="space-y-2 mb-8">
+                      {product.features.map((feature, fIdx) => (
+                        <li key={fIdx} className="flex items-center text-sm text-foreground/80">
+                          <CheckCircle2 className="h-4 w-4 text-primary mr-2 flex-shrink-0" />
                           {feature}
-                        </div>
+                        </li>
                       ))}
-                    </div>
-                    <div className="mt-auto pt-6 border-t border-indigo-500/10">
-                      <Link href={tool.url}>
-                        <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20">
-                          Access Tool <ChevronRight className="h-4 w-4 ml-1" />
+                    </ul>
+                    <div className="mt-auto pt-6 border-t border-border/50">
+                      <Link href={product.url}>
+                        <Button className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
+                          Learn More
                         </Button>
                       </Link>
                     </div>
@@ -583,76 +508,151 @@ export default function AlphaAI() {
           </div>
         </div>
       </section>
-    )}
 
-    {/* Coming Soon Section */}
-    <section className="py-24 px-4 bg-muted/20 relative">
-      <div className="container mx-auto">
-        <div className="flex flex-col md:flex-row items-end justify-between mb-16 gap-6">
-          <div className="max-w-2xl">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Coming <span className="text-primary">Soon</span>
-            </h2>
-            <p className="text-muted-foreground">
-              Our R&D department is working on the next generation of AlphaAI ventures.
-              Join the waitlist to get early access to these cutting-edge solutions.
-            </p>
-          </div>
-          <div className="hidden md:block">
-            <div className="flex items-center gap-2 text-primary font-medium">
-              <Clock className="h-5 w-5" />
-              <span>Next releases: Q3 2026</span>
+      {/* Internal Management Tools Section */}
+      {isManagement && (
+        <section id="internal" className="py-24 px-4 bg-indigo-950/20 border-y border-indigo-500/10 relative overflow-hidden">
+          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+          <div className="container mx-auto relative z-10">
+            <div className="flex flex-col md:flex-row items-center justify-between mb-16 gap-6">
+              <div>
+                <div className="flex items-center gap-2 text-indigo-400 font-semibold mb-2 uppercase tracking-widest text-sm">
+                  <Lock className="h-4 w-4" /> Management Only
+                </div>
+                <h2 className="text-4xl font-bold tracking-tight">
+                  Internal <span className="text-indigo-500">Management Tools</span>
+                </h2>
+              </div>
+              <p className="text-muted-foreground max-w-xl text-lg">
+                Proprietary AlphaAI workforce and intelligence tools reserved for executive operations and strategic analysis.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl">
+              {internalTools.map((tool, idx) => (
+                <motion.div
+                  key={tool.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5, delay: idx * 0.1 }}
+                  viewport={{ once: true }}
+                >
+                  <Card
+                    className="group relative overflow-hidden border-indigo-500/20 bg-indigo-950/30 backdrop-blur-md hover:border-indigo-500/50 transition-all duration-500 h-full flex flex-col"
+                    data-testid="internal-tool-card"
+                  >
+                    <CardHeader>
+                      <div className="flex items-center justify-between mb-4">
+                        <div className={`p-3 rounded-xl ${tool.color}/20`}>
+                          <tool.icon className={`h-6 w-6 ${tool.color.replace('bg-', 'text-')}`} />
+                        </div>
+                        <div className="text-[10px] font-bold px-2 py-1 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 uppercase tracking-tighter">
+                          Restricted Access
+                        </div>
+                      </div>
+                      <CardTitle className="text-2xl font-bold">
+                        {tool.name}
+                      </CardTitle>
+                      <p className="text-sm font-medium text-indigo-400/80 uppercase tracking-wider mt-1">
+                        {tool.tagline}
+                      </p>
+                    </CardHeader>
+                    <CardContent className="flex-grow">
+                      <p className="text-muted-foreground mb-6 leading-relaxed">
+                        {tool.description}
+                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
+                        {tool.features.map((feature, fIdx) => (
+                          <div key={fIdx} className="flex items-center text-sm text-foreground/70">
+                            <Zap className="h-3 w-3 text-indigo-500 mr-2 flex-shrink-0" />
+                            {feature}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-auto pt-6 border-t border-indigo-500/10">
+                        <Link href={tool.url}>
+                          <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20">
+                            Access Tool <ChevronRight className="h-4 w-4 ml-1" />
+                          </Button>
+                        </Link>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
             </div>
           </div>
-        </div>
+        </section>
+      )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {comingSoonProducts.map((product, idx) => (
-            <motion.div
-              key={product.id}
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: idx * 0.1 }}
-              viewport={{ once: true }}
-            >
-              <div className="relative group overflow-hidden rounded-2xl border border-border/50 bg-card/30 p-8 h-full">
-                <div className="absolute top-4 right-4 h-2 w-2 rounded-full bg-primary animate-pulse" />
-                <div className="flex flex-col md:flex-row gap-6">
-                  <div className={`flex-shrink-0 p-4 rounded-xl ${product.color}/10 h-fit`}>
-                    <product.icon className={`h-8 w-8 ${product.color.replace('bg-', 'text-')}`} />
-                  </div>
-                  <div>
-                    <h3 className="text-2xl font-bold mb-1">{product.name}</h3>
-                    <p className="text-sm font-semibold text-primary mb-4">{product.tagline}</p>
-                    <p className="text-muted-foreground mb-6 leading-relaxed">
-                      {product.description}
-                    </p>
-                    <div className="flex flex-wrap gap-2 mb-8">
-                      {product.features.map((feature, fIdx) => (
-                        <span key={fIdx} className="text-xs px-2 py-1 rounded-full bg-muted border border-border/50">
-                          {feature}
-                        </span>
-                      ))}
+      {/* Coming Soon Section */}
+      <section className="py-24 px-4 bg-muted/20 relative">
+        <div className="container mx-auto">
+          <div className="flex flex-col md:flex-row items-end justify-between mb-16 gap-6">
+            <div className="max-w-2xl">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                Coming <span className="text-primary">Soon</span>
+              </h2>
+              <p className="text-muted-foreground">
+                Our R&D department is working on the next generation of AlphaAI ventures.
+                Join the waitlist to get early access to these cutting-edge solutions.
+              </p>
+            </div>
+            <div className="hidden md:block">
+              <div className="flex items-center gap-2 text-primary font-medium">
+                <Clock className="h-5 w-5" />
+                <span>Next releases: Q3 2026</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {comingSoonProducts.map((product, idx) => (
+              <motion.div
+                key={product.id}
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, delay: idx * 0.1 }}
+                viewport={{ once: true }}
+              >
+                <div className="relative group overflow-hidden rounded-2xl border border-border/50 bg-card/30 p-8 h-full">
+                  <div className="absolute top-4 right-4 h-2 w-2 rounded-full bg-primary animate-pulse" />
+                  <div className="flex flex-col md:flex-row gap-6">
+                    <div className={`flex-shrink-0 p-4 rounded-xl ${product.color}/10 h-fit`}>
+                      <product.icon className={`h-8 w-8 ${product.color.replace('bg-', 'text-')}`} />
                     </div>
-                    <LeadGenDialog
-                      title={`Join ${product.name} Waitlist`}
-                      trigger={
-                        <Button variant="outline" className="w-full sm:w-auto border-primary/20 hover:border-primary/50 gap-2">
-                          Join Waitlist <ArrowRight className="h-4 w-4" />
-                        </Button>
-                      }
-                    />
+                    <div>
+                      <h3 className="text-2xl font-bold mb-1">{product.name}</h3>
+                      <p className="text-sm font-semibold text-primary mb-4">{product.tagline}</p>
+                      <p className="text-muted-foreground mb-6 leading-relaxed">
+                        {product.description}
+                      </p>
+                      <div className="flex flex-wrap gap-2 mb-8">
+                        {product.features.map((feature, fIdx) => (
+                          <span key={fIdx} className="text-xs px-2 py-1 rounded-full bg-muted border border-border/50">
+                            {feature}
+                          </span>
+                        ))}
+                      </div>
+                      <LeadGenDialog
+                        title={`Join ${product.name} Waitlist`}
+                        trigger={
+                          <Button variant="outline" className="w-full sm:w-auto border-primary/20 hover:border-primary/50 gap-2">
+                            Join Waitlist <ArrowRight className="h-4 w-4" />
+                          </Button>
+                        }
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            ))}
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    {/* Features Section */}
-    <section id="solutions" className="py-20 px-4">
+      {/* Features Section */}
+      <section id="solutions" className="py-20 px-4">
         <div className="container mx-auto">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>

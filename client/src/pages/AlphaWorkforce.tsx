@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    Users, 
-    Brain, 
-    TrendingUp, 
-    Target, 
-    DollarSign, 
-    Zap, 
-    ShieldCheck, 
+import {
+    Users,
+    Brain,
+    TrendingUp,
+    Target,
+    DollarSign,
+    Zap,
+    ShieldCheck,
     Briefcase,
     LayoutDashboard,
     Search,
@@ -91,11 +91,11 @@ const INITIAL_FISCAL_REQUESTS = [
     { id: 2, purpose: 'GPU Cluster Expansion (Cluster 7)', amount: '$5,000', priority: 'MEDIUM', status: 'PENDING' },
 ];
 
-const SovereignStageItem = ({ stage, name, status, description, isAutonomous, onDecision, currentDecision }: { 
-    stage: number, 
-    name: string, 
-    status: string, 
-    description: string, 
+const SovereignStageItem = ({ stage, name, status, description, isAutonomous, onDecision, currentDecision }: {
+    stage: number,
+    name: string,
+    status: string,
+    description: string,
     isAutonomous: boolean,
     onDecision?: (stage: number, decision: string) => void,
     currentDecision?: string
@@ -113,20 +113,20 @@ const SovereignStageItem = ({ stage, name, status, description, isAutonomous, on
             </Badge>
         </div>
         <p className="text-[10px] text-muted-foreground leading-tight pl-7">{description}</p>
-        
+
         {!isAutonomous && !currentDecision && onDecision && (
             <div className="flex gap-2 mt-3 pl-7">
-                <Button 
-                    size="sm" 
-                    variant="outline" 
+                <Button
+                    size="sm"
+                    variant="outline"
                     className="h-6 px-2 text-[9px] border-green-500/30 text-green-500 hover:bg-green-500/10"
                     onClick={() => onDecision(stage, 'APPROVED')}
                 >
                     APPROVE
                 </Button>
-                <Button 
-                    size="sm" 
-                    variant="outline" 
+                <Button
+                    size="sm"
+                    variant="outline"
                     className="h-6 px-2 text-[9px] border-red-500/30 text-red-500 hover:bg-red-500/10"
                     onClick={() => onDecision(stage, 'DENIED')}
                 >
@@ -296,7 +296,7 @@ const AlphaWorkforce = () => {
         const updatedDecisions = { ...governanceDecisions, [stage]: decision };
         setGovernanceDecisions(updatedDecisions);
         storage.set("governance_decisions", updatedDecisions);
-        
+
         // Auto-approve the top fiscal request if Stage 1 is approved
         if (stage === 1 && decision === 'APPROVED') {
             setFiscalRequests(prev => {
@@ -375,7 +375,7 @@ const AlphaWorkforce = () => {
                             </p>
                         </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-6 bg-muted/30 px-6 py-3 rounded-2xl border border-primary/10 shadow-inner">
                         <div className="flex items-center gap-3">
                             <div className="flex flex-col items-end">
@@ -386,9 +386,9 @@ const AlphaWorkforce = () => {
                                     {isAutonomous ? 'Delegated Authority Active' : 'Manual Control Required'}
                                 </span>
                             </div>
-                            <Switch 
-                                id="auto-mode" 
-                                checked={isAutonomous} 
+                            <Switch
+                                id="auto-mode"
+                                checked={isAutonomous}
                                 onCheckedChange={handleToggleAutonomy}
                                 className="data-[state=checked]:bg-green-500"
                                 data-testid="auto-mode-toggle"
@@ -400,8 +400,8 @@ const AlphaWorkforce = () => {
                             <span className="text-xl font-bold text-green-500 leading-none mt-1">4.2x</span>
                         </div>
                         <div className="h-8 w-px bg-border hidden md:block" />
-                        <Button 
-                            size="sm" 
+                        <Button
+                            size="sm"
                             className="bg-indigo-600 hover:bg-indigo-700 h-9"
                             onClick={handleDeployWorkforce}
                             data-testid="deploy-workforce-btn"
@@ -431,6 +431,9 @@ const AlphaWorkforce = () => {
                             </TabsTrigger>
                             <TabsTrigger value="finance" className="px-6" data-testid="tab-finance">
                                 <DollarSign className="w-4 h-4 mr-3" /> Finance
+                            </TabsTrigger>
+                            <TabsTrigger value="cashclaw" className="px-6" data-testid="tab-cashclaw">
+                                <TrendingUp className="w-4 h-4 mr-3 text-amber-500" /> CashClaw
                             </TabsTrigger>
                             <TabsTrigger value="hr" className="px-6" data-testid="tab-hr">
                                 <Users className="w-4 h-4 mr-3" /> Workforce
@@ -544,7 +547,7 @@ const AlphaWorkforce = () => {
                                 <CardContent className="p-0">
                                     <div className="divide-y divide-border/40 max-h-[500px] overflow-y-auto scrollbar-hide">
                                         {workforceData?.actions?.map((action: any) => (
-                                            <DecisionItem 
+                                            <DecisionItem
                                                 key={action.id}
                                                 role={action.role}
                                                 action={action.action}
@@ -578,7 +581,7 @@ const AlphaWorkforce = () => {
                                     <DirectiveItem label="Burn Rate Tolerance" value={20} target="<$5k/mo" />
                                     <DirectiveItem label="Min. ROI Threshold" value={65} target=">3.5x" />
                                     <DirectiveItem label="Compliance Rigor" value={100} target="Perfect Article 14" />
-                                    
+
                                     <div className="pt-4 border-t space-y-4">
                                         <div className="flex items-center justify-between text-sm">
                                             <span className="text-muted-foreground lowercase font-mono">Status:</span>
@@ -605,42 +608,42 @@ const AlphaWorkforce = () => {
                                 <CardDescription className="text-indigo-300/60">Tiered autonomy governance matrix</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <SovereignStageItem 
-                                    stage={1} 
-                                    name="Financial Settlement" 
-                                    status="REVIEW_REQUIRED" 
+                                <SovereignStageItem
+                                    stage={1}
+                                    name="Financial Settlement"
+                                    status="REVIEW_REQUIRED"
                                     description="AI suggests; Human signs off on Slack."
                                     isAutonomous={false}
                                     onDecision={handleGovernanceDecision}
                                     currentDecision={governanceDecisions[1]}
                                 />
-                                <SovereignStageItem 
-                                    stage={2} 
-                                    name="Legal Personality" 
-                                    status="REVIEW_REQUIRED" 
+                                <SovereignStageItem
+                                    stage={2}
+                                    name="Legal Personality"
+                                    status="REVIEW_REQUIRED"
                                     description="AI negotiates; Human executes signature."
                                     isAutonomous={false}
                                     onDecision={handleGovernanceDecision}
                                     currentDecision={governanceDecisions[2]}
                                 />
-                                <SovereignStageItem 
-                                    stage={3} 
-                                    name="Crisis Resilience" 
-                                    status="FULLY_AUTONOMOUS" 
+                                <SovereignStageItem
+                                    stage={3}
+                                    name="Crisis Resilience"
+                                    status="FULLY_AUTONOMOUS"
                                     description="Auto-failover on ban/attack (Stage 3)."
                                     isAutonomous={true}
                                 />
-                                <SovereignStageItem 
-                                    stage={4} 
-                                    name="Strategic R&D" 
-                                    status="FULLY_AUTONOMOUS" 
+                                <SovereignStageItem
+                                    stage={4}
+                                    name="Strategic R&D"
+                                    status="FULLY_AUTONOMOUS"
                                     description="Autonomous recursive venture launching (Stage 4)."
                                     isAutonomous={true}
                                 />
-                                <SovereignStageItem 
-                                    stage={5} 
-                                    name="Ethical Alignment" 
-                                    status="REVIEW_REQUIRED" 
+                                <SovereignStageItem
+                                    stage={5}
+                                    name="Ethical Alignment"
+                                    status="REVIEW_REQUIRED"
                                     description="Human override for moral boundary cases."
                                     isAutonomous={false}
                                     onDecision={handleGovernanceDecision}
@@ -693,8 +696,8 @@ const AlphaWorkforce = () => {
                                             </li>
                                         </ul>
                                     </div>
-                                    <Button 
-                                        variant="outline" 
+                                    <Button
+                                        variant="outline"
                                         className="w-full border-indigo-500/30 text-indigo-500"
                                         onClick={handleShiftMarketFocus}
                                     >
@@ -855,13 +858,13 @@ const AlphaWorkforce = () => {
                                             <ContentDraftItem title="The EU AI Act Survival Guide" type="Blog" status="Published" roi="450 views" />
                                             <ContentDraftItem title="How Sentinel Saved $50k" type="Case Study" status="In Progress" roi="N/A" />
                                             <ContentDraftItem title="Why Manual Compliance is Dying" type="LinkedIn" status="Ready" roi="Simulated: 2k reach" />
-                                            <Button 
-                                                className="w-full mt-2" 
+                                            <Button
+                                                className="w-full mt-2"
                                                 variant="outline"
                                                 onClick={handleRunMarketing}
                                                 disabled={isRunningMarketing}
                                             >
-                                                <RefreshCw className={`w-4 h-4 mr-2 ${isRunningMarketing ? 'animate-spin' : ''}`} /> 
+                                                <RefreshCw className={`w-4 h-4 mr-2 ${isRunningMarketing ? 'animate-spin' : ''}`} />
                                                 {isRunningMarketing ? 'Executing Crew...' : 'Generate New Content Batch'}
                                             </Button>
                                         </CardContent>
@@ -941,9 +944,9 @@ const AlphaWorkforce = () => {
                                             </TableBody>
                                         </Table>
                                         <div className="mt-4 flex justify-end">
-                                            <Button 
-                                                variant="outline" 
-                                                size="sm" 
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
                                                 className="border-blue-500/20 text-blue-500 hover:bg-blue-500/5"
                                                 onClick={handleSourceLeads}
                                                 disabled={isSourcingLeads}
@@ -969,13 +972,13 @@ const AlphaWorkforce = () => {
                                         <CardContent className="space-y-4">
                                             <div className="space-y-2">
                                                 <Label className="text-[10px] uppercase font-bold text-muted-foreground">Inbound Feedback Data</Label>
-                                                <textarea 
+                                                <textarea
                                                     id="feedback-input"
-                                                    placeholder="Paste customer discourse or support logs..." 
+                                                    placeholder="Paste customer discourse or support logs..."
                                                     className="w-full min-h-[100px] p-3 rounded-lg bg-background/50 border border-emerald-500/10 text-xs focus:ring-1 focus:ring-emerald-500/30 outline-none"
                                                 />
                                             </div>
-                                            <Button 
+                                            <Button
                                                 className="w-full bg-emerald-600 hover:bg-emerald-700 h-9 text-xs"
                                                 disabled={isAnalyzingInsights}
                                                 onClick={() => {
@@ -1027,13 +1030,13 @@ const AlphaWorkforce = () => {
                                         <CardContent className="space-y-4">
                                             <div className="space-y-2">
                                                 <Label className="text-[10px] uppercase font-bold text-muted-foreground">Inbound Customer Query</Label>
-                                                <Input 
+                                                <Input
                                                     id="query-input"
-                                                    placeholder="e.g. 'How do I export my HIPAA logs?'" 
+                                                    placeholder="e.g. 'How do I export my HIPAA logs?'"
                                                     className="h-9 text-xs bg-background/50 border-indigo-500/10 focus-visible:ring-indigo-500/20"
                                                 />
                                             </div>
-                                            <Button 
+                                            <Button
                                                 className="w-full bg-indigo-600 hover:bg-indigo-700 h-9 text-xs"
                                                 disabled={isHandlingInbound}
                                                 onClick={() => {
@@ -1144,36 +1147,36 @@ const AlphaWorkforce = () => {
                             </Card>
                         </div>
                     </TabsContent>
-                    
+
                     {/* Finance & Treasury Tab */}
                     <TabsContent value="finance" className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <MetricCard 
-                                title="Total Enterprise Capital" 
-                                value="$12,482,000" 
-                                icon={Wallet} 
-                                footer="Liquidity: 85%" 
+                            <MetricCard
+                                title="Total Enterprise Capital"
+                                value="$12,482,000"
+                                icon={Wallet}
+                                footer="Liquidity: 85%"
                                 color="bg-blue-500/10"
                             />
-                            <MetricCard 
-                                title="Net Burn Rate" 
-                                value="$240/hr" 
-                                icon={Activity} 
-                                footer="Projected Runway: 18m" 
+                            <MetricCard
+                                title="Net Burn Rate"
+                                value="$240/hr"
+                                icon={Activity}
+                                footer="Projected Runway: 18m"
                                 color="bg-amber-500/10"
                             />
-                            <MetricCard 
-                                title="Avg Venture ROI" 
-                                value="+248%" 
-                                icon={TrendingUp} 
-                                footer="Top Performer: V121" 
+                            <MetricCard
+                                title="Avg Venture ROI"
+                                value="+248%"
+                                icon={TrendingUp}
+                                footer="Top Performer: V121"
                                 color="bg-green-500/10"
                             />
-                            <MetricCard 
-                                title="Strategic Allocation" 
-                                value="OPTIMIZED" 
-                                icon={PieChart} 
-                                footer="Last Rebalance: 2h ago" 
+                            <MetricCard
+                                title="Strategic Allocation"
+                                value="OPTIMIZED"
+                                icon={PieChart}
+                                footer="Last Rebalance: 2h ago"
                                 color="bg-purple-500/10"
                             />
                         </div>
@@ -1226,84 +1229,226 @@ const AlphaWorkforce = () => {
                             </Card>
 
                             <div className="lg:col-span-3 grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            <Card className="lg:col-span-2 border-primary/10">
+                                <Card className="lg:col-span-2 border-primary/10">
+                                    <CardHeader>
+                                        <CardTitle>Venture Performance Index</CardTitle>
+                                        <CardDescription>ROI Tracking for active autonomous ventures</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Venture ID</TableHead>
+                                                    <TableHead>Sector</TableHead>
+                                                    <TableHead>Status</TableHead>
+                                                    <TableHead className="text-right">ROI</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {[
+                                                    { id: "V121", name: "Alpha Compliance", sector: "LegalTech", roi: "+420%", status: "PROFITABLE", trend: "up" },
+                                                    { id: "V117", name: "Deepfake Defense", sector: "Cybersecurity", roi: "+180%", status: "SCALING", trend: "up" },
+                                                    { id: "V120", name: "Agentic Ops", sector: "Infrastructure", roi: "-12.4%", status: "R&D", trend: "down" },
+                                                    { id: "V119", name: "Web3 Sentinel", sector: "DeFi", roi: "+45%", status: "BETA", trend: "up" },
+                                                ].map((v) => (
+                                                    <TableRow key={v.id}>
+                                                        <TableCell className="font-bold">{v.id} · {v.name}</TableCell>
+                                                        <TableCell>{v.sector}</TableCell>
+                                                        <TableCell>
+                                                            <Badge variant="outline" className={v.status === 'PROFITABLE' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-muted text-muted-foreground'}>
+                                                                {v.status}
+                                                            </Badge>
+                                                        </TableCell>
+                                                        <TableCell className={`text-right font-mono font-bold ${v.trend === 'up' ? 'text-green-500' : 'text-red-500'}`}>
+                                                            <div className="flex items-center justify-end gap-1">
+                                                                {v.roi}
+                                                                {v.trend === 'up' ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                                                            </div>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </CardContent>
+                                </Card>
+
+                                <Card className="border-indigo-500/20 shadow-lg bg-gradient-to-br from-background to-indigo-500/5">
+                                    <CardHeader>
+                                        <CardTitle className="text-sm uppercase tracking-widest text-indigo-500 font-black">Capital Allocation</CardTitle>
+                                        <CardDescription>Global department budget split</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-6">
+                                        {[
+                                            { label: "Research & Development", value: 45, color: "bg-blue-500" },
+                                            { label: "Compliance & Legal", value: 20, color: "bg-green-500" },
+                                            { label: "Marketing & Growth", value: 15, color: "bg-purple-500" },
+                                            { label: "Operations & Infrastructure", value: 20, color: "bg-amber-500" }
+                                        ].map((dept) => (
+                                            <div key={dept.label} className="space-y-2">
+                                                <div className="flex justify-between text-xs font-mono">
+                                                    <span>{dept.label}</span>
+                                                    <span className="font-bold">{dept.value}%</span>
+                                                </div>
+                                                <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                                                    <div
+                                                        className={`h-full ${dept.color} shadow-[0_0_10px_rgba(0,0,0,0.1)]`}
+                                                        style={{ width: `${dept.value}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+                                        <div className="pt-4 mt-6 border-t border-indigo-500/20">
+                                            <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-xs font-bold tracking-widest" onClick={() => toast.success("Rebalancing initiated...")}>
+                                                REBALANCE LIQUIDITY
+                                            </Button>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </div>
+                    </TabsContent>
+
+                    {/* CashClaw - AI Agent Monetization Tab */}
+                    <TabsContent value="cashclaw" className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <Card className="bg-gradient-to-br from-amber-500 to-orange-600 text-white border-none">
+                                <CardContent className="p-6">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <TrendingUp className="w-8 h-8 text-amber-200" />
+                                        <Badge className="bg-white/20 text-white">LIVE</Badge>
+                                    </div>
+                                    <div className="text-3xl font-black">$2,847</div>
+                                    <div className="text-amber-200 text-sm">This Month</div>
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardContent className="p-6">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <Wallet className="w-8 h-8 text-emerald-500" />
+                                    </div>
+                                    <div className="text-3xl font-black">$1,247</div>
+                                    <div className="text-muted-foreground text-sm">Available Balance</div>
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardContent className="p-6">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <Briefcase className="w-8 h-8 text-indigo-500" />
+                                    </div>
+                                    <div className="text-3xl font-black">12</div>
+                                    <div className="text-muted-foreground text-sm">Active Jobs</div>
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardContent className="p-6">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <Activity className="w-8 h-8 text-blue-500" />
+                                    </div>
+                                    <div className="text-3xl font-black">6</div>
+                                    <div className="text-muted-foreground text-sm">Skills Active</div>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <Card>
                                 <CardHeader>
-                                    <CardTitle>Venture Performance Index</CardTitle>
-                                    <CardDescription>ROI Tracking for active autonomous ventures</CardDescription>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Briefcase className="w-5 h-5 text-amber-500" />
+                                        Skills Marketplace
+                                    </CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Venture ID</TableHead>
-                                                <TableHead>Sector</TableHead>
-                                                <TableHead>Status</TableHead>
-                                                <TableHead className="text-right">ROI</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {[
-                                                { id: "V121", name: "Alpha Compliance", sector: "LegalTech", roi: "+420%", status: "PROFITABLE", trend: "up" },
-                                                { id: "V117", name: "Deepfake Defense", sector: "Cybersecurity", roi: "+180%", status: "SCALING", trend: "up" },
-                                                { id: "V120", name: "Agentic Ops", sector: "Infrastructure", roi: "-12.4%", status: "R&D", trend: "down" },
-                                                { id: "V119", name: "Web3 Sentinel", sector: "DeFi", roi: "+45%", status: "BETA", trend: "up" },
-                                            ].map((v) => (
-                                                <TableRow key={v.id}>
-                                                    <TableCell className="font-bold">{v.id} · {v.name}</TableCell>
-                                                    <TableCell>{v.sector}</TableCell>
-                                                    <TableCell>
-                                                        <Badge variant="outline" className={v.status === 'PROFITABLE' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-muted text-muted-foreground'}>
-                                                            {v.status}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell className={`text-right font-mono font-bold ${v.trend === 'up' ? 'text-green-500' : 'text-red-500'}`}>
-                                                        <div className="flex items-center justify-end gap-1">
-                                                            {v.roi}
-                                                            {v.trend === 'up' ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
+                                    <div className="space-y-3">
+                                        {[
+                                            { name: 'SEO Audit', price: '$9.00', jobs: 47, status: 'active' },
+                                            { name: 'Content Writing', price: '$15.00', jobs: 123, status: 'active' },
+                                            { name: 'Lead Generation', price: '$25.00', jobs: 31, status: 'active' },
+                                            { name: 'Social Media Mgmt', price: '$49.00', jobs: 18, status: 'active' },
+                                            { name: 'WhatsApp Support', price: '$5.00', jobs: 256, status: 'active' }
+                                        ].map((skill, idx) => (
+                                            <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                                                <div>
+                                                    <div className="font-bold">{skill.name}</div>
+                                                    <div className="text-xs text-muted-foreground">{skill.jobs} jobs completed</div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className="font-black text-emerald-600">{skill.price}</div>
+                                                    <Badge className="bg-emerald-500 text-[8px]">{skill.status}</Badge>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <Button className="w-full mt-4 bg-amber-600 hover:bg-amber-700">
+                                        <Plus className="w-4 h-4 mr-2" /> Add New Skill
+                                    </Button>
                                 </CardContent>
                             </Card>
 
-                            <Card className="border-indigo-500/20 shadow-lg bg-gradient-to-br from-background to-indigo-500/5">
+                            <Card>
                                 <CardHeader>
-                                    <CardTitle className="text-sm uppercase tracking-widest text-indigo-500 font-black">Capital Allocation</CardTitle>
-                                    <CardDescription>Global department budget split</CardDescription>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Zap className="w-5 h-5 text-indigo-500" />
+                                        Auto-Job Acceptance Rules
+                                    </CardTitle>
                                 </CardHeader>
-                                <CardContent className="space-y-6">
-                                    {[
-                                        { label: "Research & Development", value: 45, color: "bg-blue-500" },
-                                        { label: "Compliance & Legal", value: 20, color: "bg-green-500" },
-                                        { label: "Marketing & Growth", value: 15, color: "bg-purple-500" },
-                                        { label: "Operations & Infrastructure", value: 20, color: "bg-amber-500" }
-                                    ].map((dept) => (
-                                        <div key={dept.label} className="space-y-2">
-                                            <div className="flex justify-between text-xs font-mono">
-                                                <span>{dept.label}</span>
-                                                <span className="font-bold">{dept.value}%</span>
+                                <CardContent>
+                                    <div className="space-y-3">
+                                        {[
+                                            { rule: 'Min. $5.00 per job', enabled: true },
+                                            { rule: 'Max 3 concurrent jobs', enabled: true },
+                                            { rule: 'Client rating > 4.5', enabled: true },
+                                            { rule: 'Rush delivery upcharge', enabled: true },
+                                            { rule: 'Reject NDA jobs', enabled: false }
+                                        ].map((r, idx) => (
+                                            <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                                                <div className="font-bold">{r.rule}</div>
+                                                <Switch checked={r.enabled} />
                                             </div>
-                                            <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                                                <div 
-                                                    className={`h-full ${dept.color} shadow-[0_0_10px_rgba(0,0,0,0.1)]`} 
-                                                    style={{ width: `${dept.value}%` }} 
-                                                />
-                                            </div>
-                                        </div>
-                                    ))}
-                                    <div className="pt-4 mt-6 border-t border-indigo-500/20">
-                                        <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-xs font-bold tracking-widest" onClick={() => toast.success("Rebalancing initiated...")}>
-                                            REBALANCE LIQUIDITY
-                                        </Button>
+                                        ))}
                                     </div>
                                 </CardContent>
                             </Card>
                         </div>
-                    </div>
-                </TabsContent>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Activity className="w-5 h-5 text-emerald-500" />
+                                    Live Job Feed
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Job</TableHead>
+                                            <TableHead>Client</TableHead>
+                                            <TableHead>Price</TableHead>
+                                            <TableHead>Status</TableHead>
+                                            <TableHead>Time</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {[
+                                            { job: 'SEO Audit for techstartup.io', client: 'New Client', price: '$9.00', status: 'Auto-Accepted', time: 'Just now' },
+                                            { job: 'Blog Post - AI Trends', client: 'Acme Corp', price: '$15.00', status: 'In Progress', time: '2m ago' },
+                                            { job: 'Lead List - SaaS', client: 'StartupXYZ', price: '$25.00', status: 'Delivered', time: '15m ago' },
+                                            { job: 'WhatsApp Support', client: 'GlobalTech', price: '$5.00', status: 'Completed', time: '1h ago' }
+                                        ].map((item, idx) => (
+                                            <TableRow key={idx}>
+                                                <TableCell className="font-medium">{item.job}</TableCell>
+                                                <TableCell>{item.client}</TableCell>
+                                                <TableCell className="font-black text-emerald-600">{item.price}</TableCell>
+                                                <TableCell><Badge className="bg-amber-500">{item.status}</Badge></TableCell>
+                                                <TableCell className="text-muted-foreground">{item.time}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
 
                     {/* HR & Governance Tab */}
                     <TabsContent value="hr" className="space-y-6">
@@ -1403,9 +1548,9 @@ const AlphaWorkforce = () => {
                                                 <div className="grid gap-4 py-4">
                                                     <div className="grid gap-2">
                                                         <Label htmlFor="agent-name">Agent Name</Label>
-                                                        <Input 
-                                                            id="agent-name" 
-                                                            placeholder="e.g. Sales Optimizer" 
+                                                        <Input
+                                                            id="agent-name"
+                                                            placeholder="e.g. Sales Optimizer"
                                                             onChange={(e) => {
                                                                 (window as any)._new_agent_name = e.target.value;
                                                             }}
@@ -1413,9 +1558,9 @@ const AlphaWorkforce = () => {
                                                     </div>
                                                     <div className="grid gap-2">
                                                         <Label htmlFor="agent-specialization">Specialization</Label>
-                                                        <Input 
-                                                            id="agent-specialization" 
-                                                            placeholder="e.g. Quantitative SEO" 
+                                                        <Input
+                                                            id="agent-specialization"
+                                                            placeholder="e.g. Quantitative SEO"
                                                             onChange={(e) => {
                                                                 (window as any)._new_agent_spec = e.target.value;
                                                             }}
@@ -1423,7 +1568,7 @@ const AlphaWorkforce = () => {
                                                     </div>
                                                     <div className="grid gap-2">
                                                         <Label htmlFor="framework">Framework</Label>
-                                                        <Select 
+                                                        <Select
                                                             defaultValue="crewai"
                                                             onValueChange={(val) => {
                                                                 (window as any)._new_agent_framework = val;
@@ -1442,8 +1587,8 @@ const AlphaWorkforce = () => {
                                                     </div>
                                                 </div>
                                                 <DialogFooter>
-                                                    <Button 
-                                                        type="submit" 
+                                                    <Button
+                                                        type="submit"
                                                         onClick={() => {
                                                             const name = (window as any)._new_agent_name || "Tactical Analyst";
                                                             const spec = (window as any)._new_agent_spec || "Custom Deployment";
@@ -1473,42 +1618,42 @@ const AlphaWorkforce = () => {
                                     <CardDescription className="text-indigo-300/60">Tiered autonomy governance matrix</CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
-                                    <SovereignStageItem 
-                                        stage={1} 
-                                        name="Financial Settlement" 
-                                        status="REVIEW_REQUIRED" 
+                                    <SovereignStageItem
+                                        stage={1}
+                                        name="Financial Settlement"
+                                        status="REVIEW_REQUIRED"
                                         description="AI suggests; Human signs off on Slack."
                                         isAutonomous={false}
                                         onDecision={handleGovernanceDecision}
                                         currentDecision={governanceDecisions[1]}
                                     />
-                                    <SovereignStageItem 
-                                        stage={2} 
-                                        name="Legal Personality" 
-                                        status="REVIEW_REQUIRED" 
+                                    <SovereignStageItem
+                                        stage={2}
+                                        name="Legal Personality"
+                                        status="REVIEW_REQUIRED"
                                         description="AI negotiates; Human executes signature."
                                         isAutonomous={false}
                                         onDecision={handleGovernanceDecision}
                                         currentDecision={governanceDecisions[2]}
                                     />
-                                    <SovereignStageItem 
-                                        stage={3} 
-                                        name="Crisis Resilience" 
-                                        status="FULLY_AUTONOMOUS" 
+                                    <SovereignStageItem
+                                        stage={3}
+                                        name="Crisis Resilience"
+                                        status="FULLY_AUTONOMOUS"
                                         description="Auto-failover on ban/attack (Stage 3)."
                                         isAutonomous={true}
                                     />
-                                    <SovereignStageItem 
-                                        stage={4} 
-                                        name="Strategic R&D" 
-                                        status="FULLY_AUTONOMOUS" 
+                                    <SovereignStageItem
+                                        stage={4}
+                                        name="Strategic R&D"
+                                        status="FULLY_AUTONOMOUS"
                                         description="Autonomous recursive venture launching (Stage 4)."
                                         isAutonomous={true}
                                     />
-                                    <SovereignStageItem 
-                                        stage={5} 
-                                        name="Ethical Alignment" 
-                                        status="REVIEW_REQUIRED" 
+                                    <SovereignStageItem
+                                        stage={5}
+                                        name="Ethical Alignment"
+                                        status="REVIEW_REQUIRED"
                                         description="Human override for moral boundary cases."
                                         isAutonomous={false}
                                         onDecision={handleGovernanceDecision}
@@ -1535,9 +1680,9 @@ const AlphaWorkforce = () => {
                                     <div className="space-y-2">
                                         <Label htmlFor="slack-webhook" className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Slack Webhook URL</Label>
                                         <div className="flex gap-2">
-                                            <Input 
-                                                id="slack-webhook" 
-                                                placeholder="https://hooks.slack.com/services/..." 
+                                            <Input
+                                                id="slack-webhook"
+                                                placeholder="https://hooks.slack.com/services/..."
                                                 value={webhooks.slack}
                                                 onChange={(e) => setWebhooks(prev => ({ ...prev, slack: e.target.value }))}
                                                 className="bg-background/50"
@@ -1548,9 +1693,9 @@ const AlphaWorkforce = () => {
                                     <div className="space-y-2">
                                         <Label htmlFor="telegram-webhook" className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Telegram Bot Token</Label>
                                         <div className="flex gap-2">
-                                            <Input 
-                                                id="telegram-webhook" 
-                                                placeholder="123456789:ABCdef..." 
+                                            <Input
+                                                id="telegram-webhook"
+                                                placeholder="123456789:ABCdef..."
                                                 value={webhooks.telegram}
                                                 onChange={(e) => setWebhooks(prev => ({ ...prev, telegram: e.target.value }))}
                                                 className="bg-background/50"
@@ -1561,9 +1706,9 @@ const AlphaWorkforce = () => {
                                     <div className="space-y-2">
                                         <Label htmlFor="discord-webhook" className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Discord Webhook</Label>
                                         <div className="flex gap-2">
-                                            <Input 
-                                                id="discord-webhook" 
-                                                placeholder="https://discord.com/api/webhooks/..." 
+                                            <Input
+                                                id="discord-webhook"
+                                                placeholder="https://discord.com/api/webhooks/..."
                                                 value={webhooks.discord}
                                                 onChange={(e) => setWebhooks(prev => ({ ...prev, discord: e.target.value }))}
                                                 className="bg-background/50"
@@ -1804,7 +1949,7 @@ const StrategyIterationCard = ({ original, trigger, refined, roiDelta, status }:
                 <div className="text-[10px] text-muted-foreground uppercase font-bold">Original Strategy</div>
             </div>
             <div className="text-sm text-muted-foreground line-through opacity-50 px-3.5">{original}</div>
-            
+
             <div className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                 <div className="text-[10px] text-amber-500 uppercase font-bold uppercase tracking-widest">Data-Driven Trigger</div>
@@ -1825,7 +1970,7 @@ const StrategyIterationCard = ({ original, trigger, refined, roiDelta, status }:
 );
 
 const ArrowRight = ({ className }: { className?: string }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
 );
 
 interface RevenueCardProps {
