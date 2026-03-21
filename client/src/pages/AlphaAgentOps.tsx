@@ -1508,14 +1508,6 @@ export default function AlphaAgentOps() {
                     <DollarSign className="w-4 h-4 mr-2" />
                     Budget
                   </TabsTrigger>
-                  <TabsTrigger
-                    value="budget"
-                    data-testid="budget-rules-tab"
-                    className="bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none px-2 pb-2 h-auto"
-                  >
-                    <Wallet className="w-4 h-4 mr-2" />
-                    Budget
-                  </TabsTrigger>
                 </>
               )}
 
