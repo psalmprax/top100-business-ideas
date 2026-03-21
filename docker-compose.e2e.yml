@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  # Python backend service
+  backend:
+    build:
+      context: ./server/python
+      dockerfile: Dockerfile
+    container_name: e2e-backend
+    ports:
+      - "7002:7002"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
+      - REDIS_URL=redis://redis:6379
+    networks:
+      - e2e-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:7002/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Frontend service
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: e2e-frontend
+    ports:
+      - "7000:7000"
+    environment:
+      - VITE_API_URL=http://backend:7002
+      - PORT=7000
+    networks:
+      - e2e-network
+    depends_on:
+      backend:
+        condition: service_healthy
+
+networks:
+  e2e-network:
+    driver: bridge

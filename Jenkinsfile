@@ -54,46 +54,66 @@ pipeline {
         stage('Run Sentinel Functional Tests') {
             steps {
                 script {
-                    // Get host IP
-                    def HOST_IP = sh(script: "hostname -I | awk '{print \$1}'", returnStdout: true).trim()
-                    echo "Using host IP: ${HOST_IP} for Docker networking"
-                    
                     try {
-                        // Clean up any stale containers from previous runs
-                        sh 'docker rm -f alpha-python-backend alpha-frontend 2>/dev/null || true'
+                        // Clean up any stale containers
+                        sh 'docker rm -f e2e-test-runner 2>/dev/null || true'
 
-                        // Start the Python backend in the background
-                        // Keep container running with tail -f /dev/null
-                        sh """
-                            docker run -d --rm --name alpha-python-backend --network host -v \${HOST_WORKSPACE}:/app -w /app/server/python python:3.11-slim bash -c "pip install -r requirements.txt -q && python -m uvicorn main:app --host 0.0.0.0 --port 7002 & PID=\$!; tail -f /dev/null & wait \$PID"
-                        """
+                        // Start all services and Playwright tests in a single container
+                        // This avoids Docker-in-Docker networking issues
+                        sh '''
+                            docker run -d --rm --name e2e-test-runner \
+                                -v ${HOST_WORKSPACE}:/app \
+                                -w /app \
+                                -p 7000:7000 -p 7002:7002 \
+                                mcr.microsoft.com/playwright:v1.58.2-jammy bash -c "
+                                    # Install curl for health checks
+                                    apt-get update && apt-get install -y curl
 
-                        // Start the Frontend in the background
-                        // Keep container running with tail -f /dev/null
-                        sh """
-                            docker run -d --rm --name alpha-frontend --network host -v \${HOST_WORKSPACE}:/app -w /app/client node:20-alpine bash -c "apk add --no-cache bash curl && npm install --legacy-peer-deps -q && npm run dev -- --host 0.0.0.0 --port 7000 & PID=\$!; tail -f /dev/null & wait \$PID"
-                        """
+                                    # Start backend in background
+                                    cd /app/server/python
+                                    nohup python -m uvicorn main:app --host 0.0.0.0 --port 7002 > /tmp/backend.log 2>&1 &
+                                    BACKEND_PID=$!
 
-                        // Wait for application stack to be ready - give more time for npm/pip installs
-                        echo "Waiting for application stack to stabilize..."
-                        sleep 90
+                                    # Wait for backend to be ready
+                                    echo 'Waiting for backend...'
+                                    for i in $(seq 1 30); do
+                                        if curl -s http://localhost:7002/health > /dev/null 2>&1; then
+                                            echo 'Backend ready!'
+                                            break
+                                        fi
+                                        sleep 2
+                                    done
 
-                        // Check if containers are still running
-                        sh """
-                            docker ps --filter "name=alpha" --format '{{.Names}}: {{.Status}}'
-                        """
+                                    # Start frontend in background
+                                    cd /app/client
+                                    nohup npm run dev -- --host 0.0.0.0 --port 7000 > /tmp/frontend.log 2>&1 &
+                                    FRONTEND_PID=$!
 
-                        // Run specifically the Sentinel functional suite inside Playwright container
-                        // Use --add-host to make host.docker.internal work in DinD
-                        // Pass TEST_BASE_URL to point to the host's running services
-                        sh 'docker run --rm --network host --add-host=host.docker.internal:host-gateway -v ${HOST_WORKSPACE}:/app -w /app -e TEST_BASE_URL=http://host.docker.internal:7000 mcr.microsoft.com/playwright:v1.58.2-jammy npx playwright test client/src/test/sentinel-functional.spec.ts --project=chromium --reporter=list'
+                                    # Wait for frontend to be ready
+                                    echo 'Waiting for frontend...'
+                                    for i in $(seq 1 30); do
+                                        if curl -s http://localhost:7000 > /dev/null 2>&1; then
+                                            echo 'Frontend ready!'
+                                            break
+                                        fi
+                                        sleep 2
+                                    done
+
+                                    # Run Playwright tests
+                                    cd /app
+                                    npx playwright test client/src/test/sentinel-functional.spec.ts --project=chromium --reporter=list
+
+                                    # Cleanup
+                                    kill $BACKEND_PID $FRONTEND_PID 2>/dev/null || true
+                                "
+                        '''
+
+                        // Wait for tests to complete
+                        echo "Waiting for E2E tests to complete..."
+                        sleep 120
                     } finally {
-                        // Cleanup background containers
-                        sh 'docker stop alpha-python-backend alpha-frontend || true'
-                        
-                        // Always collect results - comment out junit and archiveArtifacts as plugins are missing
-                        // junit 'client/src/test-results/**/*.xml'
-                        // archiveArtifacts artifacts: 'client/src/test-results/**', allowEmptyArchive: true
+                        // Cleanup
+                        sh 'docker stop e2e-test-runner 2>/dev/null || true'
                     }
                 }
             }
@@ -111,8 +131,8 @@ pipeline {
 
     post {
         always {
-            // cleanWs() - plugin not installed
-            sh 'docker rm -f alpha-python-backend alpha-frontend 2>/dev/null || true'
+            // Cleanup any remaining containers
+            sh 'docker rm -f e2e-test-runner 2>/dev/null || true'
         }
         success {
             echo 'Sentinel Platform E2E Validation PASSED'
