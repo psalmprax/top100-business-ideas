@@ -59,22 +59,16 @@ pipeline {
                         sh 'docker rm -f e2e-test-runner 2>/dev/null || true'
 
                         // Start all services and Playwright tests in a single container using the script
+                        // Run synchronously and capture output
                         sh '''
-                            docker run -d --rm --name e2e-test-runner \
+                            docker run --rm --name e2e-test-runner \
                                 -v ${HOST_WORKSPACE}:/app \
                                 -w /app \
                                 -p 7000:7000 -p 7002:7002 \
                                 mcr.microsoft.com/playwright:v1.58.2-jammy bash /app/e2e-test.sh
                         '''
-
-                        // Wait for container to complete
-                        echo "Waiting for E2E tests to complete..."
-                        sh 'docker logs -f e2e-test-runner &'
-                        sleep 180
                     } finally {
-                        // Cleanup
-                        sh 'docker stop e2e-test-runner 2>/dev/null || true'
-                        sh 'docker rm -f e2e-test-runner 2>/dev/null || true'
+                        // Container is automatically removed when it exits since we used --rm
                     }
                 }
             }
