@@ -67,13 +67,13 @@ services:
   # Frontend
   frontend:
     build:
-      context: .
-      dockerfile: client/Dockerfile
+      context: ./client
+      dockerfile: Dockerfile
     ports:
-      - "7000:3000"
+      - "7000:5173"
     environment:
-      - VITE_API_URL=http://localhost:7001
-      - VITE_WS_URL=ws://localhost:7001
+      - VITE_API_URL=http://api-gateway:7001
+      - VITE_WS_URL=ws://api-gateway:7001
       - VITE_STRIPE_PUBLIC_KEY=${VITE_STRIPE_PUBLIC_KEY:-pk_test_placeholder}
     depends_on:
       - api-gateway
@@ -112,36 +112,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
-  # Nginx Proxy Manager (NPM) - Reverse Proxy with GUI
-  nginx-proxy-manager:
-    image: jc21/nginx-proxy-manager:latest
-    restart: unless-stopped
-    ports:
-      - "80:80" # HTTP
-      - "443:443" # HTTPS
-      - "81:81" # Admin UI
-    volumes:
-      - ./npm/data:/data
-      - ./npm/letsencrypt:/etc/letsencrypt
-    networks:
-      - proxied
-    depends_on:
-      - npm-db
-
-  # NPM Database (MariaDB)
-  npm-db:
-    image: mariadb:latest
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: npm_root_password
-      MYSQL_DATABASE: npm
-      MYSQL_USER: npm
-      MYSQL_PASSWORD: npm_password
-    volumes:
-      - ./npm/mysql:/var/lib/mysql
-    networks:
-      - proxied
 
 networks:
   app-network:
