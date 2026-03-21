@@ -59,6 +59,9 @@ pipeline {
                     echo "Using host IP: ${HOST_IP} for Docker networking"
                     
                     try {
+                        // Clean up any stale containers from previous runs
+                        sh 'docker rm -f alpha-python-backend alpha-frontend 2>/dev/null || true'
+
                         // Start the Python backend in the background
                         // Use --add-host to make host.docker.internal work
                         sh """
@@ -89,9 +92,9 @@ pipeline {
                         // Cleanup background containers
                         sh 'docker stop alpha-python-backend alpha-frontend || true'
                         
-                        // Always collect results
-                        junit 'client/src/test-results/**/*.xml'
-                        archiveArtifacts artifacts: 'client/src/test-results/**', allowEmptyArchive: true
+                        // Always collect results - comment out junit and archiveArtifacts as plugins are missing
+                        // junit 'client/src/test-results/**/*.xml'
+                        // archiveArtifacts artifacts: 'client/src/test-results/**', allowEmptyArchive: true
                     }
                 }
             }
@@ -109,7 +112,8 @@ pipeline {
 
     post {
         always {
-            cleanWs()
+            // cleanWs() - plugin not installed
+            sh 'docker rm -f alpha-python-backend alpha-frontend 2>/dev/null || true'
         }
         success {
             echo 'Sentinel Platform E2E Validation PASSED'
