@@ -1,13 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-
-interface User {
-    id: string;
-    email: string;
-    name: string;
-    role: string;
-    subscriptionTier: string;
-    company?: string;
-}
+import { authApi, type User } from '@/lib/api';
 
 interface AuthContextType {
     user: User | null;
@@ -22,8 +14,6 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:7001';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
@@ -57,18 +47,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         try {
-            const response = await fetch(`${API_URL}/api/v1/auth/me`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
-
-            if (response.ok) {
-                const userData = await response.json();
-                setUser(userData);
-            } else {
-                localStorage.removeItem('auth_token');
-            }
+            const userData = await authApi.me();
+            setUser(userData);
         } catch (error) {
             console.error('Auth check failed:', error);
             localStorage.removeItem('auth_token');
@@ -78,53 +58,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     const login = async (email: string, password: string) => {
-        const response = await fetch(`${API_URL}/api/v1/auth/login`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email, password }),
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
+        try {
+            const data = await authApi.login(email, password);
+            localStorage.setItem('auth_token', data.accessToken);
+            setUser(data.user);
+        } catch (error: any) {
             throw new Error(error.message || 'Login failed');
         }
-
-        const data = await response.json();
-        localStorage.setItem('auth_token', data.accessToken || data.token);
-        setUser(data.user);
     };
 
     const signUp = async (email: string, password: string, name: string) => {
-        const response = await fetch(`${API_URL}/api/v1/auth/register`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email, password, name }),
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
+        try {
+            const data = await authApi.register(email, password, name);
+            localStorage.setItem('auth_token', data.accessToken);
+            setUser(data.user);
+        } catch (error: any) {
             throw new Error(error.message || 'Registration failed');
         }
-
-        const data = await response.json();
-        localStorage.setItem('auth_token', data.accessToken || data.token);
-        setUser(data.user);
     };
 
     const logout = async () => {
         const token = localStorage.getItem('auth_token');
         if (token) {
             try {
-                await fetch(`${API_URL}/api/v1/auth/logout`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                    },
-                });
+                await authApi.logout();
             } catch (error) {
                 console.error('Logout error:', error);
             }

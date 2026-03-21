@@ -171,6 +171,16 @@ export default defineConfig({
     port: 7000,
     strictPort: true, // Force port 7000
     host: true,
+    proxy: {
+      "/api": {
+        target: "http://api-gateway:8080",
+        changeOrigin: true,
+      },
+      "/ml": {
+        target: "http://api-gateway:8080",
+        changeOrigin: true,
+      },
+    },
     allowedHosts: [
       ".manuspre.computer",
       ".manus.computer",

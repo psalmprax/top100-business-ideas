@@ -804,6 +804,24 @@ export const deepfakeApi = {
 
     history: () =>
         apiRequest<DeepfakeResult[]>('/api/v1/deepfake/history'),
+
+    getStats: () =>
+        apiRequest<any>('/api/v1/deepfake/stats'),
+
+    challenge: (userId: string) =>
+        apiRequest<any>(`/api/v1/deepfake/challenge?user_id=${userId}`, {
+            method: 'POST',
+        }),
+
+    train: (datasetName: string) =>
+        apiRequest<any>(`/api/v1/deepfake/train?dataset_name=${datasetName}`, {
+            method: 'POST',
+        }),
+
+    test: (modelId: string) =>
+        apiRequest<any>(`/api/v1/deepfake/test?model_id=${modelId}`, {
+            method: 'POST',
+        }),
 };
 
 // ============================================================================

@@ -16,7 +16,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
-import { extendedApi, type MobileSDKStatus, type WearableDevice, type TravelKioskStatus, type CryptoWallet } from '@/lib/api';
+import { extendedApi, deepfakeApi, type MobileSDKStatus, type WearableDevice, type TravelKioskStatus, type CryptoWallet } from '@/lib/api';
 import {
     Activity,
     AlertCircle,
@@ -499,11 +499,8 @@ export default function AlphaDeepfakeDefense() {
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const response = await fetch('/api/v1/deepfake/stats');
-                if (response.ok) {
-                    const data = await response.json();
-                    setStats(data);
-                }
+                const data = await deepfakeApi.getStats();
+                setStats(data);
             } catch (error) {
                 console.error("Failed to fetch deepfake stats:", error);
             }
@@ -836,10 +833,7 @@ export default function AlphaDeepfakeDefense() {
             formData.append('dataset_name', `Dataset_${Date.now()}`);
             // In a real app: formData.append('file', fileInput.files[0]);
             
-            const response = await fetch('/api/v1/deepfake/train?dataset_name=Custom_Dataset', {
-                method: 'POST',
-                body: formData // This would normally include the file
-            });
+            const response = await deepfakeApi.train('Custom_Dataset');
 
             if (!response.ok) throw new Error("Upload failed");
 
@@ -867,11 +861,7 @@ export default function AlphaDeepfakeDefense() {
     const handleRequestChallenge = async () => {
         try {
             setAuthStatus('challenging');
-            const response = await fetch(`/api/v1/deepfake/challenge?user_id=${user?.id || 'demo_user'}`, {
-                method: 'POST'
-            });
-            if (!response.ok) throw new Error("Failed to request challenge");
-            const challenge = await response.json();
+            const challenge = await deepfakeApi.challenge(user?.id || 'demo_user');
             setCurrentChallenge(challenge);
             toast.info("Hardware challenge received. Please sign with your biometric key.");
         } catch (error) {
