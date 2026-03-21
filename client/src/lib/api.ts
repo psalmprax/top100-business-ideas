@@ -409,11 +409,28 @@ function getMockResponse<T>(endpoint: string, method: string, body?: any): T {
     }
 
     // Deepfake
-    if (endpoint.includes('/deepfake') && endpoint.includes('/verify')) {
+    if (endpoint.includes('/deepfake/stats') && method === 'GET') {
+        return {
+            totalAnalyses: 12480,
+            threatsDetected: 842,
+            verificationRate: 0.985,
+            blockedAttempts: 156
+        } as T;
+    }
+
+    if (endpoint.includes('/deepfake/challenge') && method === 'POST') {
+        return {
+            challenge: `AUTH_CHALLENGE_${Math.random().toString(36).substring(2, 20).toUpperCase()}`,
+            user_id: data.user_id || 'demo_user',
+            timestamp: new Date().toISOString()
+        } as T;
+    }
+
+    if (endpoint.includes('/deepfake/verify')) {
         return { status: 'verified', confidence: 0.98, timestamp: new Date().toISOString() } as T;
     }
 
-    if (endpoint.includes('/deepfake') && endpoint.includes('/document')) {
+    if (endpoint.includes('/deepfake/document')) {
         return { document_type: 'passport', verified: true, timestamp: new Date().toISOString() } as T;
     }
 

@@ -1116,7 +1116,7 @@ export default function AlphaDeepfakeDefense() {
                                                 </Button>
                                             ) : authStatus === 'challenging' && currentChallenge ? (
                                                 <div className="p-4 bg-muted rounded-lg border border-purple-500/30 animate-pulse">
-                                                    <div className="text-sm font-medium mb-2 text-center">FIDO2 Challenge: <code className="text-xs">{currentChallenge.challenge.substring(0, 16)}...</code></div>
+                                                    <div className="text-sm font-medium mb-2 text-center">FIDO2 Challenge: <code className="text-xs">{currentChallenge?.challenge?.substring(0, 16) || 'Generating...'}...</code></div>
                                                     <div className="flex gap-2">
                                                         <Button
                                                             variant="default"
@@ -1932,7 +1932,7 @@ export default function AlphaDeepfakeDefense() {
                                                     <Key className="w-4 h-4 text-orange-500" />
                                                 </div>
                                                 <div>
-                                                    <div className="font-mono text-sm">{wallet.wallet_address.substring(0, 6)}...{wallet.wallet_address.substring(38)}</div>
+                                                    <div className="font-mono text-sm">{(wallet.wallet_address || '').substring(0, 6)}...{(wallet.wallet_address || '').substring(38)}</div>
                                                     <div className="text-xs text-muted-foreground uppercase">{wallet.blockchain}</div>
                                                 </div>
                                             </div>
@@ -2404,7 +2404,7 @@ export default function AlphaDeepfakeDefense() {
                                             <span className="text-sm font-medium">Provider: {ssoConfig.provider.toUpperCase()}</span>
                                             <Badge className="bg-green-500">{ssoConfig.status.toUpperCase()}</Badge>
                                         </div>
-                                        <p className="text-[10px] text-muted-foreground font-mono">HANDSHAKE_HASH: {btoa(ssoConfig.lastHandshake).substring(0, 16)}...</p>
+                                        <p className="text-[10px] text-muted-foreground font-mono">HANDSHAKE_HASH: {ssoConfig.lastHandshake ? btoa(ssoConfig.lastHandshake).substring(0, 16) : 'PENDING'}...</p>
                                     </div>
                                     <Button className="w-full" variant="outline" onClick={handleSSOHandshake}>
                                         <ShieldCheck className="w-4 h-4 mr-2" /> Verify SSO Handshake
