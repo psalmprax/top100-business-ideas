@@ -4,7 +4,7 @@
  * Supports both real API calls and demo mode with mock data
  */
 
-const API_URL = import.meta.env.VITE_API_URL || '/';
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 export interface LLMMetrics {
   p95LatencyMs: number;
