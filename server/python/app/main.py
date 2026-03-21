@@ -26,13 +26,22 @@ async def lifespan(app: FastAPI):
     logger.info("Starting Python AI/ML Backend...")
     logger.info(f"Environment: {settings.ENVIRONMENT}")
     
-    # Initialize ML models on startup
+    # Initialize database
     try:
-        from app.ml import deepfake_detector, compliance_analyzer
-        logger.info("ML models loaded successfully")
+        from app.core.database import init_db
+        init_db()
+        logger.info("Database initialized successfully")
     except Exception as e:
-        logger.warning(f"ML models not loaded: {e}")
+        logger.error(f"Database initialization failed: {e}")
+        # In development, we might want to continue, but in production this is fatal
     
+    # Start background services
+    try:
+        billing_service.start_budget_enforcement_loop()
+        logger.info("Background monitor services started")
+    except Exception as e:
+        logger.error(f"Failed to start background services: {e}")
+
     yield
     
     logger.info("Shutting down Python AI/ML Backend...")
@@ -68,13 +77,6 @@ app.include_router(extended.router, prefix="/api/v1", tags=["Extended API - Full
 
 from app.core.database import init_db
 
-@app.on_event("startup")
-async def startup_event():
-    """Run startup tasks"""
-    init_db()
-    # Start the budget enforcement background monitor
-    billing_service.start_budget_enforcement_loop()
-    logger.info("Background monitor services started.")
 
 @app.get("/")
 async def root():
