@@ -4,7 +4,7 @@
  * Supports both real API calls and demo mode with mock data
  */
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:7001';
+const API_URL = import.meta.env.VITE_API_URL || '/';
 
 export interface LLMMetrics {
   p95LatencyMs: number;
@@ -419,9 +419,20 @@ function getMockResponse<T>(endpoint: string, method: string, body?: any): T {
     }
 
     if (endpoint.includes('/deepfake/challenge') && method === 'POST') {
+        const challengeId = `CHL-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
         return {
+            id: challengeId,
             challenge: `AUTH_CHALLENGE_${Math.random().toString(36).substring(2, 20).toUpperCase()}`,
             user_id: data.user_id || 'demo_user',
+            timestamp: new Date().toISOString()
+        } as T;
+    }
+
+    if (endpoint.includes('/deepfake/verify') && method === 'POST') {
+        return {
+            verified: true,
+            confidence: 0.992,
+            hardware_attestation: 'verified_secure_enclave',
             timestamp: new Date().toISOString()
         } as T;
     }
@@ -829,6 +840,9 @@ export const deepfakeApi = {
         apiRequest<any>(`/api/v1/deepfake/challenge?user_id=${userId}`, {
             method: 'POST',
         }),
+
+    verify: (challengeId: string, signature: string, hardwareId: string) =>
+        apiRequest<any>(`/api/v1/deepfake/verify?challenge_id=${challengeId}&signature=${signature}&hardware_id=${hardwareId}`, { method: 'POST' }),
 
     train: (datasetName: string) =>
         apiRequest<any>(`/api/v1/deepfake/train?dataset_name=${datasetName}`, {

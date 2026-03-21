@@ -875,11 +875,8 @@ export default function AlphaDeepfakeDefense() {
 
         setIsAuthVerifying(true);
         try {
-            const response = await fetch(`/api/v1/deepfake/verify?challenge_id=${currentChallenge.id}&signature=${signature}&hardware_id=HW_${Math.random().toString(36).substr(2, 9)}`, {
-                method: 'POST'
-            });
-            if (!response.ok) throw new Error("Verification failed");
-            const result = await response.json();
+            const hardwareId = `HW_${Math.random().toString(36).substr(2, 9)}`;
+            const result = await deepfakeApi.verify(currentChallenge.id, signature, hardwareId);
 
             if (result.verified) {
                 setAuthStatus('verified');
