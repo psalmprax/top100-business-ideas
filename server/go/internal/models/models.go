@@ -8,9 +8,12 @@ type User struct {
 	Email     string    `json:"email" db:"email"`
 	Name      string    `json:"name" db:"name"`
 	Password  string    `json:"-" db:"password_hash"`
-	Role      string    `json:"role" db:"role"`
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+	Role              string    `json:"role" db:"role"`
+	SubscriptionTier  string    `json:"subscription_tier" db:"subscription_tier"`
+	SubscriptionStatus string    `json:"subscription_status" db:"subscription_status"`
+	AllowedProducts   []string  `json:"allowed_products" db:"allowed_products"`
+	CreatedAt         time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // Agent represents an AI agent

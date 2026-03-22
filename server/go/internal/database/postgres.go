@@ -99,6 +99,7 @@ func RunMigrations(ctx context.Context) error {
 			stripe_customer_id VARCHAR(255),
 			subscription_tier VARCHAR(50) DEFAULT 'free',
 			subscription_status VARCHAR(50) DEFAULT 'active',
+			allowed_products JSONB DEFAULT '[]',
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`,

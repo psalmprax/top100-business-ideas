@@ -14,9 +14,10 @@ type AuthService struct {
 }
 
 type Claims struct {
-	UserID string `json:"user_id"`
-	Email  string `json:"email"`
-	Role   string `json:"role"`
+	UserID          string   `json:"user_id"`
+	Email           string   `json:"email"`
+	Role            string   `json:"role"`
+	AllowedProducts []string `json:"allowed_products"`
 	jwt.RegisteredClaims
 }
 
@@ -27,11 +28,12 @@ func NewAuthService(secret string) *AuthService {
 	}
 }
 
-func (s *AuthService) GenerateToken(userID, email, role string) (string, error) {
+func (s *AuthService) GenerateToken(userID, email, role string, allowedProducts []string) (string, error) {
 	claims := Claims{
-		UserID: userID,
-		Email:  email,
-		Role:   role,
+		UserID:          userID,
+		Email:           email,
+		Role:            role,
+		AllowedProducts: allowedProducts,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.jwtExpiry)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

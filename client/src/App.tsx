@@ -22,8 +22,18 @@ import SettingsPage from "./pages/Settings";
 import { useAuth } from "./contexts/AuthContext";
 import { Redirect } from "wouter";
 
-function ManagementRoute({ component: Component, path }: { component: React.ComponentType, path: string }) {
-  const { user, isManagement, isLoading } = useAuth();
+function ProtectedRoute({ 
+  component: Component, 
+  path, 
+  productId, 
+  requireManagement = false 
+}: { 
+  component: React.ComponentType, 
+  path: string, 
+  productId?: string,
+  requireManagement?: boolean
+}) {
+  const { user, isManagement, isLoading, hasProductAccess } = useAuth();
 
   if (isLoading) {
     return (
@@ -33,8 +43,16 @@ function ManagementRoute({ component: Component, path }: { component: React.Comp
     );
   }
 
-  if (!user || !isManagement) {
+  if (!user) {
     return <Redirect to="/login" />;
+  }
+
+  if (requireManagement && !isManagement) {
+    return <Redirect to="/" />;
+  }
+
+  if (productId && !hasProductAccess(productId)) {
+    return <Redirect to="/" />;
   }
 
   return (
@@ -53,15 +71,15 @@ function Router() {
       <Route path={"/market-intelligence"} component={Home} />
 
       {/* Product Pages */}
-      <Route path={"/products/agent-ops"} component={AlphaAgentOpsPage} />
-      <Route path={"/products/ai-compliance"} component={AlphaAIActCompliancePage} />
-      <Route path={"/products/deepfake-defense"} component={AlphaDeepfakeDefensePage} />
-      <Route path={"/products/denial-defense"} component={DenialDefensePage} />
-      <Route path={"/products/actionable-ai"} component={ActionableAIPage} />
-      <Route path={"/products/workflow-bot"} component={FreelancerWorkflowBotPage} />
+      <ProtectedRoute path="/products/agent-ops" component={AlphaAgentOpsPage} productId="agent-ops" />
+      <ProtectedRoute path="/products/ai-compliance" component={AlphaAIActCompliancePage} productId="ai-compliance" />
+      <ProtectedRoute path="/products/deepfake-defense" component={AlphaDeepfakeDefensePage} productId="deepfake-defense" />
+      <ProtectedRoute path="/products/denial-defense" component={DenialDefensePage} productId="denial-defense" />
+      <ProtectedRoute path="/products/actionable-ai" component={ActionableAIPage} productId="actionable-ai" />
+      <ProtectedRoute path="/products/workflow-bot" component={FreelancerWorkflowBotPage} productId="workflow-bot" />
       
       {/* Gated Management Pages */}
-      <ManagementRoute path="/products/workforce" component={AlphaWorkforcePage} />
+      <ProtectedRoute path="/products/workforce" component={AlphaWorkforcePage} productId="alpha-workforce" requireManagement={true} />
 
       {/* Auth & User Pages */}
       <Route path={"/login"} component={LoginPage} />

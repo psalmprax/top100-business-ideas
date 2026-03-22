@@ -29,20 +29,21 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	// TODO: Look up user in database
 	// For demo purposes, create a mock user
 	mockUser := &models.User{
-		ID:    "user-1",
-		Email: req.Email,
-		Name:  "Demo User",
-		Role:  "admin",
+		ID:              "user-1",
+		Email:           req.Email,
+		Name:            "Demo User",
+		Role:            "admin",
+		AllowedProducts: []string{"*"}, // Admin has access to everything
 	}
 
 	// Generate tokens
-	accessToken, err := h.authService.GenerateToken(mockUser.ID, mockUser.Email, mockUser.Role)
+	accessToken, err := h.authService.GenerateToken(mockUser.ID, mockUser.Email, mockUser.Role, mockUser.AllowedProducts)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to generate token"})
 		return
 	}
 
-	refreshToken, err := h.authService.GenerateToken(mockUser.ID, mockUser.Email, mockUser.Role)
+	refreshToken, err := h.authService.GenerateToken(mockUser.ID, mockUser.Email, mockUser.Role, mockUser.AllowedProducts)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to generate refresh token"})
 		return
@@ -66,19 +67,20 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	// TODO: Create user in database
 	// For demo purposes, return success
 	newUser := &models.User{
-		ID:    "user-" + req.Email,
-		Email: req.Email,
-		Name:  req.Name,
-		Role:  "user",
+		ID:              "user-" + req.Email,
+		Email:           req.Email,
+		Name:            req.Name,
+		Role:            "user",
+		AllowedProducts: []string{"agent-ops"}, // New users only get Agent-Ops by default
 	}
 
-	accessToken, err := h.authService.GenerateToken(newUser.ID, newUser.Email, newUser.Role)
+	accessToken, err := h.authService.GenerateToken(newUser.ID, newUser.Email, newUser.Role, newUser.AllowedProducts)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to generate token"})
 		return
 	}
 
-	refreshToken, err := h.authService.GenerateToken(newUser.ID, newUser.Email, newUser.Role)
+	refreshToken, err := h.authService.GenerateToken(newUser.ID, newUser.Email, newUser.Role, newUser.AllowedProducts)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to generate refresh token"})
 		return
@@ -110,10 +112,11 @@ func (h *AuthHandler) Me(c *gin.Context) {
 	// TODO: Look up user in database
 	// For demo purposes, return mock user
 	user := &models.User{
-		ID:    userID.(string),
-		Email: "demo@alphaai.com",
-		Name:  "Demo User",
-		Role:  "admin",
+		ID:              userID.(string),
+		Email:           "demo@alphaai.com",
+		Name:            "Demo User",
+		Role:            "admin",
+		AllowedProducts: []string{"*"},
 	}
 
 	c.JSON(http.StatusOK, user)

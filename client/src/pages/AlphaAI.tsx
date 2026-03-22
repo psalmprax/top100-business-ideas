@@ -254,7 +254,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 export default function AlphaAI() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { isManagement } = useAuth();
+  const { isManagement, hasProductAccess, isAuthenticated } = useAuth();
 
   const publicProducts = products.filter(
     (p) => p.id !== "alpha-workforce" && p.id !== "market-intelligence"
@@ -496,8 +496,10 @@ export default function AlphaAI() {
                     </ul>
                     <div className="mt-auto pt-6 border-t border-border/50">
                       <Link href={product.url}>
-                        <Button className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
-                          Learn More
+                        <Button 
+                          className={`w-full transition-all duration-300 ${!hasProductAccess(product.id) && isAuthenticated ? 'opacity-50 grayscale cursor-not-allowed' : 'group-hover:bg-primary group-hover:text-primary-foreground'}`}
+                        >
+                          {!isAuthenticated ? "Learn More" : hasProductAccess(product.id) ? "Learn More" : "Upgrade to Unlock"}
                         </Button>
                       </Link>
                     </div>

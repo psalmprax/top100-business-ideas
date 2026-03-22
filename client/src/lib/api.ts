@@ -975,6 +975,7 @@ export interface User {
     role: string;
     subscriptionTier?: string;
     company?: string;
+    allowedProducts: string[];
 }
 
 export const userApi = {

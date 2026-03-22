@@ -11,6 +11,7 @@ interface AuthContextType {
     logout: () => Promise<void>;
     updateUser: (user: Partial<User>) => void;
     loginDemo: () => void;
+    hasProductAccess: (productId: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -40,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 role: 'client',
                 subscriptionTier: 'enterprise',
                 company: 'Demo Corporation',
+                allowedProducts: ['*'],
             };
             setUser(demoUser);
             setIsLoading(false);
@@ -100,6 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             role: 'client',
             subscriptionTier: 'pro',
             company: 'Demo Corporation',
+            allowedProducts: ['agent-ops', 'ai-compliance'],
         };
         localStorage.setItem('auth_token', 'demo-token-for-testing');
         localStorage.setItem('demo_mode', 'true');
@@ -114,6 +117,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const isManagement = user?.role === 'management' || user?.role === 'admin' || user?.role === 'enterprise';
 
+    const hasProductAccess = (productId: string) => {
+        if (!user) return false;
+        if (isManagement) return true;
+        return user.allowedProducts?.includes('*') || user.allowedProducts?.includes(productId);
+    };
+
     return (
         <AuthContext.Provider
             value={{
@@ -126,6 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 logout,
                 updateUser,
                 loginDemo,
+                hasProductAccess,
             }}
         >
             {children}

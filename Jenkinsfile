@@ -76,7 +76,7 @@ pipeline {
 
         stage('Build Artifacts') {
             when {
-                branch 'main'
+                branch 'master'
             }
             steps {
                 sh 'docker run --rm -v ${HOST_WORKSPACE}:/app -w /app/client node:20-alpine npm run build'
@@ -85,7 +85,7 @@ pipeline {
 
         stage('Deploy to Production') {
             when {
-                branch 'main'
+                branch 'master'
             }
             steps {
                 script {
