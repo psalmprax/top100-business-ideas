@@ -1668,7 +1668,7 @@ test.describe('AlphaAI Company Website', () => {
                 await page.goto('/products/agent-ops');
                 await expect(page.locator('h1')).toBeVisible();
 
-                const budgetTab = page.locator('[data-testid="budget-rules-tab"]');
+                const budgetTab = page.locator('[data-testid="budget-tab"]');
                 await budgetTab.click();
 
                 // Verify budget content visible
@@ -1677,7 +1677,7 @@ test.describe('AlphaAI Company Website', () => {
 
             test('should open new budget rule dialog', async ({ page }) => {
                 await page.goto('/products/agent-ops');
-                await page.click('[data-testid="budget-rules-tab"]');
+                await page.click('[data-testid="budget-tab"]');
 
                 const addButton = page.locator('button:has-text("New Rule"), button:has-text("Add Rule")');
                 const count = await addButton.count();

@@ -244,10 +244,10 @@ test.describe('AlphaAI - Functional Interaction Scenarios', () => {
             await page.goto('/products/agent-ops');
         });
 
-        test('should navigate to Budget Rules tab', async ({ page }) => {
+        test('should navigate to Budget tab', async ({ page }) => {
             await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 10000 });
-            await page.getByTestId('budget-rules-tab').click();
-            await expect(page.getByText('Budget Rules')).toBeVisible();
+            await page.getByTestId('budget-tab').click();
+            await expect(page.getByText('Dynamic Budget Rules')).toBeVisible();
         });
 
         test('should navigate to Alerts tab', async ({ page }) => {

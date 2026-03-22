@@ -92,7 +92,6 @@ test.describe('AgentOps Sentinel - Enterprise Functional Validation', () => {
         // Navigate to Budget Tab (under Core)
         await page.getByTestId('core-category-trigger').click();
         await page.getByTestId('budget-tab').click();
-        await page.getByTestId('budget-rules-tab').click();
         
         // Toggle the first rule
         const budgetSwitch = page.locator('button[role="switch"]').first();
