@@ -71,13 +71,22 @@ function Router() {
 
       {/* Legacy routes redirect to products */}
       <Route path={"/ventures/alpha-agent-ops"}>
-        {() => { window.location.href = "/products/agent-ops"; return null; }}
+        {() => { window.location.replace("/products/agent-ops"); return null; }}
+      </Route>
+      <Route path={"/agent-ops"}>
+        {() => { window.location.replace("/products/agent-ops"); return null; }}
+      </Route>
+      <Route path={"/ai-compliance"}>
+        {() => { window.location.replace("/products/ai-compliance"); return null; }}
+      </Route>
+      <Route path={"/deepfake-defense"}>
+        {() => { window.location.replace("/products/deepfake-defense"); return null; }}
       </Route>
       <Route path={"/ventures/alpha-ai-act-compliance"}>
-        {() => { window.location.href = "/products/ai-compliance"; return null; }}
+        {() => { window.location.replace("/products/ai-compliance"); return null; }}
       </Route>
       <Route path={"/ventures/alpha-deepfake-defense"}>
-        {() => { window.location.href = "/products/deepfake-defense"; return null; }}
+        {() => { window.location.replace("/products/deepfake-defense"); return null; }}
       </Route>
 
       {/* 404 */}
