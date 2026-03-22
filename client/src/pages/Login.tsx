@@ -35,7 +35,7 @@ export default function Login() {
 
         try {
             await login(email, password);
-            window.location.href = '/dashboard';
+            window.location.href = '/products/agent-ops';
         } catch (err) {
             setError('Invalid email or password');
         } finally {
@@ -50,7 +50,7 @@ export default function Login() {
 
         try {
             await signUp(email, password, name);
-            window.location.href = '/dashboard';
+            window.location.href = '/products/agent-ops';
         } catch (err) {
             setError('Failed to create account. Please try again.');
         } finally {

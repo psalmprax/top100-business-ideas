@@ -89,6 +89,9 @@ function Router() {
         {() => { window.location.replace("/products/deepfake-defense"); return null; }}
       </Route>
 
+      <Route path={"/dashboard"}>
+        {() => { window.location.replace("/products/agent-ops"); return null; }}
+      </Route>
       {/* 404 */}
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
