@@ -1,6 +1,8 @@
 """Extended API endpoints to resolve partial gaps - Full sync implementation"""
 
 from typing import List, Optional, Dict, Any, Union
+from datetime import datetime
+from pydantic import BaseModel
 import uuid
 import json
 import asyncio
