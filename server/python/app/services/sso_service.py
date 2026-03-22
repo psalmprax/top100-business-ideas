@@ -16,6 +16,7 @@ SSO_SECRET_KEY = "alpha-sentinel-sso-secret-base64"
 ALGORITHM = "HS256"
 
 class SSOService:
+    def __init__(self):
         # In-memory store for connected SSO app configurations
         self.sso_configs: Dict[str, Dict[str, Any]] = {}
         # Track connected third-party providers
