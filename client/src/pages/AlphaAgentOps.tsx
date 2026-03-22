@@ -207,7 +207,9 @@ interface AuditEntry {
   tokens: number;
   cost: number;
   reasoning: string;
+  interactionId?: string; // Links related events into a single "Thread"
 }
+
 
 interface AlertConfig {
   id: string;
@@ -989,8 +991,10 @@ export default function AlphaAgentOps() {
       setAgents(agentsRes as any);
       setAuditLog((auditRes as any[]).map(log => ({
         ...log,
-        timestamp: new Date(log.timestamp)
+        timestamp: new Date(log.timestamp),
+        interactionId: log.interaction_id || log.interactionId // Support both snake_case and camelCase from backend
       })));
+
       setBudgetRules(rulesRes as any);
       setWebhooks(webhookRes as any);
       setMultiCloudStatus(cloudRes);
