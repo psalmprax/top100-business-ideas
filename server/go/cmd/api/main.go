@@ -299,6 +299,20 @@ func main() {
 				wearable.POST("/devices/:id/pair", wearableHandler.PairDevice)
 			}
 
+			// Mobile SDK (Deepfake UC10)
+			mobileSDK := protected.Group("/mobile-sdk")
+			{
+				mobileSDK.GET("/stats", agentOpsHandler.ProxyToPython)
+			}
+
+			// SSO (AI Compliance UC1)
+			sso := protected.Group("/sso")
+			{
+				sso.GET("/config/:id", agentOpsHandler.ProxyToPython)
+				sso.GET("/config/:id/liveness-link", agentOpsHandler.ProxyToPython)
+				sso.POST("/handshake", agentOpsHandler.ProxyToPython)
+			}
+
 			// Crypto (Deepfake UC12)
 			crypto := protected.Group("/crypto")
 			{
@@ -312,6 +326,7 @@ func main() {
 			{
 				travel.GET("/kiosks", travelKioskHandler.ListKiosks)
 				travel.POST("/kiosks/:id/verify", travelKioskHandler.VerifyTraveler)
+				travel.GET("/stats", agentOpsHandler.ProxyToPython)
 			}
 
 			// Workforce & Sovereign (Digital Workforce Gap)

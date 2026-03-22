@@ -498,6 +498,7 @@ export default function AlphaDeepfakeDefense() {
 
     useEffect(() => {
         const fetchStats = async () => {
+            if (!isAuthenticated) return;
             try {
                 const data = await deepfakeApi.getStats();
                 setStats(data);
@@ -506,7 +507,8 @@ export default function AlphaDeepfakeDefense() {
             }
         };
         fetchStats();
-    }, []);
+    }, [isAuthenticated]);
+
     const [scanProgress, setScanProgress] = useState(0);
     const [scanStage, setScanStage] = useState('');
     const [isUploading, setIsUploading] = useState(false);

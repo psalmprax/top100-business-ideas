@@ -488,7 +488,13 @@ class MobileSDKConfig(BaseModel):
     enabled_features: List[str]  # face, voice, document
     created_at: Optional[datetime] = None
 
+@router.get("/mobile-sdk/stats")
+async def get_mobile_sdk_stats():
+    """Get mobile SDK usage statistics"""
+    return mobile_sdk.get_sdk_stats()
+
 class WearableDevice(BaseModel):
+
     id: Optional[str] = None
     device_type: str  # vision_pro, quest, apple_watch
     user_id: str
@@ -503,6 +509,12 @@ class TravelKiosk(BaseModel):
     status: str  # operational, maintenance, offline
     verification_count: int = 0
     last_maintenance: Optional[datetime] = None
+
+@router.get("/travel/stats")
+async def get_travel_stats():
+    """Get travel kiosk verification statistics"""
+    return travel_sdk.get_kiosk_stats()
+
 
 class CryptoWallet(BaseModel):
     id: Optional[str] = None
@@ -1441,6 +1453,16 @@ async def get_sso_config(app_id: str):
     if not conf:
         return {"app_id": app_id, "provider": "SAML2.0", "enforce_mfa": True}
     return conf
+
+@router.get("/sso/config/{app_id}/liveness-link")
+async def get_sso_liveness_link(app_id: str):
+    """Generate a one-time liveness verification link for SSO enrollment"""
+    return {
+        "link": f"https://auth.alpha-ai.io/liveness/{app_id}/{uuid.uuid4().hex[:12]}",
+        "expires_at": (datetime.utcnow().replace(minute=datetime.utcnow().minute + 15)).isoformat(),
+        "qr_code_enabled": True
+    }
+
 
 @router.post("/sso/handshake")
 async def sso_handshake(request: Dict[str, Any]):
