@@ -1454,6 +1454,12 @@ async def get_sso_config(app_id: str):
         return {"app_id": app_id, "provider": "SAML2.0", "enforce_mfa": True}
     return conf
 
+@router.post("/sso/config/{app_id}")
+async def save_sso_config(app_id: str, config: Dict[str, Any]):
+    """Update Identity Provider Config"""
+    return sso_service.save_config(app_id, config)
+
+
 @router.get("/sso/config/{app_id}/liveness-link")
 async def get_sso_liveness_link(app_id: str):
     """Generate a one-time liveness verification link for SSO enrollment"""

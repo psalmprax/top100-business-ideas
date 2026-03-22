@@ -1756,7 +1756,12 @@ export const extendedApi = {
             body: JSON.stringify({ app_id }),
         }),
         config: (app_id: string) => apiRequest<any>(`/api/v1/sso/config/${app_id}`),
+        saveConfig: (app_id: string, config: any) => apiRequest<any>(`/api/v1/sso/config/${app_id}`, {
+            method: 'POST',
+            body: JSON.stringify(config),
+        }),
     },
+
 
     workforce: {
         toggleAutonomy: (enabled: boolean) => apiRequest<any>('/api/v1/workforce/autonomy', {

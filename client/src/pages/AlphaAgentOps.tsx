@@ -692,6 +692,15 @@ export default function AlphaAgentOps() {
   const [isProvisioningClient, setIsProvisioningClient] = useState(false);
   const [isPerformingForensics, setIsPerformingForensics] = useState(false);
   const [isRollingBack, setIsRollingBack] = useState(false);
+  const [ssoConfig, setSsoConfig] = useState<any>({
+    sso_url: "",
+    certificate: "",
+    provider: "okta",
+    force_sso: false,
+    metadata_url: ""
+  });
+  const [isSavingSso, setIsSavingSso] = useState(false);
+
 
   // Phase 2 Functions
   const fetchForecast = async () => {
@@ -703,6 +712,39 @@ export default function AlphaAgentOps() {
       console.error("Forecast fetch failed", e);
     }
   };
+
+  const handleSaveSAMLConfig = async () => {
+    setIsSavingSso(true);
+    toast.info("Saving SSO Configuration...");
+    try {
+      await extendedApi.sso.saveConfig('default', ssoConfig);
+      toast.success("SSO Configuration Saved.");
+    } catch (e) {
+      console.error("SSO Save failed", e);
+      toast.error("Failed to save SSO configuration.");
+    } finally {
+      setIsSavingSso(false);
+    }
+  };
+
+  const handleSSOHandshake = async () => {
+    toast.info("Initiating SSO handshake with identity provider...");
+    try {
+      await extendedApi.sso.handshake('default');
+      toast.success("SSO Handshake Complete! Domain verified: enterprise.example.com");
+    } catch (e) {
+      console.error("SSO Handshake failed", e);
+      // Fallback for demo mode if not implemented in dev
+      if (isDemo) {
+        setTimeout(() => {
+          toast.success("SSO Handshake Complete (Demo Mode)");
+        }, 1500);
+      } else {
+        toast.error("SSO Handshake failed.");
+      }
+    }
+  };
+
 
 
   const handleProvisionClient = async () => {
@@ -961,8 +1003,15 @@ export default function AlphaAgentOps() {
       // Cache for demo offline mode
       storage.set("budget_rules", rulesRes);
       storage.set("alert_configs", alertsRes);
+      // Fetch SSO config if authenticated
+      if (isAuthenticated) {
+        extendedApi.sso.config('default').then(conf => {
+          if (conf) setSsoConfig(conf);
+        }).catch(() => {});
+      }
 
     } catch (error) {
+
       console.error("Critical Sentinel Sync Failure:", error);
       toast.error("Failed to sync with Sentinel Backend.");
     } finally {
@@ -3137,19 +3186,30 @@ export default function AlphaAgentOps() {
                     </div>
                     <div className="space-y-2">
                       <Label>SSO URL</Label>
-                      <Input placeholder="https://your-idp.com/sso" />
+                      <Input 
+                        placeholder="https://your-idp.com/sso" 
+                        value={ssoConfig.sso_url}
+                        onChange={(e) => setSsoConfig({...ssoConfig, sso_url: e.target.value})}
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label>Certificate</Label>
                       <Textarea
                         placeholder="Paste your SAML certificate here"
                         className="font-mono text-xs h-24"
+                        value={ssoConfig.certificate}
+                        onChange={(e) => setSsoConfig({...ssoConfig, certificate: e.target.value})}
                       />
                     </div>
-                    <Button className="w-full">
+                    <Button 
+                      className="w-full" 
+                      onClick={handleSaveSAMLConfig}
+                      disabled={isSavingSso}
+                    >
                       <Save className="w-4 h-4 mr-2" />
-                      Save SAML Config
+                      {isSavingSso ? "Saving..." : "Save SAML Config"}
                     </Button>
+
                   </CardContent>
                 </Card>
 
@@ -3234,7 +3294,10 @@ export default function AlphaAgentOps() {
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
                       <Label>Provider Architecture</Label>
-                      <Select defaultValue="okta">
+                      <Select 
+                        value={ssoConfig.provider} 
+                        onValueChange={(v) => setSsoConfig({...ssoConfig, provider: v})}
+                      >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -3252,7 +3315,11 @@ export default function AlphaAgentOps() {
                     </div>
                     <div className="space-y-2">
                       <Label>Metadata URL</Label>
-                      <Input placeholder="https://okta.com/app/exk.../sso/saml/metadata" />
+                      <Input 
+                        placeholder="https://okta.com/app/exk.../sso/saml/metadata" 
+                        value={ssoConfig.metadata_url}
+                        onChange={(e) => setSsoConfig({...ssoConfig, metadata_url: e.target.value})}
+                      />
                     </div>
                     <div className="flex items-center justify-between p-3 rounded-lg border bg-card/50">
                       <div className="flex items-center gap-3">
@@ -3264,25 +3331,19 @@ export default function AlphaAgentOps() {
                           </div>
                         </div>
                       </div>
-                      <Switch />
+                      <Switch 
+                        checked={ssoConfig.force_sso}
+                        onCheckedChange={(c) => setSsoConfig({...ssoConfig, force_sso: c})}
+                      />
                     </div>
                     <Button
                       className="w-full"
                       variant="outline"
-                      onClick={() => {
-                        // Demo mode: simulate SSO handshake
-                        toast.info(
-                          "Initiating SSO handshake with identity provider..."
-                        );
-                        setTimeout(() => {
-                          toast.success(
-                            "SSO Handshake Complete! Domain verified: enterprise.example.com"
-                          );
-                        }, 1500);
-                      }}
+                      onClick={handleSSOHandshake}
                     >
                       Initialize SSO Handshake
                     </Button>
+
                   </CardContent>
                 </Card>
 
