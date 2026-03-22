@@ -695,6 +695,7 @@ export default function AlphaAgentOps() {
 
   // Phase 2 Functions
   const fetchForecast = async () => {
+    if (!isAuthenticated) return;
     try {
       const res = await extendedApi.agentOps.getForecast('default');
       setForecastData(res);
@@ -702,6 +703,7 @@ export default function AlphaAgentOps() {
       console.error("Forecast fetch failed", e);
     }
   };
+
 
   const handleProvisionClient = async () => {
     setIsProvisioningClient(true);
@@ -914,7 +916,12 @@ export default function AlphaAgentOps() {
 
   // Fetch all real-world data from the Sentinel API
   const refreshData = async () => {
+    if (!isAuthenticated) {
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
+
     try {
       const [
         agentsRes,
@@ -964,11 +971,14 @@ export default function AlphaAgentOps() {
   };
 
   useEffect(() => {
-    refreshData();
-    // Poll for real-time streaming metrics every 30s
-    const interval = setInterval(refreshData, 30000);
-    return () => clearInterval(interval);
-  }, []);
+    if (isAuthenticated) {
+      refreshData();
+      // Poll for real-time streaming metrics every 30s
+      const interval = setInterval(refreshData, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated]);
+
 
   const handleRunHipaaAudit = async () => {
     toast.info("Analyzing PHI Access Logs...");
