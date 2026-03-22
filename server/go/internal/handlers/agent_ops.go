@@ -3,7 +3,9 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+
 
 	"github.com/top100-business-ideas/api/internal/models"
 	"github.com/top100-business-ideas/api/internal/services"
@@ -237,6 +239,29 @@ func (h *AgentOpsHandler) GetForecast(c *gin.Context) {
 	response, err := h.proxyService.Forward("GET", path, nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch forecast", Details: err.Error()})
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json", response)
+}
+// ProxyToPython forwards generic requests to the Python backend
+func (h *AgentOpsHandler) ProxyToPython(c *gin.Context) {
+	// Strip /api/v1 prefix from the path
+	path := c.Request.URL.Path
+	if len(path) > 7 && path[:7] == "/api/v1" {
+		path = path[7:]
+	}
+
+	var body interface{}
+	if c.Request.Method == "POST" || c.Request.Method == "PUT" || c.Request.Method == "PATCH" {
+		if err := c.ShouldBindJSON(&body); err != nil && err != io.EOF {
+			// Ignore EOF if no body provided
+		}
+	}
+
+	response, err := h.proxyService.Forward(c.Request.Method, path, body)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Backend proxy error", Details: err.Error()})
 		return
 	}
 
