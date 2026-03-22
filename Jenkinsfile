@@ -82,6 +82,22 @@ pipeline {
                 sh 'docker run --rm -v ${HOST_WORKSPACE}:/app -w /app/client node:20-alpine npm run build'
             }
         }
+
+        stage('Deploy to Production') {
+            when {
+                branch 'main'
+            }
+            steps {
+                script {
+                    echo "Redeploying Sentinel Platform to production..."
+                    // Use the host's docker-compose to redeploy. 
+                    // Since we mount docker.sock, this affects the host system.
+                    sh 'docker-compose -f docker-compose.yml down --remove-orphans'
+                    sh 'docker-compose -f docker-compose.yml up -d --build'
+                    echo "Deployment successful!"
+                }
+            }
+        }
     }
 
     post {
