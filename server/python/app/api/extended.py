@@ -1566,3 +1566,51 @@ async def update_global_retention(request: Dict[str, Any]):
     """Update the global data retention policy (in days)"""
     days = request.get("days", 30)
     return governance_service.update_retention_policy(days)
+@router.post("/agent-ops/compliance/hipaa")
+async def run_agent_ops_hipaa_audit(request: Dict[str, Any]):
+    """Execute HIPAA compliance audit for Agent Ops"""
+    system = request.get("system", "default")
+    return await governance_service.run_hipaa_audit(system)
+
+@router.post("/agent-ops/compliance/sox")
+async def run_agent_ops_sox_audit(request: Dict[str, Any]):
+    """Execute SOX financial audit for Agent Ops"""
+    system = request.get("system", "default")
+    return await governance_service.run_sox_audit(system)
+
+@router.post("/on-prem/manifest")
+async def generate_on_prem_manifest(request: Dict[str, Any]):
+    """Generate a deployment manifest for on-premise installation"""
+    fmt = request.get("format", "docker-compose")
+    if fmt == "helm":
+        manifest = """
+# Sentinel Helm Chart Values
+replicaCount: 2
+image:
+  repository: agentops/sentinel
+  tag: latest
+service:
+  type: ClusterIP
+  port: 80
+postgresql:
+  enabled: true
+redis:
+  enabled: true
+"""
+    else:
+        manifest = """
+version: '3.8'
+services:
+  sentinel:
+    image: agentops/sentinel:latest
+    environment:
+      - AIR_GAPPED=true
+    ports:
+      - "8080:8080"
+  db:
+    image: postgres:14
+  cache:
+    image: redis:6
+"""
+    return {"manifest": manifest.strip()}
+

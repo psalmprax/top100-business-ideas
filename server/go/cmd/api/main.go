@@ -239,8 +239,11 @@ func main() {
 				agentOps.GET("/models/config", agentOpsHandler.ListLLMConfigs)
 				agentOps.GET("/rules/budget", rulesHandler.ListRules)
 				agentOps.GET("/webhooks", webhookHandler.ListWebhooks)
-				agentOps.GET("/cloud/health", multiCloudHandler.GetStatus)
-				agentOps.POST("/cloud/failover", multiCloudHandler.InitiateFailover)
+				agentOps.GET("/cloud/health", agentOpsHandler.ProxyToPython)
+				agentOps.POST("/cloud/failover", agentOpsHandler.ProxyToPython)
+				agentOps.POST("/compliance/hipaa", agentOpsHandler.ProxyToPython)
+				agentOps.POST("/compliance/sox", agentOpsHandler.ProxyToPython)
+
 			}
 
 			// Multi-Cloud (Agent Ops UC16)
@@ -338,8 +341,14 @@ func main() {
 				workforce.POST("/sovereign/request", workforceHandler.RequestApproval)
 				workforce.POST("/sovereign/callback", workforceHandler.HandleCallback)
 			}
+			// On-Premise (Agent Ops UC18)
+			onPrem := protected.Group("/on-prem")
+			{
+				onPrem.POST("/manifest", agentOpsHandler.ProxyToPython)
+			}
 		}
 	}
+
 
 	// Start WebSocket hub in background
 	go wsHub.Run()

@@ -95,5 +95,44 @@ class GovernanceService:
         except Exception as e:
             logger.error(f"Failed to run retention purge logic: {e}")
 
+    async def run_hipaa_audit(self, system: str = "default") -> Dict[str, Any]:
+        """Execute a simulated HIPAA compliance audit on the specified system."""
+        logger.info(f"Initiating HIPAA compliance audit for system: {system}")
+        await asyncio.sleep(1.5) # Simulate processing
+        
+        findings = [
+            {"id": "HIPAA-01", "check": "PHI Access Logging", "status": "Compliant"},
+            {"id": "HIPAA-02", "check": "Data at Rest Encryption", "status": "Compliant"},
+            {"id": "HIPAA-03", "check": "Unique User Identification", "status": "Warning", "detail": "3 stale sessions found"}
+        ]
+        
+        return {
+            "status": "success",
+            "system": system,
+            "timestamp": datetime.utcnow().isoformat(),
+            "score": 92,
+            "findings": findings
+        }
+
+    async def run_sox_audit(self, system: str = "default") -> Dict[str, Any]:
+        """Execute a simulated SOX financial compliance audit."""
+        logger.info(f"Initiating SOX financial audit for system: {system}")
+        await asyncio.sleep(2.0) # Simulate processing
+        
+        findings = [
+            {"id": "SOX-01", "check": "Financial Transaction integrity", "status": "Compliant"},
+            {"id": "SOX-02", "check": "Access Control Review", "status": "Compliant"},
+            {"id": "SOX-03", "check": "Segregation of Duties", "status": "Critical", "detail": "Admin has direct DB write access"}
+        ]
+        
+        return {
+            "status": "success",
+            "system": system,
+            "timestamp": datetime.utcnow().isoformat(),
+            "score": 85,
+            "findings": findings
+        }
+
 # Singleton instance
 governance_service = GovernanceService()
+

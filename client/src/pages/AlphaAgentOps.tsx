@@ -2194,8 +2194,12 @@ export default function AlphaAgentOps() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {alertConfigs.map(alert => (
+                    <div className="space-y-4">
+                      <div className="p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg text-xs text-blue-500 mb-4">
+                        <strong>Note:</strong> Notification channels (Slack, Teams, Email) must be pre-configured and verified in the <strong>Webhooks</strong> or <strong>Settings</strong> tab before they can receive alerts.
+                      </div>
+                      {alertConfigs.map(alert => (
+
                       <div key={alert.id} className="p-4 rounded-lg border">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
@@ -5188,6 +5192,10 @@ export default function AlphaAgentOps() {
                            metadata: { ...prev.metadata, threadId: e.target.value } 
                         }))}
                       />
+                      <p className="text-[10px] text-muted-foreground">
+                        Agent conversation session ID. Distinct from user SSO session checkpoints.
+                      </p>
+
                     </div>
                   )}
                   {newAgentData.type === "crewai" && (
