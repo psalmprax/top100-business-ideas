@@ -132,6 +132,7 @@ func main() {
 			sso.POST("/handshake", agentOpsHandler.ProxyToPython)
 			sso.POST("/connect/:provider", agentOpsHandler.ProxyToPython)
 			sso.GET("/providers/:id", agentOpsHandler.ProxyToPython)
+			sso.GET("/callback/:provider", agentOpsHandler.ProxyToPython)
 		}
 
 		// Protected routes

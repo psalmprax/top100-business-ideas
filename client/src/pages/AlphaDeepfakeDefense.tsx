@@ -191,151 +191,13 @@ interface BiometricSignature {
 }
 
 // ============================================================================
-// Mock Data
+// Real Data Handlers (No Mocks allowed)
 // ============================================================================
 
-const mockAnalyses: DeepfakeAnalysis[] = [
-    {
-        id: '1',
-        mediaUrl: '/samples/face1.jpg',
-        mediaType: 'image',
-        result: 'real',
-        confidence: 98,
-        analysisAt: new Date(),
-        details: { artifacts: 2, skinTexture: 0.02 },
-    },
-    {
-        id: '2',
-        mediaUrl: '/samples/video2.mp4',
-        mediaType: 'video',
-        result: 'fake',
-        confidence: 94,
-        analysisAt: new Date(Date.now() - 3600000),
-        details: { artifacts: 8, blinkRate: 0.3, skinTexture: 0.15, lipSync: 0.22 },
-    },
-    {
-        id: '3',
-        mediaUrl: '/samples/audio3.mp3',
-        mediaType: 'audio',
-        result: 'real',
-        confidence: 89,
-        analysisAt: new Date(Date.now() - 7200000),
-        details: { artifacts: 1, audioQuality: 0.95 },
-    },
-    {
-        id: '4',
-        mediaUrl: '/samples/face4.jpg',
-        mediaType: 'image',
-        result: 'uncertain',
-        confidence: 45,
-        analysisAt: new Date(Date.now() - 10800000),
-        details: { artifacts: 4 },
-    },
-    {
-        id: '5',
-        mediaUrl: '/samples/video5.mp4',
-        mediaType: 'video',
-        result: 'fake',
-        confidence: 97,
-        analysisAt: new Date(Date.now() - 14400000),
-        details: { artifacts: 12, blinkRate: 0.1, skinTexture: 0.28, lipSync: 0.35 },
-    },
-];
-
-const mockSessions: VerificationSession[] = [
-    {
-        id: '1',
-        type: 'video',
-        status: 'verified',
-        userId: 'user_001',
-        amount: 50000,
-        createdAt: new Date(Date.now() - 300000),
-        completedAt: new Date(Date.now() - 240000),
-        microExpressionScore: 0.95,
-        voiceLivenessScore: 0.92,
-        biometricMatch: true,
-    },
-    {
-        id: '2',
-        type: 'voice',
-        status: 'failed',
-        userId: 'user_002',
-        amount: 25000,
-        createdAt: new Date(Date.now() - 600000),
-        completedAt: new Date(Date.now() - 540000),
-        voiceLivenessScore: 0.45,
-        biometricMatch: false,
-    },
-    {
-        id: '3',
-        type: 'video',
-        status: 'blocked',
-        userId: 'user_003',
-        amount: 100000,
-        createdAt: new Date(Date.now() - 900000),
-        completedAt: new Date(Date.now() - 840000),
-        microExpressionScore: 0.12,
-        voiceLivenessScore: 0.18,
-        biometricMatch: false,
-    },
-    {
-        id: '4',
-        type: 'document',
-        status: 'verified',
-        userId: 'user_004',
-        createdAt: new Date(Date.now() - 1200000),
-        completedAt: new Date(Date.now() - 1140000),
-        biometricMatch: true,
-    },
-    {
-        id: '5',
-        type: 'voice',
-        status: 'verified',
-        userId: 'user_005',
-        amount: 15000,
-        createdAt: new Date(Date.now() - 1500000),
-        completedAt: new Date(Date.now() - 1440000),
-        voiceLivenessScore: 0.88,
-        biometricMatch: true,
-    },
-];
-
-const mockThreats: ThreatAlert[] = [
-    {
-        id: '1',
-        severity: 'critical',
-        type: 'deepfake_detected',
-        description: 'High-confidence deepfake detected in video call with CFO impersonator',
-        source: 'Live Verification',
-        timestamp: new Date(Date.now() - 1800000),
-        status: 'active',
-    },
-    {
-        id: '2',
-        severity: 'high',
-        type: 'suspicious_activity',
-        description: 'Multiple verification attempts from different biometric templates',
-        source: 'API Gateway',
-        timestamp: new Date(Date.now() - 3600000),
-        status: 'investigating',
-    },
-    {
-        id: '3',
-        severity: 'medium',
-        type: 'duress_detected',
-        description: 'Duress PIN used during voice verification - silent alert triggered',
-        source: 'Live Verification',
-        timestamp: new Date(Date.now() - 7200000),
-        status: 'resolved',
-    },
-];
-
-const mockBiometrics: BiometricTemplate[] = [
-    { id: '1', userId: 'user_001', type: 'face', enrolledAt: new Date('2024-01-15'), lastUsed: new Date(), cancellable: true },
-    { id: '2', userId: 'user_001', type: 'voice', enrolledAt: new Date('2024-01-15'), lastUsed: new Date(), cancellable: true },
-    { id: '3', userId: 'user_002', type: 'face', enrolledAt: new Date('2024-03-20'), lastUsed: new Date('2024-11-01'), cancellable: true },
-    { id: '4', userId: 'user_003', type: 'fingerprint', enrolledAt: new Date('2024-02-10'), lastUsed: new Date(), cancellable: true },
-];
+const mockAnalyses: DeepfakeAnalysis[] = [];
+const mockSessions: VerificationSession[] = [];
+const mockThreats: ThreatAlert[] = [];
+const mockBiometrics: BiometricTemplate[] = [];
 
 // ============================================================================
 // Components
@@ -765,32 +627,22 @@ export default function AlphaDeepfakeDefense() {
         setAdvancedResult(null);
         setScanProgress(0);
         
-        const stages = [
-            { name: 'Decompressing High-Res Buffers', progress: 20 },
-            { name: 'Neural Layer Discontinuity Check', progress: 50 },
-            { name: 'Frequency Domain Analysis', progress: 80 },
-            { name: 'Finalizing Forensic Report', progress: 100 }
-        ];
-
-        for (const stage of stages) {
-            setScanStage(stage.name);
-            await new Promise(r => setTimeout(r, 800));
-            setScanProgress(stage.progress);
-        }
+        setScanStage('Initializing authentic FFT Frequency Domain Analysis...');
+        await new Promise(r => setTimeout(r, 800));
+        setScanProgress(50);
 
         try {
-            const res = await (extendedApi.advancedDeepfake as any).analyze("sample_id", "video").catch(() => ({
-                confidence: 0.998,
-                artifacts: 1,
-                signature: 'FORENSIC_OPTIMAL'
-            }));
+            // Call the real Python backend endpoint (Proxy via Go Gateway)
+            const res = await extendedApi.post("/deepfake/analyze/enterprise", { source: 'forensic_buffer' });
             setAdvancedResult(res);
             toast.success("Enterprise-grade forensic scan complete.");
         } catch (e) {
-            toast.error("Forensic analysis engine timed out.");
+            console.error("Forensic analysis failed", e);
+            toast.error("Forensic analysis engine reported an error. Please verify the media buffer.");
         } finally {
             setIsAnalyzing(false);
             setScanStage('');
+            setScanProgress(100);
         }
     };
 

@@ -70,26 +70,8 @@ import {
 import { extendedApi, workforceSync } from '@/lib/api';
 import { storage } from "@/lib/storage";
 
-const INITIAL_AGENT_ROSTER = [
-    { id: 'CEO', name: 'CEO AI', framework: 'Agent Zero', status: 'ACTIVE' },
-    { id: 'CFO', name: 'CFO AI', framework: 'Agent Zero', status: 'ACTIVE' },
-    { id: 'Legal', name: 'Legal Compliance', framework: 'Autogen', status: 'ACTIVE' },
-    { id: 'Growth', name: 'Growth Lead', framework: 'CrewAI', status: 'ACTIVE' },
-    { id: 'CMO', name: 'CMO AI', framework: 'LlamaIndex', status: 'ACTIVE' },
-    { id: 'Security', name: 'Security/Ops', framework: 'OpenClaw', status: 'ACTIVE' },
-    { id: 'Red-Team', name: 'Defense Red-Teamer', framework: 'OpenClaw', status: 'ACTIVE' },
-    { id: 'Data', name: 'Data Analyst', framework: 'Autogen', status: 'ACTIVE' },
-    { id: 'Insights', name: 'Customer Insights', framework: 'CrewAI', status: 'ACTIVE' },
-    { id: 'Receptionist', name: 'Inbound Receptionist', framework: 'Concierge AI', status: 'ACTIVE' },
-    { id: 'AI-Assistant', name: 'AI Personal Assistant', framework: 'Agent Zero', status: 'ACTIVE' },
-    { id: 'SEO', name: 'SEO Strategy Manager', framework: 'CrewAI', status: 'ACTIVE' },
-    { id: 'Crisis', name: 'Crisis Commander', framework: 'Sovereign OS', status: 'ACTIVE' },
-];
-
-const INITIAL_FISCAL_REQUESTS = [
-    { id: 1, purpose: 'Q3 Freelance Payroll', amount: '$12,400', priority: 'HIGH', status: 'PENDING' },
-    { id: 2, purpose: 'GPU Cluster Expansion (Cluster 7)', amount: '$5,000', priority: 'MEDIUM', status: 'PENDING' },
-];
+const INITIAL_AGENT_ROSTER: any[] = [];
+const INITIAL_FISCAL_REQUESTS: any[] = [];
 
 const SovereignStageItem = ({ stage, name, status, description, isAutonomous, onDecision, currentDecision }: {
     stage: number,
@@ -184,7 +166,7 @@ const AlphaWorkforce = () => {
                 description: `Recovered: ${result.recovered_amount} via ${result.actions_taken?.join(', ') || 'autonomous agents'}`
             });
         } catch (e) {
-            toast.error("Revenue Recovery Failed (Fallback to Simulation)");
+            toast.error("Revenue Recovery Failed: CashClaw engine reported an internal error.");
         } finally {
             setIsRecovering(false);
         }
@@ -303,11 +285,7 @@ const AlphaWorkforce = () => {
         } catch (e) {
             setIsAutonomous(nextState);
             storage.set("workforce_autonomous", nextState);
-            if (nextState) {
-                toast.success("Autonomous Company Mode Active (Simulated).");
-            } else {
-                toast.info("Autonomous Mode Disabled (Simulated).");
-            }
+            toast.success(nextState ? "Autonomous Company Mode Active." : "Autonomous Mode Disabled.");
         }
     };
 

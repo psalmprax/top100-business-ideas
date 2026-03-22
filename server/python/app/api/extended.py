@@ -1,14 +1,13 @@
 """Extended API endpoints to resolve partial gaps - Full sync implementation"""
 
 from typing import List, Optional, Dict, Any, Union
-from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
-from sqlmodel import Session, select, SQLModel, Field, Relationship
-from datetime import datetime
-from pydantic import BaseModel, Field as PydanticField
 import uuid
 import json
 import asyncio
 import random
+import os
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks, Request
+from starlette.responses import RedirectResponse
 
 from app.core.database import get_session
 from app.core.models import (
@@ -23,6 +22,8 @@ from app.services.multi_cloud_proxy import multi_cloud_proxy
 from app.services.shadow_ai_service import shadow_ai_service
 from app.services.wearable_liveness import wearable_liveness_service
 from app.services.travel_sdk import travel_sdk
+from app.services.sso_service import sso_service
+from app.services.compliance_service import compliance_service
 from app.services.roi_service import roi_service
 from app.services.edge_sidecar import edge_compliance_sidecar as edge_sidecar_service
 from app.services.mobile_sdk import mobile_sdk
@@ -1615,12 +1616,36 @@ services:
     return {"manifest": manifest.strip()}
 
 @router.post("/sso/connect/{provider}")
-async def connect_sso_provider(provider: str, request: Dict[str, Any]):
-    """Connect an external SSO provider mapping to an enterprise application"""
-    app_id = request.get("app_id", "default")
-    metadata = request.get("metadata", {})
-    from app.services.sso_service import sso_service
-    return sso_service.connect_provider(app_id, provider, metadata)
+async def connect_sso_provider(provider: str, request: Request):
+    """
+    Connect an external SSO provider and return the authorization URL.
+    This replaces the simulation with a real OIDC browser redirect.
+    """
+    try:
+        # Default redirect URI for the Sentinel dashboard
+        redirect_uri = f"{request.base_url}api/v1/sso/callback/{provider}"
+        auth_url = await sso_service.get_authorize_url(provider, redirect_uri, request)
+        return {"status": "redirect", "auth_url": auth_url}
+    except Exception as e:
+        logger.error(f"Failed to generate SSO redirect: {e}")
+        return {"status": "error", "message": str(e)}
+
+@router.get("/sso/callback/{provider}")
+async def sso_callback(provider: str, request: Request):
+    """
+    Handle the OIDC callback from the Identity Provider.
+    Verifies the token and persists the connection.
+    """
+    try:
+        result = await sso_service.handle_callback(provider, request)
+        # Redirect back to the frontend with a success flag
+        # Note: In production, this would be the frontend URL
+        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:7000")
+        return RedirectResponse(url=f"{frontend_url}/products/agent-ops?sso_success=true&provider={provider}")
+    except Exception as e:
+        logger.error(f"SSO Callback failed: {e}")
+        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:7000")
+        return RedirectResponse(url=f"{frontend_url}/products/agent-ops?sso_error={str(e)}")
 
 @router.get("/sso/providers/{app_id}")
 async def list_connected_providers(app_id: str):

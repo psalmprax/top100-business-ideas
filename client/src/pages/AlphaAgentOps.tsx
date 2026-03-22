@@ -748,28 +748,48 @@ export default function AlphaAgentOps() {
       toast.success("SSO Handshake Complete! Domain verified: enterprise.example.com");
     } catch (e) {
       console.error("SSO Handshake failed", e);
-      // Fallback for demo mode if not implemented in dev
-      if (isDemo) {
-        setTimeout(() => {
-          toast.success("SSO Handshake Complete (Demo Mode)");
-        }, 1500);
-      } else {
-        toast.error("SSO Handshake failed.");
-      }
+      toast.error("SSO Handshake failed. Please verify your identity provider settings.");
     }
   };
 
   const handleConnectProvider = async (provider: string) => {
-    toast.info(`Connecting ${provider} SSO...`);
+    toast.info(`Initiating ${provider} SSO connection...`);
     try {
-      const res = await extendedApi.sso.connectProvider('default', provider, { source: 'dashboard_ui' });
-      setConnectedProviders(prev => ({ ...prev, [provider]: res }));
-      toast.success(`${provider} SSO Connected Successfully.`);
+      const res = await extendedApi.post(`/sso/connect/${provider}`);
+      if (res.status === 'redirect' && res.auth_url) {
+        window.location.href = res.auth_url;
+      } else {
+        toast.error("Failed to initiate secure redirect.");
+      }
     } catch (e) {
       console.error(`Failed to connect ${provider}`, e);
-      toast.error(`Failed to connect ${provider}.`);
+      toast.error(`SSO Connection Failed: ${provider} provider is currently unavailable.`);
     }
   };
+
+  // Handle SSO Callback Redirects
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('sso_success') === 'true') {
+      const provider = params.get('provider');
+      toast.success(`${provider} SSO Connected Successfully.`);
+      // Refresh the connected providers list
+      const fetchProviders = async () => {
+        try {
+          const res = await extendedApi.get(`/sso/providers/default`);
+          setConnectedProviders(res);
+        } catch (e) {
+          console.error("Failed to refresh providers", e);
+        }
+      };
+      fetchProviders();
+      // Clean URL
+      window.history.replaceState({}, '', window.location.pathname);
+    } else if (params.get('sso_error')) {
+      toast.error(`SSO Error: ${params.get('sso_error')}`);
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
 
 
 
