@@ -702,6 +702,17 @@ export default function AlphaAgentOps() {
     metadata_url: ""
   });
   const [isSavingSso, setIsSavingSso] = useState(false);
+  const [connectedProviders, setConnectedProviders] = useState<Record<string, any>>({});
+
+  const fetchConnectedProviders = async () => {
+    try {
+      const res = await apiRequest<Record<string, any>>(`/api/v1/sso/providers/default`, { method: 'GET' });
+      setConnectedProviders(res);
+    } catch (e) {
+      console.error("Failed to fetch connected providers", e);
+    }
+  };
+
 
 
   // Phase 2 Functions
@@ -746,6 +757,22 @@ export default function AlphaAgentOps() {
       }
     }
   };
+
+  const handleConnectProvider = async (provider: string) => {
+    toast.info(`Connecting ${provider} SSO...`);
+    try {
+      const res = await apiRequest<any>(`/api/v1/sso/connect/${provider}`, { 
+        method: 'POST', 
+        body: JSON.stringify({ app_id: 'default', metadata: { source: 'dashboard_ui' } }) 
+      });
+      setConnectedProviders(prev => ({ ...prev, [provider]: res }));
+      toast.success(`${provider} SSO Connected Successfully.`);
+    } catch (e) {
+      console.error(`Failed to connect ${provider}`, e);
+      toast.error(`Failed to connect ${provider}.`);
+    }
+  };
+
 
 
 
@@ -986,7 +1013,9 @@ export default function AlphaAgentOps() {
         extendedApi.agentOps.listLLMConfigs().catch(() => []),
         extendedApi.alerts.list().catch(() => storage.get("alert_configs", mockAlertConfigs)),
         fetchForecast(),
+        fetchConnectedProviders(),
       ]);
+
 
       setAgents(agentsRes as any);
       setAuditLog((auditRes as any[]).map(log => ({
@@ -3108,16 +3137,21 @@ export default function AlphaAgentOps() {
                             </div>
                           </div>
                         </div>
-                        <Badge className="bg-green-500">Connected</Badge>
+                        <Badge variant={connectedProviders['okta']?.status === 'connected' ? 'secondary' : 'outline'} className={connectedProviders['okta']?.status === 'connected' ? 'bg-green-500/20 text-green-600' : ''}>
+                          {connectedProviders['okta']?.status === 'connected' ? 'Connected' : 'Not Connected'}
+                        </Badge>
                       </div>
                       <Button
-                        variant="outline"
+                        variant={connectedProviders['okta']?.status === 'connected' ? 'outline' : 'default'}
                         size="sm"
-                        className="w-full mt-2"
+                        className={`w-full mt-2 ${connectedProviders['okta']?.status === 'connected' ? '' : 'bg-blue-600'}`}
+                        onClick={() => handleConnectProvider('okta')}
+                        disabled={connectedProviders['okta']?.status === 'connected'}
                       >
-                        Configure
+                        {connectedProviders['okta']?.status === 'connected' ? 'Okta Linked' : 'Connect Okta'}
                       </Button>
                     </div>
+
 
                     <div className="p-4 rounded-lg border bg-muted/50">
                       <div className="flex items-center justify-between mb-2">
@@ -3134,17 +3168,22 @@ export default function AlphaAgentOps() {
                             </div>
                           </div>
                         </div>
-                        <Badge variant="outline">Not Connected</Badge>
+                        <Badge variant={connectedProviders['azure']?.status === 'connected' ? 'secondary' : 'outline'} className={connectedProviders['azure']?.status === 'connected' ? 'bg-green-500/20 text-green-600' : ''}>
+                          {connectedProviders['azure']?.status === 'connected' ? 'Connected' : 'Not Connected'}
+                        </Badge>
                       </div>
                       <Button
-                        variant="default"
+                        variant={connectedProviders['azure']?.status === 'connected' ? 'outline' : 'default'}
                         size="sm"
-                        className="w-full mt-2 bg-blue-600"
+                        className={`w-full mt-2 ${connectedProviders['azure']?.status === 'connected' ? '' : 'bg-blue-600'}`}
                         data-testid="connect-azure-ad"
+                        onClick={() => handleConnectProvider('azure')}
+                        disabled={connectedProviders['azure']?.status === 'connected'}
                       >
-                        Connect Azure AD
+                        {connectedProviders['azure']?.status === 'connected' ? 'Azure AD Linked' : 'Connect Azure AD'}
                       </Button>
                     </div>
+
 
                     <div className="p-4 rounded-lg border bg-muted/50">
                       <div className="flex items-center justify-between mb-2">
@@ -3161,16 +3200,21 @@ export default function AlphaAgentOps() {
                             </div>
                           </div>
                         </div>
-                        <Badge variant="outline">Not Connected</Badge>
+                        <Badge variant={connectedProviders['google']?.status === 'connected' ? 'secondary' : 'outline'} className={connectedProviders['google']?.status === 'connected' ? 'bg-green-500/20 text-green-600' : ''}>
+                          {connectedProviders['google']?.status === 'connected' ? 'Connected' : 'Not Connected'}
+                        </Badge>
                       </div>
                       <Button
-                        variant="default"
+                        variant={connectedProviders['google']?.status === 'connected' ? 'outline' : 'default'}
                         size="sm"
-                        className="w-full mt-2 bg-red-500"
+                        className={`w-full mt-2 ${connectedProviders['google']?.status === 'connected' ? '' : 'bg-red-500'}`}
+                        onClick={() => handleConnectProvider('google')}
+                        disabled={connectedProviders['google']?.status === 'connected'}
                       >
-                        Connect Google
+                        {connectedProviders['google']?.status === 'connected' ? 'Google Linked' : 'Connect Google'}
                       </Button>
                     </div>
+
                   </CardContent>
                 </Card>
 

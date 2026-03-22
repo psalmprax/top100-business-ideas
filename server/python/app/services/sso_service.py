@@ -16,9 +16,30 @@ SSO_SECRET_KEY = "alpha-sentinel-sso-secret-base64"
 ALGORITHM = "HS256"
 
 class SSOService:
-    def __init__(self):
         # In-memory store for connected SSO app configurations
         self.sso_configs: Dict[str, Dict[str, Any]] = {}
+        # Track connected third-party providers
+        self.connected_providers: Dict[str, Dict[str, Any]] = {}
+
+    def connect_provider(self, app_id: str, provider: str, metadata: Dict[str, Any] = None) -> Dict[str, Any]:
+        """Simulate connecting an external IDP provider (Azure, Google, Okta)"""
+        if app_id not in self.connected_providers:
+            self.connected_providers[app_id] = {}
+        
+        connection_info = {
+            "provider": provider,
+            "connected_at": int(time.time()),
+            "status": "connected",
+            "metadata": metadata or {}
+        }
+        self.connected_providers[app_id][provider] = connection_info
+        logger.info(f"Connected {provider} SSO for {app_id}")
+        return connection_info
+
+    def get_connected_providers(self, app_id: str) -> Dict[str, Any]:
+        """Return all connected providers for an app"""
+        return self.connected_providers.get(app_id, {})
+
 
     def save_config(self, app_id: str, config: Dict[str, Any]) -> Dict[str, Any]:
         """Save structural SSO configuration like SAML/OIDC URLs"""

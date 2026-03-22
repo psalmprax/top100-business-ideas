@@ -1614,3 +1614,18 @@ services:
 """
     return {"manifest": manifest.strip()}
 
+@router.post("/sso/connect/{provider}")
+async def connect_sso_provider(provider: str, request: Dict[str, Any]):
+    """Connect an external SSO provider mapping to an enterprise application"""
+    app_id = request.get("app_id", "default")
+    metadata = request.get("metadata", {})
+    from app.services.sso_service import sso_service
+    return sso_service.connect_provider(app_id, provider, metadata)
+
+@router.get("/sso/providers/{app_id}")
+async def list_connected_providers(app_id: str):
+    """List all connected SSO providers for an application"""
+    from app.services.sso_service import sso_service
+    return sso_service.get_connected_providers(app_id)
+
+

@@ -315,8 +315,10 @@ func main() {
 				sso.POST("/config/:id", agentOpsHandler.ProxyToPython)
 				sso.GET("/config/:id/liveness-link", agentOpsHandler.ProxyToPython)
 				sso.POST("/handshake", agentOpsHandler.ProxyToPython)
-
+				sso.POST("/connect/:provider", agentOpsHandler.ProxyToPython)
+				sso.GET("/providers/:id", agentOpsHandler.ProxyToPython)
 			}
+
 
 			// Crypto (Deepfake UC12)
 			crypto := protected.Group("/crypto")
