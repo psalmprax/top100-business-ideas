@@ -23,7 +23,15 @@ class SSOService:
         self.connected_providers: Dict[str, Dict[str, Any]] = {}
 
     def connect_provider(self, app_id: str, provider: str, metadata: Dict[str, Any] = None) -> Dict[str, Any]:
-        """Simulate connecting an external IDP provider (Azure, Google, Okta)"""
+        """
+        Simulate connecting an external IDP provider (Azure, Google, Okta).
+        
+        NOTE: This is currently a functional simulation for Demo/Sentinel purposes.
+        To implement real OIDC/SAML integration:
+        1. Replace this logic with a redirect to the provider's Auth URL (e.g., Azure AD /oauth2/v2.0/authorize).
+        2. Implement a callback handler (/sso/callback/{provider}) to exchange the code for an ID Token.
+        3. Use a library like 'authlib' or 'python-jose' to verify the provider's signature.
+        """
         if app_id not in self.connected_providers:
             self.connected_providers[app_id] = {}
         
@@ -34,7 +42,7 @@ class SSOService:
             "metadata": metadata or {}
         }
         self.connected_providers[app_id][provider] = connection_info
-        logger.info(f"Connected {provider} SSO for {app_id}")
+        logger.info(f"Connected {provider} SSO for {app_id} (Simulated)")
         return connection_info
 
     def get_connected_providers(self, app_id: str) -> Dict[str, Any]:

@@ -123,6 +123,17 @@ func main() {
 			demo.GET("/metrics/current", metricsHandler.GetCurrentMetrics)
 		}
 
+		// SSO (AI Compliance UC1) - Moved outside protected to allow Demo Mode access
+		sso := v1.Group("/sso")
+		{
+			sso.GET("/config/:id", agentOpsHandler.ProxyToPython)
+			sso.POST("/config/:id", agentOpsHandler.ProxyToPython)
+			sso.GET("/config/:id/liveness-link", agentOpsHandler.ProxyToPython)
+			sso.POST("/handshake", agentOpsHandler.ProxyToPython)
+			sso.POST("/connect/:provider", agentOpsHandler.ProxyToPython)
+			sso.GET("/providers/:id", agentOpsHandler.ProxyToPython)
+		}
+
 		// Protected routes
 		protected := v1.Group("")
 		protected.Use(middleware.Auth(authService))
@@ -308,16 +319,7 @@ func main() {
 				mobileSDK.GET("/stats", agentOpsHandler.ProxyToPython)
 			}
 
-			// SSO (AI Compliance UC1)
-			sso := protected.Group("/sso")
-			{
-				sso.GET("/config/:id", agentOpsHandler.ProxyToPython)
-				sso.POST("/config/:id", agentOpsHandler.ProxyToPython)
-				sso.GET("/config/:id/liveness-link", agentOpsHandler.ProxyToPython)
-				sso.POST("/handshake", agentOpsHandler.ProxyToPython)
-				sso.POST("/connect/:provider", agentOpsHandler.ProxyToPython)
-				sso.GET("/providers/:id", agentOpsHandler.ProxyToPython)
-			}
+
 
 
 			// Crypto (Deepfake UC12)
