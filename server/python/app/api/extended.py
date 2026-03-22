@@ -8,6 +8,7 @@ import random
 import os
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks, Request
 from starlette.responses import RedirectResponse
+from sqlalchemy.orm import Session
 
 from app.core.database import get_session
 from app.core.models import (
