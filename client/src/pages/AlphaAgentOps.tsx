@@ -706,12 +706,13 @@ export default function AlphaAgentOps() {
 
   const fetchConnectedProviders = async () => {
     try {
-      const res = await apiRequest<Record<string, any>>(`/api/v1/sso/providers/default`, { method: 'GET' });
+      const res = await extendedApi.sso.listProviders('default');
       setConnectedProviders(res);
     } catch (e) {
       console.error("Failed to fetch connected providers", e);
     }
   };
+
 
 
 
@@ -761,10 +762,7 @@ export default function AlphaAgentOps() {
   const handleConnectProvider = async (provider: string) => {
     toast.info(`Connecting ${provider} SSO...`);
     try {
-      const res = await apiRequest<any>(`/api/v1/sso/connect/${provider}`, { 
-        method: 'POST', 
-        body: JSON.stringify({ app_id: 'default', metadata: { source: 'dashboard_ui' } }) 
-      });
+      const res = await extendedApi.sso.connectProvider('default', provider, { source: 'dashboard_ui' });
       setConnectedProviders(prev => ({ ...prev, [provider]: res }));
       toast.success(`${provider} SSO Connected Successfully.`);
     } catch (e) {
@@ -772,6 +770,7 @@ export default function AlphaAgentOps() {
       toast.error(`Failed to connect ${provider}.`);
     }
   };
+
 
 
 

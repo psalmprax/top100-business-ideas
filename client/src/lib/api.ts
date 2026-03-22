@@ -1760,7 +1760,13 @@ export const extendedApi = {
             method: 'POST',
             body: JSON.stringify(config),
         }),
+        connectProvider: (app_id: string, provider: string, metadata: any = {}) => apiRequest<any>(`/api/v1/sso/connect/${provider}`, {
+            method: 'POST',
+            body: JSON.stringify({ app_id, metadata }),
+        }),
+        listProviders: (app_id: string) => apiRequest<Record<string, any>>(`/api/v1/sso/providers/${app_id}`),
     },
+
 
 
     workforce: {
