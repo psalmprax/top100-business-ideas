@@ -195,3 +195,50 @@ func (h *AgentOpsHandler) GetAgentHistory(c *gin.Context) {
 
 	c.JSON(http.StatusOK, history)
 }
+
+// GetAuditLogs retrieves audit logs for agents
+func (h *AgentOpsHandler) GetAuditLogs(c *gin.Context) {
+	agentID := c.Query("agentId")
+	limit := c.Query("limit")
+	if limit == "" {
+		limit = "50"
+	}
+
+	path := fmt.Sprintf("/agent-ops/audit?limit=%s", limit)
+	if agentID != "" {
+		path = fmt.Sprintf("%s&agent_id=%s", path, agentID)
+	}
+
+	response, err := h.proxyService.Forward("GET", path, nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch audit logs", Details: err.Error()})
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+// ListLLMConfigs retrieves available LLM configurations
+func (h *AgentOpsHandler) ListLLMConfigs(c *gin.Context) {
+	response, err := h.proxyService.Forward("GET", "/ml/models", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch LLM configs", Details: err.Error()})
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+// GetForecast retrieves cost and usage forecast for an agent
+func (h *AgentOpsHandler) GetForecast(c *gin.Context) {
+	id := c.Param("id")
+	path := fmt.Sprintf("/agents/%s/forecast", id)
+
+	response, err := h.proxyService.Forward("GET", path, nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch forecast", Details: err.Error()})
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json", response)
+}

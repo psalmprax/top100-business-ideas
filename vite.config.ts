@@ -173,11 +173,11 @@ export default defineConfig({
     host: true,
     proxy: {
       "/api": {
-        target: "http://api-gateway:8080",
+        target: process.env.VITE_API_PROXY_TARGET || "http://localhost:7001",
         changeOrigin: true,
       },
       "/ml": {
-        target: "http://api-gateway:8080",
+        target: process.env.VITE_API_PROXY_TARGET || "http://localhost:7001",
         changeOrigin: true,
       },
     },

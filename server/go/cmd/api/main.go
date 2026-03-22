@@ -140,6 +140,7 @@ func main() {
 				agents.PUT("/:id", agentOpsHandler.UpdateAgent)
 				agents.DELETE("/:id", agentOpsHandler.DeleteAgent)
 				agents.GET("/:id/logs", agentOpsHandler.GetAgentLogs)
+				agents.GET("/:id/forecast", agentOpsHandler.GetForecast)
 				agents.POST("/:id/stop", agentOpsHandler.StopAgent)
 				agents.POST("/:id/restart", agentOpsHandler.RestartAgent)
 			}
@@ -231,6 +232,17 @@ func main() {
 				alerts.DELETE("/:id", alertHandler.DeleteAlert)
 			}
 
+			// Consolidated Agent Operations (Frontend Alignment)
+			agentOps := protected.Group("/agent-ops")
+			{
+				agentOps.GET("/audit", agentOpsHandler.GetAuditLogs)
+				agentOps.GET("/models/config", agentOpsHandler.ListLLMConfigs)
+				agentOps.GET("/rules/budget", rulesHandler.ListRules)
+				agentOps.GET("/webhooks", webhookHandler.ListWebhooks)
+				agentOps.GET("/cloud/health", multiCloudHandler.GetStatus)
+				agentOps.POST("/cloud/failover", multiCloudHandler.InitiateFailover)
+			}
+
 			// Multi-Cloud (Agent Ops UC16)
 			multiCloud := protected.Group("/multi-cloud")
 			{
@@ -241,6 +253,7 @@ func main() {
 			// Self-Healing (Agent Ops UC17)
 			selfHealing := protected.Group("/self-healing")
 			{
+				selfHealing.GET("/status", selfHealingHandler.GetHealingStatus)
 				selfHealing.GET("/events", selfHealingHandler.GetEvents)
 				selfHealing.POST("/recover", selfHealingHandler.TriggerRecovery)
 			}

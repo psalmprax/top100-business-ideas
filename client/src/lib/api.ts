@@ -66,10 +66,43 @@ async function apiRequest<T>(
         normalizedEndpoint = `${v1Prefix}${endpoint}`;
     }
 
-    console.log(`[API Proxy] Request: ${API_URL}${normalizedEndpoint} (Method: ${options.method || 'GET'})`);
+    // EXTREME URL NORMALIZATION
+    // 1. Strip all trailing slashes from API_URL
+    const cleanBaseUrl = (API_URL || '').replace(/\/+$/, '');
+    // 2. Strip all leading slashes from normalizedEndpoint
+    const cleanPath = normalizedEndpoint.replace(/^\/+/, '');
+    
+    // 3. Construct finalUrl carefully
+    let finalUrl: string;
+    if (cleanBaseUrl && cleanBaseUrl.startsWith('http')) {
+        finalUrl = `${cleanBaseUrl}/${cleanPath}`;
+    } else {
+        // If no base URL or just a relative one, ensure we start with exactly one slash
+        finalUrl = `/${cleanPath}`;
+    }
+
+    // 4. Final safety check: replace any double slashes in the path (but not after protocol)
+    // First, handle the start of the string case separately
+    while (finalUrl.startsWith('//')) {
+        finalUrl = finalUrl.substring(1);
+    }
+    // Then handle internal double slashes
+    finalUrl = finalUrl.replace(/([^:])\/\/+/g, '$1/');
+    
+    // 5. Ensure we never start with // (browser interprets as protocol-relative)
+    if (finalUrl.startsWith('//')) {
+        finalUrl = finalUrl.substring(1);
+    }
+
+    // EXTRA FAILSAFE: If it starts with api/v1 but no slash, add it
+    if (!finalUrl.startsWith('http') && !finalUrl.startsWith('/')) {
+        finalUrl = '/' + finalUrl;
+    }
+
+    console.log(`[API Proxy] FINAL_URL: "${finalUrl}" (Base: "${API_URL}", Endpoint: "${endpoint}")`);
 
     try {
-        const response = await fetch(`${API_URL}${normalizedEndpoint}`, {
+        const response = await fetch(finalUrl, {
             ...options,
             headers,
         });
