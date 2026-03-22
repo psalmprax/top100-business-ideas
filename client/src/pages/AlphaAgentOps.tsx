@@ -3373,11 +3373,18 @@ export default function AlphaAgentOps() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="google">Google Workspace</SelectItem>
                           <SelectItem value="okta">Okta Enterprise</SelectItem>
                           <SelectItem value="azure">
                             Azure AD (Microsoft Entra)
                           </SelectItem>
                           <SelectItem value="auth0">Auth0</SelectItem>
+                          <SelectItem value="onelogin">OneLogin</SelectItem>
+                          <SelectItem value="ping">Ping Identity</SelectItem>
+                          <SelectItem value="github">GitHub</SelectItem>
+                          <SelectItem value="gitlab">GitLab</SelectItem>
+                          <SelectItem value="salesforce">Salesforce</SelectItem>
+                          <SelectItem value="oidc">Custom OIDC Connector</SelectItem>
                           <SelectItem value="custom">
                             Custom SAML 2.0
                           </SelectItem>
