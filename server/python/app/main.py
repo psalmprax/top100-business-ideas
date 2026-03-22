@@ -72,7 +72,7 @@ app.include_router(agents.router, prefix="/agents", tags=["Agents"])
 app.include_router(compliance.router, prefix="/compliance", tags=["Compliance"])
 app.include_router(deepfake.router, prefix="/deepfake", tags=["Deepfake"])
 app.include_router(auth_verify.router, prefix="/auth/verify", tags=["Liveness Authentication"])
-app.include_router(extended.router, prefix="/api/v1", tags=["Extended API - Full Sync"])
+app.include_router(extended.router, tags=["Extended API - Full Sync"])
 
 
 from app.core.database import init_db
