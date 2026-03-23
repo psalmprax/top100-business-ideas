@@ -1,4 +1,4 @@
-import { BusinessIdea } from "@/lib/businessData";
+import { BusinessIdea } from "./businessData";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 

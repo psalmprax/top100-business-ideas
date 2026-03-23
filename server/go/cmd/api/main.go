@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -12,8 +13,10 @@ import (
 	"github.com/rs/zerolog"
 
 	"github.com/top100-business-ideas/api/internal/config"
+	"github.com/top100-business-ideas/api/internal/database"
 	"github.com/top100-business-ideas/api/internal/handlers"
 	"github.com/top100-business-ideas/api/internal/middleware"
+	"github.com/top100-business-ideas/api/internal/repository"
 	"github.com/top100-business-ideas/api/internal/services"
 )
 
@@ -49,8 +52,23 @@ func main() {
 	// Load configuration
 	cfg := config.Load()
 
-	// Initialize services
-	authService := services.NewAuthService(cfg.JWTSecret)
+	// Initialize Database
+	dbConfig := database.LoadConfig()
+	if err := database.Connect(dbConfig); err != nil {
+		logger.Fatal().Err(err).Msg("Failed to connect to database")
+	}
+	defer database.Close()
+
+	if err := database.RunMigrations(context.Background()); err != nil {
+		logger.Fatal().Err(err).Msg("Failed to run database migrations")
+	}
+	logger.Info().Msg("Database migrations completed successfully")
+
+	// Initialize Repositories
+	userRepo := repository.NewUserRepository()
+
+	// Initialize Services
+	authService := services.NewAuthService(cfg.JWTSecret, userRepo)
 	proxyService := services.NewProxyService(cfg.PythonBackendURL)
 	wsHub := services.NewWebSocketHub()
 
@@ -79,6 +97,7 @@ func main() {
 	edgeHandler := handlers.NewEdgeHandler()
 	vendorHandler := handlers.NewVendorHandler()
 	workforceHandler := handlers.NewWorkforceHandler(proxyService)
+	enterpriseHandler := handlers.NewEnterpriseHandler(proxyService)
 
 	// Setup Gin router
 	if cfg.Environment == "production" {
@@ -145,6 +164,7 @@ func main() {
 
 			// Agent Operations
 			agents := protected.Group("/agents")
+			agents.Use(middleware.ProductAccess("agent-ops"))
 			{
 				agents.GET("", agentOpsHandler.ListAgents)
 				agents.GET("/:id", agentOpsHandler.GetAgent)
@@ -159,6 +179,7 @@ func main() {
 
 			// Agent Metrics
 			metrics := protected.Group("/metrics")
+			metrics.Use(middleware.ProductAccess("agent-ops"))
 			{
 				metrics.GET("/agents", agentOpsHandler.GetAgentMetrics)
 				metrics.GET("/agents/:id/history", agentOpsHandler.GetAgentHistory)
@@ -166,6 +187,7 @@ func main() {
 
 			// Compliance (AI Act)
 			compliance := protected.Group("/compliance")
+			compliance.Use(middleware.ProductAccess("compliance"))
 			{
 				compliance.GET("", complianceHandler.ListChecks)
 				compliance.GET("/:id", complianceHandler.GetCheck)
@@ -183,6 +205,7 @@ func main() {
 
 			// Deepfake Defense
 			deepfake := protected.Group("/deepfake")
+			deepfake.Use(middleware.ProductAccess("deepfake"))
 			{
 				deepfake.POST("/analyze", deepfakeHandler.Analyze)
 				deepfake.GET("/analyses", deepfakeHandler.ListAnalyses)
@@ -190,6 +213,15 @@ func main() {
 				deepfake.GET("/stats", deepfakeHandler.GetStats)
 				deepfake.POST("/challenge", deepfakeHandler.CreateChallenge)
 				deepfake.POST("/verify", deepfakeHandler.VerifyAuthSignature)
+				deepfake.POST("/analyze/enterprise", deepfakeHandler.AnalyzeEnterprise)
+				deepfake.GET("/detectors", deepfakeHandler.ListDetectors)
+			}
+
+			// Enterprise
+			enterprise := protected.Group("/enterprise")
+			{
+				enterprise.GET("/partner-config", enterpriseHandler.GetPartnerConfig)
+				enterprise.POST("/sla-tier", enterpriseHandler.UpdateSlaTier)
 			}
 
 			// WebSocket for real-time updates
@@ -197,6 +229,7 @@ func main() {
 
 			// Rules
 			rules := protected.Group("/rules")
+			rules.Use(middleware.ProductAccess("agent-ops"))
 			{
 				rules.GET("", rulesHandler.ListRules)
 				rules.POST("", rulesHandler.CreateRule)
@@ -207,6 +240,7 @@ func main() {
 
 			// Metrics
 			metricsGroup := protected.Group("/metrics")
+			metricsGroup.Use(middleware.ProductAccess("agent-ops"))
 			{
 				metricsGroup.GET("/current", metricsHandler.GetCurrentMetrics)
 				metricsGroup.GET("/history", metricsHandler.GetMetricsHistory)
@@ -215,6 +249,7 @@ func main() {
 
 			// Billing
 			billing := protected.Group("/billing")
+			billing.Use(middleware.ProductAccess("billing"))
 			{
 				billing.GET("/subscription", billingHandler.GetSubscription)
 				billing.GET("/invoices", billingHandler.GetInvoices)
@@ -225,6 +260,7 @@ func main() {
 
 			// Webhooks (Agent Ops UC12)
 			webhooks := protected.Group("/webhooks")
+			webhooks.Use(middleware.ProductAccess("agent-ops"))
 			{
 				webhooks.GET("", webhookHandler.ListWebhooks)
 				webhooks.GET("/:id", webhookHandler.GetWebhook)
@@ -237,6 +273,7 @@ func main() {
 
 			// Alerts (Agent Ops UC4)
 			alerts := protected.Group("/alerts")
+			alerts.Use(middleware.ProductAccess("agent-ops"))
 			{
 				alerts.GET("", alertHandler.ListAlerts)
 				alerts.POST("", alertHandler.CreateAlert)
@@ -246,6 +283,7 @@ func main() {
 
 			// Consolidated Agent Operations (Frontend Alignment)
 			agentOps := protected.Group("/agent-ops")
+			agentOps.Use(middleware.ProductAccess("agent-ops"))
 			{
 				agentOps.GET("/audit", agentOpsHandler.GetAuditLogs)
 				agentOps.GET("/models/config", agentOpsHandler.ListLLMConfigs)
@@ -255,11 +293,12 @@ func main() {
 				agentOps.POST("/cloud/failover", agentOpsHandler.ProxyToPython)
 				agentOps.POST("/compliance/hipaa", agentOpsHandler.ProxyToPython)
 				agentOps.POST("/compliance/sox", agentOpsHandler.ProxyToPython)
-
+				agentOps.POST("/gateway/gql", agentOpsHandler.ProxyToPython)
 			}
 
 			// Multi-Cloud (Agent Ops UC16)
 			multiCloud := protected.Group("/multi-cloud")
+			multiCloud.Use(middleware.ProductAccess("agent-ops"))
 			{
 				multiCloud.GET("/status", multiCloudHandler.GetStatus)
 				multiCloud.POST("/failover", multiCloudHandler.InitiateFailover)
@@ -267,6 +306,7 @@ func main() {
 
 			// Self-Healing (Agent Ops UC17)
 			selfHealing := protected.Group("/self-healing")
+			selfHealing.Use(middleware.ProductAccess("agent-ops"))
 			{
 				selfHealing.GET("/status", selfHealingHandler.GetHealingStatus)
 				selfHealing.GET("/events", selfHealingHandler.GetEvents)
@@ -275,6 +315,7 @@ func main() {
 
 			// Training (AI Compliance UC10)
 			training := protected.Group("/training")
+			training.Use(middleware.ProductAccess("compliance"))
 			{
 				training.GET("/modules", trainingHandler.ListModules)
 				training.GET("/modules/:id", trainingHandler.GetModule)
@@ -286,6 +327,7 @@ func main() {
 
 			// Shadow AI (AI Compliance UC15)
 			shadowAI := protected.Group("/shadow-ai")
+			shadowAI.Use(middleware.ProductAccess("compliance"))
 			{
 				shadowAI.GET("/detections", shadowAIHandler.ListDetections)
 				shadowAI.PUT("/detections/:id/remediate", shadowAIHandler.RemediateDetection)
@@ -294,6 +336,7 @@ func main() {
 
 			// Edge AI (AI Compliance UC14)
 			edge := protected.Group("/edge")
+			edge.Use(middleware.ProductAccess("compliance"))
 			{
 				edge.GET("/deployments", edgeHandler.ListDeployments)
 				edge.POST("/deployments/:id/sync", edgeHandler.SyncWeights)
@@ -301,6 +344,7 @@ func main() {
 
 			// Vendors (AI Compliance UC7)
 			vendors := protected.Group("/vendors")
+			vendors.Use(middleware.ProductAccess("compliance"))
 			{
 				vendors.GET("", vendorHandler.ListVendors)
 				vendors.POST("", vendorHandler.AddVendor)
@@ -308,6 +352,7 @@ func main() {
 
 			// Wearables (Deepfake UC14)
 			wearable := protected.Group("/wearable")
+			wearable.Use(middleware.ProductAccess("deepfake"))
 			{
 				wearable.GET("/devices", wearableHandler.ListDevices)
 				wearable.POST("/devices", wearableHandler.RegisterDevice)
@@ -316,6 +361,7 @@ func main() {
 
 			// Mobile SDK (Deepfake UC10)
 			mobileSDK := protected.Group("/mobile-sdk")
+			mobileSDK.Use(middleware.ProductAccess("deepfake"))
 			{
 				mobileSDK.GET("/stats", agentOpsHandler.ProxyToPython)
 			}
@@ -325,6 +371,7 @@ func main() {
 
 			// Crypto (Deepfake UC12)
 			crypto := protected.Group("/crypto")
+			crypto.Use(middleware.ProductAccess("deepfake"))
 			{
 				crypto.GET("/wallets", cryptoHandler.ListWallets)
 				crypto.POST("/wallets", cryptoHandler.ProtectWallet)
@@ -333,6 +380,7 @@ func main() {
 
 			// Travel (Deepfake UC16)
 			travel := protected.Group("/travel")
+			travel.Use(middleware.ProductAccess("deepfake"))
 			{
 				travel.GET("/kiosks", travelKioskHandler.ListKiosks)
 				travel.POST("/kiosks/:id/verify", travelKioskHandler.VerifyTraveler)
@@ -341,6 +389,7 @@ func main() {
 
 			// Workforce & Sovereign (Digital Workforce Gap)
 			workforce := protected.Group("/workforce")
+			workforce.Use(middleware.ProductAccess("workforce"))
 			{
 				workforce.GET("/status", workforceHandler.GetStatus)
 				workforce.POST("/sovereign/request", workforceHandler.RequestApproval)
@@ -348,6 +397,7 @@ func main() {
 			}
 			// On-Premise (Agent Ops UC18)
 			onPrem := protected.Group("/on-prem")
+			onPrem.Use(middleware.ProductAccess("agent-ops"))
 			{
 				onPrem.POST("/manifest", agentOpsHandler.ProxyToPython)
 			}

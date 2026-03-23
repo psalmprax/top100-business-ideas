@@ -124,8 +124,9 @@ type BiometricSignature struct {
 // API Request/Response types
 
 type LoginRequest struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,min=8"`
+	Email     string `json:"email" binding:"required,email"`
+	Password  string `json:"password" binding:"required,min=8"`
+	ProductID string `json:"product_id"`
 }
 
 type RegisterRequest struct {
@@ -135,10 +136,12 @@ type RegisterRequest struct {
 }
 
 type AuthResponse struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-	ExpiresIn    int    `json:"expires_in"`
-	User         *User  `json:"user"`
+	AccessToken              string `json:"access_token,omitempty"`
+	RefreshToken             string `json:"refresh_token,omitempty"`
+	ExpiresIn                int    `json:"expires_in,omitempty"`
+	User                     *User  `json:"user,omitempty"`
+	RequiresProductSelection bool   `json:"requires_product_selection,omitempty"`
+	AvailableProducts        []string `json:"available_products,omitempty"`
 }
 
 type CreateAgentRequest struct {

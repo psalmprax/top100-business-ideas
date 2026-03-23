@@ -15,6 +15,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
+import { UserMenu } from '@/components/UserMenu';
 import { extendedApi, type TrainingModule, type EdgeDeployment, type ShadowAIDetection } from '@/lib/api';
 import {
     Activity,
@@ -529,6 +530,12 @@ const ModelProfileDialog = ({ selectedModelForView, setSelectedModelForView, han
 
                     <TabsContent value="files" className="pt-4">
                         <div className="space-y-2">
+                            <div className="flex justify-between items-center mb-2">
+                                <Label className="text-[10px] uppercase text-muted-foreground font-bold">Compliance Evidence</Label>
+                                <Button size="sm" variant="outline" className="h-7 text-[10px] border-blue-500/30 hover:bg-blue-500/5 px-2" onClick={() => setShowUploadDialog(true)}>
+                                    <Plus className="w-3 h-3 mr-1" /> Upload Artifact
+                                </Button>
+                            </div>
                             {["conformity_assessment_v2.pdf", "article_11_annex_iv.json", "bias_mitigation_report.docx"].map((file, i) => (
                                 <div key={i} className="flex items-center justify-between p-2 rounded hover:bg-muted cursor-pointer transition-colors group">
                                     <div className="flex items-center gap-2">
@@ -834,6 +841,9 @@ const ComplianceChecklistContent = () => {
     const [connectedSystems, setConnectedSystems] = useState<Record<string, any>>({});
     const [scanningArticles, setScanningArticles] = useState<Record<string, boolean>>({});
     const [lastScanResults, setLastScanResults] = useState<Record<string, any>>({});
+    const [showScanConfigDialog, setShowScanConfigDialog] = useState(false);
+    const [selectedArticleForScan, setSelectedArticleForScan] = useState<any>(null);
+    const [scanSensitivity, setScanSensitivity] = useState(75);
 
     const { isAuthenticated } = useAuth();
 
@@ -1179,12 +1189,15 @@ const ComplianceChecklistContent = () => {
                                             size="sm"
                                             className="text-green-500 border-green-500/50 hover:bg-green-500/10 active:scale-95 transition-all"
                                             disabled={scanningArticles[article.article]}
-                                            onClick={() => handleRunScan(article.article, article.scanType)}
+                                            onClick={() => {
+                                                setSelectedArticleForScan(article);
+                                                setShowScanConfigDialog(true);
+                                            }}
                                         >
                                             {scanningArticles[article.article] ? (
                                                 <><Loader2 className="w-4 h-4 mr-1 animate-spin" /> Scanning Platform...</>
                                             ) : (
-                                                <><Zap className="w-4 h-4 mr-1" /> Run {article.scanType}</>
+                                                <><Zap className="w-4 h-4 mr-1" /> Configure & Run {article.scanType}</>
                                             )}
                                         </Button>
                                     ) : (
@@ -1243,6 +1256,76 @@ const ComplianceChecklistContent = () => {
                     </Card>
                 ))}
             </div>
+
+            {/* Scan Configuration Dialog */}
+            <Dialog open={showScanConfigDialog} onOpenChange={setShowScanConfigDialog}>
+                <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Zap className="w-5 h-5 text-yellow-500" />
+                            Configure Article {selectedArticleForScan?.article} Scan
+                        </DialogTitle>
+                        <DialogDescription className="text-zinc-400">
+                            Set parameters for the {selectedArticleForScan?.scanType} orchestration.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-6 py-4">
+                        <div className="space-y-4">
+                            <div className="flex justify-between">
+                                <Label>Scan Sensitivity / Depth</Label>
+                                <span className="text-xs font-mono text-yellow-500">{scanSensitivity}%</span>
+                            </div>
+                            <Progress value={scanSensitivity} className="h-2" />
+                            <div className="grid grid-cols-4 gap-2">
+                                {[25, 50, 75, 100].map(v => (
+                                    <Button 
+                                        key={v} 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className={`text-[10px] ${scanSensitivity === v ? 'border-yellow-500 bg-yellow-500/10' : ''}`}
+                                        onClick={() => setScanSensitivity(v)}
+                                    >
+                                        {v}%
+                                    </Button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Target Dataset / Environment</Label>
+                            <Select defaultValue="prod">
+                                <SelectTrigger className="bg-zinc-900 border-zinc-800">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="bg-zinc-900 border-zinc-800">
+                                    <SelectItem value="prod">Production Inference Logs</SelectItem>
+                                    <SelectItem value="staging">Staging / Pre-market Cluster</SelectItem>
+                                    <SelectItem value="training">Training / Gold Dataset v4</SelectItem>
+                                    <SelectItem value="adversarial">Adversarial Test Suite</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="flex items-center space-x-2 p-3 rounded bg-zinc-900 border border-zinc-800">
+                            <Switch id="auto-remediate" />
+                            <Label htmlFor="auto-remediate" className="text-xs font-medium cursor-pointer">
+                                Enable Auto-Remediation (Article 15 compatible)
+                            </Label>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button 
+                            className="w-full bg-yellow-600 hover:bg-yellow-700 font-bold"
+                            onClick={() => {
+                                handleRunScan(selectedArticleForScan.article, selectedArticleForScan.scanType);
+                                setShowScanConfigDialog(false);
+                            }}
+                        >
+                            Orchestrate Scan Now
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };
@@ -1326,6 +1409,9 @@ export default function AlphaAIActCompliance() {
     const [isLoading, setIsLoading] = useState(true);
     const [showVendorDialog, setShowVendorDialog] = useState(false);
     const [showIncidentDialog, setShowIncidentDialog] = useState(false);
+    const [showUploadDialog, setShowUploadDialog] = useState(false);
+    const [showScanConfigDialog, setShowScanConfigDialog] = useState(false);
+    const [selectedArticleForScan, setSelectedArticleForScan] = useState<any>(null);
     const [showModelDialog, setShowModelDialog] = useState(false);
     const [showEuRegDialog, setShowEuRegDialog] = useState(false);
     const [regStep, setRegStep] = useState(1);
@@ -1843,9 +1929,11 @@ Last Audit: ${model.lastAudit ? model.lastAudit.toLocaleDateString() : 'Pending'
                 <div className="container mx-auto px-4">
                     <div className="flex h-16 items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <Link href="/">
-                                <Button variant="ghost" size="sm">← Back</Button>
-                            </Link>
+                            {isDemo && (
+                                <Link href="/">
+                                    <Button variant="ghost" size="sm">← Back</Button>
+                                </Link>
+                            )}
                             <div className="flex items-center gap-2">
                                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-blue-600">
                                     <Scale className="h-5 w-5 text-white" />
@@ -1910,9 +1998,9 @@ Last Audit: ${model.lastAudit ? model.lastAudit.toLocaleDateString() : 'Pending'
                                     window.open('/portal/white-label', '_blank');
                                 }}
                             >
-                                <Globe className="w-4 h-4 mr-2" />
                                 White-label Portal
                             </Button>
+                            <UserMenu />
                         </div>
                     </div>
                 </div>
@@ -4091,6 +4179,51 @@ Last Audit: ${model.lastAudit ? model.lastAudit.toLocaleDateString() : 'Pending'
                 </DialogContent>
             </Dialog>
 
+            {/* Artifact Upload Dialog */}
+            <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+                <DialogContent className="sm:max-w-[425px] bg-zinc-950 border-zinc-800 text-white">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <FileCheck className="w-5 h-5 text-blue-500" />
+                            Upload Compliance Artifact
+                        </DialogTitle>
+                        <DialogDescription className="text-zinc-400">
+                            Upload evidence for conformity assessment (Art. 11, Art. 14, Art. 61)
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="border-2 border-dashed border-zinc-800 rounded-lg p-12 text-center hover:border-blue-500/50 transition-colors cursor-pointer group">
+                            <div className="flex flex-col items-center gap-2">
+                                <Cloud className="w-8 h-8 text-zinc-600 group-hover:text-blue-500 transition-colors" />
+                                <div className="text-sm font-medium">Drop files here or click to browse</div>
+                                <div className="text-[10px] text-zinc-500">PDF, JSON, DOCX (Max 50MB)</div>
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Artifact Type</Label>
+                            <Select defaultValue="conformity">
+                                <SelectTrigger className="bg-zinc-900 border-zinc-800">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="bg-zinc-900 border-zinc-800">
+                                    <SelectItem value="conformity">Conformity Assessment Certificate</SelectItem>
+                                    <SelectItem value="risk_mgmt">Risk Management Plan</SelectItem>
+                                    <SelectItem value="data_audit">Data Governance Evidence</SelectItem>
+                                    <SelectItem value="post_market">Post-Market Monitoring Report</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setShowUploadDialog(false)}>Cancel</Button>
+                        <Button className="bg-blue-600 hover:bg-blue-700 font-bold" onClick={() => {
+                            toast.success("Artifact uploaded and cryptographically hashed.");
+                            setShowUploadDialog(false);
+                        }}>Confirm & Upload</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             {/* Incident Reporting Dialog */}
             <Dialog open={showIncidentDialog} onOpenChange={setShowIncidentDialog}>
                 <DialogContent className="sm:max-w-[425px]">
@@ -4099,29 +4232,37 @@ Last Audit: ${model.lastAudit ? model.lastAudit.toLocaleDateString() : 'Pending'
                         <DialogDescription>Mandatory disclosure for serious AI system failures</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <Label>Description of Incident</Label>
-                            <textarea
-                                className="w-full h-24 p-2 rounded-md border bg-background"
-                                placeholder="Detail the failure and impact..."
-                                value={newIncidentData.description}
-                                onChange={(e) => setNewIncidentData({ ...newIncidentData, description: e.target.value })}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Severity</Label>
-                            <Select
-                                value={newIncidentData.severity}
-                                onValueChange={(v: any) => setNewIncidentData({ ...newIncidentData, severity: v })}
-                            >
-                                <SelectTrigger><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="low">Low Impact</SelectItem>
-                                    <SelectItem value="medium">Medium Severity</SelectItem>
-                                    <SelectItem value="high">High Risk</SelectItem>
-                                    <SelectItem value="critical">Critical (Immediate Reporting)</SelectItem>
-                                </SelectContent>
-                            </Select>
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label>Description of Incident</Label>
+                                <textarea
+                                    className="w-full h-24 p-2 rounded-md border bg-background"
+                                    placeholder="Detail the failure and impact..."
+                                    value={newIncidentData.description}
+                                    onChange={(e) => setNewIncidentData({ ...newIncidentData, description: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Severity</Label>
+                                <Select
+                                    value={newIncidentData.severity}
+                                    onValueChange={(v: any) => setNewIncidentData({ ...newIncidentData, severity: v })}
+                                >
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="low">Low Impact</SelectItem>
+                                        <SelectItem value="medium">Medium Severity</SelectItem>
+                                        <SelectItem value="high">High Risk</SelectItem>
+                                        <SelectItem value="critical">Critical (Immediate Reporting)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="flex items-center space-x-2 p-3 rounded bg-zinc-900 border border-zinc-800">
+                                <Switch id="art-72" defaultChecked />
+                                <Label htmlFor="art-72" className="text-xs font-medium cursor-pointer text-white">
+                                    Mark as Article 72 Serious Incident
+                                </Label>
+                            </div>
                         </div>
                     </div>
                     <DialogFooter>

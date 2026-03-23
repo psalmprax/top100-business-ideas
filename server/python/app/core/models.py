@@ -238,13 +238,21 @@ class UserBase(SQLModel):
 class UserCreate(UserBase):
     """User creation model"""
     password: str
+    company: Optional[str] = None
 
 
 class User(UserBase, table=True):
     """User model with persistent storage"""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    password_hash: str = Field(alias="password_hash")
+    company: Optional[str] = None
     role: str = Field(default="user")
+    stripe_customer_id: Optional[str] = None
+    subscription_tier: str = Field(default="free")
+    subscription_status: str = Field(default="active")
+    allowed_products: List[str] = Field(default=[], sa_column=Column(JSON))
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 # Generic Response Models

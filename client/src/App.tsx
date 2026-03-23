@@ -44,7 +44,8 @@ function ProtectedRoute({
   }
 
   if (!user) {
-    return <Redirect to="/login" />;
+    const loginPath = productId ? `/login?product=${productId}` : "/login";
+    return <Redirect to={loginPath} />;
   }
 
   if (requireManagement && !isManagement) {

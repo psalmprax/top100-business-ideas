@@ -625,15 +625,24 @@ function getMockResponse<T>(endpoint: string, method: string, body?: any): T {
 // Auth API
 // ============================================================================
 
+export interface AuthResponse {
+    accessToken?: string;
+    refreshToken?: string;
+    expiresIn?: number;
+    user?: User;
+    requiresProductSelection?: boolean;
+    availableProducts?: string[];
+}
+
 export const authApi = {
-    login: (email: string, password: string) =>
-        apiRequest<{ accessToken: string; user: User }>('/api/v1/auth/login', {
+    login: (email: string, password: string, productId?: string) =>
+        apiRequest<AuthResponse>('/api/v1/auth/login', {
             method: 'POST',
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify({ email, password, product_id: productId }),
         }),
 
     register: (email: string, password: string, name: string) =>
-        apiRequest<{ accessToken: string; user: User }>('/api/v1/auth/register', {
+        apiRequest<AuthResponse>('/api/v1/auth/register', {
             method: 'POST',
             body: JSON.stringify({ email, password, name }),
         }),
@@ -1205,6 +1214,8 @@ export interface AlertConfig {
 
 // Extended API functions
 export const extendedApi = {
+    get: <T>(url: string) => apiRequest<T>(url),
+    post: <T>(url: string, body?: any) => apiRequest<T>(url, { method: "POST", body: body ? JSON.stringify(body) : undefined }),
     // Alerts (Agent Ops UC 4)
     alerts: {
         list: () => apiRequest<AlertConfig[]>('/alerts'),

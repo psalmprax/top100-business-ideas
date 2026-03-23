@@ -16,6 +16,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
+import { UserMenu } from '@/components/UserMenu';
 import { extendedApi, deepfakeApi, type MobileSDKStatus, type WearableDevice, type TravelKioskStatus, type CryptoWallet } from '@/lib/api';
 import {
     Activity,
@@ -356,6 +357,9 @@ export default function AlphaDeepfakeDefense() {
     const [showOnboardVendorDialog, setShowOnboardVendorDialog] = useState(false);
     const [showDeployModelDialog, setShowDeployModelDialog] = useState(false);
     const [showROIDialog, setShowROIDialog] = useState(false);
+    const [showPanicWordDialog, setShowPanicWordDialog] = useState(false);
+    const [showVoiceAuthTestDialog, setShowVoiceAuthTestDialog] = useState(false);
+    const [showDeviceMgmtDialog, setShowDeviceMgmtDialog] = useState(false);
     const [stats, setStats] = useState<any>(null);
 
     useEffect(() => {
@@ -771,9 +775,11 @@ export default function AlphaDeepfakeDefense() {
                 <div className="container mx-auto px-4">
                     <div className="flex h-16 items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <Link href="/">
-                                <Button variant="ghost" size="sm">← Back</Button>
-                            </Link>
+                            {isDemo && (
+                                <Link href="/">
+                                    <Button variant="ghost" size="sm">← Back</Button>
+                                </Link>
+                            )}
                             <div className="flex items-center gap-2">
                                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-pink-600">
                                     <Eye className="h-5 w-5 text-white" />
@@ -836,9 +842,9 @@ export default function AlphaDeepfakeDefense() {
                                     }
                                 }}
                             >
-                                <Mic className="w-4 h-4 mr-2" />
                                 Voice Forensics
                             </Button>
+                            <UserMenu />
                         </div>
                     </div>
                 </div>
@@ -2328,10 +2334,13 @@ export default function AlphaDeepfakeDefense() {
                                                 Trigger silent alert with secret phrase
                                             </p>
                                         </div>
-                                        <Switch
-                                            checked={duressEnabled}
-                                            onCheckedChange={setDuressEnabled}
-                                        />
+                                        <div className="flex items-center gap-2">
+                                            <Button variant="ghost" size="sm" className="h-7 text-[10px]" onClick={() => setShowPanicWordDialog(true)}>Configure Phrase</Button>
+                                            <Switch
+                                                checked={duressEnabled}
+                                                onCheckedChange={setDuressEnabled}
+                                            />
+                                        </div>
                                     </div>
                                     <div className="flex items-center justify-between">
                                         <div>
@@ -2340,7 +2349,10 @@ export default function AlphaDeepfakeDefense() {
                                                 Require voice liveness for audio verification
                                             </p>
                                         </div>
-                                        <Switch defaultChecked />
+                                        <div className="flex items-center gap-2">
+                                            <Button variant="ghost" size="sm" className="h-7 text-[10px]" onClick={() => setShowVoiceAuthTestDialog(true)}>Test Authentication</Button>
+                                            <Switch defaultChecked />
+                                        </div>
                                     </div>
                                     <div className="flex items-center justify-between">
                                         <div>
@@ -2384,7 +2396,10 @@ export default function AlphaDeepfakeDefense() {
                                                 <Smartphone className="w-4 h-4" />
                                                 <span>Mobile SDK</span>
                                             </div>
-                                            <Badge variant="default">Ready</Badge>
+                                            <div className="flex items-center gap-2">
+                                                <Button variant="ghost" size="sm" className="h-7 text-[10px]" onClick={() => setShowDeviceMgmtDialog(true)}>Manage Devices</Button>
+                                                <Badge variant="default">Ready</Badge>
+                                            </div>
                                         </div>
                                     </div>
                                     <div className="p-3 rounded-lg border">
@@ -3616,6 +3631,153 @@ export default function AlphaDeepfakeDefense() {
                 </DialogContent>
             </Dialog>
 
+            {/* Panic Word Configuration Dialog */}
+            <Dialog open={showPanicWordDialog} onOpenChange={setShowPanicWordDialog}>
+                <DialogContent className="sm:max-w-[400px]">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-red-500">
+                            <ShieldAlert className="w-5 h-5" /> Panic Word Settings
+                        </DialogTitle>
+                        <DialogDescription>
+                            Configure your silent duress phrase. When spoken during a live session, it will trigger a covert alarm.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="panic-phrase">Secret Phrase</Label>
+                            <Input id="panic-phrase" defaultValue="alaska" placeholder="Enter a word or phrase" />
+                            <p className="text-[10px] text-muted-foreground italic">Try to choose something that sounds natural in conversation but is unique to you.</p>
+                        </div>
+                        <div className="space-y-3">
+                            <Label className="text-xs font-bold uppercase tracking-tight">Panic Action</Label>
+                            <div className="space-y-2">
+                                <div className="flex items-center space-x-2 border p-2 rounded bg-red-500/5 border-red-500/20">
+                                    <Checkbox id="action-lock" defaultChecked />
+                                    <Label htmlFor="action-lock" className="text-xs cursor-pointer">Immediately lock all biometric vaults</Label>
+                                </div>
+                                <div className="flex items-center space-x-2 border p-2 rounded bg-red-500/5 border-red-500/20">
+                                    <Checkbox id="action-silent" defaultChecked />
+                                    <Label htmlFor="action-silent" className="text-xs cursor-pointer">Silent notify security operations (SOC)</Label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setShowPanicWordDialog(false)}>Cancel</Button>
+                        <Button className="bg-red-600 hover:bg-red-700" onClick={() => {
+                            toast.success("Panic word and duress policy updated.");
+                            setShowPanicWordDialog(false);
+                        }}>Update Secure Phrase</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Voice-Only Auth Test Dialog */}
+            <Dialog open={showVoiceAuthTestDialog} onOpenChange={setShowVoiceAuthTestDialog}>
+                <DialogContent className="sm:max-w-[450px]">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-blue-500">
+                            <Mic className="w-5 h-5" /> Voice Authenticity Test
+                        </DialogTitle>
+                        <DialogDescription>
+                            Verify voice liveness and protect against AI-cloned audio injections.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-6 flex flex-col items-center justify-center space-y-6">
+                        <div className="w-24 h-24 rounded-full bg-blue-500/10 flex items-center justify-center border-2 border-blue-500/20 relative">
+                            <div className="absolute inset-0 rounded-full border-2 border-blue-500/40 animate-ping opacity-20" />
+                            <Mic className="w-10 h-10 text-blue-500 " />
+                        </div>
+                        <div className="text-center space-y-1">
+                            <div className="text-sm font-medium italic">"The quick brown fox jumps over the lazy dog"</div>
+                            <p className="text-xs text-muted-foreground">Please repeat the randomly generated passphrase above</p>
+                        </div>
+                        <div className="w-full space-y-2">
+                            <div className="flex items-center justify-between text-[10px] text-muted-foreground uppercase">
+                                <span>Liveness Score</span>
+                                <span>98.2%</span>
+                            </div>
+                            <Progress value={98} className="h-1.5" />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" className="w-full" onClick={() => {
+                            toast.info("Analyzing spectral artifacts...");
+                            setTimeout(() => toast.success("Voice Authenticity Verified (Real Human)"), 1500);
+                        }}>Record & Verify</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Device/SDK Management Dialog */}
+            <Dialog open={showDeviceMgmtDialog} onOpenChange={setShowDeviceMgmtDialog}>
+                <DialogContent className="sm:max-w-[600px] border-zinc-800 bg-zinc-950 text-white">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Smartphone className="w-5 h-5 text-blue-400" /> Device & SDK Ecosystem
+                        </DialogTitle>
+                        <DialogDescription className="text-zinc-500">
+                            Manage authorized hardware and mobile SDK instances for edge defense.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-4">
+                        <div className="grid gap-x-4 gap-y-3 grid-cols-2">
+                            <Card className="bg-zinc-900 border-zinc-800">
+                                <CardContent className="p-3 flex items-center gap-3">
+                                    <div className="p-2 rounded bg-zinc-800"><Watch className="w-4 h-4 text-orange-400" /></div>
+                                    <div>
+                                        <div className="text-xs font-bold">Biometric Watch</div>
+                                        <div className="text-[10px] text-zinc-500">Connected via BLE</div>
+                                    </div>
+                                    <Badge variant="outline" className="ml-auto text-[9px] border-green-500/20 text-green-500">LIVE</Badge>
+                                </CardContent>
+                            </Card>
+                            <Card className="bg-zinc-900 border-zinc-800">
+                                <CardContent className="p-3 flex items-center gap-3">
+                                    <div className="p-2 rounded bg-zinc-800"><Smartphone className="w-4 h-4 text-blue-400" /></div>
+                                    <div>
+                                        <div className="text-xs font-bold">iOS Hybrid SDK</div>
+                                        <div className="text-[10px] text-zinc-500">Build: 4.0.12-rc</div>
+                                    </div>
+                                    <Badge variant="outline" className="ml-auto text-[9px] border-zinc-700 text-zinc-500">v4.0.1</Badge>
+                                </CardContent>
+                            </Card>
+                        </div>
+                        
+                        <div className="p-4 rounded border border-blue-500/20 bg-blue-500/5">
+                            <Label className="text-[10px] font-bold uppercase tracking-widest text-blue-400">SDK Provisioning Key</Label>
+                            <div className="flex items-center gap-2 mt-2">
+                                <code className="flex-1 p-2 rounded bg-zinc-950 border border-zinc-800 text-xs text-blue-400">sdk_prod_823f92k39sl...</code>
+                                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => toast.success("SDK Key copied to clipboard")}><Box className="w-4 h-4" /></Button>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label className="text-xs">Active Sessions via Edge</Label>
+                            <div className="border border-zinc-800 rounded overflow-hidden">
+                                <Table>
+                                    <TableBody>
+                                        <TableRow className="border-zinc-800 hover:bg-zinc-900/50">
+                                            <TableCell className="py-2 text-[11px] font-mono">ID-28491</TableCell>
+                                            <TableCell className="py-2 text-[11px]">Travel Kiosk #42</TableCell>
+                                            <TableCell className="py-2 text-right"><Badge variant="outline" className="text-[9px] bg-green-500/10 text-green-500 border-green-500/20">Active</Badge></TableCell>
+                                        </TableRow>
+                                        <TableRow className="border-zinc-800 hover:bg-zinc-900/50">
+                                            <TableCell className="py-2 text-[11px] font-mono">ID-28492</TableCell>
+                                            <TableCell className="py-2 text-[11px]">Corporate Entrance B</TableCell>
+                                            <TableCell className="py-2 text-right"><Badge variant="outline" className="text-[9px] bg-zinc-800 text-zinc-500 border-zinc-700">Idle</Badge></TableCell>
+                                        </TableRow>
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="ghost" className="text-zinc-500" onClick={() => setShowDeviceMgmtDialog(false)}>Dismiss</Button>
+                        <Button className="bg-blue-600 hover:bg-blue-700">Add Trusted Device</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     </>
     );

@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 
-from app.api import agents, compliance, deepfake, health, auth_verify, extended
+from app.api import agents, compliance, deepfake, health, auth_verify, extended, enterprise
 from app.core.config import settings
 from app.services.billing_service import billing_service
 
@@ -71,6 +71,7 @@ app.include_router(health.router, prefix="/health", tags=["Health"])
 app.include_router(agents.router, prefix="/agents", tags=["Agents"])
 app.include_router(compliance.router, prefix="/compliance", tags=["Compliance"])
 app.include_router(deepfake.router, prefix="/deepfake", tags=["Deepfake"])
+app.include_router(enterprise.router, tags=["Enterprise"])
 app.include_router(auth_verify.router, prefix="/auth/verify", tags=["Liveness Authentication"])
 app.include_router(extended.router, tags=["Extended API - Full Sync"])
 

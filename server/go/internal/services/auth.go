@@ -1,16 +1,20 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/top100-business-ideas/api/internal/models"
+	"github.com/top100-business-ideas/api/internal/repository"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthService struct {
 	jwtSecret []byte
 	jwtExpiry time.Duration
+	userRepo  *repository.UserRepository
 }
 
 type Claims struct {
@@ -21,10 +25,11 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-func NewAuthService(secret string) *AuthService {
+func NewAuthService(secret string, userRepo *repository.UserRepository) *AuthService {
 	return &AuthService{
 		jwtSecret: []byte(secret),
 		jwtExpiry: 24 * time.Hour,
+		userRepo:  userRepo,
 	}
 }
 
@@ -63,6 +68,56 @@ func (s *AuthService) ValidateToken(tokenString string) (*Claims, error) {
 
 	return nil, errors.New("invalid token")
 }
+
+func (s *AuthService) Authenticate(ctx context.Context, email, password string) (*models.User, error) {
+	user, err := s.userRepo.GetByEmail(ctx, email)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, errors.New("user not found")
+	}
+
+	if !s.CheckPassword(password, user.Password) {
+		return nil, errors.New("invalid password")
+	}
+
+	return user, nil
+}
+
+func (s *AuthService) Register(ctx context.Context, email, password, name string) (*models.User, error) {
+	existing, err := s.userRepo.GetByEmail(ctx, email)
+	if err != nil {
+		return nil, err
+	}
+	if existing != nil {
+		return nil, errors.New("user already exists")
+	}
+
+	hashedPassword, err := s.HashPassword(password)
+	if err != nil {
+		return nil, err
+	}
+
+	user := &models.User{
+		Email:           email,
+		Password:        hashedPassword,
+		Name:            name,
+		Role:            "user",
+		AllowedProducts: []string{"agent-ops"},
+	}
+
+	if err := s.userRepo.Create(ctx, user); err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+func (s *AuthService) GetUserByID(ctx context.Context, id string) (*models.User, error) {
+	return s.userRepo.GetByID(ctx, id)
+}
+
 
 func (s *AuthService) HashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)

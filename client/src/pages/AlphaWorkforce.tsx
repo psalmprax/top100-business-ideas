@@ -69,6 +69,7 @@ import {
 } from "@/components/ui/dialog";
 import { extendedApi, workforceSync } from '@/lib/api';
 import { storage } from "@/lib/storage";
+import { UserMenu } from "@/components/UserMenu";
 
 const INITIAL_AGENT_ROSTER: any[] = [];
 const INITIAL_FISCAL_REQUESTS: any[] = [];
@@ -401,11 +402,10 @@ const AlphaWorkforce = () => {
                             size="sm"
                             className="bg-indigo-600 hover:bg-indigo-700 h-9"
                             onClick={handleDeployWorkforce}
-                            data-testid="deploy-workforce-btn"
                         >
-                            <Rocket className="w-4 h-4 mr-2" />
                             Deploy Workforce
                         </Button>
+                        <UserMenu />
                     </div>
                 </div>
             </div>
@@ -1185,7 +1185,52 @@ const AlphaWorkforce = () => {
                                         <CardTitle className="text-xs flex items-center gap-2">
                                             <FileText className="w-4 h-4 text-indigo-500" /> Fiscal Request Queue
                                         </CardTitle>
-                                        <Badge className="bg-indigo-500/20 text-indigo-500 text-[9px]">CFO PENDING</Badge>
+                                        <Dialog>
+                                            <DialogTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-6 w-6"><Plus className="w-3 h-3" /></Button>
+                                            </DialogTrigger>
+                                            <DialogContent className="sm:max-w-[400px]">
+                                                <DialogHeader>
+                                                    <DialogTitle>Create Fiscal Request</DialogTitle>
+                                                    <DialogDescription>Submit a new expenditure request for CFO AI review.</DialogDescription>
+                                                </DialogHeader>
+                                                <div className="grid gap-4 py-4">
+                                                    <div className="grid gap-2">
+                                                        <Label htmlFor="req-purpose">Purpose</Label>
+                                                        <Input id="req-purpose" placeholder="e.g. Cloud Compute Overages" />
+                                                    </div>
+                                                    <div className="grid gap-2">
+                                                        <Label htmlFor="req-amount">Amount</Label>
+                                                        <Input id="req-amount" placeholder="$2,500" />
+                                                    </div>
+                                                    <div className="grid gap-2">
+                                                        <Label htmlFor="req-priority">Priority</Label>
+                                                        <Select defaultValue="MEDIUM">
+                                                            <SelectTrigger><SelectValue /></SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="LOW">Low</SelectItem>
+                                                                <SelectItem value="MEDIUM">Medium</SelectItem>
+                                                                <SelectItem value="HIGH">High</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+                                                </div>
+                                                <DialogFooter>
+                                                    <Button onClick={() => {
+                                                        const p = (document.getElementById('req-purpose') as HTMLInputElement)?.value;
+                                                        const a = (document.getElementById('req-amount') as HTMLInputElement)?.value;
+                                                        if (!p || !a) return;
+                                                        const newReq = { id: Date.now(), purpose: p, amount: a, priority: 'MEDIUM', status: 'PENDING' };
+                                                        setFiscalRequests(prev => {
+                                                            const updated = [newReq, ...prev];
+                                                            storage.set("fiscal_requests", updated);
+                                                            return updated;
+                                                        });
+                                                        toast.success("Fiscal request submitted to CFO AI.");
+                                                    }}>Submit Request</Button>
+                                                </DialogFooter>
+                                            </DialogContent>
+                                        </Dialog>
                                     </div>
                                     <CardDescription className="text-[10px]">Daily spend authorization required</CardDescription>
                                 </CardHeader>
@@ -1745,7 +1790,10 @@ const AlphaWorkforce = () => {
                                             <Button variant="outline" size="icon" onClick={() => toast.success("Discord Bridge Initialized")}><CheckCircle2 className="w-4 h-4 text-green-500" /></Button>
                                         </div>
                                     </div>
-                                    <Button className="w-full bg-primary hover:bg-primary/90 mt-4" onClick={() => toast.success("All operational bridges synchronized.")}>
+                                    <Button className="w-full bg-primary hover:bg-primary/90 mt-4" onClick={() => {
+                                        storage.set("workforce_webhooks", webhooks);
+                                        toast.success("All operational bridges synchronized.");
+                                    }}>
                                         <Save className="w-4 h-4 mr-2" /> Save Connectivity Profile
                                     </Button>
                                 </CardContent>
@@ -2107,54 +2155,90 @@ const AgentMessage = ({ agent, framework, platform, channel, content, timestamp 
     );
 };
 
-const AgentCommsHub = ({ messages }: { messages: any[] }) => (
-    <Card className="border-primary/10 shadow-xl overflow-hidden bg-card/30 backdrop-blur-sm">
-        <CardHeader className="border-b bg-muted/30 py-4">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-indigo-500/10 rounded-lg">
-                        <MessageSquare className="w-5 h-5 text-indigo-500" />
+const AgentCommsHub = ({ messages }: { messages: any[] }) => {
+    const [msgInput, setMsgInput] = useState("");
+    const [localMessages, setLocalMessages] = useState<any[]>([]);
+
+    useEffect(() => {
+        if (messages) setLocalMessages(messages);
+    }, [messages]);
+
+    const handleSend = () => {
+        if (!msgInput.trim()) return;
+        const newMsg = {
+            id: `human-${Date.now()}`,
+            agent: "Human Bridge",
+            framework: "Sovereign-Admin",
+            platform: "Console",
+            channel: "Direct-Override",
+            content: msgInput,
+            timestamp: "Just now"
+        };
+        setLocalMessages(prev => [...prev, newMsg]);
+        setMsgInput("");
+        toast.success("Broadcast sent to agent cluster");
+    };
+
+    return (
+        <Card className="border-primary/10 shadow-xl overflow-hidden bg-card/30 backdrop-blur-sm">
+            <CardHeader className="border-b bg-muted/30 py-4">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-indigo-500/10 rounded-lg">
+                            <MessageSquare className="w-5 h-5 text-indigo-500" />
+                        </div>
+                        <div>
+                            <CardTitle className="text-lg">Inter-Agent Discourse</CardTitle>
+                            <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Internal Messaging Subsystem</CardDescription>
+                        </div>
                     </div>
-                    <div>
-                        <CardTitle className="text-lg">Inter-Agent Discourse</CardTitle>
-                        <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Internal Messaging Subsystem</CardDescription>
+                    <div className="flex items-center gap-2">
+                        <div className="flex -space-x-2">
+                            <div className="w-6 h-6 rounded-full border-2 border-background bg-indigo-500" title="Slack" />
+                            <div className="w-6 h-6 rounded-full border-2 border-background bg-blue-400" title="Telegram" />
+                            <div className="w-6 h-6 rounded-full border-2 border-background bg-green-500" title="WhatsApp" />
+                        </div>
+                        <Badge variant="outline" className="text-[10px] font-mono border-green-500/50 text-green-500 bg-green-500/5">
+                            <Activity className="w-2 h-2 mr-1 animate-pulse" /> ENCRYPTED
+                        </Badge>
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <div className="flex -space-x-2">
-                        <div className="w-6 h-6 rounded-full border-2 border-background bg-indigo-500" title="Slack" />
-                        <div className="w-6 h-6 rounded-full border-2 border-background bg-blue-400" title="Telegram" />
-                        <div className="w-6 h-6 rounded-full border-2 border-background bg-green-500" title="WhatsApp" />
-                    </div>
-                    <Badge variant="outline" className="text-[10px] font-mono border-green-500/50 text-green-500 bg-green-500/5">
-                        <Activity className="w-2 h-2 mr-1 animate-pulse" /> ENCRYPTED
-                    </Badge>
+            </CardHeader>
+            <CardContent className="p-0">
+                <div className="divide-y divide-border/30 max-h-[600px] overflow-y-auto scrollbar-hide">
+                    {localMessages?.map((msg) => (
+                        <AgentMessage key={msg.id} {...msg} />
+                    ))}
+                    {(!localMessages || localMessages.length === 0) && (
+                        <div className="p-12 text-center text-muted-foreground">
+                            <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 opacity-20" />
+                            <p className="italic text-sm">Decoding agent frequencies...</p>
+                        </div>
+                    )}
                 </div>
-            </div>
-        </CardHeader>
-        <CardContent className="p-0">
-            <div className="divide-y divide-border/30 max-h-[600px] overflow-y-auto scrollbar-hide">
-                {messages?.map((msg) => (
-                    <AgentMessage key={msg.id} {...msg} />
-                ))}
-                {(!messages || messages.length === 0) && (
-                    <div className="p-12 text-center text-muted-foreground">
-                        <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 opacity-20" />
-                        <p className="italic text-sm">Decoding agent frequencies...</p>
+                <div className="p-4 bg-muted/20 border-t flex items-center gap-2">
+                    <div className="flex-grow bg-background rounded-full border border-primary/10 px-4 py-1.5 flex items-center">
+                        <Input 
+                            value={msgInput}
+                            onChange={(e) => setMsgInput(e.target.value)}
+                            placeholder="Type an override command or message..."
+                            className="bg-transparent border-none focus-visible:ring-0 text-xs h-7"
+                            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                        />
+                        <Lock className="w-3 h-3 opacity-30 ml-2" />
                     </div>
-                )}
-            </div>
-            <div className="p-4 bg-muted/20 border-t flex items-center gap-2">
-                <div className="flex-grow bg-background rounded-full border border-primary/10 px-4 py-2 text-xs text-muted-foreground italic flex items-center justify-between">
-                    <span>Awaiting human bridge for override...</span>
-                    <Lock className="w-3 h-3 opacity-30" />
+                    <Button 
+                        size="sm" 
+                        variant="default" 
+                        className="rounded-full text-[10px] font-bold h-8 bg-indigo-600 hover:bg-indigo-700"
+                        onClick={handleSend}
+                    >
+                        <Send className="w-3 h-3 mr-1" /> BROADCAST
+                    </Button>
                 </div>
-                <Button size="sm" variant="outline" className="rounded-full text-[10px] font-bold h-8">
-                    <Send className="w-3 h-3 mr-1" /> BROADCAST
-                </Button>
-            </div>
-        </CardContent>
-    </Card>
-);
+            </CardContent>
+        </Card>
+    );
+};
 
 export default AlphaWorkforce;

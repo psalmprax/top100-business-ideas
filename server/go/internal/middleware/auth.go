@@ -38,6 +38,7 @@ func Auth(authService *services.AuthService) gin.HandlerFunc {
 		c.Set("user_id", claims.UserID)
 		c.Set("user_email", claims.Email)
 		c.Set("user_role", claims.Role)
+		c.Set("user_allowed_products", claims.AllowedProducts)
 
 		c.Next()
 	}

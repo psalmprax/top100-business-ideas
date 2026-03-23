@@ -143,6 +143,23 @@ func (p *ProxyService) VerifyDeepfakeSignature(challengeID, signature, hardwareI
 	return p.Forward("POST", fmt.Sprintf("/deepfake/verify?challenge_id=%s&signature=%s&hardware_id=%s", challengeID, signature, hardwareID), nil)
 }
 
+func (p *ProxyService) AnalyzeDeepfakeEnterprise(data interface{}) ([]byte, error) {
+	return p.Forward("POST", "/deepfake/analyze/enterprise", data)
+}
+
+func (p *ProxyService) ListDeepfakeDetectors() ([]byte, error) {
+	return p.Forward("GET", "/deepfake/detectors", nil)
+}
+
+// Enterprise
+func (p *ProxyService) GetPartnerConfig() ([]byte, error) {
+	return p.Forward("GET", "/enterprise/partner-config", nil)
+}
+
+func (p *ProxyService) UpdateSlaTier(data interface{}) ([]byte, error) {
+	return p.Forward("POST", "/enterprise/sla-tier", data)
+}
+
 // Extended Compliance (AI Act Models)
 func (p *ProxyService) ListComplianceModels() ([]byte, error) {
 	return p.Forward("GET", "/compliance/models", nil)

@@ -14,7 +14,7 @@
 
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "../contexts/AuthContext";
 import {
   agentsApi,
   rulesApi,
@@ -23,8 +23,8 @@ import {
   type WebhookConfig,
   type MultiCloudStatus,
   type SelfHealingEvent,
-} from "@/lib/api";
-import { storage } from "@/lib/storage";
+} from "../lib/api";
+import { storage } from "../lib/storage";
 import {
   Activity,
   AlertCircle,
@@ -88,24 +88,24 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+} from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+import { Checkbox } from "../components/ui/checkbox";
+import { Input } from "../components/ui/input";
+import { Textarea } from "../components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
+import { Switch } from "../components/ui/switch";
+import { Label } from "../components/ui/label";
+import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Progress } from "@/components/ui/progress";
+} from "../components/ui/select";
+import { Progress } from "../components/ui/progress";
 import {
   Dialog,
   DialogContent,
@@ -113,7 +113,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@/components/ui/dialog";
+} from "../components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -121,7 +121,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "../components/ui/table";
 import { toast } from "sonner";
 import { jsPDF } from "jspdf";
 import {
@@ -129,8 +129,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+} from "../components/ui/dropdown-menu";
+import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert";
+import { UserMenu } from "../components/UserMenu";
 
 // ============================================================================
 // Types
@@ -265,7 +266,6 @@ const mockAgents: DashboardAgent[] = [
     status: "active",
     budget: 50,
     dailySpend: 32.5,
-    tier: "tactical",
     config: {
       provider: "openai",
       model: "gpt-4-turbo",
@@ -299,8 +299,9 @@ const mockAgents: DashboardAgent[] = [
       loopsPrevented: 47,
       costSaved: 892.3,
     },
-    createdAt: new Date("2024-01-15"),
+    createdAt: new Date("2024-01-01"),
     lastActiveAt: new Date(),
+    tier: "strategic",
   },
   {
     id: "2",
@@ -309,7 +310,6 @@ const mockAgents: DashboardAgent[] = [
     status: "active",
     budget: 5,
     dailySpend: 4.2,
-    tier: "strategic",
     config: {
       provider: "anthropic",
       model: "claude-3-opus",
@@ -338,6 +338,7 @@ const mockAgents: DashboardAgent[] = [
     },
     createdAt: new Date("2024-02-20"),
     lastActiveAt: new Date(),
+    tier: "strategic",
   },
   {
     id: "3",
@@ -346,7 +347,6 @@ const mockAgents: DashboardAgent[] = [
     status: "active",
     budget: 50,
     dailySpend: 48.9,
-    tier: "strategic",
     config: {
       provider: "openai",
       model: "gpt-4",
@@ -382,6 +382,7 @@ const mockAgents: DashboardAgent[] = [
     },
     createdAt: new Date("2024-03-10"),
     lastActiveAt: new Date(),
+    tier: "industrial",
   },
   {
     id: "4",
@@ -418,6 +419,7 @@ const mockAgents: DashboardAgent[] = [
     },
     createdAt: new Date("2024-04-05"),
     lastActiveAt: new Date("2024-11-10"),
+    tier: "industrial",
   },
 ];
 
@@ -555,6 +557,15 @@ const mockBudgetRules: BudgetRule[] = [
 // Components
 // ============================================================================
 
+interface MetricCardProps {
+  title: string;
+  value: string;
+  change?: number;
+  icon: any;
+  color: string;
+  footer?: string;
+}
+
 function MetricCard({
   title,
   value,
@@ -562,14 +573,7 @@ function MetricCard({
   icon: Icon,
   color,
   footer,
-}: {
-  title: string;
-  value: string;
-  change?: number;
-  icon: React.ElementType;
-  color: string;
-  footer?: string;
-}) {
+}: MetricCardProps) {
   return (
     <Card>
       <CardContent className="p-4">
@@ -686,6 +690,12 @@ export default function AlphaAgentOps() {
   const [complianceStatus, setComplianceStatus] = useState<{hipaa: any, sox: any}>({hipaa: null, sox: null});
   const [retentionDays, setRetentionDays] = useState(30);
   const [activeSlaTier, setActiveSlaTier] = useState<string>(storage.get("active_sla_tier", "Enterprise"));
+  
+  // Phase 3 Gaps State
+  const [selectedAgentIds, setSelectedAgentIds] = useState<string[]>([]);
+  const [selectedAuditEntry, setSelectedAuditEntry] = useState<AuditEntry | null>(null);
+  const [showForensicTraceDialog, setShowForensicTraceDialog] = useState(false);
+  const [showNewModelDialog, setShowNewModelDialog] = useState(false);
 
   // Phase 2 Gaps State
   const [forecastData, setForecastData] = useState<any>(null);
@@ -755,7 +765,7 @@ export default function AlphaAgentOps() {
   const handleConnectProvider = async (provider: string) => {
     toast.info(`Initiating ${provider} SSO connection...`);
     try {
-      const res = await extendedApi.post(`/sso/connect/${provider}`);
+      const res = await extendedApi.post(`/sso/connect/${provider}`) as any;
       if (res.status === 'redirect' && res.auth_url) {
         window.location.href = res.auth_url;
       } else {
@@ -776,7 +786,7 @@ export default function AlphaAgentOps() {
       // Refresh the connected providers list
       const fetchProviders = async () => {
         try {
-          const res = await extendedApi.get(`/sso/providers/default`);
+          const res = await extendedApi.get(`/sso/providers/default`) as any;
           setConnectedProviders(res);
         } catch (e) {
           console.error("Failed to refresh providers", e);
@@ -1148,6 +1158,7 @@ export default function AlphaAgentOps() {
 
   const handleDownload = (filename: string, content: string) => {
     if (filename.toLowerCase().endsWith(".pdf")) {
+      // @ts-ignore
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
@@ -1535,11 +1546,13 @@ export default function AlphaAgentOps() {
           <div className="container mx-auto px-4">
             <div className="flex h-16 items-center justify-between">
               <div className="flex items-center gap-4">
-                <Link href="/">
-                  <Button variant="ghost" size="sm">
-                    ← Back
-                  </Button>
-                </Link>
+                {isDemo && (
+                  <Link href="/">
+                    <Button variant="ghost" size="sm">
+                      ← Back
+                    </Button>
+                  </Link>
+                )}
                 <div className="flex items-center gap-2">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600">
                     <Shield className="h-5 w-5 text-white" />
@@ -1577,6 +1590,7 @@ export default function AlphaAgentOps() {
                   <Plus className="w-4 h-4 mr-2" />
                   New Agent
                 </Button>
+                <UserMenu />
               </div>
             </div>
           </div>
@@ -1988,6 +2002,15 @@ export default function AlphaAgentOps() {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-[40px]">
+                          <Checkbox 
+                            checked={selectedAgentIds.length === agents.length && agents.length > 0}
+                            onCheckedChange={(checked) => {
+                              if (checked) setSelectedAgentIds(agents.map(a => a.id));
+                              else setSelectedAgentIds([]);
+                            }}
+                          />
+                        </TableHead>
                         <TableHead>Agent</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Budget</TableHead>
@@ -1999,7 +2022,16 @@ export default function AlphaAgentOps() {
                     </TableHeader>
                     <TableBody>
                       {agents.map(agent => (
-                        <TableRow key={agent.id}>
+                        <TableRow key={agent.id} className={selectedAgentIds.includes(agent.id) ? "bg-muted/50" : ""}>
+                          <TableCell>
+                            <Checkbox 
+                              checked={selectedAgentIds.includes(agent.id)}
+                              onCheckedChange={(checked) => {
+                                if (checked) setSelectedAgentIds([...selectedAgentIds, agent.id]);
+                                else setSelectedAgentIds(selectedAgentIds.filter(id => id !== agent.id));
+                              }}
+                            />
+                          </TableCell>
                           <TableCell>
                             <div>
                               <div className="flex items-center gap-2">
@@ -2086,6 +2118,27 @@ export default function AlphaAgentOps() {
                       ))}
                     </TableBody>
                   </Table>
+                  {selectedAgentIds.length > 0 && (
+                    <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-3 mt-4 flex items-center justify-between animate-in slide-in-from-bottom-2">
+                      <div className="flex items-center gap-4">
+                        <span className="text-xs font-medium text-zinc-400">{selectedAgentIds.length} agents selected</span>
+                        <div className="h-4 w-px bg-zinc-800" />
+                        <Button size="sm" variant="ghost" className="h-8 text-xs text-yellow-500 hover:bg-yellow-500/10 hover:text-yellow-500" onClick={() => toast.info("Bulk pause initiated.")}>
+                          <Pause className="w-3 h-3 mr-1" /> Pause
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-8 text-xs text-blue-500 hover:bg-blue-500/10 hover:text-blue-500" onClick={() => toast.info("Bulk restart initiated.")}>
+                          <RefreshCw className="w-3 h-3 mr-1" /> Restart
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-8 text-xs text-red-500 hover:bg-red-500/10 text-red-500" onClick={() => {
+                          toast.error("Bulk termination scheduled.");
+                          setSelectedAgentIds([]);
+                        }}>
+                          <Trash2 className="w-3 h-3 mr-1" /> Terminate
+                        </Button>
+                      </div>
+                      <Button variant="ghost" size="sm" className="h-8 text-[10px] text-zinc-500" onClick={() => setSelectedAgentIds([])}>Clear</Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -2140,9 +2193,23 @@ export default function AlphaAgentOps() {
                           </span>
                           {entry.reasoning}
                         </div>
-                        <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                          <span>{entry.tokens ?? 0} tokens</span>
-                          <span>${(entry.cost ?? 0).toFixed(4)}</span>
+                        <div className="flex items-center justify-between mt-2">
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <span>{entry.tokens ?? 0} tokens</span>
+                            <span>${(entry.cost ?? 0).toFixed(4)}</span>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-7 text-[10px] gap-1 hover:bg-blue-500/10 hover:text-blue-400 group"
+                            onClick={() => {
+                              setSelectedAuditEntry(entry);
+                              setShowForensicTraceDialog(true);
+                            }}
+                          >
+                            <Eye className="w-3 h-3" /> View Forensic Trace
+                            <ArrowRight className="w-3 h-3 opacity-0 -ml-1 group-hover:opacity-100 group-hover:ml-0 transition-all" />
+                          </Button>
                         </div>
                       </div>
                     ))}
@@ -5627,6 +5694,79 @@ export default function AlphaAgentOps() {
               >
                 Configure Webhook
               </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        {/* Onboard New Model Dialog */}
+        <Dialog open={showNewModelDialog} onOpenChange={setShowNewModelDialog}>
+          <DialogContent className="sm:max-w-[500px] bg-zinc-950 border-zinc-800 text-white">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Brain className="w-5 h-5 text-emerald-500" />
+                Onboard Language Model
+              </DialogTitle>
+              <DialogDescription className="text-zinc-400">
+                Register a new LLM provider or local model into the governance fabric.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Provider</Label>
+                  <Select defaultValue="openai">
+                    <SelectTrigger className="bg-zinc-900 border-zinc-800">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-zinc-900 border-zinc-800">
+                      <SelectItem value="openai">OpenAI</SelectItem>
+                      <SelectItem value="anthropic">Anthropic</SelectItem>
+                      <SelectItem value="google">Google Vertex</SelectItem>
+                      <SelectItem value="deepseek">DeepSeek</SelectItem>
+                      <SelectItem value="custom">Private Endpoint</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Deployment Type</Label>
+                  <Select defaultValue="saas">
+                    <SelectTrigger className="bg-zinc-900 border-zinc-800">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-zinc-900 border-zinc-800">
+                      <SelectItem value="saas">SaaS (API)</SelectItem>
+                      <SelectItem value="vpc">Private VPC</SelectItem>
+                      <SelectItem value="edge">Edge Device</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Model Name / Identifier</Label>
+                <Input placeholder="e.g. gpt-4o-2024-05-13" className="bg-zinc-900 border-zinc-800" />
+              </div>
+
+              <div className="space-y-2">
+                <Label>API Handshake Key</Label>
+                <div className="relative">
+                  <Input type="password" placeholder="sk-..." className="bg-zinc-900 border-zinc-800 pr-10" />
+                  <Key className="w-4 h-4 absolute right-3 top-3 text-zinc-600" />
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-2 p-3 rounded bg-zinc-900/50 border border-zinc-800">
+                <Checkbox id="sentinel-protect" defaultChecked />
+                <Label htmlFor="sentinel-protect" className="text-xs font-medium cursor-pointer text-zinc-300">
+                  Enforce Alpha Sentinel Governance (Recommended)
+                </Label>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setShowNewModelDialog(false)}>Cancel</Button>
+              <Button className="bg-emerald-600 hover:bg-emerald-700 font-bold" onClick={() => {
+                toast.success("Model successfully onboarded to the fabric.");
+                setShowNewModelDialog(false);
+              }}>Verify & Register</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

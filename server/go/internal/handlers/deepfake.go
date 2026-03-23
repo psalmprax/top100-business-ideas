@@ -138,3 +138,41 @@ func (h *DeepfakeHandler) VerifyAuthSignature(c *gin.Context) {
 
 	c.JSON(http.StatusOK, sig)
 }
+
+func (h *DeepfakeHandler) AnalyzeEnterprise(c *gin.Context) {
+	var req map[string]interface{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request", Details: err.Error()})
+		return
+	}
+
+	response, err := h.proxyService.AnalyzeDeepfakeEnterprise(req)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to perform enterprise analysis", Details: err.Error()})
+		return
+	}
+
+	var result interface{}
+	if err := json.Unmarshal(response, &result); err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to parse response"})
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
+func (h *DeepfakeHandler) ListDetectors(c *gin.Context) {
+	response, err := h.proxyService.ListDeepfakeDetectors()
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch detectors", Details: err.Error()})
+		return
+	}
+
+	var result interface{}
+	if err := json.Unmarshal(response, &result); err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to parse response"})
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}

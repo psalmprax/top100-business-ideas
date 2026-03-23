@@ -39,7 +39,8 @@ class ComplianceAnalyzer:
         score = self._calculate_score(evidence or [], "ai_act")
         
         findings = []
-        found_files = [e.get("file") for e in evidence or [] if e.get("status") == "found"]
+        evidence_dict = {e.get("file"): e for e in evidence or []}
+        found_files = [f for f, e in evidence_dict.items() if e.get("status") == "found"]
         
         # Article 11: Technical Documentation
         if "ARCHITECTURE.md" not in found_files:
@@ -49,14 +50,41 @@ class ComplianceAnalyzer:
                 "description": "Missing foundational technical architecture documentation (Annex IV).",
                 "recommendation": "Generate and maintain Article 11 compliant technical folder."
             })
+        else:
+            # Check for specific sections in architecture
+            findings.append({
+                "rule": "Article 11: Technical Documentation",
+                "severity": "low",
+                "description": "Technical documentation detected. Verification of Annex IV 'methods and steps' recommended.",
+                "recommendation": "Perform deep-scan of ARCHITECTURE.md for system logic parity."
+            })
             
         # Article 10: Data Governance
-        findings.append({
-            "rule": "Article 10: Data Governance",
-            "severity": "medium",
-            "description": "Evidence of data minimization and bias mitigation not found in repository logs.",
-            "recommendation": "Implement automated data lineage and bias scanning."
-        })
+        data_governance_files = ["DATA_LINEAGE.md", "BIAS_MITIGATION.md", "DATA_GOVERNANCE.md"]
+        found_dg = [f for f in data_governance_files if f in found_files]
+        if not found_dg:
+            findings.append({
+                "rule": "Article 10: Data Governance",
+                "severity": "medium",
+                "description": "Evidence of data minimization and bias mitigation not found in repository logs.",
+                "recommendation": "Implement automated data lineage and bias scanning."
+            })
+        else:
+            findings.append({
+                "rule": "Article 10: Data Governance",
+                "severity": "low",
+                "description": f"Detected {len(found_dg)} governance artifacts. Bias mitigation protocols present.",
+                "recommendation": "Update Article 10 evidence map with latest training run logs."
+            })
+
+        # Article 13: Transparency
+        if "PRIVACY.md" not in found_files:
+             findings.append({
+                "rule": "Article 13: Transparency and provisioning of information",
+                "severity": "high",
+                "description": "User-facing transparency disclosures (Article 13.1) are missing.",
+                "recommendation": "Integrate AlphaAI Transparency Banner and model cards."
+            })
             
         status = "passed" if score >= 85 else "review" if score >= 60 else "failed"
         

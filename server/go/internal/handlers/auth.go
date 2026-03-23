@@ -26,24 +26,60 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	// TODO: Look up user in database
-	// For demo purposes, create a mock user
-	mockUser := &models.User{
-		ID:              "user-1",
-		Email:           req.Email,
-		Name:            "Demo User",
-		Role:            "admin",
-		AllowedProducts: []string{"*"}, // Admin has access to everything
+	// Authenticate user
+	user, err := h.authService.Authenticate(c.Request.Context(), req.Email, req.Password)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+			Error:   "Authentication Failed",
+			Details: err.Error(),
+		})
+		return
+	}
+
+	// Validation Logic for product access
+	if user.Role != "admin" {
+		if req.ProductID != "" {
+			// Check if user has access to this specific product
+			hasAccess := false
+			for _, p := range user.AllowedProducts {
+				if p == req.ProductID || p == "*" {
+					hasAccess = true
+					break
+				}
+			}
+
+			if !hasAccess {
+				c.JSON(http.StatusForbidden, models.ErrorResponse{
+					Error:   "Access Denied",
+					Details: "You do not have an active subscription for " + req.ProductID,
+				})
+				return
+			}
+		} else {
+			// No ProductID provided, check if selection is needed
+			if len(user.AllowedProducts) > 1 {
+				c.JSON(http.StatusOK, models.AuthResponse{
+					RequiresProductSelection: true,
+					AvailableProducts:        user.AllowedProducts,
+					User:                     user,
+				})
+				return
+			}
+			// If only one product, use it as default
+			if len(user.AllowedProducts) == 1 {
+				req.ProductID = user.AllowedProducts[0]
+			}
+		}
 	}
 
 	// Generate tokens
-	accessToken, err := h.authService.GenerateToken(mockUser.ID, mockUser.Email, mockUser.Role, mockUser.AllowedProducts)
+	accessToken, err := h.authService.GenerateToken(user.ID, user.Email, user.Role, user.AllowedProducts)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to generate token"})
 		return
 	}
 
-	refreshToken, err := h.authService.GenerateToken(mockUser.ID, mockUser.Email, mockUser.Role, mockUser.AllowedProducts)
+	refreshToken, err := h.authService.GenerateToken(user.ID, user.Email, user.Role, user.AllowedProducts)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to generate refresh token"})
 		return
@@ -53,7 +89,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		ExpiresIn:    86400,
-		User:         mockUser,
+		User:         user,
 	})
 }
 
@@ -64,23 +100,23 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	// TODO: Create user in database
-	// For demo purposes, return success
-	newUser := &models.User{
-		ID:              "user-" + req.Email,
-		Email:           req.Email,
-		Name:            req.Name,
-		Role:            "user",
-		AllowedProducts: []string{"agent-ops"}, // New users only get Agent-Ops by default
+	// Create user in database
+	user, err := h.authService.Register(c.Request.Context(), req.Email, req.Password, req.Name)
+	if err != nil {
+		c.JSON(http.StatusConflict, models.ErrorResponse{
+			Error:   "Registration Failed",
+			Details: err.Error(),
+		})
+		return
 	}
 
-	accessToken, err := h.authService.GenerateToken(newUser.ID, newUser.Email, newUser.Role, newUser.AllowedProducts)
+	accessToken, err := h.authService.GenerateToken(user.ID, user.Email, user.Role, user.AllowedProducts)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to generate token"})
 		return
 	}
 
-	refreshToken, err := h.authService.GenerateToken(newUser.ID, newUser.Email, newUser.Role, newUser.AllowedProducts)
+	refreshToken, err := h.authService.GenerateToken(user.ID, user.Email, user.Role, user.AllowedProducts)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to generate refresh token"})
 		return
@@ -90,7 +126,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		ExpiresIn:    86400,
-		User:         newUser,
+		User:         user,
 	})
 }
 
@@ -109,18 +145,16 @@ func (h *AuthHandler) Me(c *gin.Context) {
 		return
 	}
 
-	// TODO: Look up user in database
-	// For demo purposes, return mock user
-	user := &models.User{
-		ID:              userID.(string),
-		Email:           "demo@alphaai.com",
-		Name:            "Demo User",
-		Role:            "admin",
-		AllowedProducts: []string{"*"},
+	// Look up user in database
+	user, err := h.authService.GetUserByID(c.Request.Context(), userID.(string))
+	if err != nil || user == nil {
+		c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "User not found"})
+		return
 	}
 
 	c.JSON(http.StatusOK, user)
 }
+
 
 func (h *AuthHandler) Logout(c *gin.Context) {
 	// TODO: Invalidate token in Redis
