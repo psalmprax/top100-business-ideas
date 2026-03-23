@@ -318,5 +318,51 @@ class SelfHealingManager:
         }
 
 
+    def deploy_daemon(self, node_id: str) -> Dict[str, Any]:
+        """Deploy a recovery daemon to a specific service node."""
+        node = self.nodes.get(node_id)
+        if not node:
+            return {"status": "error", "message": f"Node {node_id} not found"}
+            
+        logger.info(f"Deploying recovery daemon (Sentinel-Rebirth v2.4) to {node_id}...")
+        
+        # Simulate container/process deployment
+        deployment_event = {
+            "node_id": node_id,
+            "status": "deployed",
+            "daemon_version": "2.4.1-stable",
+            "capabilities": ["auto_restart", "log_harvesting", "resource_throttling"],
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+        
+        self.recovery_history.append({
+            "node_id": node_id,
+            "timestamp": datetime.utcnow().isoformat(),
+            "action": "DAEMON_DEPLOYMENT",
+            "details": deployment_event
+        })
+        
+        return {
+            "status": "success",
+            "event": deployment_event
+        }
+
+    def get_snapshots(self, node_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Retrieve system state snapshots for reconciliation."""
+        # Mocking snapshot history as a real implementation would pull from object storage (S3)
+        snapshots = [
+            {
+                "id": f"snp-{i:03d}",
+                "timestamp": (datetime.utcnow() - timedelta(hours=i*4)).isoformat(),
+                "node_id": node_id or "cluster-wide",
+                "integrity": "verified",
+                "size_kb": 1024 + (i * 128),
+                "type": "state_dump" if i % 2 == 0 else "config_differential"
+            }
+            for i in range(1, 6)
+        ]
+        return snapshots
+
+
 # Singleton instance
 self_healing_manager = SelfHealingManager()

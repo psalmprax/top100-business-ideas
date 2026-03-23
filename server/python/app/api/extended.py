@@ -36,6 +36,7 @@ from app.services.duress_detection import duress_detection_service
 from app.services.sovereign_service import sovereign_service
 from app.services.compliance_integration import compliance_integration_service
 from app.services.workforce_service import workforce_service
+from app.services.localization import localization_service
 
 router = APIRouter()
 
@@ -1669,10 +1670,35 @@ async def sso_callback(provider: str, request: Request):
         frontend_url = os.getenv("FRONTEND_URL", "http://localhost:7000")
         return RedirectResponse(url=f"{frontend_url}/products/agent-ops?sso_error={str(e)}")
 
-@router.get("/sso/providers/{app_id}")
-async def list_connected_providers(app_id: str):
-    """List all connected SSO providers for an application"""
-    from app.services.sso_service import sso_service
-    return sso_service.get_connected_providers(app_id)
+@router.post("/agent-ops/localization/deploy")
+async def deploy_localization_package(request: Dict[str, Any]):
+    """Deploy a linguistic package for a specific locale"""
+    locale = request.get("locale", "en")
+    return localization_service.deploy_package(locale)
+
+@router.post("/agent-ops/self-healing/deploy")
+async def deploy_self_healing_daemon(request: Dict[str, Any]):
+    """Deploy a recovery daemon to a service node"""
+    node_id = request.get("node_id", "cluster")
+    return self_healing_manager.deploy_daemon(node_id)
+
+@router.get("/agent-ops/self-healing/snapshots")
+async def get_self_healing_snapshots(node_id: Optional[str] = None):
+    """Retrieve system state snapshots"""
+    return self_healing_manager.get_snapshots(node_id)
+
+@router.get("/compliance/articles")
+async def get_compliance_articles():
+    """Retrieve all EU AI Act articles for the checklist"""
+    return await compliance_service.get_articles()
+
+@router.post("/compliance/scan")
+async def run_compliance_scan(request: Dict[str, Any]):
+    """Orchestrate an AI Act compliance scan"""
+    article_id = request.get("article_id")
+    scan_type = request.get("scan_type", "Policy Check")
+    if not article_id:
+        return {"status": "error", "message": "article_id is required"}
+    return await compliance_service.run_act_scan(article_id, scan_type)
 
 

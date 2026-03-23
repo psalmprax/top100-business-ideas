@@ -837,7 +837,7 @@ const ConnectionDialog = ({
     );
 };
 
-const ComplianceChecklistContent = () => {
+const ComplianceChecklistContent = ({ articles, loading }: { articles: any[], loading: boolean }) => {
     const [connectedSystems, setConnectedSystems] = useState<Record<string, any>>({});
     const [scanningArticles, setScanningArticles] = useState<Record<string, boolean>>({});
     const [lastScanResults, setLastScanResults] = useState<Record<string, any>>({});
@@ -922,6 +922,15 @@ const ComplianceChecklistContent = () => {
     const inProgressCount = articles.filter((a: any) => a.status === 'in_progress').length;
     const notStartedCount = articles.filter((a: any) => a.status === 'not_started').length;
     const progressPercent = articles.length > 0 ? Math.round((compliantCount / articles.length) * 100) : 0;
+
+    if (loading) {
+        return (
+            <div className="flex flex-col items-center justify-center p-12 space-y-4">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                <p className="text-zinc-400 animate-pulse">Synchronizing Global Compliance Registry...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -1199,7 +1208,7 @@ export default function AlphaAIActCompliance() {
     useEffect(() => {
         const fetchArticles = async () => {
             try {
-                const fetchedArticles = await extendedApi.compliance.listArticles();
+                const fetchedArticles = await extendedApi.compliance.getArticles();
                 // Transform API data to match component expectations
                 const transformedArticles = fetchedArticles.map((article: any) => ({
                     article: article.article,
@@ -2083,7 +2092,7 @@ Last Audit: ${model.lastAudit ? model.lastAudit.toLocaleDateString() : 'Pending'
 
                     {/* Compliance Checklist Tab */}
                     <TabsContent value="compliance" className="space-y-6">
-                        <ComplianceChecklistContent />
+                        <ComplianceChecklistContent articles={articles} loading={loadingArticles} />
                     </TabsContent>
 
                     {/* Models Tab */}

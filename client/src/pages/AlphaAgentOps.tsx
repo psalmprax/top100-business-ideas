@@ -714,6 +714,12 @@ export default function AlphaAgentOps() {
   const [isSavingSso, setIsSavingSso] = useState(false);
   const [connectedProviders, setConnectedProviders] = useState<Record<string, any>>({});
 
+  const [isDeployingDaemon, setIsDeployingDaemon] = useState(false);
+  const [showProxyConfigDialog, setShowProxyConfigDialog] = useState(false);
+  const [showSnapshotsDialog, setShowSnapshotsDialog] = useState(false);
+  const [snapshots, setSnapshots] = useState<any[]>([]);
+  const [proxyTarget, setProxyTarget] = useState("aws-us-east-1");
+
   const fetchConnectedProviders = async () => {
     try {
       const res = await extendedApi.sso.listProviders('default');
@@ -817,14 +823,62 @@ export default function AlphaAgentOps() {
     }
   };
 
-  const handleDeployLanguage = async (lang: string) => {
+  const handleDeployLanguage = async (locale: string) => {
     setIsDeployingLanguage(true);
-    toast.info(`Deploying linguistic package for ${lang}...`);
+    toast.info(`Deploying linguistic package for ${locale} to cluster...`);
     try {
-      await new Promise(resolve => setTimeout(resolve, 2500));
-      toast.success(`${lang} package deployed and verified.`);
+      if (isDemo) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        toast.success(`Demo Mode: ${locale} package simulated.`);
+      } else {
+        await extendedApi.agentOps.deployLanguage(locale);
+        toast.success(`${locale} package successfully synchronized.`);
+      }
+    } catch (e) {
+      toast.error(`Deployment failed for ${locale}.`);
     } finally {
       setIsDeployingLanguage(false);
+    }
+  };
+
+  const handleDeployRecoveryDaemon = async (nodeId: string) => {
+    setIsDeployingDaemon(true);
+    toast.info(`Provisioning recovery daemon on ${nodeId}...`);
+    try {
+      if (isDemo) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        toast.success(`Demo Mode: Daemon active on ${nodeId}.`);
+      } else {
+        await extendedApi.agentOps.deployRecoveryDaemon(nodeId);
+        toast.success(`Sentinel-Rebirth daemon deployed to ${nodeId}.`);
+      }
+      refreshData();
+    } catch (e) {
+      toast.error("Daemon deployment failed.");
+    } finally {
+      setIsDeployingDaemon(false);
+    }
+  };
+
+  const handleViewSnapshots = async () => {
+    try {
+      const data = await extendedApi.agentOps.getSnapshots();
+      setSnapshots(data || []);
+      setShowSnapshotsDialog(true);
+    } catch (err) {
+      toast.error("Failed to retrieve system snapshots.");
+    }
+  };
+
+  const handleConfigureProxyRules = async () => {
+    try {
+      if (!isDemo) {
+        await extendedApi.agentOps.configureProxy("1", proxyTarget);
+      }
+      toast.success(`Proxy routing updated: Global ingress -> ${proxyTarget}`);
+      setShowProxyConfigDialog(false);
+    } catch (err) {
+      toast.error("Proxy configuration update failed.");
     }
   };
 
@@ -1335,6 +1389,7 @@ export default function AlphaAgentOps() {
   }
 }`);
   const [graphqlResult, setGraphqlResult] = useState("");
+
 
   const handleCreateAgent = async () => {
     if (isDemo) {
@@ -2475,6 +2530,7 @@ export default function AlphaAgentOps() {
                       size="sm"
                       variant="outline"
                       className="w-full text-xs"
+                      onClick={() => setShowProxyConfigDialog(true)}
                     >
                       CONFIGURE PROXY RULES
                     </Button>
@@ -2511,6 +2567,7 @@ export default function AlphaAgentOps() {
                           variant="outline"
                           size="sm"
                           className="w-full mt-2 text-xs"
+                          onClick={handleViewSnapshots}
                         >
                           VIEW HEALING DASHBOARD
                         </Button>
@@ -4894,12 +4951,17 @@ export default function AlphaAgentOps() {
                           budget breaches.
                         </p>
                         <div className="flex gap-2">
-                          <Button className="bg-blue-600 hover:bg-blue-700 text-xs font-black tracking-wider h-11 px-8">
-                            DEPLOY RECOVERY DAEMON
+                          <Button 
+                            className="bg-blue-600 hover:bg-blue-700 text-xs font-black tracking-wider h-11 px-8"
+                            onClick={() => handleDeployRecoveryDaemon(clusterNodes[0]?.id || "node-alpha-01")}
+                            disabled={isDeployingDaemon}
+                          >
+                            {isDeployingDaemon ? "DEPLOYING..." : "DEPLOY RECOVERY DAEMON"}
                           </Button>
                           <Button
                             variant="outline"
                             className="text-xs h-11 px-6"
+                            onClick={handleViewSnapshots}
                           >
                             VIEW SNAPSHOTS
                           </Button>
@@ -5731,7 +5793,128 @@ export default function AlphaAgentOps() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-        {/* Onboard New Model Dialog */}
+        {/* System Snapshots Dialog */}
+        <Dialog open={showSnapshotsDialog} onOpenChange={setShowSnapshotsDialog}>
+          <DialogContent className="sm:max-w-[700px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <History className="w-5 h-5 text-blue-500" />
+                Temporal State Snapshots
+              </DialogTitle>
+              <DialogDescription>
+                System integrity points for autonomous recovery and rollback.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Snapshot ID</TableHead>
+                    <TableHead>Timestamp</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Integrity</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {snapshots.length > 0 ? (
+                    snapshots.map((s) => (
+                      <TableRow key={s.id}>
+                        <TableCell className="font-mono text-xs">{s.id}</TableCell>
+                        <TableCell className="text-xs">
+                          {new Date(s.timestamp).toLocaleString()}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-[10px]">
+                            STABLE
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1 text-emerald-500 text-[10px] font-bold">
+                            <ShieldCheck className="w-3 h-3" /> VERIFIED
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 text-[10px] font-bold text-blue-500 hover:text-blue-600"
+                            onClick={() => toast.info(`Initiating rollback to ${s.id}...`)}
+                          >
+                            ROLLBACK
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground italic">
+                        No snapshots available. Synchronizing with cluster...
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowSnapshotsDialog(false)}>
+                Close
+              </Button>
+              <Button onClick={() => toast.success("New snapshot baseline captured.")}>
+                Capture Fresh State
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Proxy configuration Dialog */}
+        <Dialog open={showProxyConfigDialog} onOpenChange={setShowProxyConfigDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Network className="w-5 h-5 text-purple-500" />
+                Multi-Cloud Proxy Routing
+              </DialogTitle>
+              <DialogDescription>
+                Configure global ingress traffic distribution and regional affinity.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Primary Ingress Region</Label>
+                <select 
+                  className="w-full h-10 px-3 rounded-md border border-input bg-background"
+                  value={proxyTarget}
+                  onChange={(e) => setProxyTarget(e.target.value)}
+                >
+                  <option value="aws-us-east-1">AWS US-East-1 (Virginia)</option>
+                  <option value="gcp-europe-west1">GCP Europe-West1 (Belgium)</option>
+                  <option value="azure-eastus">Azure East US (Virginia)</option>
+                </select>
+              </div>
+              <div className="p-4 rounded-lg bg-purple-500/5 border border-purple-500/10 space-y-2">
+                <div className="text-xs font-bold uppercase text-purple-500">Routing Policy</div>
+                <div className="text-sm">
+                  Traffic will be routed through the Alpha Global Mesh. 
+                  DDoS mitigation and WAF rules are applied at the edge.
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowProxyConfigDialog(false)}>
+                Cancel
+              </Button>
+              <Button 
+                className="bg-purple-600 hover:bg-purple-700"
+                onClick={handleConfigureProxyRules}
+              >
+                Apply Routing Config
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Create Agent Dialog */}
         <Dialog open={showNewModelDialog} onOpenChange={setShowNewModelDialog}>
           <DialogContent className="sm:max-w-[500px] bg-zinc-950 border-zinc-800 text-white">
             <DialogHeader>

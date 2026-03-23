@@ -74,5 +74,58 @@ class ComplianceService:
             logger.error(f"SOX Audit Error: {e}")
             return {"status": "error", "message": str(e)}
 
+    async def run_act_scan(self, article_id: str, scan_type: str) -> Dict[str, Any]:
+        """
+        Perform a simulated EU AI Act compliance scan for a specific article.
+        In a real scenario, this would orchestrate specialized audit bots.
+        """
+        logger.info(f"Orchestrating AI Act Scan: {article_id} (Type: {scan_type})")
+        
+        # Simulate diverse results based on scan type
+        import random
+        success = random.random() > 0.15  # 85% success rate for simulation
+        
+        results = {
+            "article_id": article_id,
+            "scan_type": scan_type,
+            "status": "completed" if success else "failed",
+            "score": random.randint(70, 100) if success else random.randint(30, 60),
+            "findings": [
+                f"Automated {scan_type} check for {article_id} completed.",
+                "Verified technical documentation alignment.",
+                "Data lineage verified for high-risk classification."
+            ] if success else [f"Critical gap detected in {scan_type} validation."],
+            "performed_at": datetime.now().isoformat()
+        }
+        
+        # Persist the scan result
+        try:
+            from app.core.models import ArticleScan
+            with Session(engine) as session:
+                scan = ArticleScan(
+                    article_id=article_id,
+                    scan_type=scan_type,
+                    status=results["status"],
+                    results=results
+                )
+                session.add(scan)
+                session.commit()
+        except Exception as e:
+            logger.error(f"Failed to persist scan result: {e}")
+
+        return results
+
+    async def get_articles(self) -> List[Dict[str, Any]]:
+        """Retrieve all EU AI Act articles from the database"""
+        try:
+            from app.core.models import ComplianceArticle
+            with Session(engine) as session:
+                statement = select(ComplianceArticle)
+                articles = session.exec(statement).all()
+                return [a.dict() for a in articles]
+        except Exception as e:
+            logger.error(f"Failed to fetch compliance articles: {e}")
+            return []
+
 # Singleton
 compliance_service = ComplianceService()

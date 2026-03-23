@@ -1338,11 +1338,12 @@ export const extendedApi = {
                 method: 'POST',
                 body: JSON.stringify({ article_id, connection_type, config }),
             }),
-        runScan: (article_id: string, scan_type: string) =>
+        runScan: (articleId: string, scanType: string) =>
             apiRequest<any>('/api/v1/compliance/scan', {
                 method: 'POST',
-                body: JSON.stringify({ article_id, scan_type }),
+                body: JSON.stringify({ article_id: articleId, scan_type: scanType }),
             }),
+        getArticles: () => apiRequest<any[]>('/api/v1/compliance/articles'),
         listConnections: () => apiRequest<any[]>('/api/v1/compliance/connections'),
         listScans: (article_id?: string) => {
             const url = article_id ? `/api/v1/compliance/scans/${article_id}` : '/api/v1/compliance/scans';
@@ -1748,6 +1749,15 @@ export const extendedApi = {
             method: 'POST',
             body: JSON.stringify(config),
         }),
+        deployLanguage: (locale: string) => apiRequest<any>('/api/v1/agent-ops/localization/deploy', {
+            method: 'POST',
+            body: JSON.stringify({ locale }),
+        }),
+        deployRecoveryDaemon: (node_id: string) => apiRequest<any>('/api/v1/agent-ops/self-healing/deploy', {
+            method: 'POST',
+            body: JSON.stringify({ node_id }),
+        }),
+        getSnapshots: (nodeId?: string) => apiRequest<any[]>(`/api/v1/agent-ops/self-healing/snapshots${nodeId ? `?node_id=${nodeId}` : ''}`),
     },
 
     enterprise: {
