@@ -48,31 +48,39 @@ func (c *Config) DSN() string {
 }
 
 func Connect(cfg *Config) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	var p *pgxpool.Pool
+	var err error
+	maxRetries := 10
+	
+	for i := 0; i < maxRetries; i++ {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		
+		poolConfig, perr := pgxpool.ParseConfig(cfg.DSN())
+		if perr != nil {
+			cancel()
+			return fmt.Errorf("unable to parse config: %w", perr)
+		}
 
-	poolConfig, err := pgxpool.ParseConfig(cfg.DSN())
-	if err != nil {
-		return fmt.Errorf("unable to parse config: %w", err)
+		poolConfig.MaxConns = 25
+		poolConfig.MinConns = 5
+		
+		p, err = pgxpool.NewWithConfig(ctx, poolConfig)
+		if err == nil {
+			err = p.Ping(ctx)
+			if err == nil {
+				cancel()
+				Pool = p
+				return nil
+			}
+			p.Close()
+		}
+		
+		cancel()
+		fmt.Printf("Database not ready, retrying in 2s... (%d/%d): %v\n", i+1, maxRetries, err)
+		time.Sleep(2 * time.Second)
 	}
 
-	poolConfig.MaxConns = 25
-	poolConfig.MinConns = 5
-	poolConfig.MaxConnLifetime = time.Hour
-	poolConfig.MaxConnIdleTime = 30 * time.Minute
-
-	p, err := pgxpool.NewWithConfig(ctx, poolConfig)
-	if err != nil {
-		return fmt.Errorf("unable to create connection pool: %w", err)
-	}
-
-	if err := p.Ping(ctx); err != nil {
-		p.Close()
-		return fmt.Errorf("unable to ping database: %w", err)
-	}
-
-	Pool = p
-	return nil
+	return fmt.Errorf("unable to connect to database after %d attempts: %w", maxRetries, err)
 }
 
 func RunMigrations(ctx context.Context) error {

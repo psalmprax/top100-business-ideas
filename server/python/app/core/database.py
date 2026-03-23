@@ -25,13 +25,25 @@ engine = create_engine(
 )
 
 def init_db():
-    """Initialize database and create tables"""
-    SQLModel.metadata.create_all(engine)
-
-    # Seed initial data
-    seed_compliance_articles()
-    seed_agents()
-    seed_deepfake_data()
+    """Initialize database and create tables with retry logic"""
+    import time
+    max_retries = 10
+    retry_interval = 2
+    
+    for i in range(max_retries):
+        try:
+            SQLModel.metadata.create_all(engine)
+            # Seed initial data
+            seed_compliance_articles()
+            seed_agents()
+            seed_deepfake_data()
+            return  # Success
+        except Exception as e:
+            if i < max_retries - 1:
+                print(f"Database not ready, retrying in {retry_interval}s... ({i+1}/{max_retries}): {e}")
+                time.sleep(retry_interval)
+            else:
+                raise e
 
 def get_session():
     """Dependency for getting database sessions"""
