@@ -1836,6 +1836,29 @@ export const extendedApi = {
         delete: (id: string) => apiRequest<any>(`/api/v1/vendors/${id}`, {
             method: 'DELETE',
         }),
+    },
+    deepfake: {
+        listAnalyses: () => apiRequest<any[]>('/api/v1/deepfake/analyses'),
+        getStats: () => apiRequest<any>('/api/v1/deepfake/stats'),
+        listThreats: () => apiRequest<any[]>('/api/v1/deepfake/threats'),
+        listModels: () => apiRequest<any[]>('/api/v1/deepfake/models'),
+        analyze: (media_url: string, media_type: string) => apiRequest<any>('/api/v1/deepfake/analyze', {
+            method: 'POST',
+            body: JSON.stringify({ media_url, media_type }),
+        }),
+        train: (dataset_name: string, file: File) => {
+            const formData = new FormData();
+            formData.append('dataset_name', dataset_name);
+            formData.append('file', file);
+            return fetch(`${localStorage.getItem('ALPHA_GO_URL') || ''}/api/v1/deepfake/train`, {
+                method: 'POST',
+                body: formData,
+            }).then(res => res.json());
+        },
+        deployModel: (model: any) => apiRequest<any>('/api/v1/deepfake/models', {
+            method: 'POST',
+            body: JSON.stringify(model),
+        }),
     }
 };
 

@@ -8,7 +8,7 @@ import uuid
 
 from app.core.models import (
     DeepfakeAnalysis, AnalyzeDeepfakeRequest, MediaType, AnalysisResult,
-    HardwareChallenge, BiometricSignature, TrainingJob, CustomModel, TrainingStatus
+    HardwareChallenge, BiometricSignature, TrainingJob, CustomModel, TrainingStatus, DeepfakeThreat
 )
 from app.ml.deepfake_detector import deepfake_detector
 from app.services.authlink_service import authlink_service
@@ -224,3 +224,10 @@ async def list_custom_models(session: Session = Depends(get_session)):
     """List all custom deployed models"""
     models = session.exec(select(CustomModel)).all()
     return models
+
+
+@router.get("/threats", response_model=List[DeepfakeThreat])
+async def list_threats(session: Session = Depends(get_session)):
+    """List all deepfake threats"""
+    threats = session.exec(select(DeepfakeThreat)).all()
+    return threats

@@ -4,7 +4,7 @@ from sqlmodel import SQLModel, create_engine, Session
 from sqlalchemy.orm import sessionmaker
 import os
 from app.core.config import settings
-from app.core.models import ComplianceArticle, Agent, AgentStatus
+from app.core.models import ComplianceArticle, Agent, AgentStatus, DeepfakeAnalysis, DeepfakeThreat, CustomModel, MediaType, AnalysisResult
 
 # Database connection string
 DATABASE_URL = settings.DATABASE_URL
@@ -31,6 +31,7 @@ def init_db():
     # Seed initial data
     seed_compliance_articles()
     seed_agents()
+    seed_deepfake_data()
 
 def get_session():
     """Dependency for getting database sessions"""
@@ -213,6 +214,78 @@ def seed_agents():
         for agent_data in agents_data:
             agent = Agent(**agent_data)
             session.add(agent)
+
+        session.commit()
+
+
+def seed_deepfake_data():
+    """Seed the database with deepfake analysis data and threats"""
+    with Session(engine) as session:
+        # Check if data already exists
+        if session.query(DeepfakeAnalysis).count() > 0:
+            return
+
+        # Sample Analyses
+        analyses_data = [
+            {
+                "media_url": "https://alpha-cdn.com/v/ceo_interview_01.mp4",
+                "media_type": MediaType.VIDEO,
+                "result": AnalysisResult.FAKE,
+                "confidence": 98,
+                "details": {"reason": "Non-natural eye blinking patterns", "model": "Facial Artifact Scanner v4"}
+            },
+            {
+                "media_url": "https://alpha-cdn.com/a/cfo_voice_auth.wav",
+                "media_type": MediaType.AUDIO,
+                "result": AnalysisResult.REAL,
+                "confidence": 94,
+                "details": {"reason": "Natural frequency distribution", "model": "FFT Audio Frequency Analyzer"}
+            }
+        ]
+
+        for data in analyses_data:
+            analysis = DeepfakeAnalysis(**data)
+            session.add(analysis)
+
+        # Sample Threats
+        threats_data = [
+            {
+                "type": "injection",
+                "severity": "critical",
+                "description": "Attempted live video injection during board meeting"
+            },
+            {
+                "type": "bypass",
+                "severity": "high",
+                "description": "Identity bypass attempt on core banking API"
+            }
+        ]
+
+        for data in threats_data:
+            threat = DeepfakeThreat(**data)
+            session.add(threat)
+
+        # Sample Custom Models
+        models_data = [
+            {
+                "name": "Facial Artifact Scanner",
+                "base_architecture": "EfficientNet-v2",
+                "version": "4.2.0",
+                "accuracy": 0.992,
+                "status": "deployed"
+            },
+            {
+                "name": "FFT Audio Frequency Analyzer",
+                "base_architecture": "ResNet-50-Audio",
+                "version": "2.1.0",
+                "accuracy": 0.975,
+                "status": "deployed"
+            }
+        ]
+
+        for data in models_data:
+            model = CustomModel(**data)
+            session.add(model)
 
         session.commit()
 

@@ -488,6 +488,18 @@ class WorkforceInteraction(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
+class DeepfakeThreat(SQLModel, table=True):
+    """Deepfake threat model for alerting and tracking"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    type: str  # injection, bypass, spoofing, synthetic
+    severity: str  # low, medium, high, critical
+    description: str
+    media_url: Optional[str] = None
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    resolved: bool = Field(default=False)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 class ComplianceArticle(SQLModel, table=True):
     """EU AI Act compliance article definition"""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)

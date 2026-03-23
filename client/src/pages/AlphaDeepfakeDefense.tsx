@@ -330,10 +330,10 @@ export default function AlphaDeepfakeDefense() {
             { value: 'hiring', label: 'Hiring', icon: Users }
         ]
     };
-    const [analyses, setAnalyses] = useState<DeepfakeAnalysis[]>(mockAnalyses);
-    const [sessions] = useState<VerificationSession[]>(mockSessions);
-    const [threats] = useState<ThreatAlert[]>(mockThreats);
-    const [biometrics] = useState<BiometricTemplate[]>(mockBiometrics);
+    const [analyses, setAnalyses] = useState<DeepfakeAnalysis[]>([]);
+    const [sessions, setSessions] = useState<VerificationSession[]>([]);
+    const [threats, setThreats] = useState<any[]>([]);
+    const [biometrics, setBiometrics] = useState<BiometricTemplate[]>([]);
     const [mediaType, setMediaType] = useState<string>('all');
     const [duressEnabled, setDuressEnabled] = useState(true);
 
@@ -379,10 +379,7 @@ export default function AlphaDeepfakeDefense() {
     const [scanStage, setScanStage] = useState('');
     const [isUploading, setIsUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
-    const [customModels, setCustomModels] = useState<any[]>([
-        { id: 'M-001', name: 'Facial Artifacts v4', version: '4.2.0', accuracy: 0.992, status: 'deployed', lastTrained: new Date('2024-03-10') },
-        { id: 'M-002', name: 'Voice Stress Analyzer', version: '1.0.5', accuracy: 0.945, status: 'optimizing', lastTrained: new Date('2024-03-15') }
-    ]);
+    const [customModels, setCustomModels] = useState<any[]>([]);
     const [detectors, setDetectors] = useState<any[]>([]);
 
     // Enterprise Validation State
@@ -457,19 +454,49 @@ export default function AlphaDeepfakeDefense() {
                 return;
             }
             try {
-
-                const [sdk, wearables, kiosk, wallets, detectorList] = await Promise.all([
+                const [
+                    sdk, 
+                    wearables, 
+                    kiosk, 
+                    wallets, 
+                    detectorList, 
+                    analysisList, 
+                    threatList, 
+                    modelList
+                ] = await Promise.all([
                     extendedApi.mobileSDK.status().catch(() => null),
                     extendedApi.wearable.devices().catch(() => []),
                     extendedApi.travel.kioskStatus().catch(() => null),
                     extendedApi.crypto.wallets().catch(() => []),
-                    extendedApi.advancedDeepfake.detectors.list().catch(() => [])
+                    extendedApi.advancedDeepfake.detectors.list().catch(() => []),
+                    deepfakeApi.listAnalyses().catch(() => []),
+                    deepfakeApi.listThreats().catch(() => []),
+                    deepfakeApi.listModels().catch(() => [])
                 ]);
+
                 if (sdk) setSdkStatus(sdk);
                 if (wearables) setWearableDevices(wearables);
                 if (kiosk) setKioskStatus(kiosk);
                 if (wallets) setCryptoWallets(wallets);
                 if (detectorList && Array.isArray(detectorList)) setDetectors(detectorList);
+                
+                // Set data from deepfakeApi
+                if (analysisList) setAnalyses(analysisList.map((a: any) => ({
+                    ...a,
+                    mediaType: a.media_type,
+                    mediaUrl: a.media_url,
+                    analysisAt: new Date(a.analysis_at)
+                })));
+                
+                if (threatList) setThreats(threatList.map((t: any) => ({
+                    ...t,
+                    timestamp: new Date(t.timestamp)
+                })));
+
+                if (modelList) setCustomModels(modelList.map((m: any) => ({
+                    ...m,
+                    lastTrained: new Date(m.last_trained)
+                })));
                 
                 // Fetch Enterprise Data
                 const healthRes = await extendedApi.agentOps.getCloudHealth('liveness-link');
