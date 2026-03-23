@@ -1,6 +1,6 @@
 """Deepfake detection endpoints"""
 
-from typing import List
+from typing import List, Dict, Any
 from fastapi import APIRouter, HTTPException, Depends
 from sqlmodel import Session, select
 from datetime import datetime
