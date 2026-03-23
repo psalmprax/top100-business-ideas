@@ -687,10 +687,10 @@ export default function AlphaAgentOps() {
   const [selfHealingEvents, setSelfHealingEvents] = useState<SelfHealingEvent[]>([]);
   const [llmConfigs, setLlmConfigs] = useState<LLMProviderConfig[]>([]);
   const [showModelConfigDialog, setShowModelConfigDialog] = useState(false);
-  const [complianceStatus, setComplianceStatus] = useState<{hipaa: any, sox: any}>({hipaa: null, sox: null});
+  const [complianceStatus, setComplianceStatus] = useState<{ hipaa: any, sox: any }>({ hipaa: null, sox: null });
   const [retentionDays, setRetentionDays] = useState(30);
   const [activeSlaTier, setActiveSlaTier] = useState<string>(storage.get("active_sla_tier", "Enterprise"));
-  
+
   // Phase 3 Gaps State
   const [selectedAgentIds, setSelectedAgentIds] = useState<string[]>([]);
   const [selectedAuditEntry, setSelectedAuditEntry] = useState<AuditEntry | null>(null);
@@ -946,8 +946,8 @@ export default function AlphaAgentOps() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                       <span className="text-sm font-bold">#{config.failoverPriority}</span>
-                       {config.isPrimary && <Badge className="bg-blue-500/20 text-blue-500 hover:bg-blue-500/30 border-none text-[10px]">PRIMARY</Badge>}
+                      <span className="text-sm font-bold">#{config.failoverPriority}</span>
+                      {config.isPrimary && <Badge className="bg-blue-500/20 text-blue-500 hover:bg-blue-500/30 border-none text-[10px]">PRIMARY</Badge>}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -975,41 +975,41 @@ export default function AlphaAgentOps() {
       </Card>
 
       <div className="grid gap-4 md:grid-cols-2">
-         <Card className="border-blue-500/20 bg-blue-500/5">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-blue-500" />
-                Automatic Failover Chain
-              </CardTitle>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                onClick={() => handleTriggerFailover("aws-us-east-1")}
-                title="Trigger Test Failover"
-              >
-                <RefreshCw className="w-3 h-3" />
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-4">
-                <div className="flex-1 p-3 rounded border bg-card text-center text-xs">
-                  <span className="block font-bold truncate">DeepSeek V3</span>
-                  <span className="text-muted-foreground text-[10px]">Primary</span>
-                </div>
-                <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
-                <div className="flex-1 p-3 rounded border bg-card text-center text-xs">
-                  <span className="block font-bold truncate">Gemini 1.5 Pro</span>
-                  <span className="text-muted-foreground text-[10px]">Warm Spare</span>
-                </div>
-                <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
-                <div className="flex-1 p-3 rounded border bg-card text-center text-xs">
-                  <span className="block font-bold truncate">GPT-4o</span>
-                  <span className="text-muted-foreground text-[10px]">Emergency</span>
-                </div>
+        <Card className="border-blue-500/20 bg-blue-500/5">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-blue-500" />
+              Automatic Failover Chain
+            </CardTitle>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              onClick={() => handleTriggerFailover("aws-us-east-1")}
+              title="Trigger Test Failover"
+            >
+              <RefreshCw className="w-3 h-3" />
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-4">
+              <div className="flex-1 p-3 rounded border bg-card text-center text-xs">
+                <span className="block font-bold truncate">DeepSeek V3</span>
+                <span className="text-muted-foreground text-[10px]">Primary</span>
               </div>
-            </CardContent>
-         </Card>
+              <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
+              <div className="flex-1 p-3 rounded border bg-card text-center text-xs">
+                <span className="block font-bold truncate">Gemini 1.5 Pro</span>
+                <span className="text-muted-foreground text-[10px]">Warm Spare</span>
+              </div>
+              <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
+              <div className="flex-1 p-3 rounded border bg-card text-center text-xs">
+                <span className="block font-bold truncate">GPT-4o</span>
+                <span className="text-muted-foreground text-[10px]">Emergency</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
@@ -1033,8 +1033,8 @@ export default function AlphaAgentOps() {
         llmRes,
         alertsRes,
       ] = await Promise.all([
-        agentsApi.list().catch(() => mockAgents),
-        extendedApi.agentOps.getAuditLogs().catch(() => mockAuditLog),
+        agentsApi.list().catch(() => []),
+        extendedApi.agentOps.getAuditLogs().catch(() => []),
         extendedApi.agentOps.listRules().catch(() => storage.get("budget_rules", mockBudgetRules)),
         extendedApi.agentOps.listWebhooks().catch(() => []),
         extendedApi.agentOps.getCloudHealth().catch(() => null),
@@ -1046,7 +1046,43 @@ export default function AlphaAgentOps() {
       ]);
 
 
-      setAgents(agentsRes as any);
+      // Transform backend Agent[] to frontend DashboardAgent[]
+      const transformedAgents = (agentsRes as any[]).map(agent => ({
+        id: agent.id,
+        name: agent.name,
+        type: agent.type,
+        status: agent.status,
+        environment: agent.environment,
+        provider: agent.provider,
+        model: agent.model,
+        api_secret: agent.api_secret,
+        org_id: agent.org_id,
+        control_webhook: agent.control_webhook,
+        budget: agent.budget,
+        dailySpend: agent.dailySpend,
+        tier: agent.tier,
+        config: agent.config || {
+          provider: agent.provider,
+          model: agent.model,
+          maxTokens: 4000,
+          temperature: 0.7,
+          rules: []
+        },
+        metrics: agent.metrics || {
+          totalRequests: 0,
+          totalTokens: 0,
+          totalCost: 0,
+          avgLatencyMs: 0,
+          errorRate: 0,
+          loopCount: 0,
+          cacheHits: 0,
+          loopsPrevented: 0,
+          costSaved: 0,
+        },
+        createdAt: new Date(agent.created_at),
+        lastActiveAt: new Date(agent.updated_at || agent.created_at),
+      }));
+      setAgents(transformedAgents);
       setAuditLog((auditRes as any[]).map(log => ({
         ...log,
         timestamp: new Date(log.timestamp),
@@ -1059,7 +1095,7 @@ export default function AlphaAgentOps() {
       setSelfHealingEvents((healingRes.recent_recoveries || []).map((ev: any) => ({
         ...ev,
         timestamp: new Date(ev.timestamp)
-      })));       if (healingRes.nodes) setClusterNodes(healingRes.nodes);
+      }))); if (healingRes.nodes) setClusterNodes(healingRes.nodes);
       setLlmConfigs(llmRes as any);
       setAlertConfigs(alertsRes as any);
       // Cache for demo offline mode
@@ -1069,7 +1105,7 @@ export default function AlphaAgentOps() {
       if (isAuthenticated) {
         extendedApi.sso.config('default').then(conf => {
           if (conf) setSsoConfig(conf);
-        }).catch(() => {});
+        }).catch(() => { });
       }
 
     } catch (error) {
@@ -1690,7 +1726,7 @@ export default function AlphaAgentOps() {
                     <CheckCircle2 className="w-4 h-4 mr-2" />
                     SLA
                   </TabsTrigger>
-                   <TabsTrigger
+                  <TabsTrigger
                     value="sso"
                     data-testid="sso-tab"
                     className="bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none px-2 pb-2 h-auto"
@@ -1698,7 +1734,7 @@ export default function AlphaAgentOps() {
                     <Key className="w-4 h-4 mr-2" />
                     SSO
                   </TabsTrigger>
-                   <TabsTrigger
+                  <TabsTrigger
                     value="partner"
                     className="bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none px-2 pb-2 h-auto"
                   >
@@ -2003,7 +2039,7 @@ export default function AlphaAgentOps() {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-[40px]">
-                          <Checkbox 
+                          <Checkbox
                             checked={selectedAgentIds.length === agents.length && agents.length > 0}
                             onCheckedChange={(checked) => {
                               if (checked) setSelectedAgentIds(agents.map(a => a.id));
@@ -2024,7 +2060,7 @@ export default function AlphaAgentOps() {
                       {agents.map(agent => (
                         <TableRow key={agent.id} className={selectedAgentIds.includes(agent.id) ? "bg-muted/50" : ""}>
                           <TableCell>
-                            <Checkbox 
+                            <Checkbox
                               checked={selectedAgentIds.includes(agent.id)}
                               onCheckedChange={(checked) => {
                                 if (checked) setSelectedAgentIds([...selectedAgentIds, agent.id]);
@@ -2198,9 +2234,9 @@ export default function AlphaAgentOps() {
                             <span>{entry.tokens ?? 0} tokens</span>
                             <span>${(entry.cost ?? 0).toFixed(4)}</span>
                           </div>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             className="h-7 text-[10px] gap-1 hover:bg-blue-500/10 hover:text-blue-400 group"
                             onClick={() => {
                               setSelectedAuditEntry(entry);
@@ -2309,11 +2345,11 @@ export default function AlphaAgentOps() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="space-y-4">
-                      <div className="p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg text-xs text-blue-500 mb-4">
-                        <strong>Note:</strong> Notification channels (Slack, Teams, Email) must be pre-configured and verified in the <strong>Webhooks</strong> or <strong>Settings</strong> tab before they can receive alerts.
-                      </div>
-                      {alertConfigs.map(alert => (
+                  <div className="space-y-4">
+                    <div className="p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg text-xs text-blue-500 mb-4">
+                      <strong>Note:</strong> Notification channels (Slack, Teams, Email) must be pre-configured and verified in the <strong>Webhooks</strong> or <strong>Settings</strong> tab before they can receive alerts.
+                    </div>
+                    {alertConfigs.map(alert => (
 
                       <div key={alert.id} className="p-4 rounded-lg border">
                         <div className="flex items-center justify-between">
@@ -2390,7 +2426,7 @@ export default function AlphaAgentOps() {
                                 status.status === "healthy"
                                   ? "default"
                                   : "destructive"
-                                }
+                              }
                             >
                               {status.status}
                             </Badge>
@@ -2691,8 +2727,8 @@ export default function AlphaAgentOps() {
                             </li>
                           ))}
                         </ul>
-                        <Button 
-                          className="w-full" 
+                        <Button
+                          className="w-full"
                           variant={isActive ? "secondary" : "default"}
                           onClick={async () => {
                             if (!isActive) {
@@ -2718,37 +2754,37 @@ export default function AlphaAgentOps() {
 
             {/* Partner Portal Tab Content */}
             <TabsContent value="partner">
-               <Card>
-                 <CardHeader>
-                   <CardTitle className="flex items-center gap-2">
-                     <Users className="w-5 h-5 text-blue-500" />
-                     White-label Partner Portal
-                   </CardTitle>
-                   <CardDescription>Manage sub-accounts and customized branding for agency deployments</CardDescription>
-                 </CardHeader>
-                 <CardContent className="space-y-6">
-                   <div className="grid md:grid-cols-2 gap-4">
-                     <div className="p-4 rounded-lg border border-dashed flex flex-col items-center justify-center text-center">
-                        <PlusSquare className="w-8 h-8 text-muted-foreground mb-4" />
-                        <h4 className="font-bold">Add New Sub-Account</h4>
-                        <p className="text-xs text-muted-foreground">Onboard a new client under your agency master agreement</p>
-                        <Button variant="outline" size="sm" className="mt-4">Provision Client Space</Button>
-                     </div>
-                     <div className="space-y-4">
-                        <Label>Custom Domain Mapping</Label>
-                        <div className="flex gap-2">
-                           <Input placeholder="dashboard.youragency.com" readOnly className="bg-muted" />
-                           <Badge variant="outline" className="text-emerald-500">PROXIED</Badge>
-                        </div>
-                        <Label>Primary Brand Color</Label>
-                        <div className="flex items-center gap-4">
-                           <div className="w-10 h-10 rounded-full bg-blue-600 border shadow-inner" />
-                           <Button variant="ghost" size="sm">Update Assets</Button>
-                        </div>
-                     </div>
-                   </div>
-                 </CardContent>
-               </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="w-5 h-5 text-blue-500" />
+                    White-label Partner Portal
+                  </CardTitle>
+                  <CardDescription>Manage sub-accounts and customized branding for agency deployments</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="p-4 rounded-lg border border-dashed flex flex-col items-center justify-center text-center">
+                      <PlusSquare className="w-8 h-8 text-muted-foreground mb-4" />
+                      <h4 className="font-bold">Add New Sub-Account</h4>
+                      <p className="text-xs text-muted-foreground">Onboard a new client under your agency master agreement</p>
+                      <Button variant="outline" size="sm" className="mt-4">Provision Client Space</Button>
+                    </div>
+                    <div className="space-y-4">
+                      <Label>Custom Domain Mapping</Label>
+                      <div className="flex gap-2">
+                        <Input placeholder="dashboard.youragency.com" readOnly className="bg-muted" />
+                        <Badge variant="outline" className="text-emerald-500">PROXIED</Badge>
+                      </div>
+                      <Label>Primary Brand Color</Label>
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-blue-600 border shadow-inner" />
+                        <Button variant="ghost" size="sm">Update Assets</Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
             {/* On-Premise Tab Content */}
             <TabsContent value="on-prem">
@@ -2962,14 +2998,14 @@ export default function AlphaAgentOps() {
                       </div>
                       <div className="space-y-2">
                         <div className="flex justify-between text-xs">
-                           <span>Audit Success Rate</span>
-                           <div className="flex items-center gap-2">
-                             {complianceStatus.sox === "COMPLIANT" && (
-                               <Badge className="text-[8px] h-4 bg-emerald-500/20 text-emerald-500 border-none" data-testid="sox-status-badge">COMPLIANT</Badge>
-                             )}
-                             <span className="font-bold">100%</span>
-                           </div>
-                         </div>
+                          <span>Audit Success Rate</span>
+                          <div className="flex items-center gap-2">
+                            {complianceStatus.sox === "COMPLIANT" && (
+                              <Badge className="text-[8px] h-4 bg-emerald-500/20 text-emerald-500 border-none" data-testid="sox-status-badge">COMPLIANT</Badge>
+                            )}
+                            <span className="font-bold">100%</span>
+                          </div>
+                        </div>
                         <Progress value={100} className="h-1" />
                         <div className="flex justify-between text-xs pt-2">
                           <span>Tamper-proof Log Hash</span>
@@ -2995,8 +3031,8 @@ export default function AlphaAgentOps() {
                         GraphQL Playground
                       </CardTitle>
                       <div className="flex items-center gap-2">
-                         <Label htmlFor="gql-toggle" className="text-[10px] text-muted-foreground uppercase tracking-widest">Gateway Proxy</Label>
-                         <Switch id="gql-toggle" defaultChecked />
+                        <Label htmlFor="gql-toggle" className="text-[10px] text-muted-foreground uppercase tracking-widest">Gateway Proxy</Label>
+                        <Switch id="gql-toggle" defaultChecked />
                       </div>
                     </div>
                     <CardDescription>
@@ -3112,13 +3148,12 @@ export default function AlphaAgentOps() {
                           >
                             <div className="flex items-center justify-between mb-1">
                               <span
-                                className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                                  api.method === "GET"
-                                    ? "bg-blue-500/10 text-blue-400"
-                                    : api.method === "POST"
-                                      ? "bg-emerald-500/10 text-emerald-400"
-                                      : "bg-amber-500/10 text-amber-400"
-                                }`}
+                                className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${api.method === "GET"
+                                  ? "bg-blue-500/10 text-blue-400"
+                                  : api.method === "POST"
+                                    ? "bg-emerald-500/10 text-emerald-400"
+                                    : "bg-amber-500/10 text-amber-400"
+                                  }`}
                               >
                                 {api.method}
                               </span>
@@ -3324,10 +3359,10 @@ export default function AlphaAgentOps() {
                     </div>
                     <div className="space-y-2">
                       <Label>SSO URL</Label>
-                      <Input 
-                        placeholder="https://your-idp.com/sso" 
+                      <Input
+                        placeholder="https://your-idp.com/sso"
                         value={ssoConfig.sso_url}
-                        onChange={(e) => setSsoConfig({...ssoConfig, sso_url: e.target.value})}
+                        onChange={(e) => setSsoConfig({ ...ssoConfig, sso_url: e.target.value })}
                       />
                     </div>
                     <div className="space-y-2">
@@ -3336,11 +3371,11 @@ export default function AlphaAgentOps() {
                         placeholder="Paste your SAML certificate here"
                         className="font-mono text-xs h-24"
                         value={ssoConfig.certificate}
-                        onChange={(e) => setSsoConfig({...ssoConfig, certificate: e.target.value})}
+                        onChange={(e) => setSsoConfig({ ...ssoConfig, certificate: e.target.value })}
                       />
                     </div>
-                    <Button 
-                      className="w-full" 
+                    <Button
+                      className="w-full"
                       onClick={handleSaveSAMLConfig}
                       disabled={isSavingSso}
                     >
@@ -3432,9 +3467,9 @@ export default function AlphaAgentOps() {
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
                       <Label>Provider Architecture</Label>
-                      <Select 
-                        value={ssoConfig.provider} 
-                        onValueChange={(v) => setSsoConfig({...ssoConfig, provider: v})}
+                      <Select
+                        value={ssoConfig.provider}
+                        onValueChange={(v) => setSsoConfig({ ...ssoConfig, provider: v })}
                       >
                         <SelectTrigger>
                           <SelectValue />
@@ -3460,10 +3495,10 @@ export default function AlphaAgentOps() {
                     </div>
                     <div className="space-y-2">
                       <Label>Metadata URL</Label>
-                      <Input 
-                        placeholder="https://okta.com/app/exk.../sso/saml/metadata" 
+                      <Input
+                        placeholder="https://okta.com/app/exk.../sso/saml/metadata"
                         value={ssoConfig.metadata_url}
-                        onChange={(e) => setSsoConfig({...ssoConfig, metadata_url: e.target.value})}
+                        onChange={(e) => setSsoConfig({ ...ssoConfig, metadata_url: e.target.value })}
                       />
                     </div>
                     <div className="flex items-center justify-between p-3 rounded-lg border bg-card/50">
@@ -3476,9 +3511,9 @@ export default function AlphaAgentOps() {
                           </div>
                         </div>
                       </div>
-                      <Switch 
+                      <Switch
                         checked={ssoConfig.force_sso}
-                        onCheckedChange={(c) => setSsoConfig({...ssoConfig, force_sso: c})}
+                        onCheckedChange={(c) => setSsoConfig({ ...ssoConfig, force_sso: c })}
                       />
                     </div>
                     <Button
@@ -4721,16 +4756,16 @@ export default function AlphaAgentOps() {
                           <span>Efficiency Comparison</span>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                           <div className="p-4 rounded-xl border bg-muted/20">
-                              <div className="text-[10px] text-muted-foreground uppercase font-bold mb-1">Traditional (Human)</div>
-                              <div className="text-xl font-bold">$120/hr</div>
-                              <div className="text-[10px] text-red-400">Low Scalability</div>
-                           </div>
-                           <div className="p-4 rounded-xl border bg-emerald-500/5 border-emerald-500/20">
-                              <div className="text-[10px] text-emerald-500 uppercase font-bold mb-1">AlphaAI Sentinel</div>
-                              <div className="text-xl font-bold">$0.42/hr</div>
-                              <div className="text-[10px] text-emerald-400">Infinite Elasticity</div>
-                           </div>
+                          <div className="p-4 rounded-xl border bg-muted/20">
+                            <div className="text-[10px] text-muted-foreground uppercase font-bold mb-1">Traditional (Human)</div>
+                            <div className="text-xl font-bold">$120/hr</div>
+                            <div className="text-[10px] text-red-400">Low Scalability</div>
+                          </div>
+                          <div className="p-4 rounded-xl border bg-emerald-500/5 border-emerald-500/20">
+                            <div className="text-[10px] text-emerald-500 uppercase font-bold mb-1">AlphaAI Sentinel</div>
+                            <div className="text-xl font-bold">$0.42/hr</div>
+                            <div className="text-[10px] text-emerald-400">Infinite Elasticity</div>
+                          </div>
                         </div>
                         <div className="h-6 w-full bg-muted/20 rounded-full overflow-hidden flex mt-4">
                           <div className="w-[85%] bg-slate-500/20 h-full flex items-center px-4 text-[10px] font-bold text-slate-400">
@@ -5250,12 +5285,11 @@ export default function AlphaAgentOps() {
                     </span>
                   </div>
                   <div className="h-1 w-full bg-zinc-800 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full transition-all duration-500 ${
-                        newAgentData.tier === "strategic" ? "w-[80%] bg-purple-500" : 
-                        newAgentData.tier === "tactical" ? "w-[30%] bg-blue-500" : 
-                        "w-[5%] bg-emerald-500"
-                      }`}
+                    <div
+                      className={`h-full transition-all duration-500 ${newAgentData.tier === "strategic" ? "w-[80%] bg-purple-500" :
+                        newAgentData.tier === "tactical" ? "w-[30%] bg-blue-500" :
+                          "w-[5%] bg-emerald-500"
+                        }`}
                     />
                   </div>
                   <p className="text-[9px] text-zinc-500 mt-2">
@@ -5300,12 +5334,12 @@ export default function AlphaAgentOps() {
                       <SelectItem value="autogen">Microsoft AutoGen</SelectItem>
                       <SelectItem value="metagpt">MetaGPT</SelectItem>
                       <SelectItem value="pydanticai">PydanticAI</SelectItem>
-                      
+
                       <div className="px-2 py-1.5 mt-2 text-xs font-semibold text-zinc-500 uppercase tracking-wider border-t border-zinc-500/10">
                         Managed AI Services
                       </div>
                       <SelectItem value="openai">OpenAI Assistants API</SelectItem>
-                      
+
                       <div className="px-2 py-1.5 mt-2 text-xs font-semibold text-zinc-500 uppercase tracking-wider border-t border-zinc-500/10">
                         Other
                       </div>
@@ -5321,12 +5355,12 @@ export default function AlphaAgentOps() {
                   {newAgentData.type === "langgraph" && (
                     <div className="space-y-2">
                       <Label>Thread/Checkpoint ID</Label>
-                      <Input 
+                      <Input
                         placeholder="thread_abc_123"
                         value={newAgentData.metadata.threadId || ""}
-                        onChange={(e) => setNewAgentData(prev => ({ 
-                           ...prev, 
-                           metadata: { ...prev.metadata, threadId: e.target.value } 
+                        onChange={(e) => setNewAgentData(prev => ({
+                          ...prev,
+                          metadata: { ...prev.metadata, threadId: e.target.value }
                         }))}
                       />
                       <p className="text-[10px] text-muted-foreground">
@@ -5338,31 +5372,31 @@ export default function AlphaAgentOps() {
                   {newAgentData.type === "crewai" && (
                     <div className="space-y-2">
                       <Label>Process Type</Label>
-                      <Select 
+                      <Select
                         value={newAgentData.metadata.processType || "sequential"}
-                        onValueChange={(val) => setNewAgentData(prev => ({ 
-                           ...prev, 
-                           metadata: { ...prev.metadata, processType: val } 
+                        onValueChange={(val) => setNewAgentData(prev => ({
+                          ...prev,
+                          metadata: { ...prev.metadata, processType: val }
                         }))}
                       >
-                         <SelectTrigger><SelectValue /></SelectTrigger>
-                         <SelectContent>
-                            <SelectItem value="sequential">Sequential</SelectItem>
-                            <SelectItem value="hierarchical">Hierarchical</SelectItem>
-                         </SelectContent>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="sequential">Sequential</SelectItem>
+                          <SelectItem value="hierarchical">Hierarchical</SelectItem>
+                        </SelectContent>
                       </Select>
                     </div>
                   )}
                   {newAgentData.type === "autogen" && (
                     <div className="space-y-2">
                       <Label>System Message / Persona</Label>
-                      <Textarea 
+                      <Textarea
                         placeholder="You are a helpful assistant..."
                         className="h-20"
                         value={newAgentData.metadata.systemMessage || ""}
-                        onChange={(e) => setNewAgentData(prev => ({ 
-                           ...prev, 
-                           metadata: { ...prev.metadata, systemMessage: e.target.value } 
+                        onChange={(e) => setNewAgentData(prev => ({
+                          ...prev,
+                          metadata: { ...prev.metadata, systemMessage: e.target.value }
                         }))}
                       />
                     </div>
@@ -5370,12 +5404,12 @@ export default function AlphaAgentOps() {
                   {newAgentData.type === "openai" && (
                     <div className="space-y-2">
                       <Label>Assistant ID</Label>
-                      <Input 
+                      <Input
                         placeholder="asst_..."
                         value={newAgentData.metadata.assistantId || ""}
-                        onChange={(e) => setNewAgentData(prev => ({ 
-                           ...prev, 
-                           metadata: { ...prev.metadata, assistantId: e.target.value } 
+                        onChange={(e) => setNewAgentData(prev => ({
+                          ...prev,
+                          metadata: { ...prev.metadata, assistantId: e.target.value }
                         }))}
                       />
                     </div>
@@ -5383,12 +5417,12 @@ export default function AlphaAgentOps() {
                   {newAgentData.type === "metagpt" && (
                     <div className="space-y-2">
                       <Label>SOP Path</Label>
-                      <Input 
+                      <Input
                         placeholder="software_company.yaml"
                         value={newAgentData.metadata.sopPath || ""}
-                        onChange={(e) => setNewAgentData(prev => ({ 
-                           ...prev, 
-                           metadata: { ...prev.metadata, sopPath: e.target.value } 
+                        onChange={(e) => setNewAgentData(prev => ({
+                          ...prev,
+                          metadata: { ...prev.metadata, sopPath: e.target.value }
                         }))}
                       />
                     </div>
@@ -5396,12 +5430,12 @@ export default function AlphaAgentOps() {
                   {newAgentData.type === "pydanticai" && (
                     <div className="space-y-2">
                       <Label>Agent Schema</Label>
-                      <Input 
+                      <Input
                         placeholder="BaseModel class name"
                         value={newAgentData.metadata.schemaClass || ""}
-                        onChange={(e) => setNewAgentData(prev => ({ 
-                           ...prev, 
-                           metadata: { ...prev.metadata, schemaClass: e.target.value } 
+                        onChange={(e) => setNewAgentData(prev => ({
+                          ...prev,
+                          metadata: { ...prev.metadata, schemaClass: e.target.value }
                         }))}
                       />
                     </div>

@@ -4,7 +4,7 @@ from sqlmodel import SQLModel, create_engine, Session
 from sqlalchemy.orm import sessionmaker
 import os
 from app.core.config import settings
-from app.core.models import ComplianceArticle
+from app.core.models import ComplianceArticle, Agent, AgentStatus
 
 # Database connection string
 DATABASE_URL = settings.DATABASE_URL
@@ -30,6 +30,7 @@ def init_db():
 
     # Seed initial data
     seed_compliance_articles()
+    seed_agents()
 
 def get_session():
     """Dependency for getting database sessions"""
@@ -112,6 +113,106 @@ def seed_compliance_articles():
         for article_data in articles_data:
             article = ComplianceArticle(**article_data)
             session.add(article)
+
+        session.commit()
+
+
+def seed_agents():
+    """Seed the database with sample agents"""
+    with Session(engine) as session:
+        # Check if agents already exist
+        existing_count = session.query(Agent).count()
+        if existing_count > 0:
+            return  # Already seeded
+
+        # Sample agents
+        agents_data = [
+            {
+                "name": "Customer Support Agent",
+                "type": "langgraph",
+                "environment": "production",
+                "provider": "openai",
+                "model": "gpt-4-turbo",
+                "budget": 50.0,
+                "dailySpend": 32.5,
+                "tier": "strategic",
+                "status": AgentStatus.RUNNING,
+                "config": {
+                    "provider": "openai",
+                    "model": "gpt-4-turbo",
+                    "maxTokens": 4000,
+                    "temperature": 0.7,
+                    "rules": [
+                        {
+                            "id": "1",
+                            "name": "Loop Prevention",
+                            "type": "loop_prevention",
+                            "enabled": True,
+                            "config": {"maxIterations": 10, "semanticCheck": True},
+                        },
+                        {
+                            "id": "2",
+                            "name": "Semantic Cost Cap",
+                            "type": "semantic_cost_cap",
+                            "enabled": True,
+                            "config": {"maxSpend": 50, "preserveState": True},
+                        },
+                    ],
+                },
+                "metrics": {
+                    "totalRequests": 15420,
+                    "totalTokens": 2840000,
+                    "totalCost": 142.5,
+                    "avgLatencyMs": 1250,
+                    "errorRate": 0.02,
+                    "loopCount": 3,
+                    "cacheHits": 4230,
+                    "loopsPrevented": 47,
+                    "costSaved": 892.3,
+                },
+            },
+            {
+                "name": "Research Agent",
+                "type": "crewai",
+                "environment": "production",
+                "provider": "anthropic",
+                "model": "claude-3-opus",
+                "budget": 5.0,
+                "dailySpend": 4.2,
+                "tier": "strategic",
+                "status": AgentStatus.RUNNING,
+                "config": {
+                    "provider": "anthropic",
+                    "model": "claude-3-opus",
+                    "maxTokens": 8000,
+                    "temperature": 0.8,
+                    "rules": [
+                        {
+                            "id": "3",
+                            "name": "Daily Budget Cap",
+                            "type": "budget_cap",
+                            "enabled": True,
+                            "config": {"maxSpend": 5},
+                        },
+                    ],
+                },
+                "metrics": {
+                    "totalRequests": 2340,
+                    "totalTokens": 1250000,
+                    "totalCost": 89.2,
+                    "avgLatencyMs": 2800,
+                    "errorRate": 0.01,
+                    "loopCount": 0,
+                    "cacheHits": 890,
+                    "loopsPrevented": 12,
+                    "costSaved": 156.4,
+                },
+            },
+        ]
+
+        for agent_data in agents_data:
+            agent = Agent(**agent_data)
+            session.add(agent)
 
         session.commit()
 
