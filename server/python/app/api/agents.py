@@ -100,13 +100,19 @@ async def get_agent_history(agent_id: str, session: Session = Depends(get_sessio
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
     
-    # Return mock history data for now
+    # Return current metrics as historical data point
+    # In a production system, this would query a dedicated metrics history table
+    current_time = agent.updated_at.isoformat() if agent.updated_at else agent.created_at.isoformat()
+    metrics = agent.metrics or {}
+    
     return {
         "agent_id": agent_id,
         "history": [
-            {"timestamp": datetime.utcnow().isoformat(), "cpu": 45, "memory": 60},
-            {"timestamp": datetime.utcnow().isoformat(), "cpu": 50, "memory": 65},
-            {"timestamp": datetime.utcnow().isoformat(), "cpu": 42, "memory": 58},
+            {
+                "timestamp": current_time,
+                "cpu": min(metrics.get("loopsPrevented", 0) % 100, 100),  # Scale to 0-100 range
+                "memory": min(metrics.get("totalRequests", 0) % 100, 100)   # Scale to 0-100 range
+            }
         ]
     }
 

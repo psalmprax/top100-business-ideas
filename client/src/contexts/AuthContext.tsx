@@ -5,8 +5,9 @@ interface AuthContextType {
     user: User | null;
     isLoading: boolean;
     isAuthenticated: boolean;
+    isDemo: boolean;
     isManagement: boolean;
-    login: (email: string, password: string) => Promise<void>;
+    login: (email: string, password: string, productId?: string) => Promise<{ requiresSelection?: boolean; availableProducts?: string[] }>;
     signUp: (email: string, password: string, name: string) => Promise<void>;
     logout: () => Promise<void>;
     updateUser: (user: Partial<User>) => void;
@@ -59,11 +60,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     };
 
-    const login = async (email: string, password: string) => {
+    const login = async (email: string, password: string, productId?: string) => {
         try {
-            const data = await authApi.login(email, password);
-            localStorage.setItem('auth_token', data.accessToken);
-            setUser(data.user);
+            const data = await authApi.login(email, password, productId);
+
+            if (data.requiresProductSelection) {
+                return {
+                    requiresSelection: true,
+                    availableProducts: data.availableProducts
+                };
+            }
+
+            if (data.accessToken && data.user) {
+                localStorage.setItem('auth_token', data.accessToken);
+                setUser(data.user);
+            }
+            return {};
         } catch (error: any) {
             throw new Error(error.message || 'Login failed');
         }
@@ -72,8 +84,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const signUp = async (email: string, password: string, name: string) => {
         try {
             const data = await authApi.register(email, password, name);
-            localStorage.setItem('auth_token', data.accessToken);
-            setUser(data.user);
+            if (data.accessToken && data.user) {
+                localStorage.setItem('auth_token', data.accessToken);
+                setUser(data.user);
+            }
         } catch (error: any) {
             throw new Error(error.message || 'Registration failed');
         }
@@ -129,6 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 user,
                 isLoading,
                 isAuthenticated: !!user,
+                isDemo: localStorage.getItem('demo_mode') === 'true',
                 isManagement,
                 login,
                 signUp,

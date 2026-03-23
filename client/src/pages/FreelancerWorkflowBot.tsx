@@ -1,6 +1,7 @@
-
 import { useState, useEffect } from 'react';
 import { Link } from 'wouter';
+import { useAuth } from '@/contexts/AuthContext';
+import { UserMenu } from '@/components/UserMenu';
 import {
     Clock,
     Sparkles,
@@ -92,6 +93,7 @@ function MetricCard({
 }
 
 export default function FreelancerWorkflowBot() {
+    const { isDemo } = useAuth();
     const [activeTab, setActiveTab] = useState('dashboard');
     const [activeCategory, setActiveCategory] = useState<CategoryType>('ops');
     const [isAuthorizing, setIsAuthorizing] = useState(false);
@@ -195,9 +197,11 @@ export default function FreelancerWorkflowBot() {
                 <div className="container mx-auto px-4">
                     <div className="flex h-16 items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <Link href="/">
-                                <Button variant="ghost" size="sm">← Back</Button>
-                            </Link>
+                            {isDemo && (
+                                <Link href="/">
+                                    <Button variant="ghost" size="sm">← Back</Button>
+                                </Link>
+                            )}
                             <div className="flex items-center gap-2">
                                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/20">
                                     <Briefcase className="h-5 w-5 text-white" />
@@ -230,6 +234,7 @@ export default function FreelancerWorkflowBot() {
                             <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[10px] uppercase h-9 px-6 shadow-lg shadow-indigo-600/20">
                                 <Plus className="w-4 h-4 mr-2" /> Delegate Task
                             </Button>
+                            <UserMenu />
                         </div>
                     </div>
                 </div>
@@ -470,7 +475,9 @@ export default function FreelancerWorkflowBot() {
                                     <Zap className="w-8 h-8 text-muted-foreground" />
                                 </div>
                                 <h3 className="text-lg font-black uppercase tracking-widest">{tab.replace('_', ' ')} Module</h3>
-                                <p className="text-sm text-muted-foreground mt-2">Elite logic initialization pending for this subsystem.</p>
+                                <p className="text-sm text-muted-foreground mt-2">
+                                    This module is currently in development. Check back soon for advanced autonomous workflow capabilities.
+                                </p>
                             </Card>
                         </TabsContent>
                     ))}

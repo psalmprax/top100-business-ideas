@@ -182,21 +182,21 @@ async def get_self_healing_stats():
 # ============================================================================
 
 @router.get("/agents")
-async def list_agents():
+async def list_agents(session: Session = Depends(get_session)):
     """List all autonomous agents"""
-    return [
-        {"id": "agent-001", "name": "Data Processing Agent", "status": "running", "type": "data-processing", "config": "{}"},
-        {"id": "agent-002", "name": "Customer Support Agent", "status": "running", "type": "customer-support", "config": "{}"},
-        {"id": "agent-003", "name": "Content Generation Agent", "status": "stopped", "type": "content-generation", "config": "{}"},
-        {"id": "agent-004", "name": "Analytics Agent", "status": "running", "type": "analytics", "config": "{}"},
-    ]
+    from app.core.models import Agent
+    agents = session.exec(select(Agent)).all()
+    return agents
 
 
 @router.get("/agents/{agent_id}")
-async def get_agent(agent_id: str):
+async def get_agent(agent_id: str, session: Session = Depends(get_session)):
     """Get details for a specific agent"""
-    # Simple mock for now, but aligned with Go
-    return {"id": agent_id, "name": f"Agent {agent_id}", "status": "running"}
+    from app.core.models import Agent
+    agent = session.get(Agent, agent_id)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    return agent
 
 
 @router.post("/agents/{agent_id}/stop")
@@ -250,14 +250,25 @@ async def get_agent_logs(agent_id: str, session: Session = Depends(get_session))
 
 
 @router.get("/budget/status")
-async def get_budget_status():
+async def get_budget_status(session: Session = Depends(get_session)):
     """Get real-time budget tracking and enforcement status"""
+    from app.core.models import Agent
+    from app.services.billing_service import billing_service
+    
+    # Calculate actual total daily spend from all agents
+    agents = session.exec(select(Agent)).all()
+    total_spent_today = sum(agent.dailySpend for agent in agents)
+    
+    # Get active budget alerts
+    from app.core.models import AlertConfig
+    active_alerts = session.exec(select(AlertConfig).where(AlertConfig.is_active == True)).all()
+    
     return {
-        "daily_limit": 500.00,
-        "spent_today": round(random.uniform(50, 450), 2),
+        "daily_limit": 500.00,  # This could be made configurable
+        "spent_today": round(total_spent_today, 2),
         "currency": "USD",
-        "alerts_active": 2,
-        "kill_switch_status": "inhibited"
+        "alerts_active": len(active_alerts),
+        "kill_switch_status": "inhibited" if total_spent_today < 500.00 else "activated"
     }
 
 
