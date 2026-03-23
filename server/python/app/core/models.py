@@ -514,3 +514,138 @@ class ComplianceArticle(SQLModel, table=True):
     scan_type: Optional[str] = None  # Policy Check, Classification, etc.
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class SLAAgreement(SQLModel, table=True):
+    """Service Level Agreement configuration"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    name: str
+    tier: str  # bronze, silver, gold, platinum
+    uptime_guarantee: float  # percentage, e.g., 99.9
+    response_time_sla: int  # seconds
+    resolution_time_sla: int  # hours
+    support_channels: List[str] = Field(default=[], sa_column=Column(JSON))
+    active: bool = Field(default=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class SLAMetric(SQLModel, table=True):
+    """SLA performance metrics"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    sla_id: str = Field(foreign_key="slaagreement.id")
+    period_start: datetime
+    period_end: datetime
+    actual_uptime: float
+    avg_response_time: int
+    incidents_count: int
+    breaches_count: int
+    status: str  # compliant, breached
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class PartnerIntegration(SQLModel, table=True):
+    """External partner integrations"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    name: str
+    partner_type: str  # api, webhook, oauth, sso
+    api_key: Optional[str] = None
+    webhook_url: Optional[str] = None
+    oauth_config: Optional[Dict[str, Any]] = Field(default={}, sa_column=Column(JSON))
+    permissions: List[str] = Field(default=[], sa_column=Column(JSON))
+    active: bool = Field(default=True)
+    last_sync: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class UsageForecast(SQLModel, table=True):
+    """AI usage forecasting data"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    agent_id: Optional[str] = None
+    forecast_period: str  # daily, weekly, monthly
+    predicted_tokens: int
+    predicted_cost: float
+    confidence_level: float
+    forecast_date: datetime
+    actual_tokens: Optional[int] = None
+    actual_cost: Optional[float] = None
+    accuracy_score: Optional[float] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class ROIMetric(SQLModel, table=True):
+    """Return on Investment calculations"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    period: str  # monthly, quarterly, yearly
+    period_start: datetime
+    period_end: datetime
+    total_cost: float
+    value_generated: float
+    roi_percentage: float
+    payback_period_months: float
+    cost_savings: float
+    efficiency_gains: float
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class LocalizationConfig(SQLModel, table=True):
+    """Multi-language and regional configuration"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    language_code: str  # en, es, fr, de, etc.
+    region_code: str  # US, EU, APAC, etc.
+    timezone: str
+    currency: str
+    compliance_framework: str  # GDPR, CCPA, PIPL, etc.
+    active: bool = Field(default=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class HealingConfiguration(SQLModel, table=True):
+    """Self-healing system configuration"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    healing_type: str  # node_restart, failover, rollback, etc.
+    trigger_conditions: Dict[str, Any] = Field(default={}, sa_column=Column(JSON))
+    recovery_actions: List[str] = Field(default=[], sa_column=Column(JSON))
+    cooldown_period: int  # minutes
+    max_attempts: int
+    active: bool = Field(default=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class StrategicInsight(SQLModel, table=True):
+    """Business intelligence and strategic insights"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    insight_type: str  # market_trend, competitive_analysis, opportunity, risk
+    title: str
+    description: str
+    confidence_score: float
+    impact_level: str  # high, medium, low
+    recommended_actions: List[str] = Field(default=[], sa_column=Column(JSON))
+    data_sources: List[str] = Field(default=[], sa_column=Column(JSON))
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class SystemSetting(SQLModel, table=True):
+    """Global system configuration settings"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    category: str  # security, performance, compliance, ui
+    setting_key: str
+    setting_value: str
+    setting_type: str  # string, number, boolean, json
+    description: str
+    requires_restart: bool = Field(default=False)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class OnPremDeployment(SQLModel, table=True):
+    """On-premises deployment configuration"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    deployment_name: str
+    kubernetes_version: str
+    node_count: int
+    storage_config: Dict[str, Any] = Field(default={}, sa_column=Column(JSON))
+    network_config: Dict[str, Any] = Field(default={}, sa_column=Column(JSON))
+    security_config: Dict[str, Any] = Field(default={}, sa_column=Column(JSON))
+    status: str = Field(default="provisioning")  # provisioning, active, maintenance, failed
+    last_health_check: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)

@@ -253,7 +253,104 @@ interface BudgetRule {
 
 type CategoryType = "core" | "ops" | "gov" | "advanced";
 
+interface ComplianceDashboardData {
+  overall_score: number;
+  total_articles: number;
+  compliant_articles: number;
+  risk_distribution: Record<string, number>;
+  recent_assessments: any[];
+  critical_issues: any[];
+}
 
+interface SLADashboardData {
+  current_sla: {
+    name: string;
+    tier: string;
+    uptime_guarantee: number;
+    response_time_sla: number;
+    resolution_time_sla: number;
+  };
+  current_metrics: {
+    uptime_percentage: number;
+    avg_response_time: number;
+    total_incidents: number;
+    breaches_count: number;
+    status: string;
+  };
+  compliance_status: string;
+}
+
+interface PartnerIntegration {
+  id: string;
+  name: string;
+  partner_type: string;
+  active: boolean;
+  last_sync: string | null;
+}
+
+interface UsageForecast {
+  forecast_date: string;
+  predicted_tokens: number;
+  predicted_cost: number;
+  confidence_level: number;
+}
+
+interface ROIMetric {
+  period: string;
+  total_cost: number;
+  value_generated: number;
+  roi_percentage: number;
+  cost_savings: number;
+  efficiency_gains: number;
+}
+
+interface LocalizationConfig {
+  id: string;
+  language_code: string;
+  region_code: string;
+  timezone: string;
+  currency: string;
+  compliance_framework: string;
+  active: boolean;
+}
+
+interface HealingConfig {
+  id: string;
+  healing_type: string;
+  trigger_conditions: Record<string, any>;
+  recovery_actions: string[];
+  cooldown_period: number;
+  max_attempts: number;
+  active: boolean;
+}
+
+interface StrategicInsight {
+  id: string;
+  insight_type: string;
+  title: string;
+  description: string;
+  confidence_score: number;
+  impact_level: string;
+  recommended_actions: string[];
+}
+
+interface SystemSetting {
+  id: string;
+  category: string;
+  setting_key: string;
+  setting_value: string;
+  setting_type: string;
+  description: string;
+}
+
+interface OnPremDeployment {
+  id: string;
+  deployment_name: string;
+  kubernetes_version: string;
+  node_count: number;
+  status: string;
+  last_health_check: string | null;
+}
 // ============================================================================
 // Mock Data
 // ============================================================================
@@ -653,6 +750,19 @@ export default function AlphaAgentOps() {
   const { isAuthenticated, user } = useAuth();
   const isDemo = !isAuthenticated;
   const [activeTab, setActiveTab] = useState("overview");
+
+  // Governance & Advanced State
+  const [complianceDashboard, setComplianceDashboard] = useState<ComplianceDashboardData | null>(null);
+  const [slaDashboard, setSlaDashboard] = useState<SLADashboardData | null>(null);
+  const [partners, setPartners] = useState<PartnerIntegration[]>([]);
+  const [usageForecasts, setUsageForecasts] = useState<UsageForecast[]>([]);
+  const [roiMetrics, setRoiMetrics] = useState<ROIMetric[]>([]);
+  const [localizationConfigs, setLocalizationConfigs] = useState<LocalizationConfig[]>([]);
+  const [healingConfigs, setHealingConfigs] = useState<HealingConfig[]>([]);
+  const [strategicInsights, setStrategicInsights] = useState<StrategicInsight[]>([]);
+  const [systemSettings, setSystemSettings] = useState<SystemSetting[]>([]);
+  const [onPremDeployments, setOnPremDeployments] = useState<OnPremDeployment[]>([]);
+  const [isLoadingGovernance, setIsLoadingGovernance] = useState(false);
   const [activeCategory, setActiveCategory] = useState("core");
 
   const categories = [
@@ -782,6 +892,54 @@ export default function AlphaAgentOps() {
       toast.error(`SSO Connection Failed: ${provider} provider is currently unavailable.`);
     }
   };
+
+  const fetchGovernanceData = async () => {
+    setIsLoadingGovernance(true);
+    try {
+      const [
+        compliance,
+        sla,
+        p,
+        forecast,
+        roi,
+        loc,
+        heal,
+        insp,
+        sett,
+        onPrem
+      ] = await Promise.all([
+        extendedApi.governance.compliance.getDashboard(),
+        extendedApi.governance.sla.getDashboard(),
+        extendedApi.governance.partners.list(),
+        extendedApi.governance.forecast.getUsage(),
+        extendedApi.governance.analytics.getROI(),
+        extendedApi.governance.localization.getConfigs(),
+        extendedApi.governance.healing.getConfigs(),
+        extendedApi.governance.insights.getStrategic(),
+        extendedApi.governance.settings.list(),
+        extendedApi.governance.onPrem.listDeployments()
+      ]);
+
+      setComplianceDashboard(compliance);
+      setSlaDashboard(sla);
+      setPartners(p);
+      setUsageForecasts(forecast);
+      setRoiMetrics(roi);
+      setLocalizationConfigs(loc);
+      setHealingConfigs(heal);
+      setStrategicInsights(insp);
+      setSystemSettings(sett);
+      setOnPremDeployments(onPrem);
+    } catch (e) {
+      console.error("Governance fetch error:", e);
+    } finally {
+      setIsLoadingGovernance(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchGovernanceData();
+  }, []);
 
   // Handle SSO Callback Redirects
   useEffect(() => {
@@ -1067,6 +1225,26 @@ export default function AlphaAgentOps() {
       </div>
     </div>
   );
+
+  const handleOnPremAction = async (deploymentId: string, action: string) => {
+    try {
+      await extendedApi.governance.onPrem.triggerAction(deploymentId, action);
+      toast.success(`Action '${action}' triggered for deployment`);
+      fetchGovernanceData();
+    } catch (e) {
+      toast.error(`Failed to trigger ${action}`);
+    }
+  };
+
+  const handleUpdateSetting = async (settingId: string, value: string) => {
+    try {
+      await extendedApi.governance.settings.update(settingId, value);
+      toast.success("Setting updated");
+      fetchGovernanceData();
+    } catch (e) {
+      toast.error("Failed to update setting");
+    }
+  };
 
   // Fetch all real-world data from the Sentinel API
   const refreshData = async () => {
@@ -2759,7 +2937,38 @@ export default function AlphaAgentOps() {
             </TabsContent>
 
             {/* SLA Tab Content */}
-            <TabsContent value="sla">
+            <TabsContent value="sla" className="space-y-6">
+              {slaDashboard && (
+                <div className="grid gap-4 md:grid-cols-4">
+                  <MetricCard
+                    title="System Uptime"
+                    value={`${slaDashboard.current_metrics.uptime_percentage}%`}
+                    icon={Activity}
+                    color="bg-emerald-500/10 text-emerald-500"
+                    footer={`SLA Guarantee: ${slaDashboard.current_sla.uptime_guarantee}%`}
+                  />
+                  <MetricCard
+                    title="Avg Response"
+                    value={`${slaDashboard.current_metrics.avg_response_time}ms`}
+                    icon={Clock}
+                    color="bg-blue-500/10 text-blue-500"
+                    footer={`SLA Limit: ${slaDashboard.current_sla.response_time_sla}ms`}
+                  />
+                  <MetricCard
+                    title="Incidents"
+                    value={slaDashboard.current_metrics.total_incidents.toString()}
+                    icon={AlertCircle}
+                    color="bg-yellow-500/10 text-yellow-500"
+                  />
+                  <MetricCard
+                    title="Compliance"
+                    value={slaDashboard.compliance_status.toUpperCase()}
+                    icon={ShieldCheck}
+                    color={slaDashboard.compliance_status === "compliant" ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"}
+                  />
+                </div>
+              )}
+
               <div className="grid gap-6 md:grid-cols-3">
                 {[
                   { title: "Standard", price: "$499/mo", features: ["10 Agents", "8/5 Support", "Public Cloud Only"] },
@@ -2810,7 +3019,8 @@ export default function AlphaAgentOps() {
             </TabsContent>
 
             {/* Partner Portal Tab Content */}
-            <TabsContent value="partner">
+            {/* Partner Portal Tab Content */}
+            <TabsContent value="partner" className="space-y-6">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -2842,9 +3052,67 @@ export default function AlphaAgentOps() {
                   </div>
                 </CardContent>
               </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Active Partner Integrations</CardTitle>
+                  <CardDescription>External platforms connected to the master agent network</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Partner</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Last Sync</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {partners.map((p) => (
+                        <TableRow key={p.id}>
+                          <TableCell className="font-bold">{p.name}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" className="text-[10px] uppercase">
+                              {p.partner_type}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={p.active ? "bg-emerald-500" : "bg-zinc-500"}>
+                              {p.active ? "ACTIVE" : "INACTIVE"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {p.last_sync ? new Date(p.last_sync).toLocaleString() : "Never"}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={async () => {
+                                try {
+                                  await extendedApi.governance.partners.sync(p.id);
+                                  toast.success(`${p.name} synced successfully`);
+                                  fetchGovernanceData();
+                                } catch (e) {
+                                  toast.error(`Sync failed for ${p.name}`);
+                                }
+                              }}
+                            >
+                              <RefreshCw className="w-4 h-4 mr-2" />
+                              Sync
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
             </TabsContent>
             {/* On-Premise Tab Content */}
-            <TabsContent value="on-prem">
+            <TabsContent value="on-prem" className="space-y-6">
               <div className="grid gap-6 md:grid-cols-2">
                 <Card>
                   <CardHeader>
@@ -2863,13 +3131,8 @@ export default function AlphaAgentOps() {
                           variant="outline"
                           size="sm"
                           onClick={async () => {
-                            const res =
-                              await extendedApi.onPrem.manifest(
-                                "docker-compose"
-                              );
-                            const blob = new Blob([res.manifest], {
-                              type: "text/yaml",
-                            });
+                            const res = await extendedApi.onPrem.manifest("docker-compose");
+                            const blob = new Blob([res.manifest], { type: "text/yaml" });
                             const url = window.URL.createObjectURL(blob);
                             const a = document.createElement("a");
                             a.href = url;
@@ -2884,11 +3147,8 @@ export default function AlphaAgentOps() {
                           variant="outline"
                           size="sm"
                           onClick={async () => {
-                            const res =
-                              await extendedApi.onPrem.manifest("helm");
-                            const blob = new Blob([res.manifest], {
-                              type: "text/yaml",
-                            });
+                            const res = await extendedApi.onPrem.manifest("helm");
+                            const blob = new Blob([res.manifest], { type: "text/yaml" });
                             const url = window.URL.createObjectURL(blob);
                             const a = document.createElement("a");
                             a.href = url;
@@ -2900,14 +3160,12 @@ export default function AlphaAgentOps() {
                           Helm Chart
                         </Button>
                       </div>
-                      <div className="p-4 rounded-lg bg-muted font-mono text-xs overflow-auto max-h-[300px]">
+                      <div className="p-4 rounded-lg bg-muted font-mono text-xs overflow-auto max-h-[150px]">
                         <pre>
                           # Air-gapped readiness verified&#10;# Version:
                           1.4.2-enterprise&#10;services:&#10;
                           sentinel-proxy:&#10; image:
-                          agentops/sentinel:latest&#10; ports:&#10; -
-                          "8080:8080"&#10; environment:&#10; -
-                          AIR_GAPPED=true&#10; - LOG_LEVEL=debug
+                          agentops/sentinel:latest
                         </pre>
                       </div>
                     </div>
@@ -2918,39 +3176,115 @@ export default function AlphaAgentOps() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <CheckCircle2 className="w-5 h-5 text-green-500" />
-                      Pre-Flight Checklist
+                      Infrastructure Guard
                     </CardTitle>
                     <CardDescription>
-                      Requirements for on-premise installation
+                      Secure on-premises agent deployment settings
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {[
-                        "Kubernetes 1.25+ or Docker 20.10+",
-                        "4 vCPU, 8GB RAM minimum",
-                        "PostgreSQL 14+ (Internal/External)",
-                        "Redis 6+ for caching",
-                        "TLS Certificate for internal domain",
-                        "Port 80/443 ingress for proxy",
-                        "Egress port 443 (optional for updates)",
-                      ].map((item, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-center gap-3 p-2 rounded border bg-card/50"
-                        >
-                          <Checkbox checked={idx < 4} disabled />
-                          <span className="text-sm">{item}</span>
-                        </div>
-                      ))}
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between p-2 border rounded-lg">
+                      <div className="space-y-0.5">
+                        <Label>Zero-Knowledge Logging</Label>
+                        <p className="text-[10px] text-muted-foreground">Logs never leave your perimeter</p>
+                      </div>
+                      <Switch defaultChecked />
+                    </div>
+                    <div className="flex items-center justify-between p-2 border rounded-lg">
+                      <div className="space-y-0.5">
+                        <Label>PII Redaction Engine</Label>
+                        <p className="text-[10px] text-muted-foreground">Automated masking of sensitive data</p>
+                      </div>
+                      <Switch defaultChecked />
                     </div>
                   </CardContent>
                 </Card>
               </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>On-Prem Deployments</CardTitle>
+                  <CardDescription>Active clusters managed via secure proxy</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Deployment Name</TableHead>
+                        <TableHead>K8s Version</TableHead>
+                        <TableHead>Nodes</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {onPremDeployments.map((d) => (
+                        <TableRow key={d.id}>
+                          <TableCell className="font-bold">{d.deployment_name}</TableCell>
+                          <TableCell className="text-xs">{d.kubernetes_version}</TableCell>
+                          <TableCell>{d.node_count}</TableCell>
+                          <TableCell>
+                            <Badge className={d.status === "active" ? "bg-emerald-500" : "bg-yellow-500"}>
+                              {d.status.toUpperCase()}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleOnPremAction(d.id, "upgrade")}
+                              >
+                                Upgrade
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleOnPremAction(d.id, "scale")}
+                              >
+                                Scale
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {/* Compliance Tab */}
-            <TabsContent value="compliance">
+            <TabsContent value="compliance" className="space-y-6">
+              {complianceDashboard && (
+                <div className="grid gap-4 md:grid-cols-4">
+                  <MetricCard
+                    title="Overall Compliance"
+                    value={`${complianceDashboard.overall_score.toFixed(1)}%`}
+                    icon={ShieldCheck}
+                    color="bg-purple-500/10 text-purple-500"
+                  />
+                  <MetricCard
+                    title="Total Articles"
+                    value={complianceDashboard.total_articles.toString()}
+                    icon={FileText}
+                    color="bg-blue-500/10 text-blue-500"
+                  />
+                  <MetricCard
+                    title="Compliant"
+                    value={complianceDashboard.compliant_articles.toString()}
+                    icon={CheckCircle2}
+                    color="bg-emerald-500/10 text-emerald-500"
+                  />
+                  <MetricCard
+                    title="High Risk"
+                    value={complianceDashboard.risk_distribution.high.toString()}
+                    icon={AlertTriangle}
+                    color="bg-red-500/10 text-red-500"
+                  />
+                </div>
+              )}
+
               <div className="grid gap-6 md:grid-cols-2">
                 <Card>
                   <CardHeader>
@@ -3075,6 +3409,44 @@ export default function AlphaAgentOps() {
                   </CardContent>
                 </Card>
               </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-indigo-500" />
+                    EU AI Act Regulatory Compliance
+                  </CardTitle>
+                  <CardDescription>Article-by-article assessment status</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Article</TableHead>
+                        <TableHead>Requirement</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Last Updated</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {complianceDashboard?.recent_assessments.map((a, i) => (
+                        <TableRow key={i}>
+                          <TableCell className="font-bold">{a.article}</TableCell>
+                          <TableCell className="text-xs">{a.title}</TableCell>
+                          <TableCell>
+                            <Badge className={a.status === 'compliant' ? 'bg-emerald-500' : 'bg-red-500'}>
+                              {a.status.replace('_', ' ').toUpperCase()}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right text-[10px] text-muted-foreground">
+                            {a.updated_at ? new Date(a.updated_at).toLocaleDateString() : 'N/A'}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {/* Developers Tab */}
@@ -4665,92 +5037,56 @@ export default function AlphaAgentOps() {
             </TabsContent>
             {/* UC9: Usage Forecasting - ELITE IMPLEMENTATION */}
             <TabsContent value="forecast" className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-6 md:grid-cols-2">
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <TrendingUp className="w-5 h-5 text-indigo-500" />
-                      Predictive Usage Forecasting
+                      <BarChart3 className="w-5 h-5 text-blue-500" />
+                      Usage Projection
                     </CardTitle>
-                    <CardDescription>
-                      AI-driven resource planning (30-Day Window)
-                    </CardDescription>
+                    <CardDescription>Predicted API consumption and token usage</CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="space-y-2">
-                      <div className="h-[200px] w-full bg-muted/20 rounded-lg flex items-end justify-between p-6 gap-2">
-                        {[
-                          35, 45, 30, 60, 55, 75, 90, 85, 95, 110, 105, 120,
-                          130, 125, 140,
-                        ].map((h, i) => (
-                          <div
-                            key={i}
-                            style={{ height: `${h}%` }}
-                            className={`w-full rounded-md ${i > 10 ? "bg-indigo-500/40 border-t-2 border-indigo-400 animate-pulse" : "bg-emerald-500/20"}`}
-                          />
-                        ))}
-                      </div>
-                      <div className="flex justify-between text-xs text-muted-foreground mt-4">
-                        <span>Historical Baseline</span>
-                        <span className="text-indigo-400 font-bold tracking-tight">
-                          System Forecast (Projected +31% Volume)
-                        </span>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-4 border-t pt-4">
-                      <div>
-                        <div className="text-[10px] uppercase text-muted-foreground font-bold">
-                          Peak Token Load
+                  <CardContent>
+                    <div className="h-[200px] flex items-end gap-2 px-2">
+                      {usageForecasts.map((f, i) => (
+                        <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
+                          <div className="w-full relative h-[150px]">
+                            <div
+                              className="w-full bg-blue-500/20 rounded-t absolute bottom-0 transition-all group-hover:bg-blue-500/40"
+                              style={{ height: `${(f.predicted_usage / 15000) * 100}%` }}
+                            />
+                            <div
+                              className="absolute bottom-0 w-full bg-blue-500 rounded-t transition-all z-10"
+                              style={{ height: `${(f.current_usage / 15000) * 100}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] text-muted-foreground rotate-45 mt-2">{f.month}</span>
                         </div>
-                        <div className="text-lg font-bold">4.2M / day</div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] uppercase text-muted-foreground font-bold">
-                          Compute Variance
-                        </div>
-                        <div className="text-lg font-bold text-amber-500">
-                          ±12.4%
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] uppercase text-muted-foreground font-bold">
-                          Scale Requirement
-                        </div>
-                        <div className="text-lg font-bold text-emerald-500">
-                          Tier 4
-                        </div>
-                      </div>
+                      ))}
                     </div>
                   </CardContent>
                 </Card>
+
                 <Card>
                   <CardHeader>
-                    <CardTitle>Anomaly Detection</CardTitle>
-                    <CardDescription>
-                      Outlier spending and compute spikes
-                    </CardDescription>
+                    <CardTitle>Forecast Summary</CardTitle>
+                    <CardDescription>Confidence and trend analysis</CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="p-4 rounded-xl border border-red-500/20 bg-red-500/5">
-                        <div className="font-bold text-red-500 mb-1">
-                          Compute Spike Detected
+                  <CardContent className="space-y-4">
+                    {usageForecasts.slice(0, 3).map((f, i) => (
+                      <div key={i} className="flex justify-between items-center p-3 rounded border">
+                        <div>
+                          <p className="text-sm font-bold">{f.month}</p>
+                          <p className="text-[10px] text-muted-foreground">Confidence: {f.confidence_score}%</p>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                          Shadow AI agent identified in 'Dev-Proxy-3'.
-                          Consumption exceeded baseline by 400%.
-                        </p>
-                      </div>
-                      <div className="p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5">
-                        <div className="font-bold text-emerald-500 mb-1">
-                          Baseline Stabilized
+                        <div className="text-right">
+                          <p className="text-sm">Pred: {f.predicted_usage.toLocaleString()}</p>
+                          <Badge variant="outline" className="text-[10px] text-emerald-500">
+                            {f.trend === "up" ? "↑ Growth" : "↓ Stable"}
+                          </Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                          Self-healing protocol successfully throttled rogue
-                          recruitment bot.
-                        </p>
                       </div>
-                    </div>
+                    ))}
                   </CardContent>
                 </Card>
               </div>
@@ -4759,78 +5095,31 @@ export default function AlphaAgentOps() {
             {/* UC10: ROI Correlation - ELITE IMPLEMENTATION */}
             <TabsContent value="roi" className="space-y-6">
               <div className="grid gap-4 md:grid-cols-3">
-                <MetricCard
-                  title="Gross ROI"
-                  value="12.4x"
-                  change={5}
-                  icon={DollarSign}
-                  color="bg-emerald-500/10 text-emerald-500"
-                />
-                <MetricCard
-                  title="Operating Margin"
-                  value="74%"
-                  change={12}
-                  icon={Activity}
-                  color="bg-blue-500/10 text-blue-500"
-                />
-                <MetricCard
-                  title="Efficiency Score"
-                  value="98/100"
-                  icon={ShieldCheck}
-                  color="bg-indigo-500/10 text-indigo-500"
-                />
+                {roiMetrics.map((m, i) => (
+                  <MetricCard
+                    key={i}
+                    title={m.metric_name}
+                    value={m.value.toLocaleString()}
+                    change={m.trend_percentage}
+                    icon={m.metric_name.includes("ROI") ? DollarSign : m.metric_name.includes("Efficiency") ? ShieldCheck : Activity}
+                    color="bg-emerald-500/10 text-emerald-500"
+                  />
+                ))}
               </div>
               <Card>
                 <CardHeader>
-                  <CardTitle>ROI Correlation Matrix</CardTitle>
-                  <CardDescription>
-                    Impact of agent autonomy vs traditional headcount cost
-                  </CardDescription>
+                  <CardTitle>Business Impact Analysis</CardTitle>
+                  <CardDescription>Headcount savings and accuracy improvements</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-6">
-                    <div className="p-6 rounded-2xl border bg-gradient-to-br from-indigo-500/5 to-purple-500/5">
-                      <div className="flex justify-between items-end mb-8">
-                        <div className="space-y-1">
-                          <div className="text-3xl font-bold tracking-tighter">
-                            $1.2M
-                          </div>
-                          <div className="text-xs text-muted-foreground uppercase font-black">
-                            Projected Annual Savings
-                          </div>
+                  <div className="p-6 rounded-2xl border bg-gradient-to-br from-indigo-500/5 to-purple-500/5">
+                    <div className="flex justify-between items-end">
+                      <div className="space-y-1">
+                        <div className="text-3xl font-bold tracking-tighter">
+                          ${(roiMetrics.find(m => m.metric_name === "Cost Savings")?.value || 0).toLocaleString()}
                         </div>
-                        <div className="text-right space-y-1">
-                          <div className="text-3xl font-bold tracking-tighter text-emerald-500">
-                            88.4%
-                          </div>
-                          <div className="text-xs text-muted-foreground uppercase font-black">
-                            Accuracy Uplift
-                          </div>
-                        </div>
-                      </div>
-                      <div className="space-y-4 pt-4 border-t border-muted/20">
-                        <div className="flex justify-between text-xs font-bold uppercase text-muted-foreground mb-4">
-                          <span>Efficiency Comparison</span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="p-4 rounded-xl border bg-muted/20">
-                            <div className="text-[10px] text-muted-foreground uppercase font-bold mb-1">Traditional (Human)</div>
-                            <div className="text-xl font-bold">$120/hr</div>
-                            <div className="text-[10px] text-red-400">Low Scalability</div>
-                          </div>
-                          <div className="p-4 rounded-xl border bg-emerald-500/5 border-emerald-500/20">
-                            <div className="text-[10px] text-emerald-500 uppercase font-bold mb-1">AlphaAI Sentinel</div>
-                            <div className="text-xl font-bold">$0.42/hr</div>
-                            <div className="text-[10px] text-emerald-400">Infinite Elasticity</div>
-                          </div>
-                        </div>
-                        <div className="h-6 w-full bg-muted/20 rounded-full overflow-hidden flex mt-4">
-                          <div className="w-[85%] bg-slate-500/20 h-full flex items-center px-4 text-[10px] font-bold text-slate-400">
-                            TRADITIONAL OVERHEAD: 85%
-                          </div>
-                          <div className="w-[15%] bg-indigo-600 h-full flex items-center px-4 text-[10px] font-bold text-white">
-                            SENTINEL OVERHEAD: 4%
-                          </div>
+                        <div className="text-xs text-muted-foreground uppercase font-black">
+                          Total Realized Savings
                         </div>
                       </div>
                     </div>
@@ -4840,205 +5129,188 @@ export default function AlphaAgentOps() {
             </TabsContent>
 
             {/* UC17: Localization - ELITE IMPLEMENTATION */}
+            {/* Localization Tab */}
             <TabsContent value="localization" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Globe className="w-5 h-5 text-blue-500" />
-                    Internationalization (i18n) Engine
-                  </CardTitle>
-                  <CardDescription>
-                    Manage agent linguistic capabilities and regional compliance
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-8">
-                  <div className="grid gap-4 md:grid-cols-3">
-                    {[
-                      {
-                        lang: "English (US)",
-                        status: "Native",
-                        code: "en-US",
-                        coverage: 100,
-                      },
-                      {
-                        lang: "Mandarin (CN)",
-                        status: "Fluent",
-                        code: "zh-CN",
-                        coverage: 94,
-                      },
-                      {
-                        lang: "German (DE)",
-                        status: "Contextual",
-                        code: "de-DE",
-                        coverage: 88,
-                      },
-                    ].map((l, i) => (
-                      <div key={i} className="p-4 rounded-xl border bg-card">
-                        <div className="flex justify-between items-start mb-4">
-                          <div>
-                            <div className="font-bold text-sm tracking-tight">
-                              {l.lang}
-                            </div>
-                            <div className="text-[10px] text-muted-foreground uppercase font-bold">
-                              {l.code}
-                            </div>
-                          </div>
-                          <Badge variant="outline" className="text-[8px] h-4">
-                            {l.status}
-                          </Badge>
+              <div className="grid gap-4 md:grid-cols-3">
+                {localizationConfigs.map((l, i) => (
+                  <Card key={i}>
+                    <CardHeader className="p-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <CardTitle className="text-sm">{l.region}</CardTitle>
+                          <CardDescription className="text-[10px]">{l.language_code}</CardDescription>
                         </div>
-                        <div className="space-y-1">
-                          <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
-                            <span>API Coverage</span>
-                            <span>{l.coverage}%</span>
-                          </div>
-                          <Progress value={l.coverage} className="h-1" />
-                        </div>
+                        <Badge variant={l.is_active ? "default" : "secondary"}>
+                          {l.is_active ? "ACTIVE" : "INACTIVE"}
+                        </Badge>
                       </div>
-                    ))}
-                  </div>
-                  <div className="p-6 rounded-2xl border-2 border-dashed border-muted flex flex-col items-center justify-center text-center">
-                    <Plus className="w-12 h-12 text-muted-foreground mb-4" />
-                    <div className="font-bold text-lg mb-1">
-                      Add Regional Locale
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-6">
-                      Provision specialized translation layers and regional
-                      regulatory mappings.
-                    </p>
-                    <Button
-                      variant="outline"
-                      className="font-bold h-10 px-8"
-                      onClick={() => handleDeployLanguage("Japanese (JP)")}
-                      disabled={isDeployingLanguage}
-                    >
-                      {isDeployingLanguage
-                        ? "Deploying..."
-                        : "DEPLOY NEW LANGUAGE PKG"}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
+                      <div className="flex justify-between text-xs mb-1">
+                        <span>Regional Accuracy</span>
+                        <span>{(l.accuracy_score * 100).toFixed(0)}%</span>
+                      </div>
+                      <Progress value={l.accuracy_score * 100} className="h-1" />
+                    </CardContent>
+                  </Card>
+                ))}
+                <div 
+                  className="border-dashed border-2 flex flex-col items-center justify-center p-6 text-center opacity-50 rounded-xl cursor-pointer hover:bg-muted/50"
+                  onClick={() => handleDeployLanguage("Japanese (JP)")}
+                >
+                  <Plus className="w-8 h-8 mb-2" />
+                  <p className="text-xs font-bold">{isDeployingLanguage ? "Deploying..." : "Add Locale"}</p>
+                </div>
+              </div>
             </TabsContent>
 
-            {/* UC16: Self-Healing - ELITE IMPLEMENTATION */}
+            {/* Self-Healing Tab */}
             <TabsContent value="selfheal" className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-3">
-                <Card className="md:col-span-2">
+              <div className="grid gap-4 md:grid-cols-2">
+                <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <RefreshCw className="w-5 h-5 text-blue-500" />
-                      Self-Healing Recovery Wizard
+                      <Zap className="w-5 h-5 text-yellow-500" />
+                      Recovery Protocol
                     </CardTitle>
-                    <CardDescription>
-                      Initiate automated conflict resolution and state
-                      restoration
-                    </CardDescription>
+                    <CardDescription>Automated state restoration and rollback</CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="grid gap-4">
-                      <div className="p-5 rounded-2xl bg-blue-500/5 border border-blue-500/20 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                          <Zap className="w-24 h-24" />
-                        </div>
-                        <h4 className="text-lg font-black tracking-tight mb-2 uppercase text-white">
-                          Core Recovery Engine
-                        </h4>
-                        <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
-                          Our autonomous recovery engine leverages temporal
-                          State Snapshots to rollback agents to their last known
-                          stable configuration during infinite loop cycles or
-                          budget breaches.
-                        </p>
-                        <div className="flex gap-2">
-                          <Button 
-                            className="bg-blue-600 hover:bg-blue-700 text-xs font-black tracking-wider h-11 px-8"
-                            onClick={() => handleDeployRecoveryDaemon(clusterNodes[0]?.id || "node-alpha-01")}
-                            disabled={isDeployingDaemon}
-                          >
-                            {isDeployingDaemon ? "DEPLOYING..." : "DEPLOY RECOVERY DAEMON"}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            className="text-xs h-11 px-6"
-                            onClick={handleViewSnapshots}
-                          >
-                            VIEW SNAPSHOTS
-                          </Button>
-                        </div>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Auto-Rollback Threshold ({healingConfig.error_threshold}%)</Label>
+                      <Slider 
+                        value={[healingConfig.error_threshold]} 
+                        max={100} 
+                        step={1}
+                        onValueChange={([val]) => handleUpdateSetting("healing_threshold", val.toString())}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between p-3 rounded bg-muted/20 border">
+                      <div className="flex items-center gap-2">
+                        <History className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm">Continuous Snapshots</span>
                       </div>
-                      <div className="flex items-center gap-4 p-4 rounded-xl border bg-muted/30">
-                        <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                          <ShieldCheck className="w-5 h-5 text-emerald-500" />
-                        </div>
-                        <div>
-                          <div className="text-sm font-bold">
-                            Auto-Rollback Threshold
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            System will automatically trigger recovery at 15%
-                            budget drift.
-                          </div>
-                        </div>
-                      </div>
+                      <Badge variant={healingConfig.auto_healing_enabled ? "default" : "secondary"}>
+                        {healingConfig.auto_healing_enabled ? "ENABLED" : "DISABLED"}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
 
-                      {clusterNodes && clusterNodes.length > 0 && (
-                        <div className="p-5 rounded-2xl border bg-background/50 space-y-4">
-                          <h5 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                            <Activity className="w-3 h-3" /> Live Cluster Health Status
-                          </h5>
-                          <div className="grid grid-cols-1 gap-2">
-                            {clusterNodes.map((node: any) => (
-                              <div key={node.id} className="flex items-center justify-between p-3 rounded-lg border bg-card/50">
-                                <div className="flex items-center gap-3">
-                                  <div className={`w-2 h-2 rounded-full ${node.status === 'healthy' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
-                                  <div className="flex flex-col">
-                                    <span className="text-xs font-bold">{node.id}</span>
-                                    <span className="text-[9px] text-muted-foreground font-mono">{node.url}</span>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="outline" className="text-[9px] uppercase">{node.provider}</Badge>
-                                  <span className={`text-[10px] font-bold ${node.status === 'healthy' ? 'text-green-500' : 'text-red-500'}`}>
-                                    {node.status.toUpperCase()}
-                                  </span>
-                                </div>
-                              </div>
-                            ))}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Healing History</CardTitle>
+                    <CardDescription>Recent recovery events</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {selfHealingEvents.length > 0 ? (
+                        selfHealingEvents.map((event, i) => (
+                          <div key={i} className="p-3 rounded border bg-emerald-500/5 border-emerald-500/10">
+                            <div className="flex justify-between items-start mb-1">
+                              <span className="text-xs font-bold text-emerald-500">{event.event_type}</span>
+                              <span className="text-[10px] text-muted-foreground">{new Date(event.timestamp).toLocaleTimeString()}</span>
+                            </div>
+                            <p className="text-[10px] leading-tight text-muted-foreground">
+                              {event.description}
+                            </p>
                           </div>
-                        </div>
+                        ))
+                      ) : (
+                        <p className="text-xs text-center py-8 text-muted-foreground italic">No recent healing events.</p>
                       )}
                     </div>
                   </CardContent>
                 </Card>
+              </div>
+            </TabsContent>
+
+            {/* Strategy / Venture Tab */}
+            <TabsContent value="venture" className="space-y-6">
+              <div className="grid gap-4 md:grid-cols-2">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Healing History</CardTitle>
-                    <CardDescription>Immutable recovery log</CardDescription>
+                    <CardTitle className="flex items-center gap-2">
+                      <Target className="w-5 h-5 text-purple-500" />
+                      Strategic Goal Tracking
+                    </CardTitle>
+                    <CardDescription>Enterprise alignment and mission drift</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {strategicInsights.map((s, i) => (
+                      <div key={i} className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="font-bold">{s.insight_type}</span>
+                          <span className={`${s.priority === 'high' ? 'text-red-500' : 'text-amber-500'} font-black italic uppercase`}>{s.priority}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{s.description}</p>
+                        <div className="flex justify-between items-center text-[10px]">
+                          <span className="text-muted-foreground">Confidence: {s.confidence}%</span>
+                          <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px]">REALIZE IMPACT</Button>
+                        </div>
+                        {i < strategicInsights.length - 1 && <Separator />}
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Autonomous Strategy Engine</CardTitle>
+                    <CardDescription>Agent-driven market adaptation</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
-                      {Array.isArray(selfHealingEvents) &&
-                        selfHealingEvents.map((event, idx) => (
-                          <div
-                            key={idx}
-                            className="p-3 rounded-lg border-l-4 border-l-green-500 bg-muted/50 text-[10px]"
-                          >
-                            <div className="font-black uppercase mb-1">
-                              {event.event_type}
-                            </div>
-                            <div className="text-muted-foreground mb-2">
-                              {event.description}
-                            </div>
-                            <Badge className="bg-emerald-500/20 text-emerald-400 border-none px-2 rounded-sm uppercase tracking-tighter">
-                              SUCCESS
-                            </Badge>
-                          </div>
-                        ))}
+                    <div className="p-8 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center text-center opacity-40">
+                      <Brain className="w-12 h-12 mb-4" />
+                      <p className="text-sm font-bold uppercase tracking-widest">Model: Stratos-V1</p>
+                      <p className="text-[10px] mt-2 italic">Waiting for enough data points to generate next-quarter projections.</p>
                     </div>
                   </CardContent>
                 </Card>
               </div>
+            </TabsContent>
+
+            {/* Global Settings Tab */}
+            <TabsContent value="settings" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Settings2 className="w-5 h-5 text-slate-500" />
+                    Global System Governance
+                  </CardTitle>
+                  <CardDescription>Primary control plane for Sentinel environment</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-6 md:grid-cols-2">
+                    {systemSettings.map((s, i) => (
+                      <div key={i} className="flex items-center justify-between p-4 rounded-xl border bg-muted/10">
+                        <div className="space-y-0.5">
+                          <div className="text-sm font-bold">{s.setting_name}</div>
+                          <div className="text-[10px] text-muted-foreground">{s.description}</div>
+                        </div>
+                        {s.setting_name.toLowerCase().includes("enabled") ? (
+                          <Switch 
+                            checked={s.value === "true"} 
+                            onCheckedChange={(checked) => handleUpdateSetting(s.setting_key, checked.toString())}
+                          />
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <Input 
+                              type="number" 
+                              className="w-20 h-8 text-xs" 
+                              defaultValue={s.value}
+                              onBlur={(e) => handleUpdateSetting(s.setting_key, e.target.value)}
+                            />
+                            <span className="text-[10px] font-bold text-muted-foreground">
+                              {s.setting_name.includes("Memory") ? "DAYS" : s.setting_name.includes("Threshold") ? "%" : ""}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         </div>

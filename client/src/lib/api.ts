@@ -1869,7 +1869,54 @@ export const extendedApi = {
             method: 'POST',
             body: JSON.stringify(model),
         }),
-    }
+    },
+    governance: {
+        compliance: {
+            getDashboard: () => apiRequest<any>('/api/governance/compliance/dashboard'),
+            getArticles: () => apiRequest<any[]>('/api/governance/compliance/articles'),
+            assessArticle: (articleId: string, assessment: any) => apiRequest<any>(`/api/governance/compliance/assess/${articleId}`, {
+                method: 'POST',
+                body: JSON.stringify(assessment),
+            }),
+        },
+        sla: {
+            getDashboard: () => apiRequest<any>('/api/governance/sla/dashboard'),
+            getMetrics: () => apiRequest<any[]>('/api/governance/sla/metrics'),
+        },
+        partners: {
+            list: () => apiRequest<any[]>('/api/governance/partners'),
+            sync: (partnerId: string) => apiRequest<any>(`/api/governance/partners/${partnerId}/sync`, {
+                method: 'POST',
+            }),
+        },
+        forecast: {
+            getUsage: () => apiRequest<any[]>('/api/governance/forecast/usage'),
+        },
+        analytics: {
+            getROI: () => apiRequest<any[]>('/api/governance/analytics/roi'),
+        },
+        localization: {
+            getConfigs: () => apiRequest<any[]>('/governance/localization/configs'),
+        },
+        healing: {
+            getConfigs: () => apiRequest<any[]>('/governance/healing/configs'),
+        },
+        insights: {
+            getStrategic: () => apiRequest<any[]>('/api/governance/insights/strategic'),
+        },
+        settings: {
+            list: () => apiRequest<any[]>('/api/governance/settings'),
+            update: (settingId: string, value: string) => apiRequest<any>(`/api/governance/settings/${settingId}?value=${encodeURIComponent(value)}`, {
+                method: 'PUT',
+            }),
+        },
+        onPrem: {
+            listDeployments: () => apiRequest<any[]>('/api/governance/on-prem/deployments'),
+            triggerAction: (deploymentId: string, action: string) => apiRequest<any>(`/api/governance/on-prem/deploy/${deploymentId}?action=${action}`, {
+                method: 'POST',
+            }),
+        },
+    },
 };
 
 // --- Workforce Operational Data ---
