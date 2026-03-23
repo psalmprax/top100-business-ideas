@@ -390,11 +390,29 @@ docker-compose -f docker-compose.prod.yml up -d
 
 ---
 
+## Recent Backend Improvements (2026-03-23)
+
+### Compliance Article API Implementation
+- **Model**: Added `ComplianceArticle` SQLModel with fields for EU AI Act articles
+- **Endpoint**: `/api/v1/compliance/articles` GET endpoint for fetching compliance articles
+- **Seeding**: Automatic database seeding with key AI Act articles on startup
+- **Frontend Integration**: Updated client API to fetch articles dynamically instead of using hardcoded data
+
+### Backend Architecture Enhancements
+- **Database Models**: Extended models.py with compliance and workforce interaction tracking
+- **API Services**: Enhanced compliance_service.py and workforce_service.py with functional logic
+- **Real AI Integration**: Services now use CrewAI and real ML inference when available, with graceful fallback to mocks
+
+### Data Flow Improvements
+- **Real Data Persistence**: Articles, interactions, and compliance checks now stored in PostgreSQL
+- **API-First Design**: Frontend components fetch data from REST APIs instead of static mocks
+- **Service Layer**: Clean separation between mock and real implementations
+
 ## Next Steps
 
-1. Add more ML models
-2. Implement real OAuth flow
-3. Set up monitoring
-4. Add more tests
-5. Performance optimization
-6. Security audit
+1. Complete frontend refactoring for all Alpha products
+2. Add more ML models and real AI integrations
+3. Implement comprehensive testing suite
+4. Set up monitoring and observability
+5. Performance optimization and security audit
+6. Production deployment preparation

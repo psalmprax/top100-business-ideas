@@ -486,3 +486,19 @@ class WorkforceInteraction(SQLModel, table=True):
     metadata_json: Dict[str, Any] = Field(default={}, sa_column=Column(JSON))
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class ComplianceArticle(SQLModel, table=True):
+    """EU AI Act compliance article definition"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    article: str  # e.g., "Article 5"
+    title: str
+    description: str
+    risk: str  # unacceptable, high, limited, minimal
+    status: str = Field(default="pending")  # compliant, non_compliant, not_applicable, pending
+    evidence: Optional[str] = None
+    remediation: Optional[str] = None
+    integration_type: Optional[str] = None  # Model Registry, Use Case Registry, etc.
+    scan_type: Optional[str] = None  # Policy Check, Classification, etc.
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)

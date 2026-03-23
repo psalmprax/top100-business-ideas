@@ -7,24 +7,24 @@
 const API_URL = import.meta.env.VITE_API_URL || '';
 
 export interface LLMMetrics {
-  p95LatencyMs: number;
-  avgLatencyMs: number;
-  throughput: number; // tokens/sec
-  errorRate: number;
-  costPer1k: number;
-  uptime: number;
+    p95LatencyMs: number;
+    avgLatencyMs: number;
+    throughput: number; // tokens/sec
+    errorRate: number;
+    costPer1k: number;
+    uptime: number;
 }
 
 export interface LLMProviderConfig {
-  id: string;
-  name: string;
-  provider: "deepseek" | "google" | "openai" | "anthropic" | "meta" | "local";
-  model: string;
-  status: "active" | "degraded" | "down";
-  isPrimary: boolean;
-  failoverPriority: number;
-  apiKeySet: boolean;
-  metrics: LLMMetrics;
+    id: string;
+    name: string;
+    provider: "deepseek" | "google" | "openai" | "anthropic" | "meta" | "local";
+    model: string;
+    status: "active" | "degraded" | "down";
+    isPrimary: boolean;
+    failoverPriority: number;
+    apiKeySet: boolean;
+    metrics: LLMMetrics;
 }
 
 
@@ -71,7 +71,7 @@ async function apiRequest<T>(
     const cleanBaseUrl = (API_URL || '').replace(/\/+$/, '');
     // 2. Strip all leading slashes from normalizedEndpoint
     const cleanPath = normalizedEndpoint.replace(/^\/+/, '');
-    
+
     // 3. Construct finalUrl carefully
     let finalUrl: string;
     if (cleanBaseUrl && cleanBaseUrl.startsWith('http')) {
@@ -88,7 +88,7 @@ async function apiRequest<T>(
     }
     // Then handle internal double slashes
     finalUrl = finalUrl.replace(/([^:])\/\/+/g, '$1/');
-    
+
     // 5. Ensure we never start with // (browser interprets as protocol-relative)
     if (finalUrl.startsWith('//')) {
         finalUrl = finalUrl.substring(1);
@@ -584,11 +584,11 @@ function getMockResponse<T>(endpoint: string, method: string, body?: any): T {
 
     if (endpoint.includes('/agent-ops/cloud/health') && method === 'GET') {
         return {
-          regions: [
-            { id: 'aws-us-east-1', name: 'N. Virginia (US-East-1)', status: 'healthy', load: 12, latency: 24 },
-            { id: 'gcp-europe-west1', name: 'Frankfurt (EU-Central-1)', status: 'healthy', load: 8, latency: 45 },
-            { id: 'azure-eastus', name: 'Singapore (AP-Southeast-1)', status: 'healthy', load: 4, latency: 32 }
-          ]
+            regions: [
+                { id: 'aws-us-east-1', name: 'N. Virginia (US-East-1)', status: 'healthy', load: 12, latency: 24 },
+                { id: 'gcp-europe-west1', name: 'Frankfurt (EU-Central-1)', status: 'healthy', load: 8, latency: 45 },
+                { id: 'azure-eastus', name: 'Singapore (AP-Southeast-1)', status: 'healthy', load: 4, latency: 32 }
+            ]
         } as T;
     }
 
@@ -1363,6 +1363,7 @@ export const extendedApi = {
                 method: 'POST',
                 body: JSON.stringify(incidentData),
             }),
+        listArticles: () => apiRequest<any[]>('/api/v1/compliance/articles'),
     },
 
     // Training (AI Compliance UC 10)
@@ -1704,7 +1705,7 @@ export const extendedApi = {
             apiRequest<{ agent_id: string; memory_fragments: any[]; summary: string }>(`/api/v1/agents/${agentId}/memory`),
         getForecast: (agentId?: string) =>
             apiRequest<{ agent_id: string; next_30_days_cost_est: number; trend: string }>(`/api/v1/agents/${agentId || 'default'}/forecast`),
-        getAuditLogs: (agentId?: string, limit: number = 50) => 
+        getAuditLogs: (agentId?: string, limit: number = 50) =>
             apiRequest<any>(`/api/v1/agent-ops/audit?${agentId ? `agentId=${agentId}&` : ''}limit=${limit}`),
         runHipaaAudit: (system?: string) => apiRequest<any>('/api/v1/agent-ops/compliance/hipaa', { method: 'POST', body: JSON.stringify({ system }) }),
         runSoxAudit: (system?: string) => apiRequest<any>('/api/v1/agent-ops/compliance/sox', { method: 'POST', body: JSON.stringify({ system }) }),

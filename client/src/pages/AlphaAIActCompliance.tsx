@@ -889,206 +889,6 @@ const ComplianceChecklistContent = () => {
         }
     };
 
-    const articles = [
-        {
-            article: 'Article 5',
-            title: 'Prohibited Practices',
-            description: 'AI systems that deploy subliminal techniques, exploit vulnerabilities, or enable social scoring are prohibited.',
-            risk: 'unacceptable',
-            status: 'compliant',
-            evidence: 'System audit logs, policy documentation',
-            remediation: 'N/A - Currently compliant',
-            integrationType: 'Model Registry',
-            scanType: 'Policy Check'
-        },
-        {
-            article: 'Article 6',
-            title: 'Classification Rules',
-            description: 'Classification of AI systems as unacceptable, high, limited, or minimal risk based on intended purpose.',
-            risk: 'high',
-            status: 'compliant',
-            evidence: 'Risk classification matrix, system registration',
-            remediation: 'N/A - Classification completed',
-            integrationType: 'Use Case Registry',
-            scanType: 'Classification'
-        },
-        {
-            article: 'Article 7',
-            title: 'High-Risk List',
-            description: 'AI systems in critical sectors (biometrics, employment, education, law enforcement) require strict compliance.',
-            risk: 'high',
-            status: 'in_progress',
-            evidence: 'Sector classification, use case documentation',
-            remediation: 'Complete conformity assessment',
-            integrationType: 'Sector API',
-            scanType: 'Risk Assessment'
-        },
-        {
-            article: 'Article 8',
-            title: 'Compliance Requirements',
-            description: 'High-risk systems must implement risk management, data governance, transparency, and human oversight.',
-            risk: 'high',
-            status: 'in_progress',
-            evidence: 'Risk management system, data governance policy',
-            remediation: 'Implement missing controls',
-            integrationType: 'CI/CD Pipeline',
-            scanType: 'Control Audit'
-        },
-        {
-            article: 'Article 9',
-            title: 'Quality Management',
-            description: 'High-risk systems require quality management system (QMS) following harmonized standards.',
-            risk: 'high',
-            status: 'in_progress',
-            evidence: 'QMS documentation, quality manual',
-            remediation: 'Complete QMS implementation',
-            integrationType: 'Quality System',
-            scanType: 'QMS Validation'
-        },
-        {
-            article: 'Article 10',
-            title: 'Data Governance',
-            description: 'Training data must be relevant, representative, free of errors, and include appropriate data governance measures.',
-            risk: 'high',
-            status: 'in_progress',
-            evidence: 'Data inventory, bias testing reports',
-            remediation: 'Complete data quality audit',
-            integrationType: 'Training Data Store',
-            scanType: 'Bias Scan'
-        },
-        {
-            article: 'Article 11',
-            title: 'Technical Documentation',
-            description: 'High-risk systems must have comprehensive technical documentation before market placement.',
-            risk: 'high',
-            status: 'not_started',
-            evidence: 'Technical documentation package',
-            remediation: 'Create technical documentation',
-            integrationType: 'CI/CD Pipeline',
-            scanType: 'Doc Generator'
-        },
-        {
-            article: 'Article 12',
-            title: 'Record Keeping',
-            description: 'Systems must automatically log operations with sufficient traceability for authorities.',
-            risk: 'high',
-            status: 'compliant',
-            evidence: 'Audit logs, logging infrastructure',
-            remediation: 'N/A - Currently compliant',
-            integrationType: 'Logging System',
-            scanType: 'Log Audit'
-        },
-        {
-            article: 'Article 13',
-            title: 'Transparency',
-            description: 'Systems must provide sufficient transparency for users to understand AI involvement.',
-            risk: 'limited',
-            status: 'compliant',
-            evidence: 'User disclosures, AI identification',
-            remediation: 'N/A - Currently compliant',
-            integrationType: 'UI Components',
-            scanType: 'Disclosure Check'
-        },
-        {
-            article: 'Article 14',
-            title: 'Human Oversight',
-            description: 'High-risk systems must have human-in-the-loop oversight mechanisms.',
-            risk: 'high',
-            status: 'in_progress',
-            evidence: 'Human oversight protocols, intervention mechanisms',
-            remediation: 'Implement override controls',
-            integrationType: 'Workflow Engine',
-            scanType: 'Override Test'
-        },
-        {
-            article: 'Article 15',
-            title: 'Accuracy & Robustness',
-            description: 'Systems must perform with appropriate accuracy, robustness, and cybersecurity.',
-            risk: 'high',
-            status: 'compliant',
-            evidence: 'Performance testing, security assessments',
-            remediation: 'N/A - Currently compliant',
-            integrationType: 'MLOps Platform',
-            scanType: 'Robustness Test'
-        },
-        {
-            article: 'Article 43',
-            title: 'Conformity Assessment',
-            description: 'High-risk systems must undergo conformity assessment before market entry.',
-            risk: 'high',
-            status: 'in_progress',
-            evidence: 'Conformity assessment certificate',
-            remediation: 'Complete third-party assessment',
-            integrationType: 'Certification Portal',
-            scanType: 'Assessment'
-        },
-        {
-            article: 'Article 44',
-            title: 'Self-Assessment Option',
-            description: 'Limited risk systems can self-assess; high-risk requires third-party notification.',
-            risk: 'high',
-            status: 'in_progress',
-            evidence: 'Self-assessment declaration or third-party certification',
-            remediation: 'Submit conformity declaration',
-            integrationType: 'Declaration System',
-            scanType: 'Declaration Check'
-        },
-        {
-            article: 'Article 49',
-            title: 'EU Database Registration',
-            description: 'High-risk AI systems must be registered in EU database before market placement.',
-            risk: 'high',
-            status: 'not_started',
-            evidence: 'EU database registration ID',
-            remediation: 'Register in EU database',
-            integrationType: 'EU AI Office API',
-            scanType: 'Registration'
-        },
-        {
-            article: 'Article 50',
-            title: 'Transparency Obligations',
-            description: 'AI-generated content must be marked; deepfakes require disclosure.',
-            risk: 'limited',
-            status: 'compliant',
-            evidence: 'Content marking system, disclosure mechanisms',
-            remediation: 'N/A - Currently compliant',
-            integrationType: 'Content API',
-            scanType: 'Watermark Check'
-        },
-        {
-            article: 'Article 61',
-            title: 'Post-Market Monitoring',
-            description: 'Providers must establish post-market monitoring system and report serious incidents.',
-            risk: 'high',
-            status: 'in_progress',
-            evidence: 'Post-market monitoring plan, incident reporting system',
-            remediation: 'Establish monitoring system',
-            integrationType: 'Monitoring Dashboard',
-            scanType: 'Monitoring Setup'
-        },
-        {
-            article: 'Article 62',
-            title: 'Market Surveillance',
-            description: 'AI systems subject to market surveillance authorities per Regulation (EU) 2019/1020.',
-            risk: 'high',
-            status: 'compliant',
-            evidence: 'Market surveillance compliance documentation',
-            remediation: 'N/A - Currently compliant',
-            integrationType: 'Regulatory Portal',
-            scanType: 'Surveillance Check'
-        },
-        {
-            article: 'Article 71',
-            title: 'Incident Reporting',
-            description: 'Serious incidents and malfunctions must be reported to relevant authorities within timelines.',
-            risk: 'high',
-            status: 'compliant',
-            evidence: 'Incident reporting procedures, reporting logs',
-            remediation: 'N/A - Currently compliant',
-            integrationType: 'Incident System',
-            scanType: 'Incident Drill'
-        }
-    ];
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -1118,10 +918,10 @@ const ComplianceChecklistContent = () => {
         }
     };
 
-    const compliantCount = articles.filter(a => a.status === 'compliant').length;
-    const inProgressCount = articles.filter(a => a.status === 'in_progress').length;
-    const notStartedCount = articles.filter(a => a.status === 'not_started').length;
-    const progressPercent = Math.round((compliantCount / articles.length) * 100);
+    const compliantCount = articles.filter((a: any) => a.status === 'compliant').length;
+    const inProgressCount = articles.filter((a: any) => a.status === 'in_progress').length;
+    const notStartedCount = articles.filter((a: any) => a.status === 'not_started').length;
+    const progressPercent = articles.length > 0 ? Math.round((compliantCount / articles.length) * 100) : 0;
 
     return (
         <div className="space-y-6">
@@ -1225,9 +1025,9 @@ const ComplianceChecklistContent = () => {
                                                 </div>
                                                 <div className="h-24 flex items-end gap-1 px-1">
                                                     {Array.from({ length: 20 }).map((_, i) => (
-                                                        <div 
-                                                            key={i} 
-                                                            className="flex-1 bg-emerald-500/20 rounded-t-sm animate-pulse" 
+                                                        <div
+                                                            key={i}
+                                                            className="flex-1 bg-emerald-500/20 rounded-t-sm animate-pulse"
                                                             style={{ height: `${Math.random() * 80 + 20}%`, animationDelay: `${i * 0.1}s` }}
                                                         />
                                                     ))}
@@ -1278,10 +1078,10 @@ const ComplianceChecklistContent = () => {
                             <Progress value={scanSensitivity} className="h-2" />
                             <div className="grid grid-cols-4 gap-2">
                                 {[25, 50, 75, 100].map(v => (
-                                    <Button 
-                                        key={v} 
-                                        variant="outline" 
-                                        size="sm" 
+                                    <Button
+                                        key={v}
+                                        variant="outline"
+                                        size="sm"
                                         className={`text-[10px] ${scanSensitivity === v ? 'border-yellow-500 bg-yellow-500/10' : ''}`}
                                         onClick={() => setScanSensitivity(v)}
                                     >
@@ -1314,7 +1114,7 @@ const ComplianceChecklistContent = () => {
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button 
+                        <Button
                             className="w-full bg-yellow-600 hover:bg-yellow-700 font-bold"
                             onClick={() => {
                                 handleRunScan(selectedArticleForScan.article, selectedArticleForScan.scanType);
@@ -1341,6 +1141,10 @@ export default function AlphaAIActCompliance() {
     const [activeTab, setActiveTab] = useState('dashboard');
     type CategoryType = 'gov' | 'reg' | 'tech' | 'ops' | 'infra' | 'fin';
     const [activeCategory, setActiveCategory] = useState<CategoryType>('gov');
+
+    // Articles state for real API data
+    const [articles, setArticles] = useState<any[]>([]);
+    const [loadingArticles, setLoadingArticles] = useState(true);
 
     const categories: { id: CategoryType; label: string; icon: any; description: string }[] = [
         { id: 'gov', label: 'Governance', icon: ShieldCheck, description: 'Ethics, Risk & Audit' },
@@ -1390,6 +1194,37 @@ export default function AlphaAIActCompliance() {
             { value: 'roi', label: 'ROI Impact', icon: TrendingUp }
         ]
     };
+
+    // Fetch compliance articles from API
+    useEffect(() => {
+        const fetchArticles = async () => {
+            try {
+                const fetchedArticles = await extendedApi.compliance.listArticles();
+                // Transform API data to match component expectations
+                const transformedArticles = fetchedArticles.map((article: any) => ({
+                    article: article.article,
+                    title: article.title,
+                    description: article.description,
+                    risk: article.risk,
+                    status: article.status,
+                    evidence: article.evidence,
+                    remediation: article.remediation,
+                    integrationType: article.integration_type,
+                    scanType: article.scan_type
+                }));
+                setArticles(transformedArticles);
+            } catch (error) {
+                console.error('Failed to fetch compliance articles:', error);
+                // Fallback to empty array or demo data
+                setArticles([]);
+            } finally {
+                setLoadingArticles(false);
+            }
+        };
+
+        fetchArticles();
+    }, []);
+
     const [models, setModels] = useState<AIModel[]>(mockModels);
     const [biasReports, setBiasReports] = useState<BiasReport[]>([]);
     const [isScanningBias, setIsScanningBias] = useState(false);
@@ -1615,37 +1450,37 @@ export default function AlphaAIActCompliance() {
         }
     };
 
-        const handleDownload = (filename: string, content: string) => {
+    const handleDownload = (filename: string, content: string) => {
         if (filename?.toLowerCase().endsWith('.pdf')) {
             const doc = new jsPDF();
             const pageWidth = doc.internal.pageSize.getWidth();
             const pageHeight = doc.internal.pageSize.getHeight();
-            
+
             // Header Bar
             doc.setFillColor(15, 23, 42); // Slate 900
             doc.rect(0, 0, pageWidth, 40, 'F');
-            
+
             // Logo / Branding
             doc.setTextColor(255, 255, 255);
             doc.setFontSize(24);
             doc.setFont('helvetica', 'bold');
             doc.text('ALPHA', 20, 25);
-            
+
             doc.setFontSize(9);
             doc.setFont('helvetica', 'normal');
             doc.text('ENTERPRISE AI SERVICES | HUB', 20, 32);
-            
+
             // Document Title
             doc.setTextColor(30, 41, 59); // Slate 800
             doc.setFontSize(20);
             const displayTitle = filename?.replace('.pdf', '').replace(/_/g, ' ').toUpperCase();
             doc.text(displayTitle || 'REPORT', 20, 30);
-            
+
             // Horizontal Divider
             doc.setDrawColor(226, 232, 240); // Slate 200
             doc.setLineWidth(0.5);
             doc.line(20, 65, pageWidth - 20, 65);
-            
+
             // Meta Info
             doc.setFontSize(9);
             doc.setFont('helvetica', 'normal');
@@ -1654,15 +1489,15 @@ export default function AlphaAIActCompliance() {
             doc.text(`Report ID: ${reportId}`, 20, 75);
             doc.text(`Generated: ${new Date().toLocaleString()}`, 20, 80);
             doc.text(`Classification: COMPANY CONFIDENTIAL`, pageWidth - 20, 75, { align: 'right' });
-            
+
             // Main Content
             doc.setTextColor(51, 65, 85); // Slate 700
             doc.setFontSize(10);
             doc.setFont('helvetica', 'normal');
-            
+
             const splitContent = doc.splitTextToSize(content, pageWidth - 40);
             let yPos = 95;
-            
+
             splitContent.forEach((line: string) => {
                 if (yPos > pageHeight - 30) {
                     doc.addPage();
@@ -1671,7 +1506,7 @@ export default function AlphaAIActCompliance() {
                 doc.text(line, 20, yPos);
                 yPos += 6;
             });
-            
+
             // Footer
             const totalPages = (doc as any).internal.getNumberOfPages();
             for (let i = 1; i <= totalPages; i++) {
@@ -1679,18 +1514,18 @@ export default function AlphaAIActCompliance() {
                 doc.setFontSize(8);
                 doc.setTextColor(148, 163, 184); // Slate 400
                 doc.text(
-                    `© 2026 Alpha Systems Group | Page ${i} of ${totalPages}`, 
-                    pageWidth / 2, 
-                    pageHeight - 10, 
+                    `© 2026 Alpha Systems Group | Page ${i} of ${totalPages}`,
+                    pageWidth / 2,
+                    pageHeight - 10,
                     { align: 'center' }
                 );
             }
-            
+
             doc.save(filename);
         } else {
             const isBinary = filename.endsWith('.zip') || filename.endsWith('.apk') || filename.endsWith('.bin');
             let url;
-            
+
             if (isBinary && content.length > 50) {
                 // Use Data URI for base64 blocks to ensure correct binary download
                 // Strip any possible whitespace or invalid characters from the base64 string
@@ -1700,7 +1535,7 @@ export default function AlphaAIActCompliance() {
                 const blob = new Blob([content], { type: filename.endsWith('.md') ? 'text/markdown' : 'text/plain' });
                 url = URL.createObjectURL(blob);
             }
-            
+
             const link = document.createElement('a');
             link.href = url;
             link.download = filename;
@@ -1779,10 +1614,10 @@ Last Audit: ${model.lastAudit ? model.lastAudit.toLocaleDateString() : 'Pending'
     const handleGenerateAllDocs = async () => {
         setIsScanning(true);
         toast.info("Analyzing model registry and generating Article 11 packages...");
-        
+
         // Simulate generation delay
         await new Promise(resolve => setTimeout(resolve, 2000));
-        
+
         const newDocs: DocumentationPackage[] = models.map(m => ({
             id: `DOC-${m.id}-${Date.now().toString().slice(-4)}`,
             modelId: m.id,
@@ -1790,7 +1625,7 @@ Last Audit: ${model.lastAudit ? model.lastAudit.toLocaleDateString() : 'Pending'
             generatedAt: new Date(),
             status: 'ready' as const
         }));
-        
+
         setDocumentation(newDocs);
         setIsScanning(false);
         toast.success(`${newDocs.length} technical documentation packages generated successfully.`);
@@ -2148,9 +1983,9 @@ Last Audit: ${model.lastAudit ? model.lastAudit.toLocaleDateString() : 'Pending'
                                     </div>
                                     <div className="h-32 bg-muted/30 rounded-lg flex items-end gap-1 p-2 border border-dashed">
                                         {Array.from({ length: 40 }).map((_, i) => (
-                                            <div 
-                                                key={i} 
-                                                className="flex-1 bg-blue-500/30 rounded-t-sm" 
+                                            <div
+                                                key={i}
+                                                className="flex-1 bg-blue-500/30 rounded-t-sm"
                                                 style={{ height: `${Math.random() * 90 + 10}%` }}
                                             />
                                         ))}
@@ -2399,7 +2234,7 @@ Last Audit: ${model.lastAudit ? model.lastAudit.toLocaleDateString() : 'Pending'
                                             <span className="text-green-500 font-bold">COMPLIANT</span>
                                         </div>
                                     </div>
-                                    <Button 
+                                    <Button
                                         className="w-full bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all"
                                         onClick={handleRunHipaaAudit}
                                         disabled={isAuditRunning === 'hipaa'}
@@ -2435,7 +2270,7 @@ Last Audit: ${model.lastAudit ? model.lastAudit.toLocaleDateString() : 'Pending'
                                             <span className="text-green-500 font-bold">COMPLIANT</span>
                                         </div>
                                     </div>
-                                    <Button 
+                                    <Button
                                         className="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-95 transition-all"
                                         onClick={handleRunSoxAudit}
                                         disabled={isAuditRunning === 'sox'}
@@ -2524,7 +2359,7 @@ Last Audit: ${model.lastAudit ? model.lastAudit.toLocaleDateString() : 'Pending'
                                     <CardContent className="p-4">
                                         <div className="text-3xl font-bold text-emerald-500">{edgeDeployments.filter(d => d.status === 'online').length}</div>
                                         <div className="text-sm text-muted-foreground">Online</div>
-                                </CardContent>
+                                    </CardContent>
                                 </Card>
                                 <Card>
                                     <CardContent className="p-4">
@@ -2579,9 +2414,9 @@ Last Audit: ${model.lastAudit ? model.lastAudit.toLocaleDateString() : 'Pending'
                                                         </div>
                                                     </TableCell>
                                                     <TableCell>
-                                                        <Button 
-                                                            variant="ghost" 
-                                                            size="sm" 
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
                                                             className="text-blue-500 hover:text-blue-600"
                                                             onClick={() => handleTriggerFailover(region.id)}
                                                         >
@@ -2707,7 +2542,7 @@ Last Audit: ${model.lastAudit ? model.lastAudit.toLocaleDateString() : 'Pending'
                                     </div>
                                     <Switch defaultChecked />
                                 </div>
-                                
+
                                 <div className="space-y-2">
                                     <Label>Deployment Manifest (Enterprise)</Label>
                                     <div className="flex gap-2">
@@ -2817,7 +2652,7 @@ Last Audit: ${model.lastAudit ? model.lastAudit.toLocaleDateString() : 'Pending'
                                                 <span className="text-muted-foreground">Generated: {doc.generatedAt ? doc.generatedAt.toLocaleDateString() : 'N/A'}</span>
                                                 <Badge>{doc.status}</Badge>
                                             </div>
-                                            <Button 
+                                            <Button
                                                 variant="outline"
                                                 size="sm"
                                                 onClick={() => handleDownload(`artifact_${doc.id}.pdf`, `Compliance Artifact for ${doc.modelId}\nGenerated: ${doc.generatedAt.toLocaleString()}\nStatus: ${doc.status?.toUpperCase() || 'N/A'}`)}
@@ -3348,7 +3183,7 @@ Last Audit: ${model.lastAudit ? model.lastAudit.toLocaleDateString() : 'Pending'
                                                 <SelectItem value="uk">UK (AI Safety)</SelectItem>
                                             </SelectContent>
                                         </Select>
-                                        <Button 
+                                        <Button
                                             variant="outline"
                                             onClick={() => handleDownload('Global_Compliance_Report_2026.pdf', 'Enterprise-wide compliance overview for all ReguLens-monitored AI systems.\n\nSummary: All systems meet Minimum Threshold.\nAction: 2 systems require Article 61 remediation.')}
                                         >
@@ -3434,9 +3269,9 @@ Last Audit: ${model.lastAudit ? model.lastAudit.toLocaleDateString() : 'Pending'
                                         <p>• <strong>Sectoral Approach:</strong> Compliance with FCA, Ofcom, and ICO guidance.</p>
                                         <p>• <strong>Safety Institutes:</strong> Alignment with Bletchley Declaration standards.</p>
                                         <p>• <strong>Liability:</strong> Strict adherence to UK Product Safety & Liability rules.</p>
-                                        <Button 
-                                            size="sm" 
-                                            variant="ghost" 
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
                                             className="w-full mt-2 h-7 text-[10px]"
                                             onClick={() => handleDownload('UK_AI_Rulebook_2024.pdf', 'Official guidance for AI systems operating within the United Kingdom jurisdiction.\n\nScope: Safety, Transparency, Accountability.')}
                                         >
@@ -3456,9 +3291,9 @@ Last Audit: ${model.lastAudit ? model.lastAudit.toLocaleDateString() : 'Pending'
                                         <p>• <strong>High Impact:</strong> Mandatory mitigation for systems affecting health/safety.</p>
                                         <p>• <strong>Bias Testing:</strong> Annual audit requirement for biased output.</p>
                                         <p>• <strong>Transparency:</strong> Plain-language disclosure for individual impacts.</p>
-                                        <Button 
-                                            size="sm" 
-                                            variant="ghost" 
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
                                             className="w-full mt-2 h-7 text-[10px]"
                                             onClick={() => handleDownload('Canada_AIDA_Guide.pdf', 'Implementation guide for the Artificial Intelligence and Data Act (AIDA) of Canada.')}
                                         >
@@ -4026,9 +3861,9 @@ Last Audit: ${model.lastAudit ? model.lastAudit.toLocaleDateString() : 'Pending'
                                                 </li>
                                             ))}
                                         </ul>
-                                        <Button 
-                                            size="sm" 
-                                            className="w-full" 
+                                        <Button
+                                            size="sm"
+                                            className="w-full"
                                             variant={tier.active ? "secondary" : "default"}
                                             onClick={() => {
                                                 if (!tier.active) {
@@ -4058,8 +3893,8 @@ Last Audit: ${model.lastAudit ? model.lastAudit.toLocaleDateString() : 'Pending'
                                 <div className="grid md:grid-cols-2 gap-4 text-xs">
                                     <div className="p-6 rounded-lg border border-dashed text-center">
                                         <p className="mb-4">Invite Sub-Organization to ReguLens Hub</p>
-                                        <Button 
-                                            variant="outline" 
+                                        <Button
+                                            variant="outline"
                                             size="sm"
                                             onClick={() => {
                                                 extendedApi.enterprise.getPartnerConfig()
@@ -4090,9 +3925,9 @@ Last Audit: ${model.lastAudit ? model.lastAudit.toLocaleDateString() : 'Pending'
                                     <CardTitle>API Access Management</CardTitle>
                                     <div className="flex items-center gap-2">
                                         <Label htmlFor="gql-toggle" className="text-[10px] text-muted-foreground uppercase tracking-widest">GraphQL Gateway</Label>
-                                        <Switch 
-                                            id="gql-toggle" 
-                                            defaultChecked 
+                                        <Switch
+                                            id="gql-toggle"
+                                            defaultChecked
                                             onCheckedChange={(checked) => {
                                                 extendedApi.agentOps.setGqlProxyConfig(checked)
                                                     .then(() => toast.success(`GQL Gateway ${checked ? 'Active' : 'Standby'}`));
@@ -4489,7 +4324,7 @@ Last Audit: ${model.lastAudit ? model.lastAudit.toLocaleDateString() : 'Pending'
                     </div>
                     <DialogFooter>
                         <Button variant="ghost" onClick={() => setShowDocsDialog(false)}>Cancel</Button>
-                        <Button 
+                        <Button
                             disabled={isScanning}
                             onClick={() => {
                                 handleGenerateAllDocs();
@@ -4593,7 +4428,7 @@ Last Audit: ${model.lastAudit ? model.lastAudit.toLocaleDateString() : 'Pending'
                         <Button variant="ghost" onClick={() => setShowQuizDialog(false)}>Cancel</Button>
                         <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => {
                             if (activeQuizModule) {
-                                const updated = trainingModules.map(m => 
+                                const updated = trainingModules.map(m =>
                                     m.id === activeQuizModule.id ? { ...m, progress: 100, status: 'completed' as const } : m
                                 );
                                 setTrainingModules(updated);

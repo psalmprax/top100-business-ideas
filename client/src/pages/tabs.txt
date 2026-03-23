@@ -1,0 +1,52 @@
+1785:            <TabsContent value="overview">
+1989:            <TabsContent value="agents">
+2143:            <TabsContent value="audit">
+2218:            <TabsContent value="budget">
+2296:            <TabsContent value="alerts">
+2345:            <TabsContent value="models">
+2350:            <TabsContent value="infrastructure">
+2544:            <TabsContent value="webhooks">
+2665:            <TabsContent value="sla">
+2716:            <TabsContent value="partner">
+2750:            <TabsContent value="on-prem">
+2856:            <TabsContent value="compliance">
+2984:            <TabsContent value="developers">
+3194:            <TabsContent value="sso">
+3416:            <TabsContent value="settings">
+3587:            <TabsContent value="financial">
+3765:            <TabsContent value="metrics">
+3930:            <TabsContent value="pricing">
+4130:            <TabsContent value="gtm">
+4248:            <TabsContent value="roadmap">
+4359:            <TabsContent value="hiring">
+4485:            <TabsContent value="sla">
+4571:            <TabsContent value="forecast" className="space-y-6">
+4664:            <TabsContent value="roi" className="space-y-6">
+4747:            <TabsContent value="localization" className="space-y-6">
+4829:            <TabsContent value="selfheal" className="space-y-6">
+1986:            </TabsContent>
+2140:            </TabsContent>
+2215:            </TabsContent>
+2293:            </TabsContent>
+2342:            </TabsContent>
+2347:            </TabsContent>
+2541:            </TabsContent>
+2662:            </TabsContent>
+2713:            </TabsContent>
+2748:            </TabsContent>
+2853:            </TabsContent>
+2981:            </TabsContent>
+3191:            </TabsContent>
+3413:            </TabsContent>
+3584:            </TabsContent>
+3762:            </TabsContent>
+3927:            </TabsContent>
+4127:            </TabsContent>
+4245:            </TabsContent>
+4356:            </TabsContent>
+4483:            </TabsContent>
+4569:            </TabsContent>
+4661:            </TabsContent>
+4744:            </TabsContent>
+4826:            </TabsContent>
+4941:            </TabsContent>

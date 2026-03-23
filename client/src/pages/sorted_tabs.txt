@@ -1,0 +1,52 @@
+1785:            <TabsContent value="overview">
+1986:            </TabsContent>
+1989:            <TabsContent value="agents">
+2140:            </TabsContent>
+2143:            <TabsContent value="audit">
+2215:            </TabsContent>
+2218:            <TabsContent value="budget">
+2293:            </TabsContent>
+2296:            <TabsContent value="alerts">
+2342:            </TabsContent>
+2345:            <TabsContent value="models">
+2347:            </TabsContent>
+2350:            <TabsContent value="infrastructure">
+2541:            </TabsContent>
+2544:            <TabsContent value="webhooks">
+2662:            </TabsContent>
+2665:            <TabsContent value="sla">
+2713:            </TabsContent>
+2716:            <TabsContent value="partner">
+2748:            </TabsContent>
+2750:            <TabsContent value="on-prem">
+2853:            </TabsContent>
+2856:            <TabsContent value="compliance">
+2981:            </TabsContent>
+2984:            <TabsContent value="developers">
+3191:            </TabsContent>
+3194:            <TabsContent value="sso">
+3413:            </TabsContent>
+3416:            <TabsContent value="settings">
+3584:            </TabsContent>
+3587:            <TabsContent value="financial">
+3762:            </TabsContent>
+3765:            <TabsContent value="metrics">
+3927:            </TabsContent>
+3930:            <TabsContent value="pricing">
+4127:            </TabsContent>
+4130:            <TabsContent value="gtm">
+4245:            </TabsContent>
+4248:            <TabsContent value="roadmap">
+4356:            </TabsContent>
+4359:            <TabsContent value="hiring">
+4483:            </TabsContent>
+4485:            <TabsContent value="sla">
+4569:            </TabsContent>
+4571:            <TabsContent value="forecast" className="space-y-6">
+4661:            </TabsContent>
+4664:            <TabsContent value="roi" className="space-y-6">
+4744:            </TabsContent>
+4747:            <TabsContent value="localization" className="space-y-6">
+4826:            </TabsContent>
+4829:            <TabsContent value="selfheal" className="space-y-6">
+4941:            </TabsContent>

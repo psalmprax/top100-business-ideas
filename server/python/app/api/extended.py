@@ -11,12 +11,13 @@ import os
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks, Request
 from starlette.responses import RedirectResponse
 from sqlalchemy.orm import Session
+from sqlmodel import select
 
 from app.core.database import get_session
 from app.core.models import (
     AIModel, BiasReport, TrainingModule, SovereignStatus, SovereignStage,
     WebhookConfig, WebhookExecution, AlertConfig, SovereignRequest, AgentAuditLog,
-    MultiCloudStatus, SelfHealingEvent, ArticleStatus
+    MultiCloudStatus, SelfHealingEvent, ArticleStatus, ComplianceArticle
 )
 from app.services.webhook_service import webhook_service
 from app.services.training_modules import training_service
@@ -789,6 +790,13 @@ async def export_compliance_report():
             "generated_at": datetime.utcnow().isoformat()
         }
     }
+
+
+@router.get("/compliance/articles", response_model=List[ComplianceArticle])
+async def list_compliance_articles(session: Session = Depends(get_session)):
+    """List all EU AI Act compliance articles"""
+    articles = session.exec(select(ComplianceArticle)).all()
+    return articles
 
 
 # ============================================================================
