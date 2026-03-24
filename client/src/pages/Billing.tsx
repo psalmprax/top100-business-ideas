@@ -3,8 +3,8 @@
  * Subscription management and payment settings
  */
 
-import { useState } from "react";
-import { Link } from "wouter";
+import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 import {
   Card,
   CardContent,
@@ -38,7 +38,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { storage } from "@/lib/storage";
+import { billingApi, Subscription, Invoice } from "@/lib/api";
 
 interface Plan {
   id: string;
@@ -105,72 +105,94 @@ const plans: Plan[] = [
   },
 ];
 
-const invoices = [
-  { id: "INV-001", date: "2024-03-01", amount: 49, status: "paid" },
-  { id: "INV-002", date: "2024-02-01", amount: 49, status: "paid" },
-  { id: "INV-003", date: "2024-01-01", amount: 49, status: "paid" },
-];
-
 export default function Billing() {
+  const [location] = useLocation();
   const [selectedPlan, setSelectedPlan] = useState("professional");
   const [isLoading, setIsLoading] = useState(false);
-  const [isAddingPayment, setIsAddingPayment] = useState(false);
-  const [currentPlan, setCurrentPlan] = useState(storage.get("billing_current_plan", "starter"));
-  const [paymentMethods, setPaymentMethods] = useState(storage.get("billing_payment_methods", [
-    { id: "pm_1", last4: "4242", exp: "12/2025", default: true }
-  ]));
-
+  const [isDataLoading, setIsDataLoading] = useState(true);
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [invoiceHistory, setInvoiceHistory] = useState<Invoice[]>([]);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
-  const handleUpgrade = async (planId: string) => {
+  // Parse query params for success/canceled feedback
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.get("success") === "true") {
+      setShowSuccessDialog(true);
+      toast.success("Payment completed successfully!");
+    }
+    if (searchParams.get("canceled") === "true") {
+      toast.error("Checkout was canceled.");
+    }
+  }, []);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [sub, inv] = await Promise.all([
+          billingApi.subscription(),
+          billingApi.invoices()
+        ]);
+        setSubscription(sub);
+        setInvoiceHistory(inv);
+      } catch (err) {
+        console.error("Failed to fetch billing data", err);
+        // Fallback or error state
+      } finally {
+        setIsDataLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
+  const handleUpgrade = async (planId: string, provider: "stripe" | "paypal" = "stripe") => {
     setIsLoading(true);
     setSelectedPlan(planId);
 
-    // Simulate API call to create checkout session
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    // In production, this would redirect to Stripe Checkout
-    // For hardening, we show a success simulation
-    setCurrentPlan(planId);
-    storage.set("billing_current_plan", planId);
-    setShowSuccessDialog(true);
-    toast.success("Subscription upgraded successfully", {
-      description: `You are now on the ${planId.charAt(0).toUpperCase() + planId.slice(1)} plan.`,
-    });
-
-    setIsLoading(false);
+    try {
+      toast.loading(`Redirecting to ${provider.charAt(0).toUpperCase() + provider.slice(1)}...`);
+      const response = await billingApi.createCheckout(planId);
+      
+      if (response && response.url) {
+        window.location.assign(response.url);
+      } else {
+        throw new Error("No redirect URL received");
+      }
+    } catch (err: any) {
+      toast.error("Failed to initiate checkout", {
+        description: err.message || "Please check your network connection."
+      });
+      setIsLoading(false);
+    }
   };
 
   const handleAddPayment = async () => {
-    setIsAddingPayment(true);
-    toast.promise(
-      new Promise((resolve) => setTimeout(resolve, 2000)),
-      {
-        loading: 'Connecting to Stripe Secure Vault...',
-        success: () => {
-          setIsAddingPayment(false);
-          const newPm = { 
-            id: `pm_${Date.now()}`, 
-            last4: Math.floor(1000 + Math.random() * 9000).toString(), 
-            exp: "08/2028", 
-            default: false 
-          };
-          const updatedMethods = [...paymentMethods, newPm];
-          setPaymentMethods(updatedMethods);
-          storage.set("billing_payment_methods", updatedMethods);
-          return 'New payment method added successfully.';
-        },
-        error: 'Vault connection failed.',
-      }
-    );
+    toast.info("Securely redirecting to your Customer Portal...");
+    try {
+        const response = await billingApi.updatePaymentMethod("portal");
+        // Typically handles redirection to Stripe Customer Portal
+        toast.success("Portal access granted");
+    } catch (err) {
+        toast.error("Cloud vault connection failed");
+    }
   };
 
   const handleDownloadInvoice = (id: string) => {
-    toast.info(`Generating PDF for ${id}...`);
-    setTimeout(() => {
-        toast.success(`Invoice ${id} downloaded.`);
-    }, 1500);
+    toast.info(`Fetching secure document ${id}...`);
+    // In production, this would open the pdfUrl from the invoice object
+    const invoice = invoiceHistory.find(inv => inv.id === id);
+    if (invoice && invoice.pdfUrl) {
+        window.open(invoice.pdfUrl, "_blank");
+    }
   };
+
+  if (isDataLoading) {
+    return (
+        <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+            <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
+        </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-900 text-white p-8">
@@ -178,7 +200,7 @@ export default function Billing() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Billing & Subscription</h1>
           <p className="text-slate-400">
-            Manage your subscription and billing details
+            Real-time subscription management via Stripe & PayPal
           </p>
         </div>
 
@@ -203,18 +225,17 @@ export default function Billing() {
                   <div>
                     <h3 className="text-lg font-semibold text-blue-400">
                       Current Plan:{" "}
-                      {currentPlan.charAt(0).toUpperCase() +
-                        currentPlan.slice(1)}
+                      {subscription?.plan ? subscription.plan.charAt(0).toUpperCase() + subscription.plan.slice(1) : "Free"}
                     </h3>
                     <p className="text-sm text-slate-400">
-                      Your next billing date is April 1, 2024
+                      Renews on: {subscription?.currentPeriodEnd ? new Date(subscription.currentPeriodEnd).toLocaleDateString() : "N/A"}
                     </p>
                   </div>
                   <Badge
                     variant="outline"
                     className="bg-green-500/20 text-green-400 border-green-500/30"
                   >
-                    Active
+                    {subscription?.status || "Active"}
                   </Badge>
                 </div>
               </CardContent>
@@ -256,7 +277,7 @@ export default function Billing() {
                     </ul>
                     <Button
                       onClick={() => handleUpgrade(plan.id)}
-                      disabled={currentPlan === plan.id || isLoading}
+                      disabled={subscription?.plan === plan.id || isLoading}
                       className={`w-full ${
                         plan.highlighted
                           ? "bg-blue-600 hover:bg-blue-700"
@@ -264,9 +285,9 @@ export default function Billing() {
                       }`}
                       data-testid={`btn-upgrade-${plan.id}`}
                     >
-                      {isLoading ? (
+                      {isLoading && selectedPlan === plan.id ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : currentPlan === plan.id ? (
+                      ) : subscription?.plan === plan.id ? (
                         "Current Plan"
                       ) : plan.price === 0 ? (
                         "Downgrade"
@@ -283,60 +304,28 @@ export default function Billing() {
           <TabsContent value="payment">
             <Card className="bg-slate-800 border-slate-700">
               <CardHeader>
-                <CardTitle>Payment Method</CardTitle>
+                <CardTitle>Secure Checkout & Portal</CardTitle>
                 <CardDescription className="text-slate-400">
-                  Manage your payment methods
+                  Manage your payment methods via the Stripe/PayPal native environments
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Current Card */}
-                {paymentMethods.map(pm => (
-                  <div key={pm.id} className="flex items-center justify-between p-4 rounded-lg bg-slate-700/50 border border-slate-600">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-8 bg-gradient-to-r from-blue-600 to-blue-800 rounded flex items-center justify-center">
-                        <CreditCard className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <p className="font-medium">•••• •••• •••• {pm.last4}</p>
-                        <p className="text-sm text-slate-400">Expires {pm.exp}</p>
-                      </div>
-                    </div>
-                    {pm.default && (
-                      <Badge
-                        variant="outline"
-                        className="bg-green-500/20 text-green-400 border-green-500/30"
-                      >
-                        Default
-                      </Badge>
-                    )}
-                  </div>
-                ))}
-
                 <div className="flex gap-4">
                   <Button
                     variant="outline"
                     className="border-slate-600 hover:bg-slate-700"
                     data-testid="btn-add-payment"
                     onClick={handleAddPayment}
-                    disabled={isAddingPayment}
-                  >
-                    <CreditCard className="w-4 h-4 mr-2" />
-                    {isAddingPayment ? 'Connecting...' : 'Add Payment Method'}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="border-slate-600 hover:bg-slate-700"
-                    data-testid="btn-billing-address"
                   >
                     <Shield className="w-4 h-4 mr-2" />
-                    Billing Address
+                    Open Billing Portal
                   </Button>
                 </div>
 
-                <div className="flex items-center gap-2 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                  <AlertCircle className="w-5 h-5 text-amber-500" />
-                  <p className="text-sm text-amber-200">
-                    Your subscription will automatically renew on April 1, 2024
+                <div className="flex items-center gap-2 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                  <Shield className="w-5 h-5 text-blue-500" />
+                  <p className="text-sm text-blue-200">
+                    Your payment data is fully encrypted and managed by Stripe/PayPal.
                   </p>
                 </div>
               </CardContent>
@@ -348,12 +337,12 @@ export default function Billing() {
               <CardHeader>
                 <CardTitle>Invoice History</CardTitle>
                 <CardDescription className="text-slate-400">
-                  View and download your past invoices
+                  Download official tax invoices from your history
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {invoices.map(invoice => (
+                  {invoiceHistory.length > 0 ? invoiceHistory.map(invoice => (
                     <div
                       key={invoice.id}
                       className="flex items-center justify-between p-4 rounded-lg bg-slate-700/30 border border-slate-600"
@@ -365,13 +354,13 @@ export default function Billing() {
                         <div>
                           <p className="font-medium">{invoice.id}</p>
                           <p className="text-sm text-slate-400">
-                            {invoice.date}
+                            {new Date(invoice.date).toLocaleDateString()}
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
                         <span className="font-semibold">
-                          ${invoice.amount}.00
+                          ${invoice.amount / 100}
                         </span>
                         <Badge
                           variant="outline"
@@ -389,58 +378,16 @@ export default function Billing() {
                         </Button>
                       </div>
                     </div>
-                  ))}
+                  )) : (
+                    <p className="text-center text-slate-500 py-8">No invoices found for this account.</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
-
-        {/* Usage Section */}
-        <div className="mt-8 grid md:grid-cols-3 gap-6">
-          <Card className="bg-slate-800 border-slate-700">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-slate-400">
-                This Month's Usage
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">2.4M</div>
-              <p className="text-sm text-slate-400">of 5M tokens</p>
-              <div className="mt-2 h-2 bg-slate-700 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-blue-500 rounded-full"
-                  style={{ width: "48%" }}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-slate-800 border-slate-700">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-slate-400">
-                API Requests
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">12,847</div>
-              <p className="text-sm text-green-400">+23% from last month</p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-slate-800 border-slate-700">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-slate-400">
-                Active Agents
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">4</div>
-              <p className="text-sm text-slate-400">of unlimited</p>
-            </CardContent>
-          </Card>
-        </div>
       </div>
+      
       <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
         <DialogContent className="sm:max-w-[425px] bg-slate-900 border-slate-800 text-white">
           <DialogHeader>
@@ -450,41 +397,19 @@ export default function Billing() {
               </div>
             </div>
             <DialogTitle className="text-center text-2xl font-bold">
-              Payment Successful
+              Subscription Active
             </DialogTitle>
             <DialogDescription className="text-center text-slate-400">
-              Your account has been upgraded to the{" "}
-              <strong>
-                {selectedPlan.charAt(0).toUpperCase() + selectedPlan.slice(1)}
-              </strong>{" "}
-              plan. A confirmation and invoice have been sent to your email.
+              Your account has been successfully synchronized with the payment provider.
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4 space-y-4 text-sm text-slate-300">
-            <div className="flex justify-between border-b border-slate-800 pb-2">
-              <span>Transaction ID</span>
-              <span className="text-white font-mono">
-                TXN_{Math.random().toString(36).substr(2, 9).toUpperCase()}
-              </span>
-            </div>
-            <div className="flex justify-between border-b border-slate-800 pb-2">
-              <span>Plan</span>
-              <span className="text-white">
-                {selectedPlan.charAt(0).toUpperCase() + selectedPlan.slice(1)}
-              </span>
-            </div>
-            <div className="flex justify-between border-b border-slate-800 pb-2">
-              <span>Billing Cycle</span>
-              <span className="text-white">Monthly</span>
-            </div>
-          </div>
           <DialogFooter>
             <Button
               variant="outline"
               className="w-full border-slate-700 hover:bg-slate-800"
               onClick={() => setShowSuccessDialog(false)}
             >
-              Return to Dashboard
+              Back to Dashboard
             </Button>
           </DialogFooter>
         </DialogContent>

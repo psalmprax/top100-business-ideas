@@ -77,7 +77,7 @@ func (e *EmailService) SendWelcomeEmail(name, email, loginURL string) error {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px; text-align: center; border-radius: 10px 10px 0 0;">
+    <div style="background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%); padding: 40px 20px; text-align: center; border-radius: 10px 10px 0 0;">
         <h1 style="color: white; margin: 0;">AlphaAI</h1>
     </div>
     <div style="background: #f9f9f9; padding: 40px 20px; border-radius: 0 0 10px 10px;">
@@ -111,7 +111,7 @@ func (e *EmailService) SendPasswordResetEmail(name, email, resetURL string, expi
     <meta charset="utf-8">
 </head>
 <body style="font-family: -apple-system, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-    <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 40px 20px; text-align: center;">
+    <div style="background: linear-gradient(135deg, #f093fb 0%%, #f5576c 100%%); padding: 40px 20px; text-align: center;">
         <h1 style="color: white; margin: 0;">Password Reset</h1>
     </div>
     <div style="background: #f9f9f9; padding: 40px 20px;">
@@ -172,7 +172,7 @@ func (e *EmailService) SendUsageAlertEmail(name, email, productName, currentUsag
 <html>
 <head><meta charset="utf-8"></head>
 <body style="font-family: sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-    <div style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); padding: 40px 20px; text-align: center;">
+    <div style="background: linear-gradient(135deg, #ff9a9e 0%%, #fecfef 100%%); padding: 40px 20px; text-align: center;">
         <h1 style="color: white; margin: 0;">Usage Alert</h1>
     </div>
     <div style="background: #f9f9f9; padding: 40px 20px;">
@@ -230,7 +230,7 @@ func (e *EmailService) SendBatchEmails(emails []struct {
 func (e *EmailService) ScheduleEmail(to, subject, body string, sendAt time.Time) {
 	go func() {
 		// Calculate delay
-		delay := sendAt.Sub(time.Now())
+		delay := time.Until(sendAt)
 		if delay > 0 {
 			time.Sleep(delay)
 		}

@@ -399,7 +399,7 @@ function StatusBadge({ status }: { status: string }) {
     );
 }
 
-const ModelProfileDialog = ({ selectedModelForView, setSelectedModelForView, handleToggleGuardrail }: { selectedModelForView: any, setSelectedModelForView: (model: any) => void, handleToggleGuardrail: (key: string, value: boolean) => void }) => {
+const ModelProfileDialog = ({ selectedModelForView, setSelectedModelForView, handleToggleGuardrail, setShowUploadDialog }: { selectedModelForView: any, setSelectedModelForView: (model: any) => void, handleToggleGuardrail: (key: string, value: boolean) => void, setShowUploadDialog: (show: boolean) => void }) => {
     return (
         <Dialog open={!!selectedModelForView} onOpenChange={(open) => !open && setSelectedModelForView(null)}>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -568,7 +568,7 @@ const ModelProfileDialog = ({ selectedModelForView, setSelectedModelForView, han
                                                 </div>
                                                 <Switch
                                                     checked={selectedModelForView?.activeBiasMitigation || false}
-                                                    onCheckedChange={(v) => handleToggleGuardrail('activeBiasMitigation', v)}
+                                                    onCheckedChange={(v: boolean) => handleToggleGuardrail('activeBiasMitigation', v)}
                                                 />
                                             </div>
                                             <div className="flex items-center justify-between">
@@ -578,7 +578,7 @@ const ModelProfileDialog = ({ selectedModelForView, setSelectedModelForView, han
                                                 </div>
                                                 <Switch
                                                     checked={selectedModelForView?.toxicLanguageFilter || false}
-                                                    onCheckedChange={(v) => handleToggleGuardrail('toxicLanguageFilter', v)}
+                                                    onCheckedChange={(v: boolean) => handleToggleGuardrail('toxicLanguageFilter', v)}
                                                 />
                                             </div>
                                             <div className="flex items-center justify-between">
@@ -588,7 +588,7 @@ const ModelProfileDialog = ({ selectedModelForView, setSelectedModelForView, han
                                                 </div>
                                                 <Switch
                                                     checked={selectedModelForView?.promptPrivacyGuard || false}
-                                                    onCheckedChange={(v) => handleToggleGuardrail('promptPrivacyGuard', v)}
+                                                    onCheckedChange={(v: boolean) => handleToggleGuardrail('promptPrivacyGuard', v)}
                                                 />
                                             </div>
                                         </div>
@@ -811,7 +811,7 @@ const ConnectionDialog = ({
                             className="bg-zinc-900 border-zinc-800 font-mono h-40 focus:ring-blue-500 text-[11px]"
                             placeholder={connectionTemplates[type]}
                             value={config}
-                            onChange={(e) => setConfig(e.target.value)}
+                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setConfig(e.target.value)}
                         />
                         <div className="p-2 rounded bg-zinc-900/50 border border-zinc-800 flex gap-2 items-start">
                             <Info className="w-3 h-3 text-zinc-400 shrink-0 mt-0.5" />
@@ -2529,7 +2529,7 @@ Last Audit: ${model.lastAudit ? model.lastAudit.toLocaleDateString() : 'Pending'
                                 <div className="space-y-2">
                                     <Label>Compliance Data Retention (Days)</Label>
                                     <div className="flex gap-2">
-                                        <Select value={String(retentionDays)} onValueChange={(val) => handleSaveRetention(Number(val))}>
+                                        <Select value={String(retentionDays)} onValueChange={(val: string) => handleSaveRetention(Number(val))}>
                                             <SelectTrigger className="w-full">
                                                 <SelectValue placeholder="Select retention period" />
                                             </SelectTrigger>
@@ -3179,7 +3179,7 @@ Last Audit: ${model.lastAudit ? model.lastAudit.toLocaleDateString() : 'Pending'
                                 </CardHeader>
                                 <CardContent>
                                     <div className="flex gap-4 mb-6">
-                                        <Select onValueChange={async (val) => {
+                                        <Select onValueChange={async (val: string) => {
                                             const rules = await extendedApi.regionalCompliance.rules(val as any);
                                             toast.success(`Loaded ${rules.rules.length} rules for ${val}`);
                                         }}>
@@ -3937,7 +3937,7 @@ Last Audit: ${model.lastAudit ? model.lastAudit.toLocaleDateString() : 'Pending'
                                         <Switch
                                             id="gql-toggle"
                                             defaultChecked
-                                            onCheckedChange={(checked) => {
+                                            onCheckedChange={(checked: boolean) => {
                                                 extendedApi.agentOps.setGqlProxyConfig(checked)
                                                     .then(() => toast.success(`GQL Gateway ${checked ? 'Active' : 'Standby'}`));
                                             }}
@@ -3983,14 +3983,14 @@ Last Audit: ${model.lastAudit ? model.lastAudit.toLocaleDateString() : 'Pending'
                             <Input
                                 placeholder="e.g. Anthropic, Mistral"
                                 value={newVendorData.name}
-                                onChange={(e) => setNewVendorData({ ...newVendorData, name: e.target.value })}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewVendorData({ ...newVendorData, name: e.target.value })}
                             />
                         </div>
                         <div className="space-y-2">
                             <Label>Vendor Type</Label>
                             <Select
                                 value={newVendorData.type}
-                                onValueChange={(v: any) => setNewVendorData({ ...newVendorData, type: v })}
+                                onValueChange={(v: string) => setNewVendorData({ ...newVendorData, type: v as any })}
                             >
                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
@@ -4004,7 +4004,7 @@ Last Audit: ${model.lastAudit ? model.lastAudit.toLocaleDateString() : 'Pending'
                             <Label>Risk Tier</Label>
                             <Select
                                 value={newVendorData.riskLevel}
-                                onValueChange={(v: any) => setNewVendorData({ ...newVendorData, riskLevel: v })}
+                                onValueChange={(v: string) => setNewVendorData({ ...newVendorData, riskLevel: v as any })}
                             >
                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
@@ -4083,14 +4083,14 @@ Last Audit: ${model.lastAudit ? model.lastAudit.toLocaleDateString() : 'Pending'
                                     className="w-full h-24 p-2 rounded-md border bg-background"
                                     placeholder="Detail the failure and impact..."
                                     value={newIncidentData.description}
-                                    onChange={(e) => setNewIncidentData({ ...newIncidentData, description: e.target.value })}
+                                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNewIncidentData({ ...newIncidentData, description: e.target.value })}
                                 />
                             </div>
                             <div className="space-y-2">
                                 <Label>Severity</Label>
                                 <Select
                                     value={newIncidentData.severity}
-                                    onValueChange={(v: any) => setNewIncidentData({ ...newIncidentData, severity: v })}
+                                    onValueChange={(v: string) => setNewIncidentData({ ...newIncidentData, severity: v as any })}
                                 >
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
@@ -4138,14 +4138,14 @@ Last Audit: ${model.lastAudit ? model.lastAudit.toLocaleDateString() : 'Pending'
                             <Input
                                 placeholder="e.g. Credit-Model-v3"
                                 value={newModelData.name}
-                                onChange={(e) => setNewModelData({ ...newModelData, name: e.target.value })}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewModelData({ ...newModelData, name: e.target.value })}
                             />
                         </div>
                         <div className="space-y-2">
                             <Label>Risk Category</Label>
                             <Select
                                 value={newModelData.riskCategory}
-                                onValueChange={(v: any) => setNewModelData({ ...newModelData, riskCategory: v })}
+                                onValueChange={(v: string) => setNewModelData({ ...newModelData, riskCategory: v as any })}
                             >
                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
@@ -4178,7 +4178,7 @@ Last Audit: ${model.lastAudit ? model.lastAudit.toLocaleDateString() : 'Pending'
                             <Input
                                 placeholder="https://api.example.com/v1/..."
                                 value={newModelData.endpointUrl}
-                                onChange={(e) => setNewModelData({ ...newModelData, endpointUrl: e.target.value })}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewModelData({ ...newModelData, endpointUrl: e.target.value })}
                             />
                         </div>
                         <div className="space-y-2">
@@ -4187,7 +4187,7 @@ Last Audit: ${model.lastAudit ? model.lastAudit.toLocaleDateString() : 'Pending'
                                 type="password"
                                 placeholder="sk-..."
                                 value={newModelData.apiKey}
-                                onChange={(e) => setNewModelData({ ...newModelData, apiKey: e.target.value })}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewModelData({ ...newModelData, apiKey: e.target.value })}
                             />
                         </div>
                     </div>
@@ -4412,6 +4412,7 @@ Last Audit: ${model.lastAudit ? model.lastAudit.toLocaleDateString() : 'Pending'
                 selectedModelForView={selectedModelForView}
                 setSelectedModelForView={setSelectedModelForView}
                 handleToggleGuardrail={handleToggleGuardrail}
+                setShowUploadDialog={setShowUploadDialog}
             />
 
             {/* Training Quiz Dialog */}

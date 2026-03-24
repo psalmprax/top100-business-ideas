@@ -1309,10 +1309,22 @@ async def list_duress_alerts(user_id: Optional[str] = None):
 # Gap Remediation - On-Prem, HIPAA/SOX, Regional, Advanced Deepfake
 # ============================================================================
 
-@router.get("/on-prem/manifest")
-async def get_on_prem_manifest(type: str = "docker-compose"):
+@router.api_route("/on-prem/manifest", methods=["GET", "POST"])
+async def get_on_prem_manifest(request: Request, type: Optional[str] = None):
     """Generate on-premise deployment manifests"""
     from app.services.on_prem_service import on_prem_service
+    
+    # Try to get type from query param first, then from body if it's a POST
+    if not type and request.method == "POST":
+        try:
+            body = await request.json()
+            type = body.get("type", "docker-compose")
+        except:
+            type = "docker-compose"
+    
+    if not type:
+        type = "docker-compose"
+
     if type == "helm":
         return {"manifest": on_prem_service.generate_helm_values("enterprise-cluster")}
     return {"manifest": on_prem_service.generate_docker_compose({})}

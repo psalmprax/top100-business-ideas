@@ -605,6 +605,88 @@ function getMockResponse<T>(endpoint: string, method: string, body?: any): T {
         } as T;
     }
 
+    // Governance - Forecast Usage
+    if (endpoint.includes('/api/governance/forecast/usage')) {
+        return [
+            { forecast_date: new Date().toISOString(), month: 'Jan', predicted_usage: 12500, current_usage: 11000, predicted_tokens: 45000000, predicted_cost: 1200, confidence_level: 0.95, confidence_score: 95, trend: 'up' },
+            { forecast_date: new Date().toISOString(), month: 'Feb', predicted_usage: 14000, current_usage: 12500, predicted_tokens: 52000000, predicted_cost: 1450, confidence_level: 0.92, confidence_score: 92, trend: 'up' },
+            { forecast_date: new Date().toISOString(), month: 'Mar', predicted_usage: 15500, current_usage: 0, predicted_tokens: 58000000, predicted_cost: 1600, confidence_level: 0.88, confidence_score: 88, trend: 'stable' },
+        ] as T;
+    }
+
+    // Governance - ROI Analytics
+    if (endpoint.includes('/api/governance/analytics/roi')) {
+        return [
+            { period: 'Q1 2024', metric_name: 'Cost Savings', value: 125430, total_cost: 45000, value_generated: 170430, roi_percentage: 278, trend_percentage: 12, cost_savings: 125430, efficiency_gains: 35 },
+            { period: 'Q1 2024', metric_name: 'Efficiency Gain', value: 85, total_cost: 45000, value_generated: 170430, roi_percentage: 278, trend_percentage: 8, cost_savings: 125430, efficiency_gains: 35 },
+            { period: 'Q1 2024', metric_name: 'Risk Reduction', value: 92, total_cost: 45000, value_generated: 170430, roi_percentage: 278, trend_percentage: 15, cost_savings: 125430, efficiency_gains: 35 },
+        ] as T;
+    }
+
+    // Governance - Localization
+    if (endpoint.includes('/governance/localization/configs')) {
+        return [
+            { id: 'loc-1', region: 'North America', language_code: 'en-US', region_code: 'US', timezone: 'EST', currency: 'USD', compliance_framework: 'HIPAA', active: true, status: 'Active', accuracy_score: 99.4, is_active: true },
+            { id: 'loc-2', region: 'European Union', language_code: 'de-DE', region_code: 'EU', timezone: 'CET', currency: 'EUR', compliance_framework: 'GDPR', active: true, status: 'Active', accuracy_score: 98.2, is_active: true },
+            { id: 'loc-3', region: 'Asia Pacific', language_code: 'ja-JP', region_code: 'JP', timezone: 'JST', currency: 'JPY', compliance_framework: 'APEC', active: false, status: 'Pending', accuracy_score: 95.7, is_active: false },
+        ] as T;
+    }
+
+    // Governance - Self Healing
+    if (endpoint.includes('/governance/healing/configs')) {
+        return [
+            { id: 'heal-1', healing_type: 'Node Recovery', trigger_conditions: { cpu_usage: '> 90%', memory_usage: '> 85%' }, recovery_actions: ['Restart Node', 'Scale Cluster'], cooldown_period: 300, max_attempts: 3, active: true, error_threshold: 5, auto_healing_enabled: true },
+            { id: 'heal-2', healing_type: 'Model Drift', trigger_conditions: { accuracy: '< 85%' }, recovery_actions: ['Rollback Model', 'Alert Maintenance'], cooldown_period: 3600, max_attempts: 1, active: true, error_threshold: 10, auto_healing_enabled: false },
+        ] as T;
+    }
+
+    // Governance - Strategic Insights
+    if (endpoint.includes('/api/governance/insights/strategic')) {
+        return [
+            { id: 'ins-1', insight_type: 'Expansion', title: 'Market Opportunity: LatAm', description: 'Significant demand detected for localized fintech compliance in Brazil and Mexico.', confidence_score: 92, confidence: 92, impact_level: 'High', priority: 'high', recommended_actions: ['Deploy L10n for pt-BR', 'Align with LGPD'] },
+            { id: 'ins-2', insight_type: 'Optimization', title: 'Token Usage Efficiency', description: 'Agent 4 is over-consuming tokens in non-critical hours. Recommended rate-limiting.', confidence_score: 85, confidence: 85, impact_level: 'Medium', priority: 'medium', recommended_actions: ['Set budget rule WH-12'] },
+        ] as T;
+    }
+
+    // Governance - Settings
+    if (endpoint.includes('/api/governance/settings')) {
+        return [
+            { id: 'set-1', category: 'Security', setting_key: 'ai_autonomy_level', setting_name: 'AI Autonomy Level', setting_value: 'high', value: 'high', setting_type: 'select', description: 'Degree of autonomous decision-making permitted without human override.' },
+            { id: 'set-2', category: 'Compliance', setting_key: 'data_retention_days', setting_name: 'Data Retention Days', setting_value: '90', value: '90', setting_type: 'number', description: 'Number of days to retain PII-sanitized audit logs.' },
+            { id: 'set-3', category: 'Performance', setting_key: 'self_healing_enabled', setting_name: 'Self-Healing Enabled', setting_value: 'true', value: 'true', setting_type: 'boolean', description: 'Permit the recovery daemon to autonomously restart failing agent nodes.' },
+            { id: 'set-4', category: 'Security', setting_key: 'audit_intensity', setting_name: 'Audit Intensity', setting_value: '80', value: '80', setting_type: 'number', description: 'Frequency and depth of real-time security scanning (0-100).' }
+        ] as T;
+    }
+
+    // Governance - Compliance Dashboard
+    if (endpoint.includes('/api/governance/compliance/dashboard')) {
+        return {
+            overall_score: 88,
+            compliance_status: 'Compliant',
+            last_audit_date: new Date().toISOString(),
+            pending_assessments: 4,
+            critical_violations: 0
+        } as T;
+    }
+
+    // Governance - SLA Dashboard
+    if (endpoint.includes('/api/governance/sla/dashboard')) {
+        return {
+            uptime_percentage: 99.99,
+            avg_response_time_ms: 245,
+            sla_violations_last_30d: 1,
+            active_tier: 'Enterprise'
+        } as T;
+    }
+
+    // Governance - Partners
+    if (endpoint.includes('/api/governance/partners')) {
+        return [
+            { id: 'p-1', name: 'Global Corp', industry: 'Finance', status: 'Active', last_sync: new Date().toISOString() },
+            { id: 'p-2', name: 'Tech Innovations', industry: 'Healthcare', status: 'Active', last_sync: new Date().toISOString() },
+        ] as T;
+    }
+
     // SSO Config
     if (endpoint.includes('/sso/config') && method === 'GET') {
         return {
@@ -678,6 +760,9 @@ export interface Agent {
     provider?: string;
     model?: string;
     api_secret?: string;
+    org_id?: string;
+    control_webhook?: string;
+    persistent_memory?: boolean;
     metrics?: {
         tasksTotal?: number;
         tasksComplete?: number;
@@ -695,6 +780,8 @@ export interface Agent {
     };
     createdAt: string | Date;
     lastActiveAt?: string | Date;
+    created_at?: string;
+    updated_at?: string;
 }
 
 export const agentsApi = {
@@ -922,10 +1009,10 @@ export const billingApi = {
 
     invoices: () => apiRequest<Invoice[]>('/api/v1/billing/invoices'),
 
-    createCheckout: (planId: string) =>
+    createCheckout: (planId: string, provider: 'stripe' | 'paypal' = 'stripe') =>
         apiRequest<{ url: string }>('/api/v1/billing/checkout', {
             method: 'POST',
-            body: JSON.stringify({ plan_id: planId }),
+            body: JSON.stringify({ plan_id: planId, provider }),
         }),
 
     cancel: () =>
@@ -1872,47 +1959,47 @@ export const extendedApi = {
     },
     governance: {
         compliance: {
-            getDashboard: () => apiRequest<any>('/api/governance/compliance/dashboard'),
-            getArticles: () => apiRequest<any[]>('/api/governance/compliance/articles'),
-            assessArticle: (articleId: string, assessment: any) => apiRequest<any>(`/api/governance/compliance/assess/${articleId}`, {
+            getDashboard: () => apiRequest<any>('/api/v1/governance/compliance/dashboard'),
+            getArticles: () => apiRequest<any[]>('/api/v1/governance/compliance/articles'),
+            assessArticle: (articleId: string, assessment: any) => apiRequest<any>(`/api/v1/governance/compliance/assess/${articleId}`, {
                 method: 'POST',
                 body: JSON.stringify(assessment),
             }),
         },
         sla: {
-            getDashboard: () => apiRequest<any>('/api/governance/sla/dashboard'),
-            getMetrics: () => apiRequest<any[]>('/api/governance/sla/metrics'),
+            getDashboard: () => apiRequest<any>('/api/v1/governance/sla/dashboard'),
+            getMetrics: () => apiRequest<any[]>('/api/v1/governance/sla/metrics'),
         },
         partners: {
-            list: () => apiRequest<any[]>('/api/governance/partners'),
-            sync: (partnerId: string) => apiRequest<any>(`/api/governance/partners/${partnerId}/sync`, {
+            list: () => apiRequest<any[]>('/api/v1/governance/partners'),
+            sync: (partnerId: string) => apiRequest<any>(`/api/v1/governance/partners/${partnerId}/sync`, {
                 method: 'POST',
             }),
         },
         forecast: {
-            getUsage: () => apiRequest<any[]>('/api/governance/forecast/usage'),
+            getUsage: () => apiRequest<any[]>('/api/v1/governance/forecast/usage'),
         },
         analytics: {
-            getROI: () => apiRequest<any[]>('/api/governance/analytics/roi'),
+            getROI: () => apiRequest<any[]>('/api/v1/governance/analytics/roi'),
         },
         localization: {
-            getConfigs: () => apiRequest<any[]>('/governance/localization/configs'),
+            getConfigs: () => apiRequest<any[]>('/api/v1/governance/localization/configs'),
         },
         healing: {
-            getConfigs: () => apiRequest<any[]>('/governance/healing/configs'),
+            getConfigs: () => apiRequest<any[]>('/api/v1/governance/healing/configs'),
         },
         insights: {
-            getStrategic: () => apiRequest<any[]>('/api/governance/insights/strategic'),
+            getStrategic: () => apiRequest<any[]>('/api/v1/governance/insights/strategic'),
         },
         settings: {
-            list: () => apiRequest<any[]>('/api/governance/settings'),
-            update: (settingId: string, value: string) => apiRequest<any>(`/api/governance/settings/${settingId}?value=${encodeURIComponent(value)}`, {
+            list: () => apiRequest<any[]>('/api/v1/governance/settings'),
+            update: (settingId: string, value: string) => apiRequest<any>(`/api/v1/governance/settings/${settingId}?value=${encodeURIComponent(value)}`, {
                 method: 'PUT',
             }),
         },
         onPrem: {
-            listDeployments: () => apiRequest<any[]>('/api/governance/on-prem/deployments'),
-            triggerAction: (deploymentId: string, action: string) => apiRequest<any>(`/api/governance/on-prem/deploy/${deploymentId}?action=${action}`, {
+            listDeployments: () => apiRequest<any[]>('/api/v1/governance/on-prem/deployments'),
+            triggerAction: (deploymentId: string, action: string) => apiRequest<any>(`/api/v1/governance/on-prem/deploy/${deploymentId}?action=${action}`, {
                 method: 'POST',
             }),
         },

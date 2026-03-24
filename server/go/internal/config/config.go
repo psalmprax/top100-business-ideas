@@ -26,6 +26,14 @@ type Config struct {
 
 	// External Services
 	OpenAIAPIKey string
+
+	// Billing
+	StripeSecretKey    string
+	StripeWebhookSecret string
+	PayPalClientID     string
+	PayPalSecret       string
+	PayPalAppID        string
+	PayPalMode         string // "sandbox" or "live"
 }
 
 func Load() *Config {
@@ -39,6 +47,12 @@ func Load() *Config {
 		PythonBackendURL: getEnv("PYTHON_BACKEND_URL", "http://127.0.0.1:8000"),
 		RedisURL:         getEnv("REDIS_URL", "redis://localhost:6379"),
 		OpenAIAPIKey:     getEnv("OPENAI_API_KEY", ""),
+		StripeSecretKey:   getEnv("STRIPE_SECRET_KEY", ""),
+		StripeWebhookSecret: getEnv("STRIPE_WEBHOOK_SECRET", ""),
+		PayPalClientID:    getEnv("PAYPAL_CLIENT_ID", ""),
+		PayPalSecret:      getEnv("PAYPAL_SECRET", ""),
+		PayPalAppID:       getEnv("PAYPAL_APP_ID", ""),
+		PayPalMode:        getEnv("PAYPAL_MODE", "sandbox"),
 	}
 }
 

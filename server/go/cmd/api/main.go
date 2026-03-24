@@ -81,7 +81,11 @@ func main() {
 	wsHandler := handlers.NewWebSocketHandler(wsHub)
 	rulesHandler := handlers.NewRulesHandler(proxyService)
 	metricsHandler := handlers.NewMetricsHandler()
-	billingHandler := handlers.NewBillingHandler()
+	billingService, err := services.NewBillingService(cfg)
+	if err != nil {
+		logger.Error().Err(err).Msg("Failed to initialize BillingService, falling back to restricted mode")
+	}
+	billingHandler := handlers.NewBillingHandler(billingService)
 	mlHandler := handlers.NewMLHandler(cfg.PythonBackendURL)
 
 	// New handlers for gap closure
@@ -294,6 +298,11 @@ func main() {
 				agentOps.POST("/compliance/hipaa", agentOpsHandler.ProxyToPython)
 				agentOps.POST("/compliance/sox", agentOpsHandler.ProxyToPython)
 				agentOps.POST("/gateway/gql", agentOpsHandler.ProxyToPython)
+				agentOps.POST("/deploy/language", agentOpsHandler.ProxyToPython)
+				agentOps.POST("/self-healing/deploy", agentOpsHandler.ProxyToPython)
+				agentOps.GET("/snapshots", agentOpsHandler.ProxyToPython)
+				agentOps.POST("/proxy/config", agentOpsHandler.ProxyToPython)
+				agentOps.POST("/retention", agentOpsHandler.ProxyToPython)
 			}
 
 			// Multi-Cloud (Agent Ops UC16)
@@ -400,6 +409,32 @@ func main() {
 			onPrem.Use(middleware.ProductAccess("agent-ops"))
 			{
 				onPrem.POST("/manifest", agentOpsHandler.ProxyToPython)
+				onPrem.GET("/manifest", agentOpsHandler.ProxyToPython)
+				onPrem.GET("/checklist", agentOpsHandler.ProxyToPython)
+				onPrem.GET("/deployments", agentOpsHandler.ProxyToPython)
+				onPrem.POST("/deploy/:id", agentOpsHandler.ProxyToPython)
+			}
+
+			// Governance & Advanced Analytics (Sentinel)
+			governance := protected.Group("/governance")
+			governance.Use(middleware.ProductAccess("agent-ops"))
+			{
+				governance.GET("/compliance/dashboard", agentOpsHandler.ProxyToPython)
+				governance.GET("/compliance/articles", agentOpsHandler.ProxyToPython)
+				governance.POST("/compliance/assess/:id", agentOpsHandler.ProxyToPython)
+				governance.GET("/sla/dashboard", agentOpsHandler.ProxyToPython)
+				governance.GET("/sla/metrics", agentOpsHandler.ProxyToPython)
+				governance.GET("/partners", agentOpsHandler.ProxyToPython)
+				governance.POST("/partners/:id/sync", agentOpsHandler.ProxyToPython)
+				governance.GET("/forecast/usage", agentOpsHandler.ProxyToPython)
+				governance.GET("/analytics/roi", agentOpsHandler.ProxyToPython)
+				governance.GET("/localization/configs", agentOpsHandler.ProxyToPython)
+				governance.GET("/healing/configs", agentOpsHandler.ProxyToPython)
+				governance.GET("/insights/strategic", agentOpsHandler.ProxyToPython)
+				governance.GET("/settings", agentOpsHandler.ProxyToPython)
+				governance.PUT("/settings/:id", agentOpsHandler.ProxyToPython)
+				governance.GET("/on-prem/deployments", agentOpsHandler.ProxyToPython)
+				governance.POST("/on-prem/deploy/:id", agentOpsHandler.ProxyToPython)
 			}
 		}
 	}
