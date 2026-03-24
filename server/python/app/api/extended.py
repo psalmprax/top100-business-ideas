@@ -48,6 +48,20 @@ router = APIRouter()
 # Webhook configs and other temporary state moved to database.
 # Services are singletons.
 
+# Global state for extended endpoints (in-memory for demo/testing)
+# Use dictionaries for fast lookup by ID where .values() is needed
+webhook_configs = {}
+webhook_executions = []
+training_modules = {}
+training_progress = []
+white_label_configs = {}
+edge_deployments = {}
+shadow_ai_detections = []
+wearable_devices = {}
+travel_kiosks = {}
+crypto_wallets = {}
+duress_configs = {}
+
 
 # ============================================================================
 # Webhook Endpoints (Agent Ops UC 4, 12)
@@ -1097,13 +1111,13 @@ async def download_mobile_sdk(platform: str):
     }
 
 
-@router.get("/mobile-sdk/stats")
-async def get_mobile_sdk_stats():
-    """Get mobile SDK usage statistics"""
+@router.get("/mobile-sdk/stats-legacy") # Rename or remove to avoid duplicate
+async def get_mobile_sdk_stats_legacy():
+    """Get mobile SDK usage statistics - legacy endpoint"""
     return mobile_sdk.get_sdk_stats()
 
-@router.post("/deepfake/advanced/analysis")
-async def advanced_deepfake_analysis(media_url: str):
+@router.post("/deepfake/advanced/analysis-new") # Rename or remove to avoid duplicate
+async def advanced_deepfake_analysis_new(media_url: str):
     """Execute advanced multi-material deepfake analysis (3D mask/Silicone)"""
     return {
         "status": "completed",
@@ -1130,8 +1144,10 @@ async def verify_document(document_url: str):
 @router.get("/wearable/devices", response_model=List[WearableDevice])
 async def list_wearable_devices(user_id: Optional[str] = None):
     """List wearable devices"""
-    # Simply use the liveness service to check active sessions as 'devices' for now
-    return []
+    devices = list(wearable_devices.values())
+    if user_id:
+        devices = [d for d in devices if d.user_id == user_id]
+    return devices
 
 
 @router.post("/wearable/devices", response_model=WearableDevice)
@@ -1190,9 +1206,9 @@ async def verify_at_kiosk(kiosk_id: str, user_id: str):
     }
 
 
-@router.get("/travel/stats")
-async def get_travel_stats():
-    """Get travel verification statistics"""
+@router.get("/travel/stats-legacy") # Rename or remove to avoid duplicate
+async def get_travel_stats_legacy():
+    """Get travel verification statistics - legacy endpoint"""
     return travel_sdk.get_kiosk_stats()
 
 

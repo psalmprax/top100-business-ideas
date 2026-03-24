@@ -127,7 +127,7 @@ test.describe('AgentOps Sentinel - Enterprise Functional Validation', () => {
         await page.getByTestId('agents-tab').click();
 
         // Click New Agent button
-        const newAgentBtn = page.getByRole('button', { name: /new agent/i });
+        const newAgentBtn = page.getByTestId('new-agent-btn');
         await expect(newAgentBtn).toBeVisible();
         await newAgentBtn.click();
 
@@ -156,10 +156,10 @@ test.describe('AgentOps Sentinel - Enterprise Functional Validation', () => {
         await page.getByTestId('core-category-trigger').click();
         await page.getByTestId('agents-tab').click();
 
-        // Select multiple agents using checkboxes
-        const agentCheckboxes = page.locator('input[type="checkbox"]').first().locator('..').locator('input[type="checkbox"]');
-        await agentCheckboxes.first().check();
+        // Select multiple agents using checkboxes (skip header checkbox)
+        const agentCheckboxes = page.getByRole('checkbox');
         await agentCheckboxes.nth(1).check();
+        await agentCheckboxes.nth(2).check();
 
         // Verify bulk operations bar appears
         await expect(page.getByText(/2 agents selected/i)).toBeVisible();
@@ -197,7 +197,8 @@ test.describe('AgentOps Sentinel - Enterprise Functional Validation', () => {
         await budgetInput.fill('75');
 
         // Save changes
-        await page.getByRole('button', { name: /save|update/i }).click();
+        const saveBtn = page.getByRole('button', { name: /save|update/i }).first();
+        await saveBtn.click();
 
         // Verify success message
         await expect(page.getByText(/settings.*updated|synchronized/i)).toBeVisible();
@@ -252,7 +253,7 @@ test.describe('AgentOps Sentinel - Enterprise Functional Validation', () => {
         await page.getByTestId('forecast-tab').click();
 
         // Verify forecast data loads
-        await expect(page.getByText(/forecast|predicted/i)).toBeVisible();
+        await expect(page.getByText(/forecast|predicted/i).first()).toBeVisible();
 
         // Check for confidence levels
         await expect(page.getByText(/confidence|95%/i)).toBeVisible();
