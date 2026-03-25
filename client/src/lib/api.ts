@@ -145,6 +145,29 @@ async function apiRequest<T>(
     }
 }
 
+// Helper for Blob/File requests (Downloads)
+async function apiBlobRequest(
+    endpoint: string,
+    options: RequestInit = {}
+): Promise<Blob> {
+    const token = getAuthToken();
+    const headers: HeadersInit = { ...options.headers };
+    if (token) (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+
+    let normalizedEndpoint = endpoint;
+    if (!endpoint.startsWith('/api/v1') && !endpoint.startsWith('/ml/')) {
+        normalizedEndpoint = `/api/v1${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
+    }
+
+    const cleanBaseUrl = (API_URL || '').replace(/\/+$/, '');
+    const cleanPath = normalizedEndpoint.replace(/^\/+/, '');
+    const finalUrl = cleanBaseUrl && cleanBaseUrl.startsWith('http') ? `${cleanBaseUrl}/${cleanPath}` : `/${cleanPath}`;
+
+    const response = await fetch(finalUrl, { ...options, headers });
+    if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
+    return await response.blob();
+}
+
 // Mock response generator for demo mode
 function getMockResponse<T>(endpoint: string, method: string, body?: any): T {
     const id = Math.random().toString(36).substr(2, 9);
@@ -1516,11 +1539,17 @@ export const extendedApi = {
             apiRequest<any>('/api/v1/compliance/upload', {
                 method: 'POST',
                 body: formData,
-                headers: {
-                    // Fetch will set the boundary automatically if we don't set Content-Type
-                    'Content-Type': undefined as any,
-                },
             }),
+        listArtifacts: () => apiRequest<any[]>('/api/v1/compliance/artifacts'),
+        getROIMetrics: () => apiRequest<any>('/api/v1/compliance/roi'),
+        getVelocityTrends: () => apiRequest<any[]>('/api/v1/compliance/velocity'),
+        getDeadlines: () => apiRequest<any[]>('/api/v1/compliance/deadlines'),
+        getEnterpriseAudits: () => apiRequest<any[]>('/api/v1/compliance/enterprise-audits'),
+        getModelBreakdown: (id: string) => apiRequest<any>(`/api/v1/compliance/models/${id}/breakdown`),
+        getModelAudits: (id: string) => apiRequest<any[]>(`/api/v1/compliance/models/${id}/audits`),
+        getModelHandshakes: (id: string) => apiRequest<any[]>(`/api/v1/compliance/models/${id}/handshakes`),
+        getRegionalReports: () => apiRequest<any[]>('/api/v1/compliance/regional-reports'),
+        getFinancialMetrics: () => apiRequest<any>('/api/v1/compliance/financial-metrics'),
         exportReport: (modelId?: string, reportType?: string) => {
             let url = '/api/v1/compliance/reports/export';
             const params = new URLSearchParams();
@@ -1530,27 +1559,16 @@ export const extendedApi = {
             if (queryString) url += `?${queryString}`;
             return apiRequest<any>(url);
         },
-        listArtifacts: () => apiRequest<any[]>('/api/v1/compliance/artifacts'),
-        deleteVendor: (id: string) =>
-            apiRequest<any>(`/api/v1/vendors/${id}`, {
-                method: 'DELETE',
-            }),
-        getAuditLogs: (agentId?: string, search?: string, outcome?: string, limit: number = 50) => {
-            let url = `/api/v1/agent-ops/audit?limit=${limit}`;
-            if (agentId) url += `&agentId=${agentId}`;
-            if (search) url += `&search=${encodeURIComponent(search)}`;
-            if (outcome) url += `&outcome=${outcome}`;
-            return apiRequest<any[]>(url);
-        },
-        updateIncidentStatus: (id: string, status: string) =>
-            apiRequest<any>(`/api/v1/compliance/incidents/${id}/status`, {
-                method: 'PATCH',
-                body: JSON.stringify({ status }),
-            }),
     },
-
-    // Training (AI Compliance UC 10)
     training: {
+        listModules: () => apiRequest<any[]>('/api/v1/training/modules'),
+        getModule: (id: string) => apiRequest<any>(`/api/v1/training/modules/${id}`),
+        updateProgress: (data: any) => apiRequest<any>('/api/v1/training/progress', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        }),
+        getStats: () => apiRequest<any>('/api/v1/training/stats'),
+        downloadCertificate: (id: string) => apiBlobRequest(`/api/v1/training/modules/${id}/certificate`),
         modules: (category?: string) => {
             const url = category
                 ? `/api/v1/training/modules?category=${category}`
@@ -1562,22 +1580,8 @@ export const extendedApi = {
                 method: 'POST',
                 body: JSON.stringify(module),
             }),
-        getModule: (moduleId: string) =>
-            apiRequest<TrainingModule>(`/api/v1/training/modules/${moduleId}`),
-        updateProgress: (progress: TrainingProgress) =>
-            apiRequest<TrainingProgress>('/api/v1/training/progress', {
-                method: 'POST',
-                body: JSON.stringify(progress),
-            }),
         userProgress: (userId: string) =>
             apiRequest<TrainingProgress[]>(`/api/v1/training/progress/${userId}`),
-        stats: () =>
-            apiRequest<{
-                total_modules: number;
-                completed: number;
-                in_progress: number;
-                not_started: number;
-            }>('/api/v1/training/stats'),
     },
 
     // White-label (AI Compliance UC 12, Deepfake UC 19)

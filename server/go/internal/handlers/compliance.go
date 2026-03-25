@@ -196,3 +196,86 @@ func (h *ComplianceHandler) UploadArtifact(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, result)
 }
+
+func (h *ComplianceHandler) GetROIMetrics(c *gin.Context) {
+	response, err := h.proxyService.Forward("GET", "/compliance/roi", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch ROI metrics", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+func (h *ComplianceHandler) GetVelocityTrends(c *gin.Context) {
+	response, err := h.proxyService.Forward("GET", "/compliance/velocity", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch velocity trends", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+func (h *ComplianceHandler) GetDeadlines(c *gin.Context) {
+	response, err := h.proxyService.Forward("GET", "/compliance/deadlines", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch compliance deadlines", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+func (h *ComplianceHandler) GetEnterpriseAudits(c *gin.Context) {
+	response, err := h.proxyService.Forward("GET", "/compliance/enterprise-audits", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch enterprise audits", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+func (h *ComplianceHandler) GetModelBreakdown(c *gin.Context) {
+	id := c.Param("id")
+	response, err := h.proxyService.Forward("GET", fmt.Sprintf("/compliance/models/%s/breakdown", id), nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch model breakdown", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+func (h *ComplianceHandler) GetModelAudits(c *gin.Context) {
+	id := c.Param("id")
+	response, err := h.proxyService.Forward("GET", fmt.Sprintf("/compliance/models/%s/audits", id), nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch model audits", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+func (h *ComplianceHandler) GetModelHandshakes(c *gin.Context) {
+	id := c.Param("id")
+	response, err := h.proxyService.Forward("GET", fmt.Sprintf("/compliance/models/%s/handshakes", id), nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch model handshakes", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
+}
+func (h *ComplianceHandler) GetRegionalReports(c *gin.Context) {
+	response, err := h.proxyService.Forward("GET", "/compliance/regional-reports", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch regional reports", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+func (h *ComplianceHandler) GetFinancialMetrics(c *gin.Context) {
+	response, err := h.proxyService.Forward("GET", "/compliance/financial-metrics", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch financial metrics", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
+}

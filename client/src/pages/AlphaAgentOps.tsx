@@ -17,6 +17,7 @@ import { Link } from "wouter";
 import { useAuth } from "../contexts/AuthContext";
 import {
   agentsApi,
+  extendedApi,
   type SelfHealingEvent,
 } from "../lib/api";
 import { useWebSocket } from "../hooks/useApi";
@@ -996,8 +997,8 @@ export default function AlphaAgentOps() {
   const [dashboardFilter, setDashboardFilter] = useState<"all" | "strategic" | "tactical" | "industrial">("all");
   const [clusterNodes, setClusterNodes] = useState<any[]>([]);
   const [auditLog, setAuditLog] = useState<AuditEntry[]>([]);
-  const [alertConfigs, setAlertConfigs] = useState<AlertConfig[]>(storage.get("alert_configs", []));
-  const [budgetRules, setBudgetRules] = useState<BudgetRule[]>(storage.get("budget_rules", []));
+  const [alertConfigs, setAlertConfigs] = useState<AlertConfig[]>([]);
+  const [budgetRules, setBudgetRules] = useState<BudgetRule[]>([]);
   const [showAlertDialog, setShowAlertDialog] = useState(false);
   const [showBudgetDialog, setShowBudgetDialog] = useState(false);
   const [showBudgetRuleDialog, setShowBudgetRuleDialog] = useState(false); // Renamed for clarity
@@ -1683,14 +1684,15 @@ export default function AlphaAgentOps() {
 
     } catch (error) {
       console.error("Critical Sentinel Sync Failure:", error);
-      toast.error("Failed to sync with Sentinel Backend. Using cached data if available.");
+      toast.error("Failed to sync with Sentinel Backend. Please check your connectivity.");
       
-      // Fallback to mocks ONLY when real solution fails
+      // Real-First Policy: Do not fallback to mocks. 
+      // Initialize with empty arrays to prevent crashes while showing no-data state.
       if (agents.length === 0) {
-        setAgents(mockAgents);
-        setAuditLog(mockAuditLog);
-        setBudgetRules(mockBudgetRules);
-        setAlertConfigs(mockAlertConfigs);
+        setAgents([]);
+        setAuditLog([]);
+        setBudgetRules([]);
+        setAlertConfigs([]);
       }
     } finally {
       setIsLoading(false);
@@ -1728,22 +1730,20 @@ export default function AlphaAgentOps() {
 
   const handleRealizeImpact = async (insightId: string) => {
     try {
-      const res = await fetch(`/api/v1/agent-ops/venture/realize/${insightId}`, { method: 'POST' });
-      if (res.ok) {
-        toast.success("Strategic impact realized and logged to Venture ledger.");
-      }
+      await extendedApi.agentOps.bulkAction('realize', [insightId]);
+      toast.success("Strategic impact realized and logged to Venture ledger.");
+      refreshData();
     } catch (e) {
       toast.error("Failed to realize impact.");
     }
   };
 
   const handleRunDiagnostics = async (agentId: string, type: 'dump' | 'compress') => {
-    const endpoint = type === 'dump' ? 'dump' : 'compress';
     toast.promise(
-      fetch(`/api/v1/agent-ops/${agentId}/${endpoint}`, { method: 'POST' }).then(r => r.json()),
+      extendedApi.agentOps.optimizeMemory(agentId),
       {
         loading: `Initiating agent ${type}...`,
-        success: (data) => `${type === 'dump' ? 'Memory dump' : 'Context compression'} successful: ${data.message}`,
+        success: () => `${type === 'dump' ? 'Memory dump' : 'Context compression'} successful.`,
         error: `Forensic ${type} failed.`
       }
     );
@@ -1827,8 +1827,9 @@ export default function AlphaAgentOps() {
 
   const handleSaveRetention = async (days: number) => {
     try {
-      await extendedApi.agentOps.updateRetention(days);
+      await extendedApi.agentOps.updateRetention("default", days);
       setRetentionDays(days);
+      refreshData();
       toast.success(`Retention policy set to ${days} days.`);
     } catch (e) {
       toast.error("Update failed.");
@@ -1995,40 +1996,6 @@ export default function AlphaAgentOps() {
     toast.success('Enterprise data export complete');
   };
 
-  const handleCreateAgent = async () => {
-    if (isDemo) {
-      const tempAgent: DashboardAgent = {
-        ...newAgentData,
-        id: Math.random().toString(36).substr(2, 9),
-        status: "active",
-        dailySpend: 0,
-        metrics: {
-          totalRequests: 0,
-          totalTokens: 0,
-          totalCost: 0,
-          avgLatencyMs: 0,
-          errorRate: 0,
-          loopCount: 0,
-          cacheHits: 0,
-          loopsPrevented: 0,
-          costSaved: 0,
-        },
-        config: {
-          provider: newAgentData.provider,
-          model: newAgentData.model,
-          maxTokens: newAgentData.maxTokens,
-          temperature: 0.7,
-          rules: [],
-          ...newAgentData.metadata,
-        },
-        createdAt: new Date(),
-        lastActiveAt: new Date(),
-      };
-      setAgents(prev => [...prev, tempAgent]);
-      toast.success("Demo Mode: Agent simulated locally.");
-      setShowNewAgentDialog(false);
-      return;
-    }
     try {
       const result = await agentsApi.create({
         ...newAgentData,
@@ -2043,8 +2010,8 @@ export default function AlphaAgentOps() {
       } as any);
 
       if (result) {
-        setAgents(prev => [...prev, result as unknown as DashboardAgent]);
         setShowNewAgentDialog(false);
+        refreshData();
         toast.success("Agent deployed successfully.");
         // Reset form
         setNewAgentData({
@@ -2072,7 +2039,7 @@ export default function AlphaAgentOps() {
     if (!confirm("Are you sure you want to decommission this agent? This action is irreversible.")) return;
     try {
       await agentsApi.delete(agentId);
-      setAgents(agents.filter(a => a.id !== agentId));
+      refreshData();
       toast.success("Agent decommissioned successfully");
     } catch (error) {
       toast.error("Failed to decommission agent");
@@ -2113,19 +2080,16 @@ export default function AlphaAgentOps() {
   const handleDeleteAgent = async (agentId: string) => {
     try {
       await agentsApi.delete(agentId);
-      setAgents(prev => prev.filter(a => a.id !== agentId));
+      refreshData();
       toast.success("Agent decommissioned.");
     } catch (error) {
-      // Fallback to local delete
-      setAgents(prev => prev.filter(a => a.id !== agentId));
-      toast.success("Agent removed.");
+      toast.error("Failed to decommission agent.");
     }
   };
 
   const handleUpdateAgent = async () => {
     if (!selectedAgent) return;
     try {
-      // Ensure types match for API
       const updatePayload = {
         name: selectedAgent.name,
         budget: selectedAgent.budget,
@@ -2133,18 +2097,11 @@ export default function AlphaAgentOps() {
         status: selectedAgent.status,
       };
       await agentsApi.update(selectedAgent.id, updatePayload);
-      setAgents(prev =>
-        prev.map(a => (a.id === selectedAgent.id ? selectedAgent : a))
-      );
       setShowSettingsDialog(false);
+      refreshData();
       toast.success("Agent settings synchronized.");
     } catch (error) {
-      // Fallback to local update
-      setAgents(prev =>
-        prev.map(a => (a.id === selectedAgent.id ? selectedAgent : a))
-      );
-      setShowSettingsDialog(false);
-      toast.success("Settings updated.");
+      toast.error("Failed to update agent settings.");
     }
   };
 
@@ -2187,20 +2144,12 @@ export default function AlphaAgentOps() {
       } else {
         await agentsApi.stop(agentId);
       }
-      setAgents(
-        agents.map(a => (a.id === agentId ? { ...a, status: newStatus } : a))
-      );
+      refreshData();
       toast.success(
         `Agent ${agent.name} ${newStatus === "active" ? "started" : "stopped"}`
       );
     } catch (error) {
-      // Fallback: update locally anyway
-      setAgents(
-        agents.map(a => (a.id === agentId ? { ...a, status: newStatus } : a))
-      );
-      toast.success(
-        `Agent ${agent.name} ${newStatus === "active" ? "started" : "stopped"}`
-      );
+      toast.error(`Failed to ${newStatus === "active" ? "start" : "stop"} agent.`);
     }
   };
 
@@ -5042,38 +4991,22 @@ export default function AlphaAgentOps() {
                     const result = await extendedApi.alerts.create({
                       name: `${newAlertData.type} Alert`,
                       type: newAlertData.type,
-                      channels: [newAlertData.type],
+                      channels: [newAlertData.channel],
                       threshold: newAlertData.threshold,
                       enabled: true,
                     });
                     if (result) {
-                      setAlertConfigs(prev => [
-                        ...prev,
-                        result as unknown as AlertConfig,
-                      ]);
                       setShowAlertDialog(false);
+                      refreshData();
                       setNewAlertData({
                         type: "slack",
                         channel: "",
                         threshold: 75,
                       });
-                      toast.success("Alert configuration saved successfully.");
+                      toast.success("Critical Governance Alert Configured.");
                     }
-                  } catch (error) {
-                    // Fallback: add locally
-                    const newAlert = {
-                      id: `alert-${Date.now()}`,
-                      ...newAlertData,
-                      enabled: true,
-                    };
-                    setAlertConfigs(prev => [...prev, newAlert as AlertConfig]);
-                    setShowAlertDialog(false);
-                    setNewAlertData({
-                      type: "slack",
-                      channel: "",
-                      threshold: 75,
-                    });
-                    toast.success("Alert configuration saved successfully.");
+                  } catch (e) {
+                    toast.error("Alert configuration failed.");
                   }
                 }}
               >
@@ -5162,21 +5095,7 @@ export default function AlphaAgentOps() {
                 Cancel
               </Button>
               <Button
-                onClick={() => {
-                  // Save budget rule - API or fallback
-                  const newRule = {
-                    id: `rule-${Date.now()}`,
-                    name: newBudgetRuleData.name,
-                    dailyLimit: newBudgetRuleData.dailyLimit,
-                    action: newBudgetRuleData.action,
-                    enabled: true,
-                    agentIds: [],
-                    priority: "high" as const,
-                  };
-                  setBudgetRules(prev => [...prev, newRule as BudgetRule]);
-                  setShowBudgetDialog(false);
-                  toast.success("Budget rule created successfully!");
-                }}
+                onClick={handleSaveBudgetRule}
               >
                 Add Rule
               </Button>
@@ -5963,7 +5882,7 @@ export default function AlphaAgentOps() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div >
+      </div>
     </>
   );
 }

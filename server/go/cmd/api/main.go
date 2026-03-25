@@ -229,6 +229,15 @@ func main() {
 				compliance.POST("/incidents", agentOpsHandler.ProxyToPython)
 				compliance.POST("/upload", complianceHandler.UploadArtifact)
 				compliance.GET("/artifacts", complianceHandler.ListArtifacts)
+				compliance.GET("/roi", complianceHandler.GetROIMetrics)
+				compliance.GET("/velocity", complianceHandler.GetVelocityTrends)
+				compliance.GET("/deadlines", complianceHandler.GetDeadlines)
+				compliance.GET("/enterprise-audits", complianceHandler.GetEnterpriseAudits)
+				compliance.GET("/models/:id/breakdown", complianceHandler.GetModelBreakdown)
+				compliance.GET("/models/:id/audits", complianceHandler.GetModelAudits)
+				compliance.GET("/models/:id/handshakes", complianceHandler.GetModelHandshakes)
+				compliance.GET("/regional-reports", complianceHandler.GetRegionalReports)
+				compliance.GET("/financial-metrics", complianceHandler.GetFinancialMetrics)
 			}
 
 			// Deepfake Defense
@@ -373,6 +382,7 @@ func main() {
 				training.POST("/progress", trainingHandler.UpdateProgress)
 				training.GET("/progress/:userId", trainingHandler.GetUserProgress)
 				training.GET("/stats", trainingHandler.GetTrainingStats)
+				training.GET("/modules/:id/certificate", trainingHandler.DownloadCertificate)
 			}
 
 			// Shadow AI (AI Compliance UC15)

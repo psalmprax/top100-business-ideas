@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -187,6 +188,13 @@ func (h *TrainingHandler) GetTrainingStats(c *gin.Context) {
 		},
 	}
 	c.JSON(http.StatusOK, stats)
+}
+
+func (h *TrainingHandler) DownloadCertificate(c *gin.Context) {
+	id := c.Param("id")
+	// In a real app, this would generate a PDF or fetch it from a bucket.
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=EU-AI-ACT-CERT-%s.pdf", id))
+	c.Data(http.StatusOK, "application/pdf", []byte("%PDF-1.4\n%real-certificate-data"))
 }
 
 // ShadowAIHandler handles Shadow AI detection for AI Compliance

@@ -251,7 +251,25 @@ function StatusBadge({ status }: { status: string }) {
     );
 }
 
-const ModelProfileDialog = ({ selectedModelForView, setSelectedModelForView, handleToggleGuardrail, setShowUploadDialog, handleExportReport }: { selectedModelForView: any, setSelectedModelForView: (model: any) => void, handleToggleGuardrail: (key: string, value: boolean) => void, setShowUploadDialog: (show: boolean) => void, handleExportReport: (modelId: string) => Promise<void> }) => {
+const ModelProfileDialog = ({ 
+    selectedModelForView, 
+    setSelectedModelForView, 
+    handleToggleGuardrail, 
+    setShowUploadDialog, 
+    handleExportReport,
+    modelBreakdown,
+    modelAudits,
+    modelHandshakes
+}: { 
+    selectedModelForView: any, 
+    setSelectedModelForView: (model: any) => void, 
+    handleToggleGuardrail: (key: string, value: boolean) => void, 
+    setShowUploadDialog: (show: boolean) => void, 
+    handleExportReport: (modelId: string) => Promise<void>,
+    modelBreakdown: any,
+    modelAudits: any[],
+    modelHandshakes: any[]
+}) => {
     return (
         <Dialog open={!!selectedModelForView} onOpenChange={(open) => !open && setSelectedModelForView(null)}>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -298,23 +316,23 @@ const ModelProfileDialog = ({ selectedModelForView, setSelectedModelForView, han
                             <div className="space-y-2">
                                 <div className="flex justify-between text-xs">
                                     <span>Article 10 (Data Governance)</span>
-                                    <span className="text-green-500 font-bold">98%</span>
+                                    <span className="text-green-500 font-bold">{modelBreakdown?.dataGovernance || 0}%</span>
                                 </div>
-                                <Progress value={98} className="h-1.5" />
+                                <Progress value={modelBreakdown?.dataGovernance || 0} className="h-1.5" />
                             </div>
                             <div className="space-y-2">
                                 <div className="flex justify-between text-xs">
                                     <span>Article 11 (Technical Docs)</span>
-                                    <span className="text-yellow-500 font-bold">72%</span>
+                                    <span className="text-yellow-500 font-bold">{modelBreakdown?.technicalDocs || 0}%</span>
                                 </div>
-                                <Progress value={72} className="h-1.5" />
+                                <Progress value={modelBreakdown?.technicalDocs || 0} className="h-1.5" />
                             </div>
                             <div className="space-y-2">
                                 <div className="flex justify-between text-xs">
                                     <span>Article 61 (Post-Market)</span>
-                                    <span className="text-blue-500 font-bold">85%</span>
+                                    <span className="text-blue-500 font-bold">{modelBreakdown?.postMarket || 0}%</span>
                                 </div>
-                                <Progress value={85} className="h-1.5" />
+                                <Progress value={modelBreakdown?.postMarket || 0} className="h-1.5" />
                             </div>
                         </CardContent>
                     </Card>
@@ -330,11 +348,7 @@ const ModelProfileDialog = ({ selectedModelForView, setSelectedModelForView, han
 
                     <TabsContent value="audit" className="pt-4">
                         <div className="space-y-4">
-                            {[
-                                { event: "Adversarial Scan Completed", status: "Clean", date: "2024-11-20" },
-                                { event: "Technical Documentation Finalized", status: "Published", date: "2024-11-18" },
-                                { event: "Bias Drift Detected", status: "Mitigated", date: "2024-11-15" }
-                            ].map((log, i) => (
+                            {modelAudits.length > 0 ? modelAudits.map((log, i) => (
                                 <div key={i} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20 text-xs">
                                     <div className="flex items-center gap-3">
                                         <div className="w-2 h-2 rounded-full bg-blue-500" />
@@ -345,38 +359,31 @@ const ModelProfileDialog = ({ selectedModelForView, setSelectedModelForView, han
                                         <span className="text-muted-foreground">{log.date}</span>
                                     </div>
                                 </div>
-                            ))}
+                            )) : (
+                                <div className="text-center py-8 text-muted-foreground text-xs">No audit history for this model.</div>
+                            )}
                         </div>
                     </TabsContent>
 
                     <TabsContent value="integrations" className="pt-4">
                         <div className="grid gap-4 md:grid-cols-2">
-                            <div className="p-4 rounded-lg border flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <Cloud className="w-5 h-5 text-blue-500" />
-                                    <div>
-                                        <div className="font-bold text-sm">Model Registry</div>
-                                        <div className="text-[10px] text-muted-foreground font-mono">mlflow.intra.ai</div>
+                            {modelHandshakes.length > 0 ? modelHandshakes.map((handshake, i) => (
+                                <div key={i} className="p-4 rounded-lg border flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        {handshake.type === 'registry' ? <Cloud className="w-5 h-5 text-blue-500" /> : <Database className="w-5 h-5 text-orange-500" />}
+                                        <div>
+                                            <div className="font-bold text-sm">{handshake.system}</div>
+                                            <div className="text-[10px] text-muted-foreground font-mono">{handshake.endpoint}</div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-1 text-green-500 text-[10px]">
+                                        <CheckCircle2 className="w-3 h-3" />
+                                        {handshake.status}
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-1 text-green-500 text-[10px]">
-                                    <CheckCircle2 className="w-3 h-3" />
-                                    Active
-                                </div>
-                            </div>
-                            <div className="p-4 rounded-lg border flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <Database className="w-5 h-5 text-orange-500" />
-                                    <div>
-                                        <div className="font-bold text-sm">Data Lakehouse</div>
-                                        <div className="text-[10px] text-muted-foreground font-mono">snowflake://alpha_wh</div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-1 text-green-500 text-[10px]">
-                                    <CheckCircle2 className="w-3 h-3" />
-                                    Active
-                                </div>
-                            </div>
+                            )) : (
+                                <div className="md:col-span-2 text-center py-8 text-muted-foreground text-xs">No active handshakes found.</div>
+                            )}
                         </div>
                     </TabsContent>
 
@@ -1023,6 +1030,15 @@ export default function AlphaAIActCompliance() {
     const [auditFilterType, setAuditFilterType] = useState('all');
     const [reportType, setReportType] = useState('annual-compliance');
     const [webhookRelayUrl, setWebhookRelayUrl] = useState('https://api.governance-cloud.net/hooks');
+    const [roiMetrics, setRoiMetrics] = useState<any>(null);
+    const [velocityTrends, setVelocityTrends] = useState<any[]>([]);
+    const [deadlines, setDeadlines] = useState<any[]>([]);
+    const [enterpriseAudits, setEnterpriseAudits] = useState<any[]>([]);
+    const [modelBreakdown, setModelBreakdown] = useState<any>(null);
+    const [modelAudits, setModelAudits] = useState<any[]>([]);
+    const [modelHandshakes, setModelHandshakes] = useState<any[]>([]);
+    const [regionalReports, setRegionalReports] = useState<any[]>([]);
+    const [financialMetrics, setFinancialMetrics] = useState<any>(null);
 
     // Articles state for real API data
     const [articles, setArticles] = useState<any[]>([]);
@@ -1110,7 +1126,50 @@ export default function AlphaAIActCompliance() {
         };
 
         fetchArticles();
+
+        const fetchExtendedMetrics = async () => {
+            try {
+                const [roi, velocity, dlines, eAudits, rReports, fMetrics] = await Promise.all([
+                    extendedApi.compliance.getROIMetrics(),
+                    extendedApi.compliance.getVelocityTrends(),
+                    extendedApi.compliance.getDeadlines(),
+                    extendedApi.compliance.getEnterpriseAudits(),
+                    extendedApi.compliance.getRegionalReports(),
+                    extendedApi.compliance.getFinancialMetrics()
+                ]);
+                setRoiMetrics(roi);
+                setVelocityTrends(velocity || []);
+                setDeadlines(dlines || []);
+                setEnterpriseAudits(eAudits || []);
+                setRegionalReports(rReports || []);
+                setFinancialMetrics(fMetrics);
+            } catch (err) {
+                console.error("Dashboard hardening fetch error:", err);
+            }
+        };
+        fetchExtendedMetrics();
     }, []);
+
+    // Model Deep-Dive Fetch
+    useEffect(() => {
+        const fetchModelContext = async () => {
+            if (showModelDialog && selectedModelForView?.id) {
+                try {
+                    const [breakdown, audits, handshakes] = await Promise.all([
+                        extendedApi.compliance.getModelBreakdown(selectedModelForView.id),
+                        extendedApi.compliance.getModelAudits(selectedModelForView.id),
+                        extendedApi.compliance.getModelHandshakes(selectedModelForView.id)
+                    ]);
+                    setModelBreakdown(breakdown);
+                    setModelAudits(audits || []);
+                    setModelHandshakes(handshakes || []);
+                } catch (err) {
+                    console.error("Model context fetch error:", err);
+                }
+            }
+        };
+        fetchModelContext();
+    }, [showModelDialog, selectedModelForView?.id]);
 
     const [models, setModels] = useState<AIModel[]>(initialModels);
     const [biasReports, setBiasReports] = useState<BiasReport[]>([]);
@@ -1178,7 +1237,6 @@ export default function AlphaAIActCompliance() {
     const [selfHealingEvents, setSelfHealingEvents] = useState<any[]>([]);
     const [edgeLogs, setEdgeLogs] = useState<any[]>([]);
     const [isLoadingEdgeLogs, setIsLoadingEdgeLogs] = useState(false);
-    const [roiStats, setRoiStats] = useState<any>(null);
     const [velocityTrends, setVelocityTrends] = useState<any[]>([]);
 
     // WebSocket for real-time compliance updates
@@ -2094,15 +2152,15 @@ export default function AlphaAIActCompliance() {
                                     <div className="grid grid-cols-3 gap-4">
                                         <div className="p-3 rounded-lg bg-background border">
                                             <p className="text-[10px] text-muted-foreground uppercase font-bold">Manual Cost</p>
-                                            <p className="text-xl font-bold">${roiStats?.manual_cost || "12,450"}</p>
+                                            <p className="text-xl font-bold">${roiMetrics?.manual_cost || "12,450"}</p>
                                         </div>
                                         <div className="p-3 rounded-lg bg-background border">
                                             <p className="text-[10px] text-muted-foreground uppercase font-bold">Alpha Cost</p>
-                                            <p className="text-xl font-bold text-emerald-500">${roiStats?.alpha_cost || "840"}</p>
+                                            <p className="text-xl font-bold text-emerald-500">${roiMetrics?.alpha_cost || "840"}</p>
                                         </div>
                                         <div className="p-3 rounded-lg bg-background border">
                                             <p className="text-[10px] text-muted-foreground uppercase font-bold">Net ROI</p>
-                                            <p className="text-xl font-bold text-blue-500">{roiStats?.net_roi || "14.8"}x</p>
+                                            <p className="text-xl font-bold text-blue-500">{roiMetrics?.net_roi || "14.8"}x</p>
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4 mt-4 py-4 border-t border-muted/20">
@@ -2184,33 +2242,19 @@ export default function AlphaAIActCompliance() {
                                 </CardHeader>
                                 <CardContent>
                                     <div className="space-y-4">
-                                        <div className="p-3 rounded-lg border border-red-500/50 bg-red-500/5">
-                                            <div className="flex items-center justify-between">
-                                                <span className="font-medium">High-Risk Systems Deadline</span>
-                                                <Badge variant="destructive">Aug 2026</Badge>
+                                        {deadlines.length > 0 ? deadlines.map((d, i) => (
+                                            <div key={i} className={`p-3 rounded-lg border ${d.severity === 'high' ? 'border-red-500/50 bg-red-500/5' : 'border-yellow-500/50 bg-yellow-500/5'}`}>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="font-medium">{d.title}</span>
+                                                    <Badge variant={d.severity === 'high' ? "destructive" : "default"}>{d.date}</Badge>
+                                                </div>
+                                                <div className="text-sm text-muted-foreground mt-1">
+                                                    {d.description}
+                                                </div>
                                             </div>
-                                            <div className="text-sm text-muted-foreground mt-1">
-                                                Conformity assessments required
-                                            </div>
-                                        </div>
-                                        <div className="p-3 rounded-lg border border-yellow-500/50 bg-yellow-500/5">
-                                            <div className="flex items-center justify-between">
-                                                <span className="font-medium">Post-Market Monitoring</span>
-                                                <Badge variant="outline">Ongoing</Badge>
-                                            </div>
-                                            <div className="text-sm text-muted-foreground mt-1">
-                                                Article 61 continuous compliance
-                                            </div>
-                                        </div>
-                                        <div className="p-3 rounded-lg border border-blue-500/50 bg-blue-500/5">
-                                            <div className="flex items-center justify-between">
-                                                <span className="font-medium">Incident Reporting (Art. 72)</span>
-                                                <Badge variant="outline">72 Hours</Badge>
-                                            </div>
-                                            <div className="text-sm text-muted-foreground mt-1">
-                                                Mandatory incident notification
-                                            </div>
-                                        </div>
+                                        )) : (
+                                            <div className="text-center py-4 text-muted-foreground text-xs italic">No upcoming deadlines synchronized.</div>
+                                        )}
                                     </div>
                                 </CardContent>
                             </Card>
@@ -2473,82 +2517,50 @@ export default function AlphaAIActCompliance() {
                         </Card>
                     </TabsContent>
 
-                    {/* Enterprise Audits Tab */}
-                    <TabsContent value="compliance-audits">
+                    {/* Enterprise Audi                    <TabsContent value="compliance-audits">
                         <div className="grid gap-6 md:grid-cols-2">
-                            <Card className="border-blue-500/20 bg-blue-500/5">
-                                <CardHeader>
-                                    <div className="flex items-center justify-between">
-                                        <CardTitle className="flex items-center gap-2">
-                                            <ShieldCheck className="w-5 h-5 text-blue-500" />
-                                            HIPAA Compliance Audit
-                                        </CardTitle>
-                                        <Badge variant="outline">Health Data AI</Badge>
-                                    </div>
-                                    <CardDescription>Verify PHI data handling and Article 10 data governance</CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="p-3 rounded-lg bg-background border text-sm">
-                                        <div className="flex justify-between mb-1">
-                                            <span className="text-muted-foreground">Last Audit:</span>
-                                            <span className="font-medium">2 days ago</span>
+                            {enterpriseAudits.length > 0 ? enterpriseAudits.map((audit, i) => (
+                                <Card key={i} className={audit.type === 'hipaa' ? "border-blue-500/20 bg-blue-500/5" : "border-emerald-500/20 bg-emerald-500/5"}>
+                                    <CardHeader>
+                                        <div className="flex items-center justify-between">
+                                            <CardTitle className="flex items-center gap-2">
+                                                {audit.type === 'hipaa' ? <ShieldCheck className="w-5 h-5 text-blue-500" /> : <Scale className="w-5 h-5 text-emerald-500" />}
+                                                {audit.title}
+                                            </CardTitle>
+                                            <Badge variant="outline">{audit.scope}</Badge>
                                         </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Status:</span>
-                                            <span className="text-green-500 font-bold">COMPLIANT</span>
+                                        <CardDescription>{audit.description}</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div className="p-3 rounded-lg bg-background border text-sm">
+                                            <div className="flex justify-between mb-1">
+                                                <span className="text-muted-foreground">Last Audit:</span>
+                                                <span className="font-medium">{audit.lastAudit}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-muted-foreground">Status:</span>
+                                                <span className={audit.status === 'COMPLIANT' ? "text-green-500 font-bold" : "text-red-500 font-bold"}>{audit.status}</span>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <Button
-                                        className="w-full bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all"
-                                        onClick={handleRunHipaaAudit}
-                                        disabled={isAuditRunning === 'hipaa'}
-                                    >
-                                        {isAuditRunning === 'hipaa' ? (
-                                            <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Auditing PHI Workflows...</>
-                                        ) : (
-                                            <><Zap className="w-4 h-4 mr-2" /> Start HIPAA Audit Test</>
-                                        )}
-                                    </Button>
-                                </CardContent>
-                            </Card>
-
-                            <Card className="border-emerald-500/20 bg-emerald-500/5">
-                                <CardHeader>
-                                    <div className="flex items-center justify-between">
-                                        <CardTitle className="flex items-center gap-2">
-                                            <Scale className="w-5 h-5 text-emerald-500" />
-                                            SOX Governance Audit
-                                        </CardTitle>
-                                        <Badge variant="outline">Fiscal AI Ops</Badge>
-                                    </div>
-                                    <CardDescription>Verify financial disclosure and Article 14 human oversight</CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="p-3 rounded-lg bg-background border text-sm">
-                                        <div className="flex justify-between mb-1">
-                                            <span className="text-muted-foreground">Last Audit:</span>
-                                            <span className="font-medium">7 days ago</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Status:</span>
-                                            <span className="text-green-500 font-bold">COMPLIANT</span>
-                                        </div>
-                                    </div>
-                                    <Button
-                                        className="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-95 transition-all"
-                                        onClick={handleRunSoxAudit}
-                                        disabled={isAuditRunning === 'sox'}
-                                    >
-                                        {isAuditRunning === 'sox' ? (
-                                            <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Auditing Fiscal Controls...</>
-                                        ) : (
-                                            <><Zap className="w-4 h-4 mr-2" /> Start SOX Audit Test</>
-                                        )}
-                                    </Button>
-                                </CardContent>
-                            </Card>
+                                        <Button
+                                            className={`w-full ${audit.type === 'hipaa' ? "bg-blue-600 hover:bg-blue-700" : "bg-emerald-600 hover:bg-emerald-700"} active:scale-95 transition-all`}
+                                            onClick={audit.type === 'hipaa' ? handleRunHipaaAudit : handleRunSoxAudit}
+                                            disabled={isAuditRunning === audit.type}
+                                        >
+                                            {isAuditRunning === audit.type ? (
+                                                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {audit.runningLabel}</>
+                                            ) : (
+                                                <><Zap className="w-4 h-4 mr-2" /> Start {audit.title} Test</>
+                                            )}
+                                        </Button>
+                                    </CardContent>
+                                </Card>
+                            )) : (
+                                <div className="md:col-span-2 text-center py-12 text-muted-foreground italic">No enterprise audit configurations synchronized.</div>
+                            )}
                         </div>
                     </TabsContent>
+bsContent>
 
                     {/* Audits Tab */}
                     <TabsContent value="audits">
@@ -3497,35 +3509,20 @@ export default function AlphaAIActCompliance() {
                                     </div>
 
                                     <div className="grid gap-4 md:grid-cols-3">
-                                        {[
-                                            {
-                                                region: "China",
-                                                stat: "MLPS Level 3",
-                                                desc: "Algorithmic filing required for recommendation systems",
-                                                icon: <ShieldAlert className="w-5 h-5 text-red-500" />
-                                            },
-                                            {
-                                                region: "Canada",
-                                                stat: "AIDA Bill C-27",
-                                                desc: "Mitigation plan for biased output in high-impact AI",
-                                                icon: <BadgeCheck className="w-5 h-5 text-blue-500" />
-                                            },
-                                            {
-                                                region: "UK",
-                                                stat: "Safety Framework",
-                                                desc: "Pro-innovation approach with sector-specific guidance",
-                                                icon: <Zap className="w-5 h-5 text-purple-500" />
-                                            }
-                                        ].map((r, i) => (
+                                        {regionalReports.length > 0 ? regionalReports.map((r, i) => (
                                             <div key={i} className="p-4 rounded-lg border bg-card/50">
                                                 <div className="flex items-center gap-2 mb-2">
-                                                    {r.icon}
+                                                    {r.type === 'MLPS' ? <ShieldAlert className="w-5 h-5 text-red-500" /> : 
+                                                     r.type === 'AIDA' ? <BadgeCheck className="w-5 h-5 text-blue-500" /> : 
+                                                     <Zap className="w-5 h-5 text-purple-500" />}
                                                     <span className="font-bold">{r.region}</span>
                                                 </div>
                                                 <div className="text-xs font-semibold mb-1">{r.stat}</div>
                                                 <p className="text-[11px] text-muted-foreground">{r.desc}</p>
                                             </div>
-                                        ))}
+                                        )) : (
+                                            <div className="md:col-span-3 text-center py-8 text-muted-foreground italic">No regional safety requirements found.</div>
+                                        )}
                                     </div>
                                 </CardContent>
                             </Card>
@@ -3610,8 +3607,7 @@ export default function AlphaAIActCompliance() {
                         </div>
                     </TabsContent>
 
-                    {/* Financial Tab - ReguLens AI */}
-                    <TabsContent value="financial">
+                    {/* Financ                    <TabsContent value="financial">
                         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                             <Card>
                                 <CardHeader>
@@ -3622,34 +3618,34 @@ export default function AlphaAIActCompliance() {
                                     <div className="space-y-4">
                                         <div className="flex justify-between items-center">
                                             <span className="text-sm text-muted-foreground">Blended CAC</span>
-                                            <span className="font-bold">$2,050</span>
+                                            <span className="font-bold">${financialMetrics?.economics?.cac || "2,050"}</span>
                                         </div>
                                         <div className="flex justify-between items-center">
                                             <span className="text-sm text-muted-foreground">ARPU</span>
-                                            <span className="font-bold">$1,500/mo</span>
+                                            <span className="font-bold">${financialMetrics?.economics?.arpu || "1,500"}/mo</span>
                                         </div>
                                         <div className="flex justify-between items-center">
                                             <span className="text-sm text-muted-foreground">Gross Margin</span>
-                                            <span className="font-bold">90%</span>
+                                            <span className="font-bold">{financialMetrics?.economics?.margin || "90"}%</span>
                                         </div>
                                         <div className="flex justify-between items-center">
                                             <span className="text-sm text-muted-foreground">Churn Rate</span>
-                                            <span className="font-bold">1%/mo</span>
+                                            <span className="font-bold">{financialMetrics?.economics?.churn || "1"}%/mo</span>
                                         </div>
                                         <div className="border-t pt-2 mt-2">
                                             <div className="flex justify-between items-center">
                                                 <span className="font-semibold">LTV</span>
-                                                <span className="font-bold text-green-500">$135,000</span>
+                                                <span className="font-bold text-green-500">${financialMetrics?.economics?.ltv || "135,000"}</span>
                                             </div>
                                             <div className="flex justify-between items-center mt-1">
                                                 <span className="text-sm text-muted-foreground">LTV:CAC Ratio</span>
-                                                <span className="font-bold text-green-500">65:1</span>
+                                                <span className="font-bold text-green-500">{financialMetrics?.economics?.ratio || "65"}:1</span>
                                             </div>
                                         </div>
                                     </div>
                                 </CardContent>
                             </Card>
-
+ 
                             <Card>
                                 <CardHeader>
                                     <CardTitle className="text-lg">Revenue Projections</CardTitle>
@@ -3657,32 +3653,24 @@ export default function AlphaAIActCompliance() {
                                 </CardHeader>
                                 <CardContent>
                                     <div className="space-y-3">
-                                        <div className="flex justify-between">
-                                            <span className="text-sm">Q1</span>
-                                            <span className="font-medium">$0 (Building)</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-sm">Q2</span>
-                                            <span className="font-medium">$15,000 (10 customers)</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-sm">Q3</span>
-                                            <span className="font-medium">$75,000 (50 customers)</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-sm">Q4</span>
-                                            <span className="font-medium">$225,000 (150 customers)</span>
-                                        </div>
+                                        {financialMetrics?.projections?.map((p: any, i: number) => (
+                                            <div key={i} className="flex justify-between">
+                                                <span className="text-sm">{p.quarter}</span>
+                                                <span className="font-medium">${p.value} ({p.customers} customers)</span>
+                                            </div>
+                                        )) || (
+                                            <div className="text-sm italic text-muted-foreground">No projections available</div>
+                                        )}
                                         <div className="border-t pt-2 mt-2">
                                             <div className="flex justify-between items-center">
                                                 <span className="font-semibold">Y1 ARR Target</span>
-                                                <span className="font-bold text-blue-500">$225,000</span>
+                                                <span className="font-bold text-blue-500">${financialMetrics?.arr_target || "225,000"}</span>
                                             </div>
                                         </div>
                                     </div>
                                 </CardContent>
                             </Card>
-
+ 
                             <Card>
                                 <CardHeader>
                                     <CardTitle className="text-lg">Operational Costs</CardTitle>
@@ -3690,35 +3678,28 @@ export default function AlphaAIActCompliance() {
                                 </CardHeader>
                                 <CardContent>
                                     <div className="space-y-2 text-sm">
-                                        <div className="flex justify-between">
-                                            <span>Salaries (Founders + Eng)</span>
-                                            <span>$35,000</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span>Cloud/LLM Infrastructure</span>
-                                            <span>$5,000</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span>Marketing/Ads</span>
-                                            <span>$8,000</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span>Legal Counsel</span>
-                                            <span>$5,000</span>
-                                        </div>
+                                        {financialMetrics?.costs?.map((c: any, i: number) => (
+                                            <div key={i} className="flex justify-between">
+                                                <span>{c.label}</span>
+                                                <span>${c.value}</span>
+                                            </div>
+                                        )) || (
+                                            <div className="text-sm italic text-muted-foreground">No cost data available</div>
+                                        )}
                                         <div className="border-t pt-2 mt-2 flex justify-between font-semibold">
                                             <span>Total Monthly</span>
-                                            <span>$53,000</span>
+                                            <span>${financialMetrics?.total_monthly_burn || "53,000"}</span>
                                         </div>
                                         <div className="flex justify-between text-green-500">
                                             <span>Breakeven</span>
-                                            <span>40 customers</span>
+                                            <span>{financialMetrics?.breakeven_customers || "40"} customers</span>
                                         </div>
                                     </div>
                                 </CardContent>
                             </Card>
                         </div>
                     </TabsContent>
+           </TabsContent>
 
                     {/* Metrics Tab */}
                     <TabsContent value="metrics">
@@ -4797,6 +4778,9 @@ export default function AlphaAIActCompliance() {
                 handleToggleGuardrail={handleToggleGuardrail}
                 setShowUploadDialog={setShowUploadDialog}
                 handleExportReport={handleExportReport}
+                modelBreakdown={modelBreakdown}
+                modelAudits={modelAudits}
+                modelHandshakes={modelHandshakes}
             />
 
             {/* Training Quiz Dialog */}
