@@ -96,41 +96,93 @@ class GovernanceService:
             logger.error(f"Failed to run retention purge logic: {e}")
 
     async def run_hipaa_audit(self, system: str = "default") -> Dict[str, Any]:
-        """Execute a simulated HIPAA compliance audit on the specified system."""
+        """Execute a real HIPAA compliance audit by scanning logs for PII leaks."""
         logger.info(f"Initiating HIPAA compliance audit for system: {system}")
-        await asyncio.sleep(1.5) # Simulate processing
         
-        findings = [
-            {"id": "HIPAA-01", "check": "PHI Access Logging", "status": "Compliant"},
-            {"id": "HIPAA-02", "check": "Data at Rest Encryption", "status": "Compliant"},
-            {"id": "HIPAA-03", "check": "Unique User Identification", "status": "Warning", "detail": "3 stale sessions found"}
-        ]
+        from app.services.compliance_service import compliance_service
         
+        findings = []
+        try:
+            with Session(engine) as session:
+                # Scan all audit logs for PII patterns in their details
+                logs = session.exec(select(AgentAuditLog)).all()
+                for log in logs:
+                    if log.details:
+                        pii_results = await compliance_service.scan_for_pii(log.details)
+                        if pii_results["findings_count"] > 0:
+                            findings.append({
+                                "id": f"HIPAA-LEAK-{log.id}",
+                                "check": "PII Exposure in Audit Trails",
+                                "status": "Critical",
+                                "detail": f"Detected {pii_results['findings_count']} PII markers in action '{log.action}'"
+                            })
+                
+                # Check for encryption metadata in system connections
+                from app.core.models import SystemConnection
+                connections = session.exec(select(SystemConnection)).all()
+                for conn in connections:
+                    if "encrypted" not in (conn.metadata or {}).get("security_layer", "").lower():
+                        findings.append({
+                            "id": f"HIPAA-SEC-{conn.id}",
+                            "check": "Data at Rest Encryption",
+                            "status": "Warning",
+                            "detail": f"Connection {conn.name} lacks verified encryption metadata."
+                        })
+        except Exception as e:
+            logger.error(f"HIPAA Audit Runtime Error: {e}")
+            return {"status": "error", "message": f"Audit interrupted: {str(e)}"}
+        
+        score = max(100 - (len(findings) * 10), 0)
         return {
-            "status": "success",
+            "status": "success" if score > 70 else "fail",
             "system": system,
             "timestamp": datetime.utcnow().isoformat(),
-            "score": 92,
-            "findings": findings
+            "score": score,
+            "findings": findings if findings else [{"id": "HIPAA-OK", "check": "Global PII Scan", "status": "Compliant"}]
         }
 
     async def run_sox_audit(self, system: str = "default") -> Dict[str, Any]:
-        """Execute a simulated SOX financial compliance audit."""
+        """Execute a real SOX financial compliance audit by verifying fiscal integrity."""
         logger.info(f"Initiating SOX financial audit for system: {system}")
-        await asyncio.sleep(2.0) # Simulate processing
         
-        findings = [
-            {"id": "SOX-01", "check": "Financial Transaction integrity", "status": "Compliant"},
-            {"id": "SOX-02", "check": "Access Control Review", "status": "Compliant"},
-            {"id": "SOX-03", "check": "Segregation of Duties", "status": "Critical", "detail": "Admin has direct DB write access"}
-        ]
+        findings = []
+        try:
+            with Session(engine) as session:
+                # 1. Verify Segregation of Duties (Ensure no single user is doing everything)
+                statement = select(AgentAuditLog.agent_id).distinct()
+                admins = session.exec(statement).all()
+                if len(admins) < 2:
+                    findings.append({
+                        "id": "SOX-SOD-01",
+                        "check": "Segregation of Duties",
+                        "status": "Critical",
+                        "detail": f"Only {len(admins)} administrative agent detected. Article 12 requires dual-oversight for financial hubs."
+                    })
+
+                # 2. Check for unauthorized budget changes
+                budget_logs = session.exec(select(AgentAuditLog).where(
+                    AgentAuditLog.action.ilike("%budget%") | AgentAuditLog.action.ilike("%rule%")
+                )).all()
+                
+                for log in budget_logs:
+                    if log.outcome == "failure":
+                        findings.append({
+                            "id": f"SOX-AUTH-{log.id}",
+                            "check": "Fiscal Configuration Integrity",
+                            "status": "Warning",
+                            "detail": f"Unauthorized attempt to modify budget rule detected in session {log.agent_id}"
+                        })
+        except Exception as e:
+            logger.error(f"SOX Audit Runtime Error: {e}")
+            return {"status": "error", "message": f"Audit interrupted: {str(e)}"}
         
+        score = max(100 - (len(findings) * 15), 0)
         return {
-            "status": "success",
+            "status": "success" if score > 75 else "fail",
             "system": system,
             "timestamp": datetime.utcnow().isoformat(),
-            "score": 85,
-            "findings": findings
+            "score": score,
+            "findings": findings if findings else [{"id": "SOX-OK", "check": "Financial Transaction integrity", "status": "Compliant"}]
         }
 
 # Singleton instance

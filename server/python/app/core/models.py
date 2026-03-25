@@ -16,10 +16,17 @@ class AgentStatus(str, Enum):
 
 class AgentType(str, Enum):
     """Agent type enum"""
-    DATA_PROCESSING = "data_processing"
-    CONTENT_GENERATION = "content_generation"
-    ANALYSIS = "analysis"
-    AUTOMATION = "automation"
+    data_processing = "data_processing"
+    content_generation = "content_generation"
+    analysis = "analysis"
+    automation = "automation"
+    langgraph = "langgraph"
+    crewai = "crewai"
+    autogen = "autogen"
+    custom = "custom"
+    openai = "openai"
+    metagpt = "metagpt"
+    pydanticai = "pydanticai"
 
 
 class Agent(SQLModel, table=True):
@@ -649,3 +656,32 @@ class OnPremDeployment(SQLModel, table=True):
     status: str = Field(default="provisioning")  # provisioning, active, maintenance, failed
     last_health_check: Optional[datetime] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class Vendor(SQLModel, table=True):
+    """Artificial Intelligence Vendor/Supply Chain model"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    name: str
+    category: str  # software, hardware, consultancy, model_provider
+    risk_level: str # low, medium, high, critical
+    status: str = Field(default="vetted") # vetted, under_review, blocked
+    contact_email: Optional[str] = None
+    website: Optional[str] = None
+    last_audit_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class ComplianceIncident(SQLModel, table=True):
+    """Regulatory or technical compliance incident log"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    title: str
+    description: str
+    severity: str # low, medium, high, critical
+    incident_type: str # security, privacy, bias, deepfake, ethics
+    status: str = Field(default="open") # open, investigating, resolved, closed
+    reported_by: Optional[str] = None
+    affected_systems: List[str] = Field(default=[], sa_column=Column(JSON))
+    remediation_steps: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    resolved_at: Optional[datetime] = None

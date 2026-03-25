@@ -25,15 +25,13 @@ func NewAgentOpsHandler(proxyService *services.ProxyService) *AgentOpsHandler {
 
 func (h *AgentOpsHandler) ListAgents(c *gin.Context) {
 	response, err := h.proxyService.ListAgents()
-	if err != nil || len(response) == 0 || string(response) == "[]" {
-		// Fallback to demo agents when Python backend unavailable or returns empty
-		demoAgents := []models.Agent{
-			{ID: "agent-001", Name: "Data Processing Agent", Status: "running", Type: "data-processing", Config: "{}"},
-			{ID: "agent-002", Name: "Customer Support Agent", Status: "running", Type: "customer-support", Config: "{}"},
-			{ID: "agent-003", Name: "Content Generation Agent", Status: "stopped", Type: "content-generation", Config: "{}"},
-			{ID: "agent-004", Name: "Analytics Agent", Status: "running", Type: "analytics", Config: "{}"},
-		}
-		c.JSON(http.StatusOK, demoAgents)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch agents from backend", Details: err.Error()})
+		return
+	}
+
+	if len(response) == 0 || string(response) == "[]" {
+		c.JSON(http.StatusOK, []models.Agent{})
 		return
 	}
 
@@ -252,6 +250,35 @@ func (h *AgentOpsHandler) ProxyToPython(c *gin.Context) {
 		path = path[7:]
 	}
 
+	// Remap specific /agent-ops paths to Python equivalents
+	if len(path) > 10 && path[:10] == "/agent-ops" {
+		if len(path) > 15 && path[10:16] == "/bulk/" {
+			path = "/agents/bulk/" + path[16:]
+		} else if len(path) > 11 && path[len(path)-9:] == "/optimize" {
+			path = "/agents" + path[10:]
+		} else if len(path) > 5 && path[len(path)-5:] == "/dump" {
+			path = "/agents" + path[10:]
+		} else if len(path) > 9 && path[len(path)-9:] == "/compress" {
+			path = "/agents" + path[10:]
+		} else if len(path) > 28 && path[10:29] == "/compliance/alerts/" {
+			path = "/compliance/incidents/" + path[29:]
+		} else if path == "/agent-ops/compliance/sox" || path == "/agent-ops/compliance/audit/sox" {
+			path = "/compliance/audit/sox"
+		} else if path == "/agent-ops/governance/healing/configs" {
+			path = "/compliance/healing"
+		} else if len(path) > 28 && path[10:29] == "/governance/healing/" {
+			path = "/compliance/healing/" + path[29:]
+		} else if path == "/agent-ops/governance/healing/events" {
+			path = "/compliance/healing/events"
+		} else if path == "/agent-ops/security/rotate-key" {
+			path = "/security/rotate-key"
+		} else if path == "/agent-ops/venture/insights" {
+			path = "/venture/insights"
+		} else if len(path) > 17 && path[10:18] == "/venture/" {
+			path = "/venture" + path[10:]
+		}
+	}
+
 	var body interface{}
 	if c.Request.Method == "POST" || c.Request.Method == "PUT" || c.Request.Method == "PATCH" {
 		if err := c.ShouldBindJSON(&body); err != nil && err != io.EOF {
@@ -265,5 +292,29 @@ func (h *AgentOpsHandler) ProxyToPython(c *gin.Context) {
 		return
 	}
 
+	c.Data(http.StatusOK, "application/json", response)
+}
+func (h *AgentOpsHandler) RunForensics(c *gin.Context) {
+	agentID := c.Query("agent_id")
+	response, err := h.proxyService.RunForensics(agentID)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Forensic analysis failed", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+func (h *AgentOpsHandler) ProvisionClient(c *gin.Context) {
+	var req map[string]interface{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request"})
+		return
+	}
+
+	response, err := h.proxyService.ProvisionClient(req)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Provisioning failed", Details: err.Error()})
+		return
+	}
 	c.Data(http.StatusOK, "application/json", response)
 }

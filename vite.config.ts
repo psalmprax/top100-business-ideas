@@ -172,12 +172,17 @@ export default defineConfig({
     strictPort: true, // Force port 7000
     host: true,
     proxy: {
+      "/api/v1": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/v1/, ""),
+      },
       "/api": {
-        target: process.env.VITE_API_PROXY_TARGET || "http://localhost:7001",
+        target: "http://localhost:8000",
         changeOrigin: true,
       },
       "/ml": {
-        target: process.env.VITE_API_PROXY_TARGET || "http://localhost:7001",
+        target: "http://localhost:8000",
         changeOrigin: true,
       },
     },

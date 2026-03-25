@@ -469,9 +469,9 @@ export default function AlphaDeepfakeDefense() {
                     extendedApi.travel.kioskStatus().catch(() => null),
                     extendedApi.crypto.wallets().catch(() => []),
                     extendedApi.advancedDeepfake.detectors.list().catch(() => []),
-                    deepfakeApi.listAnalyses().catch(() => []),
-                    deepfakeApi.listThreats().catch(() => []),
-                    deepfakeApi.listModels().catch(() => [])
+                    extendedApi.deepfake.listAnalyses().catch(() => []),
+                    extendedApi.deepfake.listThreats().catch(() => []),
+                    extendedApi.deepfake.listModels().catch(() => [])
                 ]);
 
                 if (sdk) setSdkStatus(sdk);
@@ -480,7 +480,7 @@ export default function AlphaDeepfakeDefense() {
                 if (wallets) setCryptoWallets(wallets);
                 if (detectorList && Array.isArray(detectorList)) setDetectors(detectorList);
                 
-                // Set data from deepfakeApi
+                // Set data from extendedApi.deepfake
                 if (analysisList) setAnalyses(analysisList.map((a: any) => ({
                     ...a,
                     mediaType: a.media_type,

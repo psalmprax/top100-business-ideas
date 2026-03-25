@@ -59,6 +59,12 @@ func NewWebSocketHub() *WebSocketHub {
 	}
 }
 
+func (h *WebSocketHub) GetClientCount() int {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	return len(h.clients)
+}
+
 func (h *WebSocketHub) Run() {
 	for {
 		select {

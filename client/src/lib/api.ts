@@ -27,6 +27,27 @@ export interface LLMProviderConfig {
     metrics: LLMMetrics;
 }
 
+export interface Vendor {
+    id: string;
+    name: string;
+    type: string;
+    riskLevel: string;
+    complianceStatus: string;
+    lastAssessment: Date | string;
+}
+
+export interface Incident {
+    id: string;
+    title: string;
+    description: string;
+    severity: string;
+    date: Date | string;
+    affectedSystems?: string[];
+    affected_systems?: string[]; // Backend compatibility
+    status: 'open' | 'investigating' | 'resolved' | 'closed';
+    article72?: boolean;
+}
+
 
 // Helper to get auth token
 function getAuthToken(): string | null {
@@ -61,7 +82,7 @@ async function apiRequest<T>(
     const v1Prefix = '/api/v1';
 
     // Legacy mapping: if endpoint starts with /agents, /rules, /metrics, /compliance, /deepfake, /billing, /alerts
-    const legacyRoutes = ['/agents', '/rules', '/metrics', '/compliance', '/deepfake', '/billing', '/alerts', '/webhooks', '/multi-cloud', '/self-healing'];
+    const legacyRoutes = ['/agents', '/rules', '/metrics', '/compliance', '/deepfake', '/billing', '/alerts', '/webhooks', '/multi-cloud', '/self-healing', '/agent-ops'];
     if (legacyRoutes.some(route => endpoint.startsWith(route)) && !endpoint.startsWith(v1Prefix) && !endpoint.startsWith('/ml/')) {
         normalizedEndpoint = `${v1Prefix}${endpoint}`;
     }
@@ -698,6 +719,28 @@ function getMockResponse<T>(endpoint: string, method: string, body?: any): T {
         } as T;
     }
 
+    // Sentinel: Hint Injection
+    if (endpoint.includes('/hint') && method === 'POST') {
+        return { status: 'success', message: 'Hint injected (mock)', timestamp: new Date().toISOString() } as T;
+    }
+
+    // Sentinel: Healing Config
+    if (endpoint.includes('/self-healing/config') && method === 'POST') {
+        return { status: 'success', config: data, timestamp: new Date().toISOString() } as T;
+    }
+
+    // Sentinel: Streaming Metrics
+    if (endpoint.includes('/agent-ops/metrics/stream') && method === 'GET') {
+        return {
+            tokens_per_second: (Math.random() * 5 + 2).toFixed(1),
+            active_cost_usd: (Math.random() * 0.1).toFixed(4),
+            p95_latency_ms: Math.floor(Math.random() * 300 + 100),
+            connected_agents: 8,
+            status: 'connected',
+            timestamp: new Date().toISOString()
+        } as T;
+    }
+
     // Default response
     return { success: true, timestamp: new Date().toISOString() } as T;
 }
@@ -1303,6 +1346,9 @@ export interface AlertConfig {
 export const extendedApi = {
     get: <T>(url: string) => apiRequest<T>(url),
     post: <T>(url: string, body?: any) => apiRequest<T>(url, { method: "POST", body: body ? JSON.stringify(body) : undefined }),
+    patch: <T>(url: string, body?: any) => apiRequest<T>(url, { method: "PATCH", body: body ? JSON.stringify(body) : undefined }),
+    put: <T>(url: string, body?: any) => apiRequest<T>(url, { method: "PUT", body: body ? JSON.stringify(body) : undefined }),
+    delete: <T>(url: string) => apiRequest<T>(url, { method: "DELETE" }),
     // Alerts (Agent Ops UC 4)
     alerts: {
         list: () => apiRequest<AlertConfig[]>('/alerts'),
@@ -1414,6 +1460,22 @@ export const extendedApi = {
                 method: 'POST',
                 body: JSON.stringify({ modelId }),
             }),
+        generateDocumentation: (modelId: string) =>
+            apiRequest<any>(`/api/v1/compliance/documentation/${modelId}`, {
+                method: 'POST',
+            }),
+        exportReport: (modelId: string) =>
+            apiRequest<any>(`/api/v1/compliance/reports/export?model_id=${modelId}`),
+        getLiveMetrics: () => apiRequest<any>('/api/v1/compliance/live-metrics'),
+        remediateDrift: (target_id: string) =>
+            apiRequest<any>('/api/v1/compliance/remediate', {
+                method: 'POST',
+                body: JSON.stringify({ target_id }),
+            }),
+        testNotification: (channel: string = 'slack') =>
+            apiRequest<any>(`/api/v1/notifications/test?channel=${channel}`, {
+                method: 'POST',
+            }),
         updateGuardrails: (modelId: string, guardrails: any) =>
             apiRequest<any>(`/api/v1/compliance/models/${modelId}/guardrails`, {
                 method: 'PATCH',
@@ -1447,11 +1509,36 @@ export const extendedApi = {
                 body: JSON.stringify({ model_id: modelId }),
             }),
         reportIncident: (incidentData: any) =>
-            apiRequest<any>('/api/v1/compliance/incidents', {
+            apiRequest<Incident>('/api/v1/compliance/incidents', {
                 method: 'POST',
                 body: JSON.stringify(incidentData),
             }),
         listArticles: () => apiRequest<any[]>('/api/v1/compliance/articles'),
+        uploadArtifact: (formData: FormData) =>
+            apiRequest<any>('/api/v1/compliance/upload', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    // Fetch will set the boundary automatically if we don't set Content-Type
+                    'Content-Type': undefined as any,
+                },
+            }),
+        deleteVendor: (id: string) =>
+            apiRequest<any>(`/api/v1/vendors/${id}`, {
+                method: 'DELETE',
+            }),
+        getAuditLogs: (agentId?: string, search?: string, outcome?: string, limit: number = 50) => {
+            let url = `/api/v1/agent-ops/audit?limit=${limit}`;
+            if (agentId) url += `&agentId=${agentId}`;
+            if (search) url += `&search=${encodeURIComponent(search)}`;
+            if (outcome) url += `&outcome=${outcome}`;
+            return apiRequest<any[]>(url);
+        },
+        updateIncidentStatus: (id: string, status: string) =>
+            apiRequest<any>(`/api/v1/compliance/incidents/${id}/status`, {
+                method: 'PATCH',
+                body: JSON.stringify({ status }),
+            }),
     },
 
     // Training (AI Compliance UC 10)
@@ -1519,6 +1606,7 @@ export const extendedApi = {
             apiRequest<{ message: string }>(`/api/v1/edge/deployments/${deploymentId}/sync`, {
                 method: 'POST',
             }),
+        logs: (id: string) => apiRequest<any[]>(`/api/v1/edge/deployments/${id}/logs`),
         stats: () =>
             apiRequest<{
                 total_deployments: number;
@@ -1764,10 +1852,12 @@ export const extendedApi = {
                 body: JSON.stringify({ model_id: modelId }),
             }),
         reportIncident: (incidentData: any) =>
-            apiRequest<{ status: string; incident_id: string }>('/api/v1/compliance/incidents', {
+            apiRequest<Incident>('/api/v1/compliance/incidents', {
                 method: 'POST',
                 body: JSON.stringify(incidentData),
             }),
+        listIncidents: () =>
+            apiRequest<any[]>('/api/v1/compliance/incidents'),
         runBiasScan: (model_id: string) =>
             apiRequest<any>('/api/v1/compliance/bias-scan', {
                 method: 'POST',
@@ -1819,6 +1909,15 @@ export const extendedApi = {
             method: 'POST',
             body: JSON.stringify({ rule_id, target }),
         }),
+        runForensics: (agentId?: string) =>
+            apiRequest<any>(`/api/v1/agent-ops/forensics?agent_id=${agentId || ''}`, {
+                method: 'POST',
+            }),
+        provisionClient: (name: string) =>
+            apiRequest<any>('/api/v1/agent-ops/whitelabel/provision', {
+                method: 'POST',
+                body: JSON.stringify({ name }),
+            }),
         updateRetention: (system: any, days?: number) => apiRequest<any>('/api/v1/agent-ops/config/retention', {
             method: 'POST',
             body: JSON.stringify({ system, days }),
@@ -1844,7 +1943,25 @@ export const extendedApi = {
             method: 'POST',
             body: JSON.stringify({ node_id }),
         }),
-        getSnapshots: (nodeId?: string) => apiRequest<any[]>(`/api/v1/agent-ops/self-healing/snapshots${nodeId ? `?node_id=${nodeId}` : ''}`),
+        getSnapshots: (nodeId?: string) => apiRequest<any[]>(`/api/v1/agent-ops/governance/healing/snapshots${nodeId ? `?node_id=${nodeId}` : ''}`),
+        captureSnapshot: () => apiRequest<any>('/api/v1/agent-ops/governance/healing/snapshots', { method: 'POST' }),
+        rollbackSnapshot: (id: string) => apiRequest<any>('/api/v1/agent-ops/governance/healing/snapshots/rollback', {
+            method: 'POST',
+            body: JSON.stringify({ snapshot_id: id }),
+        }),
+        bulkAction: (action: string, agentIds: string[]) =>
+            apiRequest<any>(`/api/v1/agent-ops/bulk/${action}`, {
+                method: 'POST',
+                body: JSON.stringify(agentIds),
+            }),
+        optimizeMemory: (agentId: string) =>
+            apiRequest<any>(`/api/v1/agent-ops/${agentId}/optimize`, {
+                method: 'POST',
+            }),
+        resolveAlert: (alertId: string) =>
+            apiRequest<any>(`/api/v1/agent-ops/compliance/alerts/${alertId}/resolve`, {
+                method: 'PATCH',
+            }),
     },
 
     enterprise: {
@@ -1922,6 +2039,17 @@ export const extendedApi = {
                 method: 'POST',
                 body: JSON.stringify({ node_id, url, provider }),
             }),
+        injectHint: (agentId: string, hint: string) =>
+            apiRequest<any>(`/agents/${agentId}/hint`, {
+                method: 'POST',
+                body: JSON.stringify({ hint }),
+            }),
+        updateHealingConfig: (config: { auto_refine?: boolean; safety_rollback?: boolean; error_threshold?: number }) =>
+            apiRequest<any>('/api/v1/agent-ops/governance/healing/configs', {
+                method: 'POST',
+                body: JSON.stringify(config),
+            }),
+        getStreamingMetrics: () => apiRequest<any>('/agent-ops/metrics/stream'),
     },
 
     vendors: {

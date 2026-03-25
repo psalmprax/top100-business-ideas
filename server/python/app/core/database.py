@@ -9,14 +9,9 @@ from app.core.models import ComplianceArticle, Agent, AgentStatus, DeepfakeAnaly
 # Database connection string
 DATABASE_URL = settings.DATABASE_URL
 
-# Fallback: construct from components if it's the default or missing
+# Fallback: use SQLite for development if no DATABASE_URL is provided or if it's the default placeholder
 if DATABASE_URL == "postgresql://localhost:5432/top100ideas" or not DATABASE_URL:
-    db_user = os.getenv("DB_USER", "postgres")
-    db_pass = os.getenv("DB_PASSWORD", "postgres")
-    db_host = os.getenv("DB_HOST", "db")
-    db_port = os.getenv("DB_PORT", "5432")
-    db_name = os.getenv("DB_NAME", "alphaai")
-    DATABASE_URL = f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
+    DATABASE_URL = "sqlite:///./app.db"
 
 # Create engine
 engine = create_engine(

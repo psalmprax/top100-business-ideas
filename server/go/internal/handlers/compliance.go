@@ -11,12 +11,14 @@ import (
 )
 
 type ComplianceHandler struct {
-	proxyService *services.ProxyService
+	proxyService  *services.ProxyService
+	uploadHandler *services.FileUploadHandler
 }
 
-func NewComplianceHandler(proxyService *services.ProxyService) *ComplianceHandler {
+func NewComplianceHandler(proxyService *services.ProxyService, uploadHandler *services.FileUploadHandler) *ComplianceHandler {
 	return &ComplianceHandler{
-		proxyService: proxyService,
+		proxyService:  proxyService,
+		uploadHandler: uploadHandler,
 	}
 }
 
@@ -154,4 +156,20 @@ func (h *ComplianceHandler) TriggerBiasScan(c *gin.Context) {
 		return
 	}
 	c.Data(http.StatusOK, "application/json", response)
+}
+
+func (h *ComplianceHandler) UploadArtifact(c *gin.Context) {
+	file, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "No file uploaded"})
+		return
+	}
+
+	result, err := h.uploadHandler.UploadFile(file)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to upload file", Details: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, result)
 }

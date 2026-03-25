@@ -180,3 +180,15 @@ func (p *ProxyService) GetBiasReports(modelID string) ([]byte, error) {
 func (p *ProxyService) TriggerBiasScan(data interface{}) ([]byte, error) {
 	return p.Forward("POST", "/compliance/bias-scan", data)
 }
+
+func (p *ProxyService) RunForensics(agentID string) ([]byte, error) {
+	path := "/compliance/forensics"
+	if agentID != "" {
+		path = fmt.Sprintf("%s?agent_id=%s", path, agentID)
+	}
+	return p.Forward("POST", path, nil)
+}
+
+func (p *ProxyService) ProvisionClient(data interface{}) ([]byte, error) {
+	return p.Forward("POST", "/whitelabel/provision", data)
+}

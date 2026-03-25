@@ -76,7 +76,15 @@ func main() {
 	healthHandler := handlers.NewHealthHandler()
 	authHandler := handlers.NewAuthHandler(authService)
 	agentOpsHandler := handlers.NewAgentOpsHandler(proxyService)
-	complianceHandler := handlers.NewComplianceHandler(proxyService)
+	
+	// Initialize File Upload Service for Compliance
+	complianceUploadDir := os.Getenv("COMPLIANCE_UPLOAD_DIR")
+	if complianceUploadDir == "" {
+		complianceUploadDir = "./uploads/compliance"
+	}
+	complianceUploadHandler := services.NewFileUploadHandler(complianceUploadDir, 10*1024*1024) // 10MB limit
+
+	complianceHandler := handlers.NewComplianceHandler(proxyService, complianceUploadHandler)
 	deepfakeHandler := handlers.NewDeepfakeHandler(proxyService)
 	wsHandler := handlers.NewWebSocketHandler(wsHub)
 	rulesHandler := handlers.NewRulesHandler(proxyService)
@@ -99,7 +107,6 @@ func main() {
 	cryptoHandler := handlers.NewCryptoHandler()
 	travelKioskHandler := handlers.NewTravelKioskHandler()
 	edgeHandler := handlers.NewEdgeHandler()
-	vendorHandler := handlers.NewVendorHandler()
 	workforceHandler := handlers.NewWorkforceHandler(proxyService)
 	enterpriseHandler := handlers.NewEnterpriseHandler(proxyService)
 
@@ -154,7 +161,11 @@ func main() {
 			sso.GET("/config/:id/liveness-link", agentOpsHandler.ProxyToPython)
 			sso.POST("/handshake", agentOpsHandler.ProxyToPython)
 			sso.POST("/connect/:provider", agentOpsHandler.ProxyToPython)
-			sso.GET("/providers/:id", agentOpsHandler.ProxyToPython)
+			sso.GET("/providers/:id", func(c *gin.Context) {
+				id := c.Param("id")
+				c.Request.URL.Path = "/api/v1/sso/config/" + id
+				agentOpsHandler.ProxyToPython(c)
+			})
 			sso.GET("/callback/:provider", agentOpsHandler.ProxyToPython)
 		}
 
@@ -179,6 +190,7 @@ func main() {
 				agents.GET("/:id/forecast", agentOpsHandler.GetForecast)
 				agents.POST("/:id/stop", agentOpsHandler.StopAgent)
 				agents.POST("/:id/restart", agentOpsHandler.RestartAgent)
+				agents.POST("/:id/hint", agentOpsHandler.ProxyToPython)
 			}
 
 			// Agent Metrics
@@ -199,12 +211,22 @@ func main() {
 				compliance.GET("/categories", complianceHandler.GetCategories)
 				compliance.GET("/reports/export", complianceHandler.ExportReport)
 
-				// Extended AI Model Compliance
-				compliance.GET("/models", complianceHandler.ListModels)
-				compliance.POST("/models", complianceHandler.RegisterModel)
-				compliance.PATCH("/models/:id/guardrails", complianceHandler.UpdateGuardrails)
-				compliance.GET("/bias-reports/:id", complianceHandler.GetBiasReports)
-				compliance.POST("/bias-scan", complianceHandler.TriggerBiasScan)
+				// Extended AI Model Compliance & Orchestration
+				compliance.GET("/models", agentOpsHandler.ProxyToPython)
+				compliance.POST("/models", agentOpsHandler.ProxyToPython)
+				compliance.PATCH("/models/:id/guardrails", agentOpsHandler.ProxyToPython)
+				compliance.GET("/bias-reports/:id", agentOpsHandler.ProxyToPython)
+				compliance.POST("/bias-scan", agentOpsHandler.ProxyToPython)
+				compliance.POST("/connect", agentOpsHandler.ProxyToPython)
+				compliance.POST("/scan", agentOpsHandler.ProxyToPython)
+				compliance.GET("/connections", agentOpsHandler.ProxyToPython)
+				compliance.GET("/scans", agentOpsHandler.ProxyToPython)
+				compliance.GET("/scans/:id", agentOpsHandler.ProxyToPython)
+				compliance.POST("/red-team", agentOpsHandler.ProxyToPython)
+				compliance.POST("/eu-register", agentOpsHandler.ProxyToPython)
+				compliance.GET("/incidents", agentOpsHandler.ProxyToPython)
+				compliance.POST("/incidents", agentOpsHandler.ProxyToPython)
+				compliance.POST("/upload", complianceHandler.UploadArtifact)
 			}
 
 			// Deepfake Defense
@@ -303,6 +325,22 @@ func main() {
 				agentOps.GET("/snapshots", agentOpsHandler.ProxyToPython)
 				agentOps.POST("/proxy/config", agentOpsHandler.ProxyToPython)
 				agentOps.POST("/retention", agentOpsHandler.ProxyToPython)
+				agentOps.GET("/metrics/stream", agentOpsHandler.ProxyToPython)
+				agentOps.POST("/forensics", agentOpsHandler.RunForensics)
+				agentOps.POST("/whitelabel/provision", agentOpsHandler.ProvisionClient)
+				agentOps.POST("/bulk/:action", agentOpsHandler.ProxyToPython)
+				agentOps.POST("/:id/optimize", agentOpsHandler.ProxyToPython)
+				agentOps.POST("/:id/dump", agentOpsHandler.ProxyToPython)
+				agentOps.POST("/:id/compress", agentOpsHandler.ProxyToPython)
+				agentOps.PATCH("/compliance/alerts/:id/resolve", agentOpsHandler.ProxyToPython)
+				agentOps.POST("/compliance/sox", agentOpsHandler.ProxyToPython)
+				agentOps.POST("/compliance/audit/sox", agentOpsHandler.ProxyToPython)
+				agentOps.GET("/governance/healing/configs", agentOpsHandler.ProxyToPython)
+				agentOps.PATCH("/governance/healing/configs/:id", agentOpsHandler.ProxyToPython)
+				agentOps.GET("/governance/healing/events", agentOpsHandler.ProxyToPython)
+				agentOps.POST("/security/rotate-key", agentOpsHandler.ProxyToPython)
+				agentOps.GET("/venture/insights", agentOpsHandler.ProxyToPython)
+				agentOps.POST("/venture/realize/:id", agentOpsHandler.ProxyToPython)
 			}
 
 			// Multi-Cloud (Agent Ops UC16)
@@ -319,6 +357,7 @@ func main() {
 			{
 				selfHealing.GET("/status", selfHealingHandler.GetHealingStatus)
 				selfHealing.GET("/events", selfHealingHandler.GetEvents)
+				selfHealing.POST("/config", agentOpsHandler.ProxyToPython)
 				selfHealing.POST("/recover", selfHealingHandler.TriggerRecovery)
 			}
 
@@ -348,6 +387,7 @@ func main() {
 			edge.Use(middleware.ProductAccess("compliance"))
 			{
 				edge.GET("/deployments", edgeHandler.ListDeployments)
+				edge.GET("/deployments/:id/logs", edgeHandler.GetEdgeLogs)
 				edge.POST("/deployments/:id/sync", edgeHandler.SyncWeights)
 			}
 
@@ -355,8 +395,9 @@ func main() {
 			vendors := protected.Group("/vendors")
 			vendors.Use(middleware.ProductAccess("compliance"))
 			{
-				vendors.GET("", vendorHandler.ListVendors)
-				vendors.POST("", vendorHandler.AddVendor)
+				vendors.GET("", agentOpsHandler.ProxyToPython)
+				vendors.POST("", agentOpsHandler.ProxyToPython)
+				vendors.DELETE("/:id", agentOpsHandler.ProxyToPython)
 			}
 
 			// Wearables (Deepfake UC14)
@@ -442,6 +483,26 @@ func main() {
 
 	// Start WebSocket hub in background
 	go wsHub.Run()
+
+	// Start Compliance Metrics Broadcast Loop (Real-First bridging)
+	go func() {
+		ticker := time.NewTicker(10 * time.Second)
+		defer ticker.Stop()
+		for range ticker.C {
+			if wsHub.GetClientCount() > 0 {
+				metrics, err := proxyService.Forward("GET", "/compliance/live-metrics", nil)
+				if err == nil {
+					var m map[string]interface{}
+					if err := json.Unmarshal(metrics, &m); err == nil {
+						wsHub.Broadcast(map[string]interface{}{
+							"type":    "compliance_metrics",
+							"payload": m,
+						})
+					}
+				}
+			}
+		}
+	}()
 
 	// Start server
 	logger.Info().
