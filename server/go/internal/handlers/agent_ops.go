@@ -200,6 +200,9 @@ func (h *AgentOpsHandler) GetAgentHistory(c *gin.Context) {
 func (h *AgentOpsHandler) GetAuditLogs(c *gin.Context) {
 	agentID := c.Query("agentId")
 	limit := c.Query("limit")
+	search := c.Query("search")
+	outcome := c.Query("outcome")
+
 	if limit == "" {
 		limit = "50"
 	}
@@ -207,6 +210,12 @@ func (h *AgentOpsHandler) GetAuditLogs(c *gin.Context) {
 	path := fmt.Sprintf("/agent-ops/audit?limit=%s", limit)
 	if agentID != "" {
 		path = fmt.Sprintf("%s&agent_id=%s", path, agentID)
+	}
+	if search != "" {
+		path = fmt.Sprintf("%s&search=%s", path, search)
+	}
+	if outcome != "" {
+		path = fmt.Sprintf("%s&outcome=%s", path, outcome)
 	}
 
 	response, err := h.proxyService.Forward("GET", path, nil)

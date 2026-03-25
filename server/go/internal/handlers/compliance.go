@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/top100-business-ideas/api/internal/models"
@@ -88,9 +89,31 @@ func (h *ComplianceHandler) GetCategories(c *gin.Context) {
 }
 
 func (h *ComplianceHandler) ExportReport(c *gin.Context) {
-	response, err := h.proxyService.Forward("GET", "/compliance/reports/export", nil)
+	modelID := c.Query("model_id")
+	reportType := c.Query("report_type")
+
+	path := "/compliance/reports/export"
+	if modelID != "" {
+		path = fmt.Sprintf("%s?model_id=%s", path, modelID)
+		if reportType != "" {
+			path = fmt.Sprintf("%s&report_type=%s", path, reportType)
+		}
+	} else if reportType != "" {
+		path = fmt.Sprintf("%s?report_type=%s", path, reportType)
+	}
+
+	response, err := h.proxyService.Forward("GET", path, nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to export report", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+func (h *ComplianceHandler) ListArtifacts(c *gin.Context) {
+	response, err := h.proxyService.Forward("GET", "/compliance/artifacts", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch artifacts", Details: err.Error()})
 		return
 	}
 	c.Data(http.StatusOK, "application/json", response)

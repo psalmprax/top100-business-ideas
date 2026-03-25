@@ -1464,8 +1464,6 @@ export const extendedApi = {
             apiRequest<any>(`/api/v1/compliance/documentation/${modelId}`, {
                 method: 'POST',
             }),
-        exportReport: (modelId: string) =>
-            apiRequest<any>(`/api/v1/compliance/reports/export?model_id=${modelId}`),
         getLiveMetrics: () => apiRequest<any>('/api/v1/compliance/live-metrics'),
         remediateDrift: (target_id: string) =>
             apiRequest<any>('/api/v1/compliance/remediate', {
@@ -1523,6 +1521,16 @@ export const extendedApi = {
                     'Content-Type': undefined as any,
                 },
             }),
+        exportReport: (modelId?: string, reportType?: string) => {
+            let url = '/api/v1/compliance/reports/export';
+            const params = new URLSearchParams();
+            if (modelId) params.append('model_id', modelId);
+            if (reportType) params.append('report_type', reportType);
+            const queryString = params.toString();
+            if (queryString) url += `?${queryString}`;
+            return apiRequest<any>(url);
+        },
+        listArtifacts: () => apiRequest<any[]>('/api/v1/compliance/artifacts'),
         deleteVendor: (id: string) =>
             apiRequest<any>(`/api/v1/vendors/${id}`, {
                 method: 'DELETE',

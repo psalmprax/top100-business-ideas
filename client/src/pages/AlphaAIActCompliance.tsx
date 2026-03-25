@@ -1019,6 +1019,9 @@ export default function AlphaAIActCompliance() {
     const [ssoMetadata, setSsoMetadata] = useState('');
     const [complianceBudget, setComplianceBudget] = useState(5000);
     const [proxyEndpoint, setProxyEndpoint] = useState('https://proxy.regu-lens.com/api');
+    const [auditSearch, setAuditSearch] = useState('');
+    const [auditFilterType, setAuditFilterType] = useState('all');
+    const [reportType, setReportType] = useState('annual-compliance');
     const [webhookRelayUrl, setWebhookRelayUrl] = useState('https://api.governance-cloud.net/hooks');
 
     // Articles state for real API data
@@ -1191,7 +1194,17 @@ export default function AlphaAIActCompliance() {
                 const p = data.payload;
                 if (p.overall_score) setComplianceScore(p.overall_score);
                 if (p.drift_results) setDriftMetrics(p.drift_results);
-                // toast.info("Compliance metrics synchronized in real-time.");
+                
+                // Real-First: Bridge WebSocket updates to model status
+                if (p.model_updates) {
+                    setModels(prev => prev.map(m => {
+                        const update = p.model_updates.find((u: any) => u.id === m.id);
+                        if (update) {
+                            return { ...m, complianceScore: update.score };
+                        }
+                        return m;
+                    }));
+                }
             }
         }
     });
@@ -1445,17 +1458,22 @@ export default function AlphaAIActCompliance() {
         }
 
         setIsUploading(true);
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        formData.append('artifact_type', artifactType);
+
         try {
-            await extendedApi.compliance.uploadArtifact(selectedFile, artifactType);
+            await extendedApi.compliance.uploadArtifact(formData);
             toast.success("Artifact uploaded and cryptographically hashed.");
+            
+            // Real-First: Refresh artifacts list
+            await extendedApi.compliance.listArtifacts();
+            
             setShowUploadDialog(false);
             setSelectedFile(null);
         } catch (error) {
-            toast.error("Upload failed. Falling back to secure local archive.");
-            // Simulation fallback
             console.error("Upload Error:", error);
-            toast.success("Artifact archived in local regulatory vault.");
-            setShowUploadDialog(false);
+            toast.error("Real Documentation Vault synchronization failed.");
         } finally {
             setIsUploading(false);
         }
@@ -1658,7 +1676,11 @@ export default function AlphaAIActCompliance() {
         toast.info("Connecting to real Documentation Service (Article 11)...");
         try {
             const response = await extendedApi.compliance.exportReport(modelId);
-            if (response && response.data && response.data.package) {
+            if (response && response.package) {
+                const content = JSON.stringify(response.package, null, 2);
+                handleDownload(`ReguLens_Art11_${modelId}.json`, content);
+                toast.success("Real Article 11 package exported from regulatory vault.");
+            } else if (response && response.data && response.data.package) {
                 const content = JSON.stringify(response.data.package, null, 2);
                 handleDownload(`ReguLens_Art11_${modelId}.json`, content);
                 toast.success("Real Article 11 package exported from regulatory vault.");
@@ -1667,22 +1689,52 @@ export default function AlphaAIActCompliance() {
             }
         } catch (error) {
             console.error("Report export failed:", error);
-            toast.error("Real Documentation Service failed. Falling back to local generation.");
+            toast.error("Real Documentation Service (Article 11) is currently unavailable.");
+        }
+    };
 
-            // Fallback to local PDF generation if service fails
-            const model = models.find(m => m.id === modelId) || models[0];
-            const content = `
-=========================================
-AI ACT TECHNICAL DOCUMENTATION (ART. 11) - FALLBACK
-=========================================
-Model Name: ${model.name}
-Model ID: ${model.id}
-Risk Category: ${model.riskCategory.toUpperCase()}
-Status: ${model.status.toUpperCase()}
-Generated At: ${new Date().toLocaleString()}
-[FALLBACK CONTENT DUE TO API UNAVAILABILITY]
-            `;
-            handleDownload(`ReguLens_Art11_${model.name.replace(/\s+/g, '_')}_FALLBACK.pdf`, content.trim());
+    const handleGenerateReport = async (type: string) => {
+        toast.info(`Generating real ${type.replace('-', ' ')}...`);
+        try {
+            const response = await extendedApi.compliance.exportReport(undefined, type);
+            if (response) {
+                const blob = new Blob([JSON.stringify(response, null, 2)], { type: 'application/json' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Compliance_Report_${type}_${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                toast.success("Audit-grade compliance report generated and downloaded.");
+            }
+        } catch (err) {
+            toast.error("Real-time report generation failed.");
+        }
+    };
+
+    const handleAuditSearch = async (query: string) => {
+        setAuditSearch(query);
+        try {
+            const logs = await extendedApi.compliance.getAuditLogs?.(undefined, query, auditFilterType === 'all' ? undefined : auditFilterType);
+            if (logs) setAuditLogs(logs);
+        } catch (err) {
+            console.error("Search failed:", err);
+        }
+    };
+
+    const handleAuditExport = async () => {
+        toast.info("Preparing immutable audit export...");
+        try {
+            const logs = await extendedApi.compliance.getAuditLogs?.(undefined, auditSearch, auditFilterType === 'all' ? undefined : auditFilterType);
+            if (logs) {
+                const csv = [
+                    ["Timestamp", "Actor", "Action", "Outcome", "ID"],
+                    ...logs.map((l: any) => [l.timestamp, l.actor, l.action, l.outcome || l.status, l.id])
+                ].map(row => row.join(',')).join('\n');
+                handleDownload("Alpha_Compliance_Audit_Trail.csv", csv);
+                toast.success("Full immutable audit trail exported (CSV).");
+            }
+        } catch (err) {
+            toast.error("Audit export failed.");
         }
     };
 
@@ -4029,9 +4081,31 @@ Generated At: ${new Date().toLocaleString()}
                                     <CardDescription>Immutable log of all compliance-relevant actions</CardDescription>
                                 </div>
                                 <div className="flex gap-2">
-                                    <Input placeholder="Search logs..." className="w-64 h-8 text-xs" />
-                                    <Button variant="outline" size="sm"><Filter className="w-3 h-3 mr-2" />Filter</Button>
-                                    <Button variant="outline" size="sm"><Download className="w-3 h-3 mr-2" />Export</Button>
+                                    <Input 
+                                        placeholder="Search logs..." 
+                                        className="w-64 h-8 text-xs" 
+                                        value={auditSearch}
+                                        onChange={(e) => handleAuditSearch(e.target.value)}
+                                    />
+                                    <Select value={auditFilterType} onValueChange={(val) => {
+                                        setAuditFilterType(val);
+                                        handleAuditSearch(auditSearch);
+                                    }}>
+                                        <SelectTrigger className="w-32 h-8 text-xs">
+                                            <Filter className="w-3 h-3 mr-2" />
+                                            {auditFilterType === 'all' ? 'All Events' : auditFilterType}
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Events</SelectItem>
+                                            <SelectItem value="Success">Success</SelectItem>
+                                            <SelectItem value="Verified">Verified</SelectItem>
+                                            <SelectItem value="Failed">Failed</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <Button variant="outline" size="sm" onClick={handleAuditExport}>
+                                        <Download className="w-3 h-3 mr-2" />
+                                        Export
+                                    </Button>
                                 </div>
                             </CardHeader>
                             <CardContent>
@@ -4088,7 +4162,7 @@ Generated At: ${new Date().toLocaleString()}
                                     <div className="p-4 rounded-lg border border-dashed text-center space-y-3">
                                         <FileDown className="w-10 h-10 mx-auto opacity-20" />
                                         <p className="text-xs text-muted-foreground">Select report type and date range</p>
-                                        <Select defaultValue="annual-compliance">
+                                        <Select defaultValue="annual-compliance" onValueChange={(val) => setReportType(val)}>
                                             <SelectTrigger><SelectValue /></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="annual-compliance">Annual Compliance Artifact</SelectItem>
@@ -4096,7 +4170,12 @@ Generated At: ${new Date().toLocaleString()}
                                                 <SelectItem value="technical-doc">Technical Doc Bundle (Annex IV)</SelectItem>
                                             </SelectContent>
                                         </Select>
-                                        <Button className="w-full">GENERATE PDF REPORT</Button>
+                                        <Button 
+                                            className="w-full"
+                                            onClick={() => handleGenerateReport(reportType || 'annual-compliance')}
+                                        >
+                                            GENERATE PDF REPORT
+                                        </Button>
                                     </div>
                                 </CardContent>
                             </Card>

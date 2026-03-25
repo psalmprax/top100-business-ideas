@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -227,6 +228,7 @@ func main() {
 				compliance.GET("/incidents", agentOpsHandler.ProxyToPython)
 				compliance.POST("/incidents", agentOpsHandler.ProxyToPython)
 				compliance.POST("/upload", complianceHandler.UploadArtifact)
+				compliance.GET("/artifacts", complianceHandler.ListArtifacts)
 			}
 
 			// Deepfake Defense
