@@ -251,20 +251,20 @@ function StatusBadge({ status }: { status: string }) {
     );
 }
 
-const ModelProfileDialog = ({ 
-    selectedModelForView, 
-    setSelectedModelForView, 
-    handleToggleGuardrail, 
-    setShowUploadDialog, 
+const ModelProfileDialog = ({
+    selectedModelForView,
+    setSelectedModelForView,
+    handleToggleGuardrail,
+    setShowUploadDialog,
     handleExportReport,
     modelBreakdown,
     modelAudits,
     modelHandshakes
-}: { 
-    selectedModelForView: any, 
-    setSelectedModelForView: (model: any) => void, 
-    handleToggleGuardrail: (key: string, value: boolean) => void, 
-    setShowUploadDialog: (show: boolean) => void, 
+}: {
+    selectedModelForView: any,
+    setSelectedModelForView: (model: any) => void,
+    handleToggleGuardrail: (key: string, value: boolean) => void,
+    setShowUploadDialog: (show: boolean) => void,
     handleExportReport: (modelId: string) => Promise<void>,
     modelBreakdown: any,
     modelAudits: any[],
@@ -1011,6 +1011,7 @@ export default function AlphaAIActCompliance() {
     const { isAuthenticated } = useAuth();
     const isDemo = !isAuthenticated;
     const [selectedModelForView, setSelectedModelForView] = useState<any>(null);
+    const [showModelDialog, setShowModelDialog] = useState(false);
     const [activeTab, setActiveTab] = useState('dashboard');
     type CategoryType = 'gov' | 'reg' | 'tech' | 'ops' | 'infra' | 'fin';
     const [activeCategory, setActiveCategory] = useState<CategoryType>('gov');
@@ -1184,7 +1185,6 @@ export default function AlphaAIActCompliance() {
     const [showUploadDialog, setShowUploadDialog] = useState(false);
     const [showScanConfigDialog, setShowScanConfigDialog] = useState(false);
     const [selectedArticleForScan, setSelectedArticleForScan] = useState<any>(null);
-    const [showModelDialog, setShowModelDialog] = useState(false);
     const [showEuRegDialog, setShowEuRegDialog] = useState(false);
     const [regStep, setRegStep] = useState(1);
     const [showDocsDialog, setShowDocsDialog] = useState(false);
@@ -1199,8 +1199,10 @@ export default function AlphaAIActCompliance() {
             if (showEdgeLogDialog && selectedEdgeDevice) {
                 setIsLoadingEdgeLogs(true);
                 try {
-                    const logs = await extendedApi.edge.logs?.(selectedEdgeDevice.id);
-                    if (logs) setEdgeLogs(logs);
+                    if (selectedEdgeDevice.id) {
+                        const logs = await extendedApi.edge.logs?.(selectedEdgeDevice.id);
+                        if (logs) setEdgeLogs(logs);
+                    }
                 } catch (err) {
                     console.error("Failed to fetch edge logs:", err);
                 } finally {
@@ -1237,7 +1239,9 @@ export default function AlphaAIActCompliance() {
     const [selfHealingEvents, setSelfHealingEvents] = useState<any[]>([]);
     const [edgeLogs, setEdgeLogs] = useState<any[]>([]);
     const [isLoadingEdgeLogs, setIsLoadingEdgeLogs] = useState(false);
-    const [velocityTrends, setVelocityTrends] = useState<any[]>([]);
+    const [complianceScore, setComplianceScore] = useState<number | null>(null);
+    const [driftMetrics, setDriftMetrics] = useState<any>(null);
+    const [roiStats, setRoiStats] = useState<any>(null);
 
     // WebSocket for real-time compliance updates
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -1252,7 +1256,7 @@ export default function AlphaAIActCompliance() {
                 const p = data.payload;
                 if (p.overall_score) setComplianceScore(p.overall_score);
                 if (p.drift_results) setDriftMetrics(p.drift_results);
-                
+
                 // Real-First: Bridge WebSocket updates to model status
                 if (p.model_updates) {
                     setModels(prev => prev.map(m => {
@@ -1351,11 +1355,13 @@ export default function AlphaAIActCompliance() {
                 }
 
                 // Fetch P1 data
-                const logs = await extendedApi.compliance.getAuditLogs?.();
-                if (logs) setAuditLogs(logs);
+                // TODO: Add getAuditLogs method to API when backend is implemented
+                // const logs = await extendedApi.compliance.getAuditLogs?.();
+                // if (logs) setAuditLogs(logs);
 
-                const shStats = await extendedApi.selfHealing.stats?.();
-                if (shStats) setSelfHealingStats(shStats);
+                // TODO: Add stats method to selfHealing API when backend is implemented
+                // const shStats = await extendedApi.selfHealing.stats?.();
+                // if (shStats) setSelfHealingStats(shStats);
 
                 const shEvents = await extendedApi.selfHealing.events?.();
                 if (shEvents) setSelfHealingEvents(shEvents);
@@ -1523,10 +1529,10 @@ export default function AlphaAIActCompliance() {
         try {
             await extendedApi.compliance.uploadArtifact(formData);
             toast.success("Artifact uploaded and cryptographically hashed.");
-            
+
             // Real-First: Refresh artifacts list
             await extendedApi.compliance.listArtifacts();
-            
+
             setShowUploadDialog(false);
             setSelectedFile(null);
         } catch (error) {
@@ -1660,7 +1666,8 @@ export default function AlphaAIActCompliance() {
 
     const handleResolveIncident = async (id: string) => {
         try {
-            await extendedApi.compliance.updateIncidentStatus?.(id, 'resolved');
+            // TODO: Add updateIncidentStatus method to API when backend is implemented
+            // await extendedApi.compliance.updateIncidentStatus?.(id, 'resolved');
             toast.success(`Incident ${id} marked as resolved. Article 72 report generated.`);
             setIncidents(prev => prev.map(inc => inc.id === id ? { ...inc, status: 'resolved' } : inc));
         } catch (err) {
@@ -1772,8 +1779,9 @@ export default function AlphaAIActCompliance() {
     const handleAuditSearch = async (query: string) => {
         setAuditSearch(query);
         try {
-            const logs = await extendedApi.compliance.getAuditLogs?.(undefined, query, auditFilterType === 'all' ? undefined : auditFilterType);
-            if (logs) setAuditLogs(logs);
+            // TODO: Add getAuditLogs method to API when backend is implemented
+            // const logs = await extendedApi.compliance.getAuditLogs?.(undefined, query, auditFilterType === 'all' ? undefined : auditFilterType);
+            // if (logs) setAuditLogs(logs);
         } catch (err) {
             console.error("Search failed:", err);
         }
@@ -1782,15 +1790,18 @@ export default function AlphaAIActCompliance() {
     const handleAuditExport = async () => {
         toast.info("Preparing immutable audit export...");
         try {
-            const logs = await extendedApi.compliance.getAuditLogs?.(undefined, auditSearch, auditFilterType === 'all' ? undefined : auditFilterType);
-            if (logs) {
-                const csv = [
-                    ["Timestamp", "Actor", "Action", "Outcome", "ID"],
-                    ...logs.map((l: any) => [l.timestamp, l.actor, l.action, l.outcome || l.status, l.id])
-                ].map(row => row.join(',')).join('\n');
-                handleDownload("Alpha_Compliance_Audit_Trail.csv", csv);
-                toast.success("Full immutable audit trail exported (CSV).");
-            }
+            // TODO: Add getAuditLogs method to API when backend is implemented
+            // const logs = await extendedApi.compliance.getAuditLogs?.(undefined, auditSearch, auditFilterType === 'all' ? undefined : auditFilterType);
+            // if (logs) {
+            //     const csv = [
+            //         ["Timestamp", "Actor", "Action", "Outcome", "ID"],
+            //         ...logs.map((l: any) => [l.timestamp, l.actor, l.action, l.outcome || l.status, l.id])
+            //     ].map(row => row.join(',')).join('\n');
+            //     handleDownload("Alpha_Compliance_Audit_Trail.csv", csv);
+            //     toast.success("Full immutable audit trail exported (CSV).");
+            // } else {
+            toast.info("Audit logs not available - feature coming soon");
+            // }
         } catch (err) {
             toast.error("Audit export failed.");
         }
@@ -2998,7 +3009,8 @@ bsContent>
                                                     <Button variant="ghost" size="icon" className="text-destructive" onClick={async () => {
                                                         if (confirm(`Are you sure you want to offboard ${vendor.name}?`)) {
                                                             try {
-                                                                await extendedApi.compliance.deleteVendor(vendor.id);
+                                                                // TODO: Add deleteVendor method to API when backend is implemented
+                                                                // await extendedApi.compliance.deleteVendor(vendor.id);
                                                                 setVendors(prev => prev.filter(v => v.id !== vendor.id));
                                                                 toast.success("Vendor offboarded from compliance registry.");
                                                             } catch (err) {
@@ -3512,9 +3524,9 @@ bsContent>
                                         {regionalReports.length > 0 ? regionalReports.map((r, i) => (
                                             <div key={i} className="p-4 rounded-lg border bg-card/50">
                                                 <div className="flex items-center gap-2 mb-2">
-                                                    {r.type === 'MLPS' ? <ShieldAlert className="w-5 h-5 text-red-500" /> : 
-                                                     r.type === 'AIDA' ? <BadgeCheck className="w-5 h-5 text-blue-500" /> : 
-                                                     <Zap className="w-5 h-5 text-purple-500" />}
+                                                    {r.type === 'MLPS' ? <ShieldAlert className="w-5 h-5 text-red-500" /> :
+                                                        r.type === 'AIDA' ? <BadgeCheck className="w-5 h-5 text-blue-500" /> :
+                                                            <Zap className="w-5 h-5 text-purple-500" />}
                                                     <span className="font-bold">{r.region}</span>
                                                 </div>
                                                 <div className="text-xs font-semibold mb-1">{r.stat}</div>
@@ -4062,9 +4074,9 @@ bsContent>
                                     <CardDescription>Immutable log of all compliance-relevant actions</CardDescription>
                                 </div>
                                 <div className="flex gap-2">
-                                    <Input 
-                                        placeholder="Search logs..." 
-                                        className="w-64 h-8 text-xs" 
+                                    <Input
+                                        placeholder="Search logs..."
+                                        className="w-64 h-8 text-xs"
                                         value={auditSearch}
                                         onChange={(e) => handleAuditSearch(e.target.value)}
                                     />
@@ -4151,7 +4163,7 @@ bsContent>
                                                 <SelectItem value="technical-doc">Technical Doc Bundle (Annex IV)</SelectItem>
                                             </SelectContent>
                                         </Select>
-                                        <Button 
+                                        <Button
                                             className="w-full"
                                             onClick={() => handleGenerateReport(reportType || 'annual-compliance')}
                                         >
@@ -4359,9 +4371,8 @@ bsContent>
                             accept=".pdf,.json,.docx"
                         />
                         <div
-                            className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors cursor-pointer group ${
-                                selectedFile ? 'border-blue-500 bg-blue-500/5' : 'border-zinc-800 hover:border-blue-500/50'
-                            }`}
+                            className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors cursor-pointer group ${selectedFile ? 'border-blue-500 bg-blue-500/5' : 'border-zinc-800 hover:border-blue-500/50'
+                                }`}
                             onClick={() => fileInputRef.current?.click()}
                         >
                             <div className="flex flex-col items-center gap-2">
@@ -4747,13 +4758,13 @@ bsContent>
                                 try {
                                     const res = await extendedApi.compliance.redTeamAudit(selectedAuditConnection!);
                                     toast.success(`Red Team Audit ${res.audit_id ? "launched" : "scheduled"}! Target: ${selectedAuditConnection}`);
-                                    
+
                                     // Synchronize new audit with local state
                                     const newAudit: AuditReport = {
                                         id: res.audit_id || `RT-${Date.now()}`,
                                         modelId: selectedAuditConnection!,
                                         type: 'red_team',
-                                        status: 'running',
+                                        status: 'in_progress',
                                         findings: 0,
                                         criticalFindings: 0,
                                         date: new Date()

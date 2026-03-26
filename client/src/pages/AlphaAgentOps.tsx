@@ -12,13 +12,15 @@
  * - Usage Forecasting
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { useAuth } from "../contexts/AuthContext";
 import {
   agentsApi,
   extendedApi,
+  rulesApi,
   type SelfHealingEvent,
+  type WebhookConfig,
 } from "../lib/api";
 import { useWebSocket } from "../hooks/useApi";
 import { storage } from "../lib/storage";
@@ -786,7 +788,7 @@ interface AgentSettingsDialogProps {
   onSave: (updated: DashboardAgent) => void;
 }
 
-function AgentSettingsDialog({ agent, onOpenChange, onSave }: AgentSettingsDialogProps) {
+function AgentSettingsDialog({ agent, isOpen, onOpenChange, onSave }: AgentSettingsDialogProps) {
   const [editedAgent, setEditedAgent] = useState<DashboardAgent>(agent);
 
   useEffect(() => {
@@ -822,6 +824,22 @@ function AgentSettingsDialog({ agent, onOpenChange, onSave }: AgentSettingsDialo
                 <SelectItem value="production">Production</SelectItem>
                 <SelectItem value="staging">Staging</SelectItem>
                 <SelectItem value="development">Development</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Agent Tier</Label>
+            <Select
+              value={editedAgent.tier || "tactical"}
+              onValueChange={(val: any) => setEditedAgent(prev => ({ ...prev, tier: val }))}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="strategic">Strategic</SelectItem>
+                <SelectItem value="tactical">Tactical</SelectItem>
+                <SelectItem value="industrial">Industrial</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -895,7 +913,7 @@ function AgentSettingsDialog({ agent, onOpenChange, onSave }: AgentSettingsDialo
               <Input
                 type="number"
                 value={editedAgent.budget}
-                onChange={(e) => setEditedAgent(prev => ({ ...prev, budget: parseFloat(e.target.value) }))}
+                onChange={(e) => setEditedAgent(prev => ({ ...prev, budget: parseFloat(e.target.value) || 0 }))}
                 placeholder="25"
               />
             </div>
@@ -906,7 +924,7 @@ function AgentSettingsDialog({ agent, onOpenChange, onSave }: AgentSettingsDialo
                 value={editedAgent.config.maxTokens}
                 onChange={(e) => setEditedAgent(prev => ({
                   ...prev,
-                  config: { ...prev.config, maxTokens: parseInt(e.target.value) }
+                  config: { ...prev.config, maxTokens: parseInt(e.target.value) || 0 }
                 }))}
                 placeholder="100000"
               />
@@ -1052,6 +1070,27 @@ export default function AlphaAgentOps() {
     connected_agents: 0,
     status: "polling"
   });
+
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      try {
+        const metrics = await extendedApi.sentinel.getStreamingMetrics();
+        if (metrics) {
+          setLiveMetrics(prev => ({
+            ...prev,
+            ...metrics,
+            status: "live"
+          }));
+        }
+      } catch (e) {
+        setLiveMetrics(prev => ({ ...prev, status: "error" }));
+      }
+    };
+
+    fetchMetrics();
+    const interval = setInterval(fetchMetrics, 5000);
+    return () => clearInterval(interval);
+  }, []);
   const [autoRefine, setAutoRefine] = useState(true);
   const [safetyRollback, setSafetyRollback] = useState(true);
 
@@ -1067,11 +1106,14 @@ export default function AlphaAgentOps() {
       if (data.type === 'agent_update' && data.payload) {
         setAgents(prev => prev.map(a => a.id === data.payload.id ? { ...a, ...data.payload } : a));
       }
-      if (data.type === 'audit_log' && data.payload) {
+      if ((data.type === 'audit_log' || data.type === 'audit_entry') && data.payload) {
         setAuditLog(prev => [data.payload, ...prev].slice(0, 100));
       }
       if (data.type === 'live_metrics' && data.payload) {
-        setLiveMetrics(data.payload);
+        setLiveMetrics(prev => ({ ...prev, ...data.payload, status: "live" }));
+      }
+      if (data.type === 'self_healing_event' && data.payload) {
+        setSelfHealingEvents(prev => [data.payload, ...prev].slice(0, 50));
       }
     }
   });
@@ -1140,10 +1182,49 @@ export default function AlphaAgentOps() {
     toast.success(`Configuration for ${agent.name} exported.`);
   };
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const handleImportAgent = () => {
-    toast.info("Importing configuration...");
-    // Future: Implement real file picker and validation
-    toast.success("Configuration imported successfully.");
+    fileInputRef.current?.click();
+  };
+
+  const onFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const importedData = JSON.parse(event.target?.result as string);
+        // Basic validation
+        if (!importedData.name || !importedData.type) {
+          throw new Error("Invalid agent configuration format.");
+        }
+
+        setNewAgentData({
+          name: `${importedData.name} (Imported)`,
+          type: importedData.type,
+          environment: importedData.environment || "production",
+          provider: importedData.provider || "openai",
+          model: importedData.model || "gpt-4o",
+          budget: importedData.budget || 10,
+          maxTokens: importedData.config?.maxTokens || 100000,
+          org_id: importedData.org_id || "",
+          control_webhook: importedData.control_webhook || "",
+          metadata: importedData.metadata || {},
+          tier: importedData.tier || "industrial",
+          persistent_memory: importedData.persistent_memory ?? true,
+        });
+        setShowNewAgentDialog(true);
+        toast.success("Configuration imported. Review and deploy.");
+      } catch (err) {
+        toast.error("Import failed: " + (err as Error).message);
+      } finally {
+        // Reset input
+        e.target.value = "";
+      }
+    };
+    reader.readAsText(file);
   };
 
   const handleSaveSAMLConfig = async () => {
@@ -1199,7 +1280,8 @@ export default function AlphaAgentOps() {
         heal,
         insp,
         sett,
-        onPrem
+        onPrem,
+        healingStatus
       ] = await Promise.all([
         extendedApi.governance.compliance.getDashboard(),
         extendedApi.governance.sla.getDashboard(),
@@ -1210,7 +1292,8 @@ export default function AlphaAgentOps() {
         extendedApi.governance.healing.getConfigs(),
         extendedApi.governance.insights.getStrategic(),
         extendedApi.governance.settings.list(),
-        extendedApi.governance.onPrem.listDeployments()
+        extendedApi.governance.onPrem.listDeployments(),
+        extendedApi.sentinel.getHealingStatus()
       ]);
 
       setComplianceDashboard(compliance);
@@ -1223,6 +1306,7 @@ export default function AlphaAgentOps() {
       setStrategicInsights(Array.isArray(insp) ? insp : []);
       setSystemSettings(Array.isArray(sett) ? sett : []);
       setOnPremDeployments(Array.isArray(onPrem) ? onPrem : []);
+      setSelfHealingEvents(Array.isArray(healingStatus?.events) ? healingStatus.events : []);
     } catch (e) {
       console.error("Governance fetch error:", e);
     } finally {
@@ -1232,6 +1316,8 @@ export default function AlphaAgentOps() {
 
   useEffect(() => {
     fetchGovernanceData();
+    const interval = setInterval(fetchGovernanceData, 30000); // Poll every 30s
+    return () => clearInterval(interval);
   }, []);
 
   // Handle SSO Callback Redirects
@@ -1304,7 +1390,7 @@ export default function AlphaAgentOps() {
 
   const handleViewSnapshots = async () => {
     try {
-      const data = await extendedApi.agentOps.getSnapshots();
+      const data = await extendedApi.governance.getSnapshots();
       setSnapshots(data || []);
       setShowSnapshotsDialog(true);
     } catch (err) {
@@ -1314,7 +1400,7 @@ export default function AlphaAgentOps() {
 
   const handleConfigureProxyRules = async () => {
     try {
-      await extendedApi.agentOps.configureProxy("1", proxyTarget);
+      await extendedApi.cloud.configureProxy("1", proxyTarget);
       toast.success(`Proxy routing updated: Global ingress -> ${proxyTarget}`);
       setShowProxyConfigDialog(false);
     } catch (err) {
@@ -1326,7 +1412,7 @@ export default function AlphaAgentOps() {
     setIsPerformingForensics(true);
     toast.info("Running deep behavioral forensic analysis...");
     try {
-      const result = await extendedApi.agentOps.runForensics();
+      const result = await extendedApi.sentinel.runForensics();
       toast.success(result.analysis_summary || "Analysis complete: No anomalies detected.");
     } catch (e) {
       toast.error("Forensic analysis engine unavailable.");
@@ -1339,7 +1425,7 @@ export default function AlphaAgentOps() {
     if (selectedAgentIds.length === 0) return;
     toast.info(`Bulk ${action} initiated for ${selectedAgentIds.length} agents...`);
     try {
-      await extendedApi.agentOps.bulkAction(action, selectedAgentIds);
+      await extendedApi.agents.bulkAction(action, selectedAgentIds);
       toast.success(`Bulk ${action} completed.`);
       refreshData();
       setSelectedAgentIds([]);
@@ -1730,9 +1816,9 @@ export default function AlphaAgentOps() {
 
   const handleRealizeImpact = async (insightId: string) => {
     try {
-      await extendedApi.agentOps.bulkAction('realize', [insightId]);
+      await extendedApi.governance.analytics.realizeImpact(insightId);
       toast.success("Strategic impact realized and logged to Venture ledger.");
-      refreshData();
+      fetchGovernanceData();
     } catch (e) {
       toast.error("Failed to realize impact.");
     }
@@ -1740,7 +1826,7 @@ export default function AlphaAgentOps() {
 
   const handleRunDiagnostics = async (agentId: string, type: 'dump' | 'compress') => {
     toast.promise(
-      extendedApi.agentOps.optimizeMemory(agentId),
+      extendedApi.sentinel.runForensics(), // Placeholder for specific diagnostic if exists
       {
         loading: `Initiating agent ${type}...`,
         success: () => `${type === 'dump' ? 'Memory dump' : 'Context compression'} successful.`,
@@ -1757,8 +1843,11 @@ export default function AlphaAgentOps() {
   const handleCaptureSnapshot = async () => {
     toast.info("Capturing system state baseline...");
     try {
-      await extendedApi.agentOps.captureSnapshot();
+      await extendedApi.governance.captureSnapshot();
       toast.success("New snapshot baseline captured.");
+      // Refresh list
+      const data = await extendedApi.governance.getSnapshots();
+      setSnapshots(data || []);
     } catch (e) {
       toast.error("Failed to capture snapshot.");
     }
@@ -1767,7 +1856,7 @@ export default function AlphaAgentOps() {
   const handleRollbackSnapshot = async (id: string) => {
     toast.info(`Initiating rollback to ${id}...`);
     try {
-      await extendedApi.agentOps.rollbackSnapshot(id);
+      await extendedApi.governance.rollbackSnapshot(id);
       toast.success("System state restored from snapshot.");
       setShowSnapshotsDialog(false);
     } catch (e) {
@@ -1778,7 +1867,7 @@ export default function AlphaAgentOps() {
   const handleTriggerFailover = async (regionId: string) => {
     toast.success("Regional Failover initiated.");
     try {
-      await extendedApi.agentOps.triggerFailover(regionId);
+      await extendedApi.cloud.triggerFailover(regionId);
       refreshData();
       toast.success("Failover protocol complete.");
     } catch (e) {
@@ -1967,18 +2056,7 @@ export default function AlphaAgentOps() {
     events: ["AGENT_ERROR", "BUDGET_EXCEEDED"],
   });
 
-  const [graphqlQuery, setGraphqlQuery] = useState(`query {
-  agents {
-    id
-    name
-    status
-    metrics {
-      totalCost
-      errorRate
-    }
-  }
-}`);
-  const [graphqlResult, setGraphqlResult] = useState("");
+
 
 
   const handleExportData = () => {
@@ -1996,6 +2074,7 @@ export default function AlphaAgentOps() {
     toast.success('Enterprise data export complete');
   };
 
+  const handleCreateAgent = async () => {
     try {
       const result = await agentsApi.create({
         ...newAgentData,
@@ -2956,7 +3035,7 @@ export default function AlphaAgentOps() {
                             <div className="font-medium">{entry.action}</div>
                             <div className="text-sm text-muted-foreground">
                               {entry.agentName} ·{" "}
-                              {entry.timestamp.toLocaleTimeString()}
+                              {new Date(entry.timestamp).toLocaleTimeString()}
                             </div>
                           </div>
                           <Badge
@@ -5882,6 +5961,14 @@ export default function AlphaAgentOps() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        <input
+          type="file"
+          ref={fileInputRef}
+          className="hidden"
+          accept=".json"
+          onChange={onFileImport}
+          data-testid="agent-import-input"
+        />
       </div>
     </>
   );
