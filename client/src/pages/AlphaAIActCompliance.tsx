@@ -1355,19 +1355,18 @@ export default function AlphaAIActCompliance() {
                 }
 
                 // Fetch P1 data
-                // TODO: Add getAuditLogs method to API when backend is implemented
-                // const logs = await extendedApi.compliance.getAuditLogs?.();
-                // if (logs) setAuditLogs(logs);
+                const logs = await extendedApi.compliance.getAuditLogs();
+                if (logs) setAuditLogs(logs);
 
-                // TODO: Add stats method to selfHealing API when backend is implemented
-                // const shStats = await extendedApi.selfHealing.stats?.();
-                // if (shStats) setSelfHealingStats(shStats);
+                const shStats = await extendedApi.selfHealing.stats();
+                if (shStats) setSelfHealingStats(shStats);
 
-                const shEvents = await extendedApi.selfHealing.events?.();
+                const shEvents = await extendedApi.selfHealing.events();
                 if (shEvents) setSelfHealingEvents(shEvents);
 
             } catch (error) {
                 console.error("Failed to fetch extended compliance data:", error);
+                // Real-First: No mock fallbacks here. 
             } finally {
                 setIsLoading(false);
             }
@@ -1666,15 +1665,13 @@ export default function AlphaAIActCompliance() {
 
     const handleResolveIncident = async (id: string) => {
         try {
-            // TODO: Add updateIncidentStatus method to API when backend is implemented
-            // await extendedApi.compliance.updateIncidentStatus?.(id, 'resolved');
+            await extendedApi.compliance.updateIncidentStatus(id, 'resolved');
             toast.success(`Incident ${id} marked as resolved. Article 72 report generated.`);
             setIncidents(prev => prev.map(inc => inc.id === id ? { ...inc, status: 'resolved' } : inc));
         } catch (err) {
             console.error("Failed to resolve incident:", err);
-            toast.error("Failed to resolve incident (API Error). FALLING BACK TO LOCAL RESOLUTION.");
-            // Simulation fallback
-            setIncidents(prev => prev.map(inc => inc.id === id ? { ...inc, status: 'resolved' } : inc));
+            toast.error("Failed to resolve incident (API Error).");
+            // Real-First Policy: No simulation fallback.
         }
     };
 
@@ -1790,19 +1787,19 @@ export default function AlphaAIActCompliance() {
     const handleAuditExport = async () => {
         toast.info("Preparing immutable audit export...");
         try {
-            // TODO: Add getAuditLogs method to API when backend is implemented
-            // const logs = await extendedApi.compliance.getAuditLogs?.(undefined, auditSearch, auditFilterType === 'all' ? undefined : auditFilterType);
-            // if (logs) {
-            //     const csv = [
-            //         ["Timestamp", "Actor", "Action", "Outcome", "ID"],
-            //         ...logs.map((l: any) => [l.timestamp, l.actor, l.action, l.outcome || l.status, l.id])
-            //     ].map(row => row.join(',')).join('\n');
-            //     handleDownload("Alpha_Compliance_Audit_Trail.csv", csv);
-            //     toast.success("Full immutable audit trail exported (CSV).");
-            // } else {
-            toast.info("Audit logs not available - feature coming soon");
-            // }
+            const logs = await extendedApi.compliance.getAuditLogs(undefined, auditSearch, auditFilterType === 'all' ? undefined : auditFilterType);
+            if (logs && logs.length > 0) {
+                const csv = [
+                    ["Timestamp", "Actor", "Action", "Outcome", "ID"],
+                    ...logs.map((l: any) => [l.timestamp, l.actor, l.action, l.outcome || l.status, l.id])
+                ].map(row => row.join(',')).join('\n');
+                handleDownload("Alpha_Compliance_Audit_Trail.csv", csv);
+                toast.success("Full immutable audit trail exported (CSV).");
+            } else {
+                toast.info("No audit logs available to export.");
+            }
         } catch (err) {
+            console.error("Audit export failed:", err);
             toast.error("Audit export failed.");
         }
     };
@@ -1997,7 +1994,7 @@ export default function AlphaAIActCompliance() {
                             <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handleDownload('regulens-compliance-sdk.zip', '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')}
+                                onClick={() => handleDownload('regulens-compliance-sdk.zip', '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')}
                             >
                                 <Download className="w-4 h-4 mr-2" />
                                 SDK
@@ -3009,12 +3006,13 @@ bsContent>
                                                     <Button variant="ghost" size="icon" className="text-destructive" onClick={async () => {
                                                         if (confirm(`Are you sure you want to offboard ${vendor.name}?`)) {
                                                             try {
-                                                                // TODO: Add deleteVendor method to API when backend is implemented
-                                                                // await extendedApi.compliance.deleteVendor(vendor.id);
-                                                                setVendors(prev => prev.filter(v => v.id !== vendor.id));
-                                                                toast.success("Vendor offboarded from compliance registry.");
+                                                                await extendedApi.compliance.deleteVendor(vendor.id);
+                                                                toast.success("Vendor offboarded successfully");
+                                                                const updatedVendors = await extendedApi.compliance.listConnections(); // Refresh
+                                                                setVendors(updatedVendors); // Assuming setVendors can take the new list directly
                                                             } catch (err) {
-                                                                toast.error("Failed to delete vendor.");
+                                                                console.error("Failed to offboard vendor:", err);
+                                                                toast.error("Failed to offboard vendor");
                                                             }
                                                         }
                                                     }}>

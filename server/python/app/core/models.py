@@ -320,6 +320,9 @@ class AlertConfig(SQLModel, table=True):
     name: str
     alert_type: str  # budget, failure, rate_limit, bias
     threshold: float
+    limit: float = Field(default=100.0) # Budget limit in USD
+    action: str = Field(default="pause") # notify, pause, terminate
+    priority: str = Field(default="medium") # low, medium, high
     is_active: bool = Field(default=True)
     channels: List[str] = Field(sa_column=Column(JSON))  # slack, email, pagerduty
     created_at: datetime = Field(default_factory=datetime.utcnow)

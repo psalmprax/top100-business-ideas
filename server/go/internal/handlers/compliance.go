@@ -279,3 +279,65 @@ func (h *ComplianceHandler) GetFinancialMetrics(c *gin.Context) {
 	}
 	c.Data(http.StatusOK, "application/json", response)
 }
+
+// ListAuditLogs proxies to agent-ops audit logs
+func (h *ComplianceHandler) ListAuditLogs(c *gin.Context) {
+	agentID := c.Query("agentId")
+	limit := c.Query("limit")
+	search := c.Query("search")
+	outcome := c.Query("outcome")
+
+	if limit == "" {
+		limit = "50"
+	}
+
+	path := fmt.Sprintf("/agent-ops/audit?limit=%s", limit)
+	if agentID != "" {
+		path = fmt.Sprintf("%s&agent_id=%s", path, agentID)
+	}
+	if search != "" {
+		path = fmt.Sprintf("%s&search=%s", path, search)
+	}
+	if outcome != "" {
+		path = fmt.Sprintf("%s&outcome=%s", path, outcome)
+	}
+
+	response, err := h.proxyService.Forward("GET", path, nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch audit logs", Details: err.Error()})
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+// UpdateIncidentStatus updates status of a compliance incident
+func (h *ComplianceHandler) UpdateIncidentStatus(c *gin.Context) {
+	id := c.Param("id")
+	var req map[string]interface{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request body"})
+		return
+	}
+
+	// Map to Python's alert resolution path remapped in agent_ops.go
+	path := fmt.Sprintf("/agent-ops/compliance/alerts/%s/resolve", id)
+	response, err := h.proxyService.Forward("PATCH", path, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to update incident status", Details: err.Error()})
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+// DeleteVendor deletes a vendor via Python proxy
+func (h *ComplianceHandler) DeleteVendor(c *gin.Context) {
+	id := c.Param("id")
+	response, err := h.proxyService.Forward("DELETE", fmt.Sprintf("/vendors/%s", id), nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to delete vendor", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
+}

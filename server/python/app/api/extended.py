@@ -1523,10 +1523,21 @@ async def create_budget_rule(request: Dict[str, Any]):
     """Create a new dynamic budget alert rule"""
     name = request.get("name")
     threshold = request.get("threshold", 0.8)
+    limit = request.get("limit", 100.0)
+    action = request.get("action", "pause")
+    priority = request.get("priority", "medium")
     alert_type = request.get("alert_type", "budget")
     channels = request.get("channels", ["email"])
     
-    rule_id = governance_service.set_budget_rule(name, threshold, alert_type, channels)
+    rule_id = governance_service.set_budget_rule(
+        name=name, 
+        threshold=threshold, 
+        alert_type=alert_type, 
+        channels=channels,
+        limit=limit,
+        action=action,
+        priority=priority
+    )
     return {"status": "success", "rule_id": rule_id}
 
 from app.services.sso_service import sso_service

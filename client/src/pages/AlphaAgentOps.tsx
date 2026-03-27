@@ -226,10 +226,14 @@ interface AuditEntry {
 
 interface AlertConfig {
   id: string;
-  type: "slack" | "teams" | "email" | "webhook";
-  channel: string;
-  threshold: number; // percentage of budget
+  type: "slack" | "teams" | "email" | "webhook" | "governance";
+  channel: string; // channel name or rule descriptor
+  threshold: number; // percentage of budget or rule threshold
   enabled: boolean;
+  is_active?: boolean;
+  limit?: number;
+  action?: string;
+  priority?: string;
 }
 
 interface LLMMetrics {
@@ -385,305 +389,9 @@ interface OnPremDeployment {
 // Mock Data
 // ============================================================================
 
-const mockAgents: DashboardAgent[] = [
-  {
-    id: "1",
-    name: "Customer Support Agent",
-    type: "langgraph",
-    status: "active",
-    budget: 50,
-    dailySpend: 32.5,
-    config: {
-      provider: "openai",
-      model: "gpt-4-turbo",
-      maxTokens: 4000,
-      temperature: 0.7,
-      rules: [
-        {
-          id: "1",
-          name: "Loop Prevention",
-          type: "loop_prevention",
-          enabled: true,
-          config: { maxIterations: 10, semanticCheck: true },
-        },
-        {
-          id: "2",
-          name: "Semantic Cost Cap",
-          type: "semantic_cost_cap",
-          enabled: true,
-          config: { maxSpend: 50, preserveState: true },
-        },
-      ],
-    },
-    metrics: {
-      totalRequests: 15420,
-      totalTokens: 2840000,
-      totalCost: 142.5,
-      avgLatencyMs: 1250,
-      errorRate: 0.02,
-      loopCount: 3,
-      cacheHits: 4230,
-      loopsPrevented: 47,
-      costSaved: 892.3,
-    },
-    createdAt: new Date("2024-01-01"),
-    lastActiveAt: new Date(),
-    tier: "strategic",
-  },
-  {
-    id: "2",
-    name: "Research Agent",
-    type: "crewai",
-    status: "active",
-    budget: 5,
-    dailySpend: 4.2,
-    config: {
-      provider: "anthropic",
-      model: "claude-3-opus",
-      maxTokens: 8000,
-      temperature: 0.8,
-      rules: [
-        {
-          id: "3",
-          name: "Daily Budget Cap",
-          type: "budget_cap",
-          enabled: true,
-          config: { maxSpend: 5 },
-        },
-      ],
-    },
-    metrics: {
-      totalRequests: 2340,
-      totalTokens: 1250000,
-      totalCost: 89.2,
-      avgLatencyMs: 2800,
-      errorRate: 0.01,
-      loopCount: 0,
-      cacheHits: 890,
-      loopsPrevented: 12,
-      costSaved: 156.4,
-    },
-    createdAt: new Date("2024-02-20"),
-    lastActiveAt: new Date(),
-    tier: "strategic",
-  },
-  {
-    id: "3",
-    name: "Code Writer Agent",
-    type: "autogen",
-    status: "active",
-    budget: 50,
-    dailySpend: 48.9,
-    config: {
-      provider: "openai",
-      model: "gpt-4",
-      maxTokens: 6000,
-      temperature: 0.3,
-      rules: [
-        {
-          id: "4",
-          name: "Semantic Cost Cap",
-          type: "semantic_cost_cap",
-          enabled: true,
-          config: { maxSpend: 50, preserveState: true },
-        },
-        {
-          id: "5",
-          name: "Memory Optimization",
-          type: "memory_optimization",
-          enabled: true,
-          config: { compressThreshold: 0.7 },
-        },
-      ],
-    },
-    metrics: {
-      totalRequests: 8920,
-      totalTokens: 4500000,
-      totalCost: 312.4,
-      avgLatencyMs: 3200,
-      errorRate: 0.05,
-      loopCount: 8,
-      cacheHits: 2100,
-      loopsPrevented: 156,
-      costSaved: 1245.8,
-    },
-    createdAt: new Date("2024-03-10"),
-    lastActiveAt: new Date(),
-    tier: "industrial",
-  },
-  {
-    id: "4",
-    name: "Data Analysis Agent",
-    type: "langgraph",
-    status: "paused",
-    budget: 25,
-    dailySpend: 0,
-    config: {
-      provider: "google",
-      model: "gemini-pro",
-      maxTokens: 4000,
-      temperature: 0.5,
-      rules: [
-        {
-          id: "6",
-          name: "Loop Prevention",
-          type: "loop_prevention",
-          enabled: true,
-          config: { maxIterations: 5 },
-        },
-      ],
-    },
-    metrics: {
-      totalRequests: 4520,
-      totalTokens: 1800000,
-      totalCost: 156.8,
-      avgLatencyMs: 1800,
-      errorRate: 0.03,
-      loopCount: 2,
-      cacheHits: 1200,
-      loopsPrevented: 34,
-      costSaved: 423.1,
-    },
-    createdAt: new Date("2024-04-05"),
-    lastActiveAt: new Date("2024-11-10"),
-    tier: "industrial",
-  },
-];
+// Replaced mock data with real API connectivity. 
+// INITIAL_AGENTS, INITIAL_AUDIT_LOG etc. are now fetched from the backend.
 
-const mockAuditLog: AuditEntry[] = [
-  {
-    id: "1",
-    timestamp: new Date(),
-    agentId: "1",
-    agentName: "Customer Support Agent",
-    action: "Refund Request Processing",
-    intent:
-      "Customer requested refund for order #12345. Checking policy compliance.",
-    outcome: "approved",
-    tokens: 450,
-    cost: 0.02,
-    reasoning:
-      "Request aligns with refund policy. Customer has valid proof of purchase.",
-    summary: "Approved refund request for order #12345 due to policy compliance",
-  },
-  {
-    id: "2",
-    timestamp: new Date(Date.now() - 300000),
-    agentId: "3",
-    agentName: "Code Writer Agent",
-    action: "Database Migration Script",
-    intent: "Generate migration script for PostgreSQL to MongoDB",
-    outcome: "modified",
-    tokens: 2800,
-    cost: 0.14,
-    reasoning:
-      "Added safety checks and rollback logic. Original intent preserved but enhanced.",
-    summary: "Enhanced database migration script with safety checks and rollback logic",
-  },
-  {
-    id: "3",
-    timestamp: new Date(Date.now() - 600000),
-    agentId: "2",
-    agentName: "Research Agent",
-    action: "Market Analysis",
-    intent: "Analyze competitor pricing for Q4 strategy",
-    outcome: "paused",
-    tokens: 1200,
-    cost: 0.08,
-    reasoning:
-      "Daily budget limit ($5) reached. Agent paused to preserve budget. Session state saved.",
-    summary: "Paused market analysis due to daily budget limit reached",
-  },
-  {
-    id: "4",
-    timestamp: new Date(Date.now() - 900000),
-    agentId: "1",
-    agentName: "Customer Support Agent",
-    action: "Password Reset",
-    intent: "Process password reset for user admin@company.com",
-    outcome: "approved",
-    tokens: 180,
-    cost: 0.01,
-    reasoning:
-      "Standard security protocol followed. Multi-factor verification required.",
-    summary: "Approved password reset following security protocols",
-  },
-  {
-    id: "5",
-    timestamp: new Date(Date.now() - 1200000),
-    agentId: "3",
-    agentName: "Code Writer Agent",
-    action: "API Endpoint Creation",
-    intent: "Create new REST API endpoints for user management",
-    outcome: "denied",
-    tokens: 890,
-    cost: 0.05,
-    reasoning:
-      "Request would create security vulnerability. Exposes plaintext passwords in response.",
-    summary: "Denied API endpoint creation due to security vulnerability risk",
-  },
-];
-
-const mockAlertConfigs: AlertConfig[] = [
-  {
-    id: "1",
-    type: "slack",
-    channel: "#ai-alerts",
-    threshold: 75,
-    enabled: true,
-  },
-  {
-    id: "2",
-    type: "slack",
-    channel: "#finance-ops",
-    threshold: 90,
-    enabled: true,
-  },
-  {
-    id: "3",
-    type: "teams",
-    channel: "Engineering",
-    threshold: 80,
-    enabled: false,
-  },
-  {
-    id: "4",
-    type: "email",
-    channel: "ciso@company.com",
-    threshold: 50,
-    enabled: true,
-  },
-];
-
-const mockBudgetRules: BudgetRule[] = [
-  {
-    id: "1",
-    name: "Research Budget Protection",
-    agentIds: ["2"],
-    dailyLimit: 5,
-    priority: "high",
-    action: "pause",
-    enabled: true,
-  },
-  {
-    id: "2",
-    name: "Production Stability",
-    agentIds: ["1", "3"],
-    dailyLimit: 100,
-    priority: "high",
-    action: "alert",
-    enabled: true,
-  },
-  {
-    id: "3",
-    name: "Development Relaxed",
-    agentIds: ["4"],
-    dailyLimit: 25,
-    priority: "low",
-    action: "throttle",
-    enabled: false,
-  },
-];
 
 // ============================================================================
 // Components
@@ -1032,7 +740,7 @@ export default function AlphaAgentOps() {
   const [showModelConfigDialog, setShowModelConfigDialog] = useState(false);
   const [complianceStatus, setComplianceStatus] = useState<{ hipaa: any, sox: any }>({ hipaa: null, sox: null });
   const [retentionDays, setRetentionDays] = useState(30);
-  const [activeSlaTier, setActiveSlaTier] = useState<string>(storage.get("active_sla_tier", "Enterprise"));
+  const [activeSlaTier, setActiveSlaTier] = useState<string>("Enterprise");
 
   // Phase 3 Gaps State
   const [selectedAgentIds, setSelectedAgentIds] = useState<string[]>([]);
@@ -1074,7 +782,7 @@ export default function AlphaAgentOps() {
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
-        const metrics = await extendedApi.sentinel.getStreamingMetrics();
+        const metrics = await extendedApi.selfHealing.getStreamingMetrics();
         if (metrics) {
           setLiveMetrics(prev => ({
             ...prev,
@@ -1093,6 +801,16 @@ export default function AlphaAgentOps() {
   }, []);
   const [autoRefine, setAutoRefine] = useState(true);
   const [safetyRollback, setSafetyRollback] = useState(true);
+  const [graphqlQuery, setGraphqlQuery] = useState(`{
+  agents {
+    id
+    name
+    status
+    budget
+    dailySpend
+  }
+}`);
+  const [graphqlResult, setGraphqlResult] = useState("");
 
   // WebSocket for real-time AgentOps updates
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -1255,7 +973,7 @@ export default function AlphaAgentOps() {
   const handleConnectProvider = async (provider: string) => {
     toast.info(`Initiating ${provider} SSO connection...`);
     try {
-      const res = await extendedApi.post(`/sso/connect/${provider}`) as any;
+      const res = await extendedApi.sso.connectProvider('default', provider) as any;
       if (res.status === 'redirect' && res.auth_url) {
         window.location.href = res.auth_url;
       } else {
@@ -1293,11 +1011,14 @@ export default function AlphaAgentOps() {
         extendedApi.governance.insights.getStrategic(),
         extendedApi.governance.settings.list(),
         extendedApi.governance.onPrem.listDeployments(),
-        extendedApi.sentinel.getHealingStatus()
+        extendedApi.selfHealing.getHealingStatus()
       ]);
 
       setComplianceDashboard(compliance);
       setSlaDashboard(sla);
+      if (sla?.tier) {
+        setActiveSlaTier(sla.tier);
+      }
       setPartners(Array.isArray(p) ? p : []);
       setUsageForecasts(Array.isArray(forecast) ? forecast : []);
       setRoiMetrics(Array.isArray(roi) ? roi : []);
@@ -1390,7 +1111,7 @@ export default function AlphaAgentOps() {
 
   const handleViewSnapshots = async () => {
     try {
-      const data = await extendedApi.governance.getSnapshots();
+      const data = await extendedApi.agentOps.getSnapshots();
       setSnapshots(data || []);
       setShowSnapshotsDialog(true);
     } catch (err) {
@@ -1400,7 +1121,7 @@ export default function AlphaAgentOps() {
 
   const handleConfigureProxyRules = async () => {
     try {
-      await extendedApi.cloud.configureProxy("1", proxyTarget);
+      await extendedApi.agentOps.configureProxy("1", proxyTarget);
       toast.success(`Proxy routing updated: Global ingress -> ${proxyTarget}`);
       setShowProxyConfigDialog(false);
     } catch (err) {
@@ -1412,7 +1133,7 @@ export default function AlphaAgentOps() {
     setIsPerformingForensics(true);
     toast.info("Running deep behavioral forensic analysis...");
     try {
-      const result = await extendedApi.sentinel.runForensics();
+      const result = await extendedApi.agentOps.runForensics();
       toast.success(result.analysis_summary || "Analysis complete: No anomalies detected.");
     } catch (e) {
       toast.error("Forensic analysis engine unavailable.");
@@ -1425,7 +1146,7 @@ export default function AlphaAgentOps() {
     if (selectedAgentIds.length === 0) return;
     toast.info(`Bulk ${action} initiated for ${selectedAgentIds.length} agents...`);
     try {
-      await extendedApi.agents.bulkAction(action, selectedAgentIds);
+      await extendedApi.agentOps.bulkAction(action, selectedAgentIds);
       toast.success(`Bulk ${action} completed.`);
       refreshData();
       setSelectedAgentIds([]);
@@ -1455,6 +1176,16 @@ export default function AlphaAgentOps() {
     } catch (e) {
       console.error("Alert resolution failed", e);
       toast.error("Failed to resolve alert.");
+    }
+  };
+
+  const handleIgnoreAlert = async (alertId: string) => {
+    try {
+      await extendedApi.agentOps.ignoreAlert(alertId);
+      toast.success("Alert suppressed successfully.");
+      refreshData();
+    } catch (e) {
+      toast.error("Failed to ignore alert.");
     }
   };
 
@@ -1587,7 +1318,7 @@ export default function AlphaAgentOps() {
                       <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                         <Settings className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive" title="Simulate Failover">
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-primary" title="Execute Failover" onClick={() => handleTriggerFailover(config.id)}>
                         <RefreshCw className="w-4 h-4" />
                       </Button>
                     </div>
@@ -1659,7 +1390,7 @@ export default function AlphaAgentOps() {
   const handleUpdateSetting = async (settingId: string, value: string) => {
     try {
       if (settingId === "healing_threshold") {
-        await extendedApi.sentinel.updateHealingConfig({ error_threshold: parseInt(value) });
+        await extendedApi.selfHealing.updateHealingConfig({ error_threshold: parseInt(value) });
       } else {
         await extendedApi.governance.settings.update(settingId, value);
       }
@@ -1691,10 +1422,10 @@ export default function AlphaAgentOps() {
       ] = await Promise.all([
         agentsApi.list(),
         extendedApi.agentOps.getAuditLogs(),
-        extendedApi.agentOps.listRules(),
+        extendedApi.governance.budget.listRules(),
         extendedApi.agentOps.listWebhooks(),
         extendedApi.agentOps.getCloudHealth(),
-        extendedApi.sentinel.getHealingStatus(),
+        extendedApi.selfHealing.getHealingStatus(),
         extendedApi.agentOps.listLLMConfigs(),
         extendedApi.alerts.list(),
         fetchForecast(),
@@ -1771,15 +1502,6 @@ export default function AlphaAgentOps() {
     } catch (error) {
       console.error("Critical Sentinel Sync Failure:", error);
       toast.error("Failed to sync with Sentinel Backend. Please check your connectivity.");
-      
-      // Real-First Policy: Do not fallback to mocks. 
-      // Initialize with empty arrays to prevent crashes while showing no-data state.
-      if (agents.length === 0) {
-        setAgents([]);
-        setAuditLog([]);
-        setBudgetRules([]);
-        setAlertConfigs([]);
-      }
     } finally {
       setIsLoading(false);
     }
@@ -1826,7 +1548,7 @@ export default function AlphaAgentOps() {
 
   const handleRunDiagnostics = async (agentId: string, type: 'dump' | 'compress') => {
     toast.promise(
-      extendedApi.sentinel.runForensics(), // Placeholder for specific diagnostic if exists
+      extendedApi.agentOps.runForensics(),
       {
         loading: `Initiating agent ${type}...`,
         success: () => `${type === 'dump' ? 'Memory dump' : 'Context compression'} successful.`,
@@ -1836,17 +1558,22 @@ export default function AlphaAgentOps() {
   };
 
   const handleToggleCompression = async (enabled: boolean) => {
-    toast.success(`Context Compression ${enabled ? "Enabled" : "Disabled"}`);
-    // Persistent setting update could go here
+    try {
+      await extendedApi.agentOps.updateOptimization(enabled ? "compress" : "none");
+      toast.success(`Context Compression ${enabled ? "Enabled" : "Disabled"}`);
+      refreshData();
+    } catch (e) {
+      toast.error("Failed to update compression policy.");
+    }
   };
 
   const handleCaptureSnapshot = async () => {
     toast.info("Capturing system state baseline...");
     try {
-      await extendedApi.governance.captureSnapshot();
+      await extendedApi.agentOps.captureSnapshot();
       toast.success("New snapshot baseline captured.");
       // Refresh list
-      const data = await extendedApi.governance.getSnapshots();
+      const data = await extendedApi.agentOps.getSnapshots();
       setSnapshots(data || []);
     } catch (e) {
       toast.error("Failed to capture snapshot.");
@@ -1856,7 +1583,7 @@ export default function AlphaAgentOps() {
   const handleRollbackSnapshot = async (id: string) => {
     toast.info(`Initiating rollback to ${id}...`);
     try {
-      await extendedApi.governance.rollbackSnapshot(id);
+      await extendedApi.agentOps.rollbackSnapshot(id);
       toast.success("System state restored from snapshot.");
       setShowSnapshotsDialog(false);
     } catch (e) {
@@ -1867,7 +1594,7 @@ export default function AlphaAgentOps() {
   const handleTriggerFailover = async (regionId: string) => {
     toast.success("Regional Failover initiated.");
     try {
-      await extendedApi.cloud.triggerFailover(regionId);
+      await extendedApi.agentOps.triggerFailover(regionId);
       refreshData();
       toast.success("Failover protocol complete.");
     } catch (e) {
@@ -1877,12 +1604,12 @@ export default function AlphaAgentOps() {
 
   const handleSaveBudgetRule = async () => {
     try {
-      await extendedApi.agentOps.createRule(newBudgetRuleData);
+      await extendedApi.governance.budget.createRule(newBudgetRuleData);
       setShowBudgetRuleDialog(false);
-      refreshData();
+      fetchGovernanceData();
       toast.success("Dynamic Budget Rule Saved.");
-    } catch (e) {
-      toast.error("Failed to save rule.");
+    } catch (e: any) {
+      toast.error(`Failed to save rule: ${e.message || "Unknown error"}`);
     }
   };
 
@@ -2046,8 +1773,9 @@ export default function AlphaAgentOps() {
 
   const [newBudgetRuleData, setNewBudgetRuleData] = useState({
     name: "",
-    dailyLimit: 50,
+    daily_limit: 50, // Changed from dailyLimit to daily_limit
     action: "pause",
+    priority: "medium",
   });
 
   const [newWebhookData, setNewWebhookData] = useState({
@@ -2129,7 +1857,7 @@ export default function AlphaAgentOps() {
     if (!selectedAgentForHint || !hintText.trim()) return;
 
     try {
-      await extendedApi.sentinel.injectHint(selectedAgentForHint.id, hintText);
+      await extendedApi.selfHealing.injectHint(selectedAgentForHint.id, hintText);
       toast.success(`Hint successfully injected to ${selectedAgentForHint.name}`);
 
       const newEntry: AuditEntry = {
@@ -2233,52 +1961,25 @@ export default function AlphaAgentOps() {
   };
 
   const toggleAlert = async (alertId: string) => {
-    const alert = alertConfigs.find(a => a.id === alertId);
-    if (!alert) return;
-
-    const newEnabled = !alert.enabled;
-
     try {
-      await extendedApi.alerts.update(alertId, { enabled: newEnabled });
-      const updated = alertConfigs.map(a =>
-        a.id === alertId ? ({ ...a, enabled: newEnabled } as AlertConfig) : a
-      );
-      setAlertConfigs(updated);
-      storage.set("alert_configs", updated);
-      toast.success(`Alert ${newEnabled ? "enabled" : "disabled"}`);
-    } catch (error) {
-      // Fallback: update locally
-      const updated = alertConfigs.map(a =>
-        a.id === alertId ? ({ ...a, enabled: newEnabled } as AlertConfig) : a
-      );
-      setAlertConfigs(updated);
-      storage.set("alert_configs", updated);
-      toast.success(`Alert ${newEnabled ? "enabled" : "disabled"}`);
+      await extendedApi.governance.compliance.alerts.update(alertId, {
+        is_active: !alertConfigs.find(a => a.id === alertId)?.is_active
+      });
+      toast.success("Alert status updated on backend.");
+      fetchGovernanceData();
+    } catch (e: any) {
+      toast.error(`Backend Synchronous Fail: ${e.message || "Connection lost"}`);
     }
   };
 
   const toggleBudgetRule = async (ruleId: string) => {
-    const rule = budgetRules.find(r => r.id === ruleId);
-    if (!rule) return;
-
-    const newEnabled = !rule.enabled;
-
     try {
-      await rulesApi.toggle(ruleId, newEnabled);
-      const updated = budgetRules.map(r =>
-        r.id === ruleId ? ({ ...r, enabled: newEnabled } as BudgetRule) : r
-      );
-      setBudgetRules(updated);
-      storage.set("budget_rules", updated);
-      toast.success(`Budget rule ${newEnabled ? "enabled" : "disabled"}`);
-    } catch (error) {
-      // Fallback: update locally
-      const updated = budgetRules.map(r =>
-        r.id === ruleId ? ({ ...r, enabled: newEnabled } as BudgetRule) : r
-      );
-      setBudgetRules(updated);
-      storage.set("budget_rules", updated);
-      toast.success(`Budget rule ${newEnabled ? "enabled" : "disabled"}`);
+      const rule = budgetRules.find(r => r.id === ruleId);
+      await rulesApi.toggle(ruleId, !rule?.enabled);
+      toast.success("Budget governance synchronized.");
+      fetchGovernanceData();
+    } catch (e: any) {
+      toast.error(`Governance Outage: ${e.message || "Rule could not be updated"}`);
     }
   };
 
@@ -3247,7 +2948,7 @@ export default function AlphaAgentOps() {
                                 variant="ghost"
                                 size="sm"
                                 className="h-8 text-xs text-zinc-400 hover:text-white"
-                                onClick={() => toast.info(`Alert ${alert.id} ignored.`)}
+                                onClick={() => handleIgnoreAlert(alert.id)}
                               >
                                 Ignore
                               </Button>
@@ -3610,9 +3311,9 @@ export default function AlphaAgentOps() {
                                 size="sm"
                                 onClick={async () => {
                                   try {
-                                    // Simulated test for now since we're using real rules
                                     toast.info("Sending test ping to webhook...");
-                                    setTimeout(() => toast.success("Webhook pong received!"), 1500);
+                                    await extendedApi.agentOps.testWebhook(webhook.id || "");
+                                    toast.success("Webhook test signal delivered.");
                                   } catch (e) {
                                     toast.error("Test failed");
                                   }
@@ -3750,7 +3451,6 @@ export default function AlphaAgentOps() {
                               try {
                                 await extendedApi.enterprise.updateSlaTier(tier.title);
                                 setActiveSlaTier(tier.title);
-                                storage.set("active_sla_tier", tier.title);
                                 toast.success(`${tier.title} Tier Activated`);
                               } catch (e) {
                                 toast.error("Activation failed");
@@ -3819,7 +3519,7 @@ export default function AlphaAgentOps() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {(Array.isArray(partners) ? partners : []).map((p) => (
+                      {(Array.isArray(partners) ? partners.filter(p => p && p.id) : []).map((p) => (
                         <TableRow key={p.id}>
                           <TableCell className="font-bold">{p.name}</TableCell>
                           <TableCell>
@@ -3968,7 +3668,7 @@ export default function AlphaAgentOps() {
                     </TableHeader>
                     <TableBody>
                       {Array.isArray(onPremDeployments) && onPremDeployments.length > 0 ? (
-                        (Array.isArray(onPremDeployments) ? onPremDeployments : []).map((d) => (
+                        (Array.isArray(onPremDeployments) ? onPremDeployments.filter(d => d && d.deployment_name) : []).map((d) => (
                           <TableRow key={d.id}>
                             <TableCell className="font-bold">{d.deployment_name}</TableCell>
                             <TableCell className="text-xs">{d.kubernetes_version}</TableCell>
@@ -4289,7 +3989,7 @@ export default function AlphaAgentOps() {
                           <Copy className="w-3 h-3" />
                         </Button>
                       </div>
-                      <Button 
+                      <Button
                         className="w-full bg-blue-600 hover:bg-blue-700 text-xs"
                         onClick={handleRotateApiKey}
                       >
@@ -4657,7 +4357,7 @@ export default function AlphaAgentOps() {
                   </CardHeader>
                   <CardContent>
                     <div className="h-[200px] flex items-end gap-2 px-2">
-                      {Array.isArray(usageForecasts) && usageForecasts.map((f, i) => (
+                      {Array.isArray(usageForecasts) && usageForecasts.filter(f => f && f.month).map((f, i) => (
                         <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
                           <div className="w-full relative h-[150px]">
                             <div
@@ -4682,14 +4382,14 @@ export default function AlphaAgentOps() {
                     <CardDescription>Confidence and trend analysis</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {(Array.isArray(usageForecasts) ? usageForecasts.slice(0, 3) : []).map((f, i) => (
+                    {(Array.isArray(usageForecasts) ? usageForecasts.filter(f => f && f.month) : []).slice(0, 3).map((f, i) => (
                       <div key={i} className="flex justify-between items-center p-3 rounded border">
                         <div>
                           <p className="text-sm font-bold">{f.month}</p>
                           <p className="text-[10px] text-muted-foreground">Confidence: {f.confidence_score}%</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm">Pred: {f.predicted_usage.toLocaleString()}</p>
+                          <p className="text-sm">Pred: {f.predicted_usage?.toLocaleString() || "0"}</p>
                           <Badge variant="outline" className="text-[10px] text-emerald-500">
                             {f.trend === "up" ? "↑ Growth" : "↓ Stable"}
                           </Badge>
@@ -4704,13 +4404,13 @@ export default function AlphaAgentOps() {
             {/* UC10: ROI Correlation - ELITE IMPLEMENTATION */}
             <TabsContent value="roi" className="space-y-6">
               <div className="grid gap-4 md:grid-cols-3">
-                {Array.isArray(roiMetrics) && roiMetrics.map((m, i) => (
+                {Array.isArray(roiMetrics) && roiMetrics.filter(m => m && m.metric_name).map((m, i) => (
                   <MetricCard
                     key={i}
                     title={m.metric_name}
-                    value={m.value.toLocaleString()}
+                    value={m.value?.toLocaleString() || "0"}
                     change={m.trend_percentage}
-                    icon={m.metric_name.includes("ROI") ? DollarSign : m.metric_name.includes("Efficiency") ? ShieldCheck : Activity}
+                    icon={(m.metric_name || "").includes("ROI") ? DollarSign : (m.metric_name || "").includes("Efficiency") ? ShieldCheck : Activity}
                     color="bg-emerald-500/10 text-emerald-500"
                   />
                 ))}
@@ -4725,7 +4425,7 @@ export default function AlphaAgentOps() {
                     <div className="flex justify-between items-end">
                       <div className="space-y-1">
                         <div className="text-3xl font-bold tracking-tighter">
-                          ${(roiMetrics.find(m => m.metric_name === "Cost Savings")?.value || 0).toLocaleString()}
+                          ${(roiMetrics.find(m => m.metric_name === "Cost Savings")?.value ?? 0).toLocaleString()}
                         </div>
                         <div className="text-xs text-muted-foreground uppercase font-black">
                           Total Realized Savings
@@ -4741,7 +4441,7 @@ export default function AlphaAgentOps() {
             {/* Localization Tab */}
             <TabsContent value="localization" className="space-y-6">
               <div className="grid gap-4 md:grid-cols-3">
-                {Array.isArray(localizationConfigs) && localizationConfigs.map((l, i) => (
+                {Array.isArray(localizationConfigs) && localizationConfigs.filter(l => l && l.region).map((l, i) => (
                   <Card key={i}>
                     <CardHeader className="p-4">
                       <div className="flex justify-between items-start">
@@ -4813,7 +4513,7 @@ export default function AlphaAgentOps() {
                         checked={autoRefine}
                         onCheckedChange={(val) => {
                           setAutoRefine(val);
-                          extendedApi.sentinel.updateHealingConfig({ auto_refine: val, safety_rollback: safetyRollback });
+                          extendedApi.selfHealing.updateHealingConfig({ auto_refine: val, safety_rollback: safetyRollback });
                           toast.success(`Auto-Refine ${val ? "Enabled" : "Disabled"}`);
                         }}
                       />
@@ -4827,7 +4527,7 @@ export default function AlphaAgentOps() {
                         checked={safetyRollback}
                         onCheckedChange={(val) => {
                           setSafetyRollback(val);
-                          extendedApi.sentinel.updateHealingConfig({ auto_refine: autoRefine, safety_rollback: val });
+                          extendedApi.selfHealing.updateHealingConfig({ auto_refine: autoRefine, safety_rollback: val });
                           toast.success(`Safety Rollback ${val ? "Enabled" : "Disabled"}`);
                         }}
                       />
@@ -4875,7 +4575,7 @@ export default function AlphaAgentOps() {
                     <CardDescription>Enterprise alignment and mission drift</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {Array.isArray(strategicInsights) && strategicInsights.map((s, i) => (
+                    {Array.isArray(strategicInsights) && strategicInsights.filter(s => s && s.insight_type).map((s, i) => (
                       <div key={i} className="space-y-2">
                         <div className="flex justify-between text-sm">
                           <span className="font-bold">{s.insight_type}</span>
@@ -4884,9 +4584,9 @@ export default function AlphaAgentOps() {
                         <p className="text-xs text-muted-foreground">{s.description}</p>
                         <div className="flex justify-between items-center text-[10px]">
                           <span className="text-muted-foreground">Confidence: {s.confidence}%</span>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             className="h-6 px-2 text-[10px]"
                             onClick={() => handleRealizeImpact(s.insight_type)}
                           >
@@ -4966,13 +4666,13 @@ export default function AlphaAgentOps() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid gap-6 md:grid-cols-2">
-                    {Array.isArray(systemSettings) && systemSettings.map((s, i) => (
+                    {Array.isArray(systemSettings) && systemSettings.filter(s => s && s.setting_name).map((s, i) => (
                       <div key={i} className="flex items-center justify-between p-4 rounded-xl border bg-muted/10">
                         <div className="space-y-0.5">
                           <div className="text-sm font-bold">{s.setting_name}</div>
                           <div className="text-[10px] text-muted-foreground">{s.description}</div>
                         </div>
-                        {s.setting_name.toLowerCase().includes("enabled") ? (
+                        {(s.setting_name || "").toLowerCase().includes("enabled") ? (
                           <Switch
                             checked={s.value === "true"}
                             onCheckedChange={(checked: boolean) => handleUpdateSetting(s.setting_key, (checked ?? false).toString())}
@@ -4987,7 +4687,7 @@ export default function AlphaAgentOps() {
                               onBlur={(e: React.FocusEvent<HTMLInputElement>) => handleUpdateSetting(s.setting_key, e.target.value)}
                             />
                             <span className="text-[10px] font-bold text-muted-foreground">
-                              {s.setting_name.includes("Memory") ? "DAYS" : s.setting_name.includes("Threshold") ? "%" : ""}
+                              {(s.setting_name || "").includes("Memory") ? "DAYS" : (s.setting_name || "").includes("Threshold") ? "%" : ""}
                             </span>
                           </div>
                         )}
@@ -5124,12 +4824,12 @@ export default function AlphaAgentOps() {
                 <Input
                   type="number"
                   placeholder="50"
-                  value={newBudgetRuleData.dailyLimit}
+                  value={newBudgetRuleData.daily_limit}
                   data-testid="rule-limit-input"
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     setNewBudgetRuleData({
                       ...newBudgetRuleData,
-                      dailyLimit: parseInt(e.target.value),
+                      daily_limit: parseInt(e.target.value),
                     })
                   }
                 />
@@ -5154,7 +4854,12 @@ export default function AlphaAgentOps() {
               </div>
               <div className="space-y-2">
                 <Label>Priority</Label>
-                <Select defaultValue="high">
+                <Select 
+                  value={newBudgetRuleData.priority}
+                  onValueChange={(v: string) =>
+                    setNewBudgetRuleData({ ...newBudgetRuleData, priority: v })
+                  }
+                >
                   <SelectTrigger data-testid="rule-priority-select">
                     <SelectValue />
                   </SelectTrigger>
@@ -5774,7 +5479,7 @@ export default function AlphaAgentOps() {
                       <TableRow key={s.id}>
                         <TableCell className="font-mono text-xs">{s.id}</TableCell>
                         <TableCell className="text-xs">
-                          {new Date(s.timestamp).toLocaleString()}
+                          {s.timestamp ? new Date(s.timestamp).toLocaleString() : "Unknown"}
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className="text-[10px]">
@@ -5885,7 +5590,7 @@ export default function AlphaAgentOps() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Provider</Label>
-                  <Select 
+                  <Select
                     value={newModelData.provider}
                     onValueChange={(v) => setNewModelData(prev => ({ ...prev, provider: v }))}
                   >
@@ -5918,10 +5623,10 @@ export default function AlphaAgentOps() {
 
               <div className="space-y-2">
                 <Label>Model Name / Identifier</Label>
-                <Input 
-                  data-testid="model-name-input" 
-                  placeholder="e.g. gpt-4o-2024-05-13" 
-                  className="bg-zinc-900 border-zinc-800" 
+                <Input
+                  data-testid="model-name-input"
+                  placeholder="e.g. gpt-4o-2024-05-13"
+                  className="bg-zinc-900 border-zinc-800"
                   value={newModelData.name}
                   onChange={(e) => setNewModelData(prev => ({ ...prev, name: e.target.value }))}
                 />
@@ -5930,11 +5635,11 @@ export default function AlphaAgentOps() {
               <div className="space-y-2">
                 <Label>API Handshake Key</Label>
                 <div className="relative">
-                  <Input 
-                    data-testid="model-key-input" 
-                    type="password" 
-                    placeholder="sk-..." 
-                    className="bg-zinc-900 border-zinc-800 pr-10" 
+                  <Input
+                    data-testid="model-key-input"
+                    type="password"
+                    placeholder="sk-..."
+                    className="bg-zinc-900 border-zinc-800 pr-10"
                     value={newModelData.key}
                     onChange={(e) => setNewModelData(prev => ({ ...prev, key: e.target.value }))}
                   />
@@ -5951,9 +5656,9 @@ export default function AlphaAgentOps() {
             </div>
             <DialogFooter>
               <Button variant="ghost" onClick={() => setShowNewModelDialog(false)}>Cancel</Button>
-              <Button 
-                data-testid="register-model-btn" 
-                className="bg-emerald-600 hover:bg-emerald-700 font-bold" 
+              <Button
+                data-testid="register-model-btn"
+                className="bg-emerald-600 hover:bg-emerald-700 font-bold"
                 onClick={handleRegisterModel}
               >
                 Verify & Register

@@ -1,6 +1,6 @@
 import re
 import logging
-from typing import Dict, Any, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 from sqlmodel import Session, select
 from app.core.database import engine

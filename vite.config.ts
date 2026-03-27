@@ -173,27 +173,23 @@ export default defineConfig({
     host: true,
     proxy: {
       "/api/v1": {
-        target: "http://localhost:8000",
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/v1/, ""),
-      },
-      "/api": {
-        target: "http://localhost:8000",
+        target: process.env.VITE_API_PROXY_TARGET || "http://localhost:8080",
         changeOrigin: true,
       },
       "/ml": {
-        target: "http://localhost:8000",
+        target: process.env.VITE_API_PROXY_TARGET || "http://localhost:8080",
         changeOrigin: true,
       },
     },
     allowedHosts: [
+      "149.104.110.122",
+      "localhost",
+      "127.0.0.1",
       ".manuspre.computer",
       ".manus.computer",
       ".manus-asia.computer",
       ".manuscomputer.ai",
       ".manusvm.computer",
-      "localhost",
-      "127.0.0.1",
     ],
     fs: {
       strict: true,

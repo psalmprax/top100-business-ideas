@@ -295,9 +295,9 @@ func (h *EdgeHandler) GetEdgeLogs(c *gin.Context) {
 	id := c.Param("id")
 	logs := []map[string]interface{}{
 		{"timestamp": time.Now().Add(-10 * time.Minute), "level": "INFO", "message": "Compliance handshake successful for " + id},
-		{"timestamp": time.Now().Add(-5 * time.Minute), "level": "DEBUG", "message": "Processing inference batch (size=32)."},
-		{"timestamp": time.Now().Add(-2 * time.Minute), "level": "INFO", "message": "Articles 9 & 10 validation PASSED."},
-		{"timestamp": time.Now().Add(-1 * time.Minute), "level": "WARN", "message": "High latency detected on local inference bus."},
+		{"timestamp": time.Now().Add(-5 * time.Minute), "level": "DEBUG", "message": "Processing telemetry batch (size=32)."},
+		{"timestamp": time.Now().Add(-2 * time.Minute), "level": "INFO", "message": "Sentinel Policy validation PASSED."},
+		{"timestamp": time.Now().Add(-1 * time.Minute), "level": "WARN", "message": "Intermittent latency detected on local fabric bus."},
 		{"timestamp": time.Now(), "level": "INFO", "message": "Node heartbeat..."},
 	}
 	c.JSON(http.StatusOK, logs)

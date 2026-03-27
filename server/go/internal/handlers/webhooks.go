@@ -261,6 +261,17 @@ func (h *SelfHealingHandler) GetHealingStatus(c *gin.Context) {
 	c.Data(http.StatusOK, "application/json", resp)
 }
 
+// GetStats returns self-healing statistics
+// GET /api/v1/self-healing/stats
+func (h *SelfHealingHandler) GetStats(c *gin.Context) {
+	resp, err := h.proxy.Forward("GET", "/self-healing/stats", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch self-healing stats", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", resp)
+}
+
 // generateID generates a simple ID
 func generateID() string {
 	return "xxx"

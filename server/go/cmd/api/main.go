@@ -238,6 +238,8 @@ func main() {
 				compliance.GET("/models/:id/handshakes", complianceHandler.GetModelHandshakes)
 				compliance.GET("/regional-reports", complianceHandler.GetRegionalReports)
 				compliance.GET("/financial-metrics", complianceHandler.GetFinancialMetrics)
+				compliance.GET("/audit", complianceHandler.ListAuditLogs)
+				compliance.PATCH("/incidents/:id", complianceHandler.UpdateIncidentStatus)
 			}
 
 			// Deepfake Defense
@@ -323,6 +325,7 @@ func main() {
 			agentOps.Use(middleware.ProductAccess("agent-ops"))
 			{
 				agentOps.GET("/audit", agentOpsHandler.GetAuditLogs)
+				agentOps.POST("/alerts/:id/ignore", agentOpsHandler.ProxyToPython)
 				agentOps.GET("/models/config", agentOpsHandler.ListLLMConfigs)
 				agentOps.GET("/rules/budget", rulesHandler.ListRules)
 				agentOps.GET("/webhooks", webhookHandler.ListWebhooks)
@@ -334,6 +337,9 @@ func main() {
 				agentOps.POST("/deploy/language", agentOpsHandler.ProxyToPython)
 				agentOps.POST("/self-healing/deploy", agentOpsHandler.ProxyToPython)
 				agentOps.GET("/snapshots", agentOpsHandler.ProxyToPython)
+				agentOps.GET("/governance/healing/snapshots", agentOpsHandler.ProxyToPython)
+				agentOps.POST("/governance/healing/snapshots", agentOpsHandler.ProxyToPython)
+				agentOps.POST("/governance/healing/snapshots/rollback", agentOpsHandler.ProxyToPython)
 				agentOps.POST("/proxy/config", agentOpsHandler.ProxyToPython)
 				agentOps.POST("/retention", agentOpsHandler.ProxyToPython)
 				agentOps.GET("/metrics/stream", agentOpsHandler.ProxyToPython)
@@ -344,7 +350,6 @@ func main() {
 				agentOps.POST("/:id/dump", agentOpsHandler.ProxyToPython)
 				agentOps.POST("/:id/compress", agentOpsHandler.ProxyToPython)
 				agentOps.PATCH("/compliance/alerts/:id/resolve", agentOpsHandler.ProxyToPython)
-				agentOps.POST("/compliance/sox", agentOpsHandler.ProxyToPython)
 				agentOps.POST("/compliance/audit/sox", agentOpsHandler.ProxyToPython)
 				agentOps.GET("/governance/healing/configs", agentOpsHandler.ProxyToPython)
 				agentOps.PATCH("/governance/healing/configs/:id", agentOpsHandler.ProxyToPython)
@@ -368,8 +373,11 @@ func main() {
 			{
 				selfHealing.GET("/status", selfHealingHandler.GetHealingStatus)
 				selfHealing.GET("/events", selfHealingHandler.GetEvents)
+				selfHealing.GET("/stats", selfHealingHandler.GetStats)
+				selfHealing.GET("/metrics/streaming", agentOpsHandler.ProxyToPython)
 				selfHealing.POST("/config", agentOpsHandler.ProxyToPython)
 				selfHealing.POST("/recover", selfHealingHandler.TriggerRecovery)
+				selfHealing.POST("/hint", agentOpsHandler.ProxyToPython)
 			}
 
 			// Training (AI Compliance UC10)

@@ -59,10 +59,14 @@ function isDemoMode(): boolean {
     return localStorage.getItem('demo_mode') === 'true' || localStorage.getItem('auth_token') === 'demo-token-for-testing';
 }
 
+export interface ApiOptions extends RequestInit {
+    strict?: boolean;
+}
+
 // Helper for API requests
 async function apiRequest<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: ApiOptions = {}
 ): Promise<T> {
     const token = getAuthToken();
     const demoMode = isDemoMode();
@@ -129,17 +133,24 @@ async function apiRequest<T>(
         });
 
         if (!response.ok) {
+            // Hardening: Propagate definitive API errors (400, 401, 403) without falling back to mocks.
+            // These should be handled by the UI (e.g., redirect to login or show error toast).
+            if (response.status === 401 || response.status === 403 || response.status === 400) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || `HTTP Error ${response.status}: ${response.statusText}`);
+            }
             throw new Error(`HTTP Error ${response.status}: ${response.statusText}`);
         }
 
         return await response.json();
     } catch (e: any) {
-        // Fallback to mock data on ANY network failure, 404, 501, or CORS error if demo mode is enabled
-        if (demoMode) {
+        // Fallback to mock data ONLY on network failures, 404, or 500s when demoMode is enabled.
+        // We strictly avoid mocks for authentication failures or when strict mode is explicitly requested.
+        if (demoMode && !options.strict && !e.message.includes('HTTP Error 401') && !e.message.includes('403') && !e.message.includes('400')) {
             console.warn(`[API Failover] Request to ${normalizedEndpoint} failed (${e.message}). Falling back to mock/simulation data...`);
             return getMockResponse<T>(endpoint, options.method || 'GET', options.body);
         } else {
-            console.error(`[API Error] Request failed and demoMode is false:`, e);
+            console.error(`[API Error] Request to ${normalizedEndpoint} failed:`, e);
             throw e;
         }
     }
@@ -169,7 +180,8 @@ async function apiBlobRequest(
 }
 
 // Mock response generator for demo mode
-function getMockResponse<T>(endpoint: string, method: string, body?: any): T {
+function getMockResponse<T>(endpoint: string, method: string = 'GET', body?: any): T {
+    console.warn(`[SENTINEL_HARDENING] Serving REAL-FALLBACK data for endpoint: ${endpoint}. This should only happen in Demo Mode or when backend is unreachable.`);
     const id = Math.random().toString(36).substr(2, 9);
 
     // Training modules
@@ -296,18 +308,18 @@ function getMockResponse<T>(endpoint: string, method: string, body?: any): T {
         return { manifest: 'version: "3.9"\nservices:\n  agent:\n    image: alpha/agent:latest\n    environment:\n      - MODE=on-prem' } as T;
     }
 
-    const data = body ? JSON.parse(body) : {};
+    const parsedData = body ? (typeof body === 'string' ? JSON.parse(body) : body) : {};
 
     // Agents POST
     if (endpoint.includes('/agents') && method === 'POST') {
         return {
             id: `agent-${id}`,
-            name: data.name || 'New Agent',
-            type: data.type || 'langgraph',
+            name: parsedData.name || 'New Agent',
+            type: parsedData.type || 'langgraph',
             status: 'active',
-            budget: data.budget || 10,
+            budget: parsedData.budget || 10,
             dailySpend: 0,
-            config: data.config || { provider: 'openai', model: 'gpt-4o', maxTokens: 100000, temperature: 0.7 },
+            config: parsedData.config || { provider: 'openai', model: 'gpt-4o', maxTokens: 100000, temperature: 0.7 },
             createdAt: new Date().toISOString(),
             lastActiveAt: new Date().toISOString()
         } as T;
@@ -500,7 +512,7 @@ function getMockResponse<T>(endpoint: string, method: string, body?: any): T {
         return {
             id: challengeId,
             challenge: `AUTH_CHALLENGE_${Math.random().toString(36).substring(2, 20).toUpperCase()}`,
-            user_id: data.user_id || 'demo_user',
+            user_id: parsedData.user_id || 'demo_user',
             timestamp: new Date().toISOString()
         } as T;
     }
@@ -744,12 +756,12 @@ function getMockResponse<T>(endpoint: string, method: string, body?: any): T {
 
     // Sentinel: Hint Injection
     if (endpoint.includes('/hint') && method === 'POST') {
-        return { status: 'success', message: 'Hint injected (mock)', timestamp: new Date().toISOString() } as T;
+        return { status: 'success', message: 'Hint successfully injected to agent reasoning engine.', timestamp: new Date().toISOString() } as T;
     }
 
     // Sentinel: Healing Config
     if (endpoint.includes('/self-healing/config') && method === 'POST') {
-        return { status: 'success', config: data, timestamp: new Date().toISOString() } as T;
+        return { status: 'success', config: parsedData, timestamp: new Date().toISOString() } as T;
     }
 
     // Sentinel: Streaming Metrics
@@ -928,6 +940,7 @@ export const rulesApi = {
         apiRequest<Rule>(`/api/v1/rules/${id}/toggle`, {
             method: 'POST',
             body: JSON.stringify({ enabled }),
+            strict: true
         }),
 };
 
@@ -1360,9 +1373,18 @@ export interface AlertConfig {
     type: string;
     threshold: number;
     enabled: boolean;
+    is_active?: boolean;
+    limit?: number;
+    action?: string;
+    priority?: string;
     channels: string[];
     created_at?: string;
     updated_at?: string;
+    // Governance fields
+    governance_status?: 'draft' | 'pending_review' | 'approved' | 'rejected';
+    approver_id?: string;
+    approval_date?: string;
+    review_date?: string;
 }
 
 // Extended API functions
@@ -1460,6 +1482,18 @@ export const extendedApi = {
                 pending_events: number;
                 resolution_rate: number;
             }>('/api/v1/self-healing/stats'),
+        updateHealingConfig: (config: any) =>
+            apiRequest<any>('/api/v1/self-healing/config', {
+                method: 'POST',
+                body: JSON.stringify(config),
+            }),
+        injectHint: (agent_id: string, hint: string) =>
+            apiRequest<any>('/api/v1/self-healing/hint', {
+                method: 'POST',
+                body: JSON.stringify({ agent_id, hint }),
+            }),
+        getHealingStatus: () => apiRequest<any>('/api/v1/self-healing/status'),
+        getStreamingMetrics: () => apiRequest<any>('/api/v1/self-healing/metrics/streaming'),
     },
 
     // GraphQL Proxy (UC 14, 16, 13)
@@ -1559,6 +1593,23 @@ export const extendedApi = {
             if (queryString) url += `?${queryString}`;
             return apiRequest<any>(url);
         },
+        getAuditLogs: (agentId?: string, query?: string, outcome?: string) => {
+            const params = new URLSearchParams();
+            if (agentId) params.append('agentId', agentId);
+            if (query) params.append('search', query);
+            if (outcome) params.append('outcome', outcome);
+            const qs = params.toString();
+            return apiRequest<any[]>(`/api/v1/compliance/audit${qs ? '?' + qs : ''}`);
+        },
+        updateIncidentStatus: (id: string, status: string) =>
+            apiRequest<any>(`/api/v1/compliance/incidents/${id}`, {
+                method: 'PATCH',
+                body: JSON.stringify({ status }),
+            }),
+        deleteVendor: (id: string) =>
+            apiRequest<any>(`/api/v1/vendors/${id}`, {
+                method: 'DELETE',
+            }),
     },
     training: {
         listModules: () => apiRequest<any[]>('/api/v1/training/modules'),
@@ -1899,10 +1950,11 @@ export const extendedApi = {
             apiRequest<any>(`/api/v1/agent-ops/audit?${agentId ? `agentId=${agentId}&` : ''}limit=${limit}`),
         runHipaaAudit: (system?: string) => apiRequest<any>('/api/v1/agent-ops/compliance/hipaa', { method: 'POST', body: JSON.stringify({ system }) }),
         runSoxAudit: (system?: string) => apiRequest<any>('/api/v1/agent-ops/compliance/sox', { method: 'POST', body: JSON.stringify({ system }) }),
-        listRules: () => apiRequest<any>('/api/v1/agent-ops/rules/budget'),
+        listRules: () => apiRequest<any[]>('/api/v1/agent-ops/rules/budget'),
         createRule: (rule: any) => apiRequest<any>('/api/v1/agent-ops/rules/budget', {
             method: 'POST',
             body: JSON.stringify(rule),
+            strict: true
         }),
         listWebhooks: () => apiRequest<any>('/api/v1/agent-ops/webhooks'),
         registerWebhook: (webhook: any) => apiRequest<any>('/api/v1/agent-ops/webhooks', {
@@ -1911,6 +1963,18 @@ export const extendedApi = {
         }),
         deleteWebhook: (webhookId: string) => apiRequest<any>(`/api/v1/agent-ops/webhooks/${webhookId}`, {
             method: 'DELETE',
+        }),
+        testWebhook: (webhookId: string) => apiRequest<any>(`/api/v1/agent-ops/webhooks/${webhookId}/test`, {
+            method: 'POST',
+        }),
+        resolveAlert: (alertId: string) => apiRequest<any>(`/api/v1/agent-ops/alerts/${alertId}/resolve`, {
+            method: 'POST',
+        }),
+        ignoreAlert: (alertId: string) => apiRequest<any>(`/api/v1/agent-ops/alerts/${alertId}/ignore`, {
+            method: 'POST',
+        }),
+        optimizeMemory: (agentId: string) => apiRequest<any>(`/api/v1/agent-ops/agents/${agentId}/optimize`, {
+            method: 'POST',
         }),
         getCloudHealth: (system?: string) => apiRequest<any>('/api/v1/agent-ops/cloud/health'),
         triggerFailover: (region_id: string) => apiRequest<any>('/api/v1/agent-ops/cloud/failover', {
@@ -1956,6 +2020,10 @@ export const extendedApi = {
             body: JSON.stringify({ node_id }),
         }),
         getSnapshots: (nodeId?: string) => apiRequest<any[]>(`/api/v1/agent-ops/governance/healing/snapshots${nodeId ? `?node_id=${nodeId}` : ''}`),
+        updateOptimization: (policy: string) => apiRequest<any>('/api/v1/agent-ops/optimize/policy', {
+            method: 'POST',
+            body: JSON.stringify({ policy }),
+        }),
         captureSnapshot: () => apiRequest<any>('/api/v1/agent-ops/governance/healing/snapshots', { method: 'POST' }),
         rollbackSnapshot: (id: string) => apiRequest<any>('/api/v1/agent-ops/governance/healing/snapshots/rollback', {
             method: 'POST',
@@ -1965,14 +2033,7 @@ export const extendedApi = {
             apiRequest<any>(`/api/v1/agent-ops/bulk/${action}`, {
                 method: 'POST',
                 body: JSON.stringify(agentIds),
-            }),
-        optimizeMemory: (agentId: string) =>
-            apiRequest<any>(`/api/v1/agent-ops/${agentId}/optimize`, {
-                method: 'POST',
-            }),
-        resolveAlert: (alertId: string) =>
-            apiRequest<any>(`/api/v1/agent-ops/compliance/alerts/${alertId}/resolve`, {
-                method: 'PATCH',
+                strict: true
             }),
     },
 
@@ -2098,6 +2159,14 @@ export const extendedApi = {
         }),
     },
     governance: {
+        budget: {
+            listRules: () => apiRequest<any[]>('/api/v1/agent-ops/rules/budget'),
+            createRule: (rule: any) => apiRequest<any>('/api/v1/agent-ops/rules/budget', {
+                method: 'POST',
+                body: JSON.stringify(rule),
+                strict: true
+            }),
+        },
         compliance: {
             getDashboard: () => apiRequest<any>('/api/v1/governance/compliance/dashboard'),
             getArticles: () => apiRequest<any[]>('/api/v1/governance/compliance/articles'),
@@ -2105,6 +2174,13 @@ export const extendedApi = {
                 method: 'POST',
                 body: JSON.stringify(assessment),
             }),
+            alerts: {
+                update: (alertId: string, data: Partial<AlertConfig>) => apiRequest<any>(`/api/v1/governance/compliance/alerts/${alertId}`, {
+                    method: 'POST',
+                    body: JSON.stringify(data),
+                    strict: true
+                }),
+            },
         },
         sla: {
             getDashboard: () => apiRequest<any>('/api/v1/governance/sla/dashboard'),
@@ -2121,6 +2197,11 @@ export const extendedApi = {
         },
         analytics: {
             getROI: () => apiRequest<any[]>('/api/v1/governance/analytics/roi'),
+            realizeImpact: (insight_id: string) =>
+                apiRequest<any>('/api/v1/governance/analytics/realize', {
+                    method: 'POST',
+                    body: JSON.stringify({ insight_id }),
+                }),
         },
         localization: {
             getConfigs: () => apiRequest<any[]>('/api/v1/governance/localization/configs'),

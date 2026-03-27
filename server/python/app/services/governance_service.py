@@ -40,7 +40,7 @@ class GovernanceService:
         with Session(engine) as session:
             return session.exec(select(WebhookConfig)).all()
 
-    def set_budget_rule(self, name: str, threshold: float, alert_type: str, channels: List[str]) -> str:
+    def set_budget_rule(self, name: str, threshold: float, alert_type: str, channels: List[str], limit: float = 100.0, action: str = "pause", priority: str = "medium") -> str:
         """Create a new budget or safety alert rule"""
         try:
             with Session(engine) as session:
@@ -49,6 +49,9 @@ class GovernanceService:
                     threshold=threshold,
                     alert_type=alert_type,
                     channels=channels,
+                    limit=limit,
+                    action=action,
+                    priority=priority,
                     is_active=True
                 )
                 session.add(rule)
