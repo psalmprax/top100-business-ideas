@@ -40,6 +40,8 @@ def init_db():
                 from sqlalchemy import text
                 with engine.connect() as conn:
                     conn.execute(text("ALTER TABLE alertconfig ADD COLUMN IF NOT EXISTS \"limit\" FLOAT DEFAULT 100.0;"))
+                    conn.execute(text("ALTER TABLE alertconfig ADD COLUMN IF NOT EXISTS \"action\" VARCHAR DEFAULT 'pause';"))
+                    conn.execute(text("ALTER TABLE alertconfig ADD COLUMN IF NOT EXISTS \"priority\" VARCHAR DEFAULT 'medium';"))
                     conn.commit()
             
             # Seed initial data
