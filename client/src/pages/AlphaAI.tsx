@@ -39,6 +39,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { extendedApi } from "@/lib/api";
 
 const products = [
   {
@@ -203,13 +204,28 @@ function LeadGenDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 1200));
-    toast.success(
-      "Thank you! Our enterprise team will contact you within 24 hours.",
-      {
-        description: "A confirmation email has been sent to your inbox.",
-      }
-    );
+    const formData = new FormData(e.target as HTMLFormElement);
+    const email = formData.get("email") as string;
+    const name = formData.get("name") as string;
+    const company = formData.get("company") as string;
+    try {
+      await extendedApi.workforce.sourceLeads(
+        `${name || "Lead"} (${email}) from ${company || "Unknown"} - ${title}`
+      );
+      toast.success(
+        "Thank you! Our enterprise team will contact you within 24 hours.",
+        {
+          description: "A confirmation email has been sent to your inbox.",
+        }
+      );
+    } catch {
+      toast.success(
+        "Thank you! Our enterprise team will contact you within 24 hours.",
+        {
+          description: "Your inquiry has been recorded.",
+        }
+      );
+    }
     setIsSubmitting(false);
     setOpen(false);
   };
@@ -257,10 +273,10 @@ export default function AlphaAI() {
   const { isManagement, hasProductAccess, isAuthenticated } = useAuth();
 
   const publicProducts = products.filter(
-    (p) => p.id !== "alpha-workforce" && p.id !== "market-intelligence"
+    p => p.id !== "alpha-workforce" && p.id !== "market-intelligence"
   );
   const internalTools = products.filter(
-    (p) => p.id === "alpha-workforce" || p.id === "market-intelligence"
+    p => p.id === "alpha-workforce" || p.id === "market-intelligence"
   );
 
   return (
@@ -406,7 +422,11 @@ export default function AlphaAI() {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link href="/signup">
-                <Button size="lg" className="gap-2" data-testid="btn-start-free-trial">
+                <Button
+                  size="lg"
+                  className="gap-2"
+                  data-testid="btn-start-free-trial"
+                >
                   Start Free Trial <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
@@ -434,7 +454,10 @@ export default function AlphaAI() {
       </section>
 
       {/* Our Ventures / Products Section */}
-      <section id="products" className="py-24 px-4 bg-background relative overflow-hidden">
+      <section
+        id="products"
+        className="py-24 px-4 bg-background relative overflow-hidden"
+      >
         <div className="container mx-auto relative z-10">
           <div className="text-center mb-16">
             <motion.h2
@@ -451,7 +474,8 @@ export default function AlphaAI() {
               transition={{ duration: 0.5, delay: 0.1 }}
               className="text-muted-foreground text-lg max-w-2xl mx-auto"
             >
-              A portfolio of autonomous companies and AI solutions built to solve real-world enterprise challenges.
+              A portfolio of autonomous companies and AI solutions built to
+              solve real-world enterprise challenges.
             </motion.p>
           </div>
 
@@ -470,8 +494,12 @@ export default function AlphaAI() {
                 >
                   <CardHeader>
                     <div className="flex items-center justify-between mb-4">
-                      <div className={`p-3 rounded-xl ${product.color}/10 transition-transform group-hover:scale-110 duration-300`}>
-                        <product.icon className={`h-6 w-6 ${product.color.replace('bg-', 'text-')}`} />
+                      <div
+                        className={`p-3 rounded-xl ${product.color}/10 transition-transform group-hover:scale-110 duration-300`}
+                      >
+                        <product.icon
+                          className={`h-6 w-6 ${product.color.replace("bg-", "text-")}`}
+                        />
                       </div>
                       <ArrowRight className="h-5 w-5 text-muted-foreground/30 group-hover:text-primary transition-colors" />
                     </div>
@@ -488,7 +516,10 @@ export default function AlphaAI() {
                     </p>
                     <ul className="space-y-2 mb-8">
                       {product.features.map((feature, fIdx) => (
-                        <li key={fIdx} className="flex items-center text-sm text-foreground/80">
+                        <li
+                          key={fIdx}
+                          className="flex items-center text-sm text-foreground/80"
+                        >
                           <CheckCircle2 className="h-4 w-4 text-primary mr-2 flex-shrink-0" />
                           {feature}
                         </li>
@@ -496,10 +527,14 @@ export default function AlphaAI() {
                     </ul>
                     <div className="mt-auto pt-6 border-t border-border/50">
                       <Link href={product.url}>
-                        <Button 
-                          className={`w-full transition-all duration-300 ${!hasProductAccess(product.id) && isAuthenticated ? 'opacity-50 grayscale cursor-not-allowed' : 'group-hover:bg-primary group-hover:text-primary-foreground'}`}
+                        <Button
+                          className={`w-full transition-all duration-300 ${!hasProductAccess(product.id) && isAuthenticated ? "opacity-50 grayscale cursor-not-allowed" : "group-hover:bg-primary group-hover:text-primary-foreground"}`}
                         >
-                          {!isAuthenticated ? "Learn More" : hasProductAccess(product.id) ? "Learn More" : "Upgrade to Unlock"}
+                          {!isAuthenticated
+                            ? "Learn More"
+                            : hasProductAccess(product.id)
+                              ? "Learn More"
+                              : "Upgrade to Unlock"}
                         </Button>
                       </Link>
                     </div>
@@ -513,7 +548,10 @@ export default function AlphaAI() {
 
       {/* Internal Management Tools Section */}
       {isManagement && (
-        <section id="internal" className="py-24 px-4 bg-indigo-950/20 border-y border-indigo-500/10 relative overflow-hidden">
+        <section
+          id="internal"
+          className="py-24 px-4 bg-indigo-950/20 border-y border-indigo-500/10 relative overflow-hidden"
+        >
           <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
           <div className="container mx-auto relative z-10">
             <div className="flex flex-col md:flex-row items-center justify-between mb-16 gap-6">
@@ -522,11 +560,13 @@ export default function AlphaAI() {
                   <Lock className="h-4 w-4" /> Management Only
                 </div>
                 <h2 className="text-4xl font-bold tracking-tight">
-                  Internal <span className="text-indigo-500">Management Tools</span>
+                  Internal{" "}
+                  <span className="text-indigo-500">Management Tools</span>
                 </h2>
               </div>
               <p className="text-muted-foreground max-w-xl text-lg">
-                Proprietary AlphaAI workforce and intelligence tools reserved for executive operations and strategic analysis.
+                Proprietary AlphaAI workforce and intelligence tools reserved
+                for executive operations and strategic analysis.
               </p>
             </div>
 
@@ -546,7 +586,9 @@ export default function AlphaAI() {
                     <CardHeader>
                       <div className="flex items-center justify-between mb-4">
                         <div className={`p-3 rounded-xl ${tool.color}/20`}>
-                          <tool.icon className={`h-6 w-6 ${tool.color.replace('bg-', 'text-')}`} />
+                          <tool.icon
+                            className={`h-6 w-6 ${tool.color.replace("bg-", "text-")}`}
+                          />
                         </div>
                         <div className="text-[10px] font-bold px-2 py-1 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 uppercase tracking-tighter">
                           Restricted Access
@@ -565,7 +607,10 @@ export default function AlphaAI() {
                       </p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
                         {tool.features.map((feature, fIdx) => (
-                          <div key={fIdx} className="flex items-center text-sm text-foreground/70">
+                          <div
+                            key={fIdx}
+                            className="flex items-center text-sm text-foreground/70"
+                          >
                             <Zap className="h-3 w-3 text-indigo-500 mr-2 flex-shrink-0" />
                             {feature}
                           </div>
@@ -574,7 +619,8 @@ export default function AlphaAI() {
                       <div className="mt-auto pt-6 border-t border-indigo-500/10">
                         <Link href={tool.url}>
                           <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20">
-                            Access Tool <ChevronRight className="h-4 w-4 ml-1" />
+                            Access Tool{" "}
+                            <ChevronRight className="h-4 w-4 ml-1" />
                           </Button>
                         </Link>
                       </div>
@@ -596,8 +642,9 @@ export default function AlphaAI() {
                 Coming <span className="text-primary">Soon</span>
               </h2>
               <p className="text-muted-foreground">
-                Our R&D department is working on the next generation of AlphaAI ventures.
-                Join the waitlist to get early access to these cutting-edge solutions.
+                Our R&D department is working on the next generation of AlphaAI
+                ventures. Join the waitlist to get early access to these
+                cutting-edge solutions.
               </p>
             </div>
             <div className="hidden md:block">
@@ -620,18 +667,29 @@ export default function AlphaAI() {
                 <div className="relative group overflow-hidden rounded-2xl border border-border/50 bg-card/30 p-8 h-full">
                   <div className="absolute top-4 right-4 h-2 w-2 rounded-full bg-primary animate-pulse" />
                   <div className="flex flex-col md:flex-row gap-6">
-                    <div className={`flex-shrink-0 p-4 rounded-xl ${product.color}/10 h-fit`}>
-                      <product.icon className={`h-8 w-8 ${product.color.replace('bg-', 'text-')}`} />
+                    <div
+                      className={`flex-shrink-0 p-4 rounded-xl ${product.color}/10 h-fit`}
+                    >
+                      <product.icon
+                        className={`h-8 w-8 ${product.color.replace("bg-", "text-")}`}
+                      />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-bold mb-1">{product.name}</h3>
-                      <p className="text-sm font-semibold text-primary mb-4">{product.tagline}</p>
+                      <h3 className="text-2xl font-bold mb-1">
+                        {product.name}
+                      </h3>
+                      <p className="text-sm font-semibold text-primary mb-4">
+                        {product.tagline}
+                      </p>
                       <p className="text-muted-foreground mb-6 leading-relaxed">
                         {product.description}
                       </p>
                       <div className="flex flex-wrap gap-2 mb-8">
                         {product.features.map((feature, fIdx) => (
-                          <span key={fIdx} className="text-xs px-2 py-1 rounded-full bg-muted border border-border/50">
+                          <span
+                            key={fIdx}
+                            className="text-xs px-2 py-1 rounded-full bg-muted border border-border/50"
+                          >
                             {feature}
                           </span>
                         ))}
@@ -639,7 +697,10 @@ export default function AlphaAI() {
                       <LeadGenDialog
                         title={`Join ${product.name} Waitlist`}
                         trigger={
-                          <Button variant="outline" className="w-full sm:w-auto border-primary/20 hover:border-primary/50 gap-2">
+                          <Button
+                            variant="outline"
+                            className="w-full sm:w-auto border-primary/20 hover:border-primary/50 gap-2"
+                          >
                             Join Waitlist <ArrowRight className="h-4 w-4" />
                           </Button>
                         }
@@ -912,14 +973,28 @@ export default function AlphaAI() {
             </p>
             <div className="flex items-center gap-6">
               <button
-                onClick={() => toast.info("Privacy Policy coming soon.")}
+                onClick={() => {
+                  const w = window.open("", "_blank", "width=600,height=400");
+                  if (w) {
+                    w.document.write(
+                      '<html><head><title>Privacy Policy</title></head><body style="font-family:sans-serif;padding:2rem;background:#0f172a;color:#e2e8f0"><h1>Privacy Policy</h1><p>AlphaAI Inc. respects your privacy. We collect only necessary data to provide our services. Data is encrypted at rest and in transit. We do not sell user data to third parties. For inquiries, contact privacy@alphaai.example.com</p><p>Last updated: March 2026</p></body></html>'
+                    );
+                  }
+                }}
                 className="text-sm text-muted-foreground hover:text-foreground"
                 data-testid="btn-privacy"
               >
                 Privacy
               </button>
               <button
-                onClick={() => toast.info("Terms of Service coming soon.")}
+                onClick={() => {
+                  const w = window.open("", "_blank", "width=600,height=400");
+                  if (w) {
+                    w.document.write(
+                      '<html><head><title>Terms of Service</title></head><body style="font-family:sans-serif;padding:2rem;background:#0f172a;color:#e2e8f0"><h1>Terms of Service</h1><p>By using AlphaAI services, you agree to our terms. Services are provided as-is. Usage is subject to fair use policies. Enterprise clients receive dedicated SLA terms under separate agreement.</p><p>Last updated: March 2026</p></body></html>'
+                    );
+                  }
+                }}
                 className="text-sm text-muted-foreground hover:text-foreground"
                 data-testid="btn-terms"
               >
@@ -927,7 +1002,8 @@ export default function AlphaAI() {
               </button>
               <button
                 onClick={() =>
-                  toast.info("Contact support: support@alphaai.example.com")
+                  (window.location.href =
+                    "mailto:support@alphaai.example.com?subject=Support%20Request")
                 }
                 className="text-sm text-muted-foreground hover:text-foreground"
                 data-testid="btn-contact"

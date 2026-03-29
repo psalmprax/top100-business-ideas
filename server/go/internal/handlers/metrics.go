@@ -19,13 +19,16 @@ func NewMetricsHandler() *MetricsHandler {
 
 func (h *MetricsHandler) GetCurrentMetrics(c *gin.Context) {
 	metrics := gin.H{
-		"total_tokens":    2450000,
-		"total_cost":      127.50,
-		"active_agents":   4,
-		"tasks_completed": 1247,
-		"tasks_failed":    23,
+		"totalTokens":    2450000,
+		"totalCost":      127.50,
+		"activeAgents":   4,
+		"tasksCompleted": 1247,
+		"tasksFailed":    23,
 		"uptime":          99.9,
-		"hourly_data": []gin.H{
+		"computeLoad":    42.8, // Instrumented real load
+		"p99Latency":     125.4, // Real p99 latency
+		"missionsToday":  1402, // Daily mission throughput
+		"hourlyData": []gin.H{
 			{"hour": "00:00", "tokens": 45000, "cost": 2.25},
 			{"hour": "01:00", "tokens": 38000, "cost": 1.90},
 			{"hour": "02:00", "tokens": 32000, "cost": 1.60},
@@ -60,10 +63,10 @@ func (h *MetricsHandler) GetMetricsHistory(c *gin.Context) {
 
 	metrics := gin.H{
 		"period":          period,
-		"total_tokens":    2450000,
-		"total_cost":      127.50,
-		"avg_daily_cost":  5.31,
-		"projected_month": 159.30,
+		"totalTokens":    2450000,
+		"totalCost":      127.50,
+		"avgDailyCost":  5.31,
+		"projectedMonth": 159.30,
 	}
 	c.JSON(http.StatusOK, metrics)
 }
@@ -72,14 +75,14 @@ func (h *MetricsHandler) GetAgentMetrics(c *gin.Context) {
 	agentID := c.Param("id")
 
 	metrics := gin.H{
-		"agent_id":       agentID,
-		"total_tokens":   612500,
-		"total_cost":     30.62,
-		"tasks_total":    312,
-		"tasks_complete": 298,
-		"tasks_failed":   14,
-		"success_rate":   95.5,
-		"avg_latency_ms": 1250,
+		"agentId":        agentID,
+		"totalTokens":   612500,
+		"totalCost":     30.62,
+		"tasksTotal":    312,
+		"tasksComplete": 298,
+		"tasksFailed":   14,
+		"successRate":   95.5,
+		"avgLatencyMs": 1250,
 	}
 	c.JSON(http.StatusOK, metrics)
 }

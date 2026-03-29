@@ -510,6 +510,63 @@ class DeepfakeThreat(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
+class DuressConfig(SQLModel, table=True):
+    """Persistent Duress/Silent Alarm configuration"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    user_id: str = Field(index=True, unique=True)
+    panic_phrase: str
+    silent_mode: bool = Field(default=True)
+    trigger_action: str  # lock_account, alert_security, fake_data
+    enabled: bool = Field(default=True)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class BiometricTemplate(SQLModel, table=True):
+    """Enrolled biometric templates for liveness comparison"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    user_id: str = Field(index=True)
+    type: str  # face, voice, fingerprint
+    template_hash: str
+    enrolled_at: datetime = Field(default_factory=datetime.utcnow)
+    last_used: Optional[datetime] = None
+    cancellable: bool = Field(default=True)
+
+
+class WearableDevice(SQLModel, table=True):
+    """Registered wearable devices for hardware-backed liveness"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    user_id: str = Field(index=True)
+    name: str
+    device_type: str  # vision_pro, apple_watch, android_wear
+    status: str = Field(default="active")
+    registered_at: datetime = Field(default_factory=datetime.utcnow)
+    last_synced: Optional[datetime] = None
+
+
+class CryptoWallet(SQLModel, table=True):
+    """Protected cryptocurrency wallets requiring biometric consent"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    user_id: str = Field(index=True)
+    name: str
+    wallet_address: str
+    blockchain: str  # ethereum, solana, bitcoin
+    protection_enabled: bool = Field(default=True)
+    last_verified: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class ComplianceAuditLog(SQLModel, table=True):
+    """Persistent audit logs for HIPAA/SOX/GDPR compliance"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    user_id: str = Field(index=True)
+    action: str
+    resource: str
+    status: str = Field(default="verified")
+    compliance_type: str  # HIPAA, SOX, Art. 14, GDPR
+    metadata_json: Dict[str, Any] = Field(default={}, sa_column=Column(JSON))
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+
 class ComplianceArticle(SQLModel, table=True):
     """EU AI Act compliance article definition"""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
@@ -647,6 +704,39 @@ class SystemSetting(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
+class AgentVigilanceAlert(SQLModel, table=True):
+    """Persistent security and budget alerts for AgentOps"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    agent_id: Optional[str] = Field(default=None, index=True)
+    type: str  # budget_breach, loop_detected, unauthorized_access, tool_failure
+    severity: str  # low, medium, high, critical
+    description: str
+    metadata_json: Dict[str, Any] = Field(default={}, sa_column=Column(JSON))
+    resolved: bool = Field(default=False)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class AgentMemorySegment(SQLModel, table=True):
+    """Persistent memory segments for agents"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    agent_id: str = Field(index=True)
+    content: str
+    importance: float = Field(default=1.0)
+    context_type: str = Field(default="short_term")  # short_term, long_term, semantic
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+
+class SecurityKey(SQLModel, table=True):
+    """Persistent rotated API keys and security credentials"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    name: str  # "Main API Key", "Partner SDK", etc.
+    key_hash: str
+    prefix: str  # "sk_live_..."
+    status: str = Field(default="active")  # active, revoked, rotated
+    expires_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 class OnPremDeployment(SQLModel, table=True):
     """On-premises deployment configuration"""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
@@ -688,3 +778,35 @@ class ComplianceIncident(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     resolved_at: Optional[datetime] = None
+
+
+class FiscalRequest(SQLModel, table=True):
+    """Persistent spending approval request"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    purpose: str
+    amount: str
+    priority: str = Field(default="MEDIUM")  # LOW, MEDIUM, HIGH
+    status: str = Field(default="PENDING")  # PENDING, APPROVED, DENIED
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class WorkforceGoal(SQLModel, table=True):
+    """Persistent Board Directives and KPIs"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    name: str
+    current_value: float
+    target_value: float
+    unit: str = Field(default="%")
+    category: str = Field(default="revenue") # revenue, burn_rate, roi, compliance
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class WorkforceVenture(SQLModel, table=True):
+    """Persistent Business Unit / Venture performance tracking"""
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    name: str
+    sector: str
+    roi: float = Field(default=0.0)
+    status: str = Field(default="BETA") # PROFITABLE, SCALING, R&D, BETA
+    trend: str = Field(default="up") # up, down
+    created_at: datetime = Field(default_factory=datetime.utcnow)

@@ -1,31 +1,6 @@
-export interface BusinessIdea {
-  id: number;
-  rank: number;
-  title: string;
-  category: string;
-  description: string;
-  gap: string;
-  markets: string[];
-  earning_potential: number;
-  earning_label: string;
-  rollout_speed: number;
-  rollout_label: string;
-  startup_cost: string;
-  profit_margin: number;
-  market_size_bn: number;
-  trend: "Explosive" | "High Growth" | "Steady";
-  tags: string[];
-  // Enhanced Fields
-  gtm_strategy?: string;
-  tech_stack?: string[];
-  risk_factors?: string[];
-  team_requirements?: string[];
-  market_signals?: {
-    reddit_insight?: string;
-    search_trend?: string;
-    regulatory_wedge?: string;
-  };
-}
+import { type BusinessIdea } from "./api";
+
+export { type BusinessIdea };
 
 export const businessIdeas: BusinessIdea[] = [
   { 

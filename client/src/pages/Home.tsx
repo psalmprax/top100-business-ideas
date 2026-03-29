@@ -7,15 +7,16 @@
  */
 
 import { useState, useMemo, useEffect, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
-  businessIdeas,
+  businessIdeas as mockIdeas,
   CATEGORY_COLORS,
   TREND_COLORS,
   ALL_CATEGORIES,
   ALL_MARKETS,
   ALL_TRENDS,
-  type BusinessIdea,
 } from "@/lib/businessData";
+import { ventureApi, type BusinessIdea } from "@/lib/api";
 import {
   BarChart,
   Bar,
@@ -287,7 +288,7 @@ function IdeaModal({ idea, onClose }: { idea: BusinessIdea; onClose: () => void 
     { subject: "Speed", value: idea.rollout_speed * 10 },
     { subject: "Margin", value: idea.profit_margin },
     { subject: "Market", value: Math.min((idea.market_size_bn / 500) * 100, 100) },
-    { subject: "Scalability", value: idea.rollout_speed * 9 },
+    { subject: "Scalability", value: idea.scalability_score || 0 }, // Using real metric from backend
   ];
 
   return (
@@ -514,18 +515,27 @@ function ChartsSection({ ideas }: { ideas: BusinessIdea[] }) {
     </div>
   );
 }
-
 export default function Home() {
-  const [search, setSearch] = useState("");
+  const [selectedIdea, setSelectedIdea] = useState<BusinessIdea | null>(null);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedMarket, setSelectedMarket] = useState("all");
   const [selectedTrend, setSelectedTrend] = useState("all");
+  const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("rank");
-  const [selectedIdea, setSelectedIdea] = useState<BusinessIdea | null>(null);
   const [showCharts, setShowCharts] = useState(true);
   const [visibleCount, setVisibleCount] = useState(24);
   const [showComparison, setShowComparison] = useState(false);
   const [comparisonIdeas, setComparisonIdeas] = useState<BusinessIdea[]>([]);
+  
+  // REAL-FIRST: Fetch live venture insights from Go/Python backend
+  const { data: remoteIdeas, isLoading } = useQuery({
+    queryKey: ["venture-insights"],
+    queryFn: () => ventureApi.getInsights(),
+    retry: 1,
+  });
+
+  // Fallback to static research data only if backend is unreachable or empty
+  const businessIdeas = remoteIdeas && remoteIdeas.length > 0 ? remoteIdeas : mockIdeas;
   const { shortlist, isLoaded, toggle: toggleShortlist, isInShortlist } = useShortlist();
 
   const filtered = useMemo(() => {
@@ -703,8 +713,8 @@ export default function Home() {
             </p>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-6 border-t border-white/10">
-              <StatCounter value={100} label="Business Ideas" suffix="+" />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 px-4 -mt-10 mb-12">
+              <StatCounter value={businessIdeas.length} label="Business Ideas" suffix={businessIdeas.length >= 100 ? "+" : ""} />
               <StatCounter value={explosiveCount} label="Explosive Trends" />
               <StatCounter value={avgMargin} label="Avg Profit %" suffix="%" />
               <StatCounter value={fastRollout} label="Fast Rollout (<1mo)" />
@@ -803,7 +813,7 @@ export default function Home() {
           <div className="flex items-center gap-3 mt-3 pt-3 border-t border-white/8">
             <Filter className="w-3.5 h-3.5 text-white/30" />
             <span className="text-xs text-white/40">
-              Showing <span className="text-white/70 font-semibold">{filtered.length}</span> of <span className="text-white/70 font-semibold">100</span> ideas
+              Showing <span className="text-white/70 font-semibold">{filtered.length}</span> of <span className="text-white/70 font-semibold">{businessIdeas.length}</span> ideas
             </span>
             {hasFilters && (
               <div className="flex flex-wrap gap-1.5">

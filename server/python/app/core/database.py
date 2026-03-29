@@ -4,7 +4,12 @@ from sqlmodel import SQLModel, create_engine, Session
 from sqlalchemy.orm import sessionmaker
 import os
 from app.core.config import settings
-from app.core.models import ComplianceArticle, Agent, AgentStatus, DeepfakeAnalysis, DeepfakeThreat, CustomModel, MediaType, AnalysisResult
+from app.core.models import (
+    ComplianceArticle, Agent, AgentStatus, DeepfakeAnalysis, DeepfakeThreat, 
+    CustomModel, MediaType, AnalysisResult, FiscalRequest, WorkforceGoal, WorkforceVenture,
+    DuressConfig, BiometricTemplate, WearableDevice, CryptoWallet, ComplianceAuditLog,
+    AgentVigilanceAlert, AgentMemorySegment, SecurityKey, SystemSetting
+)
 
 # Database connection string
 DATABASE_URL = settings.DATABASE_URL
@@ -32,6 +37,8 @@ def init_db():
             seed_compliance_articles()
             seed_agents()
             seed_deepfake_data()
+            seed_workforce_data()
+            seed_agent_ops_data()
             return  # Success
         except Exception as e:
             if i < max_retries - 1:
@@ -294,5 +301,128 @@ def seed_deepfake_data():
             model = CustomModel(**data)
             session.add(model)
 
+        # 4. Seed Duress Configs
+        if session.query(DuressConfig).count() == 0:
+            session.add(DuressConfig(
+                user_id="default_user",
+                panic_phrase="alaska",
+                silent_mode=True,
+                trigger_action="alert_security",
+                enabled=True
+            ))
+
+        # 5. Seed Biometric Templates
+        if session.query(BiometricTemplate).count() == 0:
+            session.add(BiometricTemplate(
+                user_id="default_user",
+                type="face",
+                template_hash="sha256:7f83b1...",
+                cancellable=True
+            ))
+
+        # 6. Seed Wearable Devices
+        if session.query(WearableDevice).count() == 0:
+            session.add(WearableDevice(
+                user_id="default_user",
+                name="Vision Pro 1",
+                device_type="vision_pro",
+                status="active"
+            ))
+
+        # 7. Seed Crypto Wallets
+        if session.query(CryptoWallet).count() == 0:
+            session.add(CryptoWallet(
+                user_id="default_user",
+                name="Alpha Vault",
+                wallet_address="0x71C765...d897",
+                blockchain="ethereum",
+                protection_enabled=True
+            ))
+
+        # 8. Seed Compliance Audit Logs
+        if session.query(ComplianceAuditLog).count() == 0:
+            session.add(ComplianceAuditLog(
+                user_id="admin_01",
+                action="Data Access",
+                resource="Biometric_DB_v4",
+                compliance_type="HIPAA",
+                status="verified"
+            ))
+
         session.commit()
 
+
+def seed_workforce_data():
+    """Seed the database with initial workforce ventures, goals and fiscal requests"""
+    with Session(engine) as session:
+        # 1. Seed Ventures
+        if session.query(WorkforceVenture).count() == 0:
+            ventures = [
+                {"name": "Alpha Compliance", "sector": "LegalTech", "roi": 420.0, "status": "PROFITABLE", "trend": "up"},
+                {"name": "Deepfake Defense", "sector": "Cybersecurity", "roi": 180.0, "status": "SCALING", "trend": "up"},
+                {"name": "Agentic Ops", "sector": "Infrastructure", "roi": -12.4, "status": "R&D", "trend": "down"},
+                {"name": "Web3 Sentinel", "sector": "DeFi", "roi": 45.0, "status": "BETA", "trend": "up"}
+            ]
+            for v in ventures:
+                session.add(WorkforceVenture(**v))
+        
+        # 2. Seed Goals
+        if session.query(WorkforceGoal).count() == 0:
+            goals = [
+                {"name": "Revenue Growth Target", "current_value": 42.5, "target_value": 85.0, "unit": "%", "category": "revenue"},
+                {"name": "Net Burn Rate Limit", "current_value": 310.0, "target_value": 250.0, "unit": "$/hr", "category": "burn_rate"},
+                {"name": "Compliance Coverage", "current_value": 92.0, "target_value": 100.0, "unit": "%", "category": "compliance"},
+                {"name": "Autonomous Decisions", "current_value": 1240, "target_value": 5000, "unit": "count", "category": "operations"}
+            ]
+            for g in goals:
+                session.add(WorkforceGoal(**g))
+
+        # 3. Seed Fiscal Requests
+        if session.query(FiscalRequest).count() == 0:
+            requests = [
+                {"purpose": "Cloud Compute Overages", "amount": "$2,500", "priority": "HIGH", "status": "PENDING"},
+                {"purpose": "Marketing Campaign Alpha", "amount": "$1,200", "priority": "MEDIUM", "status": "APPROVED"},
+                {"purpose": "Hiring: Senior AI Dev", "amount": "$15,000", "priority": "HIGH", "status": "PENDING"}
+            ]
+            for r in requests:
+                session.add(FiscalRequest(**r))
+
+        session.commit()
+
+
+def seed_agent_ops_data():
+    """Seed the database with AgentOps security and configuration data"""
+    with Session(engine) as session:
+        # Check if data already exists
+        if session.query(AgentVigilanceAlert).count() > 0:
+            return
+
+        # 1. System Settings (Governance & Privacy)
+        settings_data = [
+            {"category": "security", "setting_key": "pii_redaction", "setting_value": "true", "setting_type": "boolean", "description": "Enable automatic PII redaction on all agent logs"},
+            {"category": "security", "setting_key": "zero_knowledge_logging", "setting_value": "true", "setting_type": "boolean", "description": "Ensure logs are encrypted with user-only keys"},
+            {"category": "compliance", "setting_key": "gdpr_forgotten", "setting_value": "false", "setting_type": "boolean", "description": "Enable automated Right to be Forgotten workflows"},
+            {"category": "compliance", "setting_key": "mica_guard", "setting_value": "true", "setting_type": "boolean", "description": "Enable Crypto Asset Guard rails for MiCA compliance"},
+            {"category": "ui", "setting_key": "roi_forecast_multiplier", "setting_value": "8.4", "setting_type": "number", "description": "Historical ROI multiplier for dashboard forecasting"},
+        ]
+        for s in settings_data:
+            session.add(SystemSetting(**s))
+
+        # 2. Vigilance Alerts (Real Alerts from the backend)
+        alerts_data = [
+            {"type": "budget_breach", "severity": "critical", "description": "Marketing Agent exceeded daily token budget by 15%", "metadata_json": {"excess": 15.2, "agent_id": "marketing-01"}},
+            {"type": "loop_detected", "severity": "high", "description": "Recursive loop detected in Research Agent chain. Execution halted.", "metadata_json": {"iterations": 45, "stack_depth": 12}},
+            {"type": "unauthorized_access", "severity": "medium", "description": "Anomalous IP detected attempting to rotate security keys.", "metadata_json": {"ip": "192.168.1.105", "geo": "unknown"}},
+        ]
+        for a in alerts_data:
+            session.add(AgentVigilanceAlert(**a))
+
+        # 3. Security Keys
+        keys_data = [
+            {"name": "Main Production Key", "prefix": "sk_live_v1_", "key_hash": "hashed_key_val_01", "status": "active"},
+            {"name": "Partner SDK Key", "prefix": "sk_sdk_v4_", "key_hash": "hashed_key_val_02", "status": "rotated"},
+        ]
+        for k in keys_data:
+            session.add(SecurityKey(**k))
+
+        session.commit()

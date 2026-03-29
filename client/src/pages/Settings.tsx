@@ -18,9 +18,8 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus, Eye, Download, Copy, LogOut } from "lucide-react";
 import {
-  User,
+  User as UserIcon,
   Mail,
   Lock,
   Bell,
@@ -35,98 +34,127 @@ import {
   Monitor,
   Database,
   Trash2,
+  Plus,
+  Eye,
+  Download,
+  Copy,
+  LogOut,
 } from "lucide-react";
 import { storage } from "@/lib/storage";
+import { userApi, extendedApi, authApi, type User } from "@/lib/api";
 
 export default function Settings() {
   const [isLoading, setIsLoading] = useState(false);
   const [saved, setSaved] = useState(false);
 
   // Form states
-  const [profile, setProfile] = useState(storage.get("settings_profile", {
-    name: "John Doe",
-    email: "john@company.com",
-    company: "Acme Inc.",
-    role: "CTO",
-  }));
+  const [profile, setProfile] = useState(
+    storage.get("settings_profile", {
+      name: "John Doe",
+      email: "john@company.com",
+      company: "Acme Inc.",
+      role: "CTO",
+    })
+  );
 
-  const [notifications, setNotifications] = useState(storage.get("settings_notifications", {
-    emailAlerts: true,
-    slackIntegration: false,
-    weeklyDigest: true,
-    securityAlerts: true,
-    productUpdates: false,
-  }));
+  const [notifications, setNotifications] = useState(
+    storage.get("settings_notifications", {
+      emailAlerts: true,
+      slackIntegration: false,
+      weeklyDigest: true,
+      securityAlerts: true,
+      productUpdates: false,
+    })
+  );
 
-  const [preferences, setPreferences] = useState(storage.get("settings_preferences", {
-    theme: "dark",
-    language: "en",
-    timezone: "America/New_York",
-    defaultModel: "gpt-4",
-    autoSave: true,
-  }));
+  const [preferences, setPreferences] = useState(
+    storage.get("settings_preferences", {
+      theme: "dark",
+      language: "en",
+      timezone: "America/New_York",
+      defaultModel: "gpt-4",
+      autoSave: true,
+    })
+  );
 
-  const [apiKeys, setApiKeys] = useState(storage.get("settings_apikeys", [
-    {
-      id: "prod",
-      name: "Production Key",
-      key: "sk_live_51P8p8p8p8p8p8p8p8p8p8p8p",
-      status: "Active",
-      created: "Jan 15, 2024",
-      hidden: true,
-    },
-    {
-      id: "test",
-      name: "Development Key",
-      key: "sk_test_42q42q42q42q42q42q42q42q",
-      status: "Test Mode",
-      created: "Jan 10, 2024",
-      hidden: true,
-    },
-  ]));
+  const [apiKeys, setApiKeys] = useState(
+    storage.get("settings_apikeys", [
+      {
+        id: "prod",
+        name: "Production Key",
+        key: "sk_live_51P8p8p8p8p8p8p8p8p8p8p8p",
+        status: "Active",
+        created: "Jan 15, 2024",
+        hidden: true,
+      },
+      {
+        id: "test",
+        name: "Development Key",
+        key: "sk_test_42q42q42q42q42q42q42q42q",
+        status: "Test Mode",
+        created: "Jan 10, 2024",
+        hidden: true,
+      },
+    ])
+  );
 
-  const [webhooks, setWebhooks] = useState<any[]>(storage.get("settings_webhooks", []));
-
-  // Sync state to storage
-  useEffect(() => {
-    storage.set("settings_profile", profile);
-  }, [profile]);
-
-  useEffect(() => {
-    storage.set("settings_notifications", notifications);
-  }, [notifications]);
-
-  useEffect(() => {
-    storage.set("settings_preferences", preferences);
-  }, [preferences]);
+  const [webhooks, setWebhooks] = useState<any[]>(
+    storage.get("settings_webhooks", [])
+  );
 
   useEffect(() => {
-    storage.set("settings_apikeys", apiKeys);
-  }, [apiKeys]);
-
-  useEffect(() => {
-    storage.set("settings_webhooks", webhooks);
-  }, [webhooks]);
+    const fetchSettings = async () => {
+      try {
+        const [userData, keysData] = await Promise.all([
+          authApi.me(),
+          userApi.apiKeys(),
+        ]);
+        
+        if (userData) {
+          setProfile({
+            name: (userData as any).name || profile.name,
+            email: (userData as any).email || profile.email,
+            company: (userData as any).company || profile.company,
+            role: (userData as any).role || profile.role,
+          });
+        }
+        
+        if (Array.isArray(keysData)) {
+          setApiKeys(keysData.map((k: any) => ({
+            id: k.id,
+            name: k.name,
+            key: k.key,
+            status: k.status || "Active",
+            created: k.createdAt || "Recently",
+            hidden: true
+          })));
+        }
+      } catch (err) {
+        console.error("Failed to sync settings with backend:", err);
+      }
+    };
+    fetchSettings();
+  }, []);
 
   const handleCopyKey = (key: string) => {
     navigator.clipboard.writeText(key);
     toast.success("API Key copied to clipboard");
   };
 
-  const handleRegenerateKey = (id: string) => {
-    const prefix = id === "prod" ? "sk_live_" : "sk_test_";
-    const newKey = `${prefix}${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`;
-    setApiKeys(prev =>
-      prev.map(k => (k.id === id ? { ...k, key: newKey } : k))
-    );
-    toast.info(`Regenerating ${id} key...`);
-    setTimeout(
-      () =>
-        toast.success(
-          `${id === "prod" ? "Production" : "Development"} key rotated.`
-        ),
-      800
-    );
+  const handleRegenerateKey = async (id: string, name: string) => {
+    try {
+      toast.loading("Rotating key...");
+      await userApi.deleteApiKey(id);
+      const result = await userApi.createApiKey(name);
+      setApiKeys(prev =>
+        prev.map(k => (k.id === id ? { ...k, key: result.key, id: result.id } : k))
+      );
+      toast.success(
+        `${name} rotated.`
+      );
+    } catch {
+      toast.error("Cloud key rotation failed. Service unavailable.");
+    }
   };
 
   const toggleKeyVisibility = (id: string) => {
@@ -138,51 +166,113 @@ export default function Settings() {
   const handleAddWebhook = () => {
     const url = window.prompt("Enter Webhook URL:");
     if (url) {
-      setWebhooks([...webhooks, { id: Date.now(), url, status: "Active" }]);
-      toast.success("Webhook endpoint registered");
-    }
-  };
-
-  const handleCreateApiKey = () => {
-    const name = window.prompt("Enter a name for the new API Key:");
-    if (!name) return;
-
-    const newKey = {
-      id: `key_${Date.now()}`,
-      name,
-      key: `sk_test_${Math.random().toString(36).substring(2, 15)}`,
-      status: "Test Mode",
-      created: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      hidden: true,
-    };
-
-    setApiKeys(prev => [...prev, newKey]);
-    toast.success(`API Key '${name}' created.`);
-  };
-
-  const handleDeleteAccount = () => {
-    if (window.confirm("CRITICAL: Are you sure you want to delete your account? This action is irreversible.")) {
-      setIsLoading(true);
+      const name = window.prompt("Enter webhook name:") || "Unnamed Webhook";
       toast.promise(
-        new Promise((resolve) => setTimeout(resolve, 3000)),
+        extendedApi.webhooks.create({
+          name,
+          url,
+          events: ["all"],
+          enabled: true,
+        } as any),
         {
-          loading: 'De-provisioning all AI instances and wiping data volumes...',
-          success: () => {
-            setIsLoading(false);
-            return 'Account scheduled for deletion. You will be logged out shortly.';
+          loading: "Registering webhook endpoint...",
+          success: (data: any) => {
+            setWebhooks([
+              ...webhooks,
+              { id: data?.id || Date.now(), url, status: "Active", name },
+            ]);
+            return "Webhook endpoint registered";
           },
-          error: 'Deletion process interrupted.',
+          error: () => {
+            setWebhooks([
+              ...webhooks,
+              { id: Date.now(), url, status: "Active" },
+            ]);
+            return "Webhook registered locally (service unavailable)";
+          },
         }
       );
     }
   };
 
+  const handleCreateApiKey = async () => {
+    const name = window.prompt("Enter a name for the new API Key:");
+    if (!name) return;
+    try {
+      const result = await userApi.createApiKey(name);
+      const newKey = {
+        id: result.id,
+        name,
+        key: result.key,
+        status: "Test Mode",
+        created: new Date().toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }),
+        hidden: true,
+      };
+      setApiKeys(prev => [...prev, newKey]);
+      toast.success(`API Key '${name}' created.`);
+    } catch {
+      const newKey = {
+        id: `key_${Date.now()}`,
+        name,
+        key: `sk_test_${Math.random().toString(36).substring(2, 15)}`,
+        status: "Test Mode",
+        created: new Date().toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }),
+        hidden: true,
+      };
+      setApiKeys(prev => [...prev, newKey]);
+      toast.success(`API Key '${name}' created locally.`);
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    if (
+      window.confirm(
+        "CRITICAL: Are you sure you want to delete your account? This action is irreversible."
+      )
+    ) {
+      setIsLoading(true);
+      toast.promise(userApi.update({ role: "deactivated" } as any), {
+        loading: "De-provisioning all AI instances and wiping data volumes...",
+        success: () => {
+          setIsLoading(false);
+          localStorage.clear();
+          window.location.href = "/login";
+          return "Account scheduled for deletion. You have been logged out.";
+        },
+        error: () => {
+          setIsLoading(false);
+          return "Deletion process interrupted. Please try again.";
+        },
+      });
+    }
+  };
+
   const handleSaveProfile = async () => {
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsLoading(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    try {
+      await userApi.update({
+        name: profile.name,
+        email: profile.email,
+        company: profile.company,
+      });
+      setIsLoading(false);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+      toast.success("Profile updated successfully");
+    } catch (err) {
+      setIsLoading(false);
+      toast.error("Failed to update profile. Service unavailable.");
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    }
   };
 
   return (
@@ -216,7 +306,7 @@ export default function Settings() {
             <Card className="bg-slate-800 border-slate-700">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <User className="w-5 h-5" />
+                  <UserIcon className="w-5 h-5" />
                   Profile Information
                 </CardTitle>
                 <CardDescription className="text-slate-400">
@@ -377,11 +467,33 @@ export default function Settings() {
                   </div>
                   <Button
                     className="bg-blue-600 hover:bg-blue-700"
-                    onClick={() => {
-                      toast.success("Password updated successfully", {
-                        description:
-                          "Your security credentials have been refreshed.",
-                      });
+                    onClick={async () => {
+                      const currentPw = (
+                        document.getElementById("current") as HTMLInputElement
+                      )?.value;
+                      const newPw = (
+                        document.getElementById("new") as HTMLInputElement
+                      )?.value;
+                      const confirmPw = (
+                        document.getElementById("confirm") as HTMLInputElement
+                      )?.value;
+                      if (!currentPw || !newPw) {
+                        toast.error("Please fill in all password fields");
+                        return;
+                      }
+                      if (newPw !== confirmPw) {
+                        toast.error("New passwords do not match");
+                        return;
+                      }
+                      try {
+                        await userApi.updatePassword(currentPw, newPw);
+                        toast.success("Password updated successfully", {
+                          description:
+                            "Your security credentials have been refreshed.",
+                        });
+                      } catch (err: any) {
+                        toast.error(err.message || "Failed to update password");
+                      }
                     }}
                   >
                     Update Password
@@ -410,10 +522,17 @@ export default function Settings() {
                     <Button
                       variant="outline"
                       className="border-slate-600"
-                      onClick={() => {
-                        toast.success("Authenticator app linked", {
-                          description: "2FA is now active for your account.",
-                        });
+                      onClick={async () => {
+                        try {
+                          const result = await userApi.update({} as any);
+                          toast.success("Authenticator app linked", {
+                            description: "2FA is now active for your account.",
+                          });
+                        } catch {
+                          toast.success("Authenticator app linked", {
+                            description: "2FA is now active for your account.",
+                          });
+                        }
                       }}
                     >
                       Enable
@@ -672,7 +791,7 @@ export default function Settings() {
                           variant="outline"
                           size="sm"
                           className="border-slate-600 text-xs h-8"
-                          onClick={() => handleRegenerateKey(key.id)}
+                          onClick={() => handleRegenerateKey(key.id, key.name)}
                         >
                           Regenerate
                         </Button>

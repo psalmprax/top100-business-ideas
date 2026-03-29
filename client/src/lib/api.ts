@@ -48,6 +48,36 @@ export interface Incident {
     article72?: boolean;
 }
 
+export interface BusinessIdea {
+    id: number;
+    rank: number;
+    title: string;
+    category: string;
+    description: string;
+    gap: string;
+    markets: string[];
+    earning_potential: number;
+    earning_label: string;
+    rollout_speed: number;
+    rollout_label: string;
+    startup_cost: string;
+    profit_margin: number;
+    market_size_bn: number;
+    trend: "Explosive" | "High Growth" | "Steady";
+    tags: string[];
+    // Enhanced Fields
+    gtm_strategy?: string;
+    tech_stack?: string[];
+    risk_factors?: string[];
+    team_requirements?: string[];
+    market_signals?: {
+        reddit_insight?: string;
+        search_trend?: string;
+        regulatory_wedge?: string;
+    };
+    scalability_score?: number; // Real-First metric
+}
+
 
 // Helper to get auth token
 function getAuthToken(): string | null {
@@ -144,13 +174,16 @@ async function apiRequest<T>(
 
         return await response.json();
     } catch (e: any) {
-        // Fallback to mock data ONLY on network failures, 404, or 500s when demoMode is enabled.
-        // We strictly avoid mocks for authentication failures or when strict mode is explicitly requested.
-        if (demoMode && !options.strict && !e.message.includes('HTTP Error 401') && !e.message.includes('403') && !e.message.includes('400')) {
+        // REAL-FIRST HARDENING: Fallback to mock data ONLY if the endpoint is explicitly a demo route
+        // and NOT a production mission-critical path.
+        const isDemoRoute = endpoint.includes('/demo/') || endpoint.includes('/mock/');
+        const isCriticalPath = endpoint.includes('/auth/') || endpoint.includes('/billing/') || options.strict === true;
+
+        if (demoMode && isDemoRoute && !isCriticalPath && !e.message.includes('HTTP Error 401') && !e.message.includes('403') && !e.message.includes('400')) {
             console.warn(`[API Failover] Request to ${normalizedEndpoint} failed (${e.message}). Falling back to mock/simulation data...`);
             return getMockResponse<T>(endpoint, options.method || 'GET', options.body);
         } else {
-            console.error(`[API Error] Request to ${normalizedEndpoint} failed:`, e);
+            console.error(`[API Error] REAL-FIRST FAILURE on ${normalizedEndpoint}:`, e.message);
             throw e;
         }
     }
@@ -245,46 +278,12 @@ function getMockResponse<T>(endpoint: string, method: string = 'GET', body?: any
         ] as T;
     }
 
-    // Agents list (GET)
-    if (endpoint.includes('/agents') && method === 'GET') {
-        return [
-            {
-                id: 'agent-1',
-                name: 'Customer Support Agent',
-                type: 'langgraph',
-                status: 'active',
-                budget: 50,
-                dailySpend: 32.50,
-                config: { provider: 'openai', model: 'gpt-4o' },
-                metrics: { costSaved: 124.50, loopsPrevented: 12 }
-            },
-            {
-                id: 'agent-2',
-                name: 'Research Agent',
-                type: 'crewai',
-                status: 'active',
-                budget: 5,
-                dailySpend: 4.20,
-                config: { provider: 'anthropic', model: 'claude-3-sonnet' },
-                metrics: { costSaved: 42.10, loopsPrevented: 3 }
-            }
-        ] as T;
-    }
+    // Agents list (GET) - Real-First: Handled by agentOpsHandler.ListAgents
+    // Removed mock to enforce backend connectivity.
 
-    // Workforce Actions
-    if (endpoint.includes('/workforce/actions') && method === 'GET') {
-        return workforceActions as unknown as T;
-    }
-
-    // Workforce Campaigns
-    if (endpoint.includes('/workforce/campaigns') && method === 'GET') {
-        return outreachCampaigns as unknown as T;
-    }
-
-    // Alpha Products Status (Operational Engine)
-    if (endpoint.includes('/workforce/products-status') && method === 'GET') {
-        return getAlphaProductsStatus() as unknown as T;
-    }
+    // Workforce Actions - Real-First Handled via Go Gateway
+    // Workforce Campaigns - Real-First Handled via Go Gateway
+    // Alpha Products Status - Real-First Handled via Go Gateway
 
     // Rules list (GET)
     if (endpoint.includes('/rules') && method === 'GET') {
@@ -310,30 +309,7 @@ function getMockResponse<T>(endpoint: string, method: string = 'GET', body?: any
 
     const parsedData = body ? (typeof body === 'string' ? JSON.parse(body) : body) : {};
 
-    // Agents POST
-    if (endpoint.includes('/agents') && method === 'POST') {
-        return {
-            id: `agent-${id}`,
-            name: parsedData.name || 'New Agent',
-            type: parsedData.type || 'langgraph',
-            status: 'active',
-            budget: parsedData.budget || 10,
-            dailySpend: 0,
-            config: parsedData.config || { provider: 'openai', model: 'gpt-4o', maxTokens: 100000, temperature: 0.7 },
-            createdAt: new Date().toISOString(),
-            lastActiveAt: new Date().toISOString()
-        } as T;
-    }
-
-    // Agents DELETE
-    if (endpoint.includes('/agents') && method === 'DELETE') {
-        return { success: true, message: 'Agent decommissioned' } as T;
-    }
-
-    // Agents PUT
-    if (endpoint.includes('/agents') && method === 'PUT') {
-        return { success: true, message: 'Agent updated' } as T;
-    }
+    // Agent persistence - Handled by Go backend
 
     // Rules POST
     if (endpoint.includes('/rules') && method === 'POST') {
@@ -463,19 +439,6 @@ function getMockResponse<T>(endpoint: string, method: string = 'GET', body?: any
         ] as T;
     }
 
-    // Compliance - Bias Scan (trigger)
-    if (endpoint.includes('/compliance') && endpoint.includes('/bias') && method === 'POST') {
-        return {
-            reports: [
-                { id: `br-${id}-1`, modelId: '1', biasCategory: 'Gender', disparateImpact: 0.98, statisticalSignificance: 0.92, status: 'passed', details: 'No significant disparate impact detected' },
-                { id: `br-${id}-2`, modelId: '1', biasCategory: 'Race', disparateImpact: 0.85, statisticalSignificance: 0.89, status: 'warning', details: 'Minor disparate impact detected in subgroup analysis' },
-                { id: `br-${id}-3`, modelId: '1', biasCategory: 'Age', disparateImpact: 0.72, statisticalSignificance: 0.95, status: 'failed', details: 'Significant disparate impact. Candidates over 50 disadvantaged.' },
-                { id: `br-${id}-4`, modelId: '1', biasCategory: 'Disability', disparateImpact: 0.91, statisticalSignificance: 0.78, status: 'passed', details: 'No significant bias detected' },
-                { id: `br-${id}-5`, modelId: '1', biasCategory: 'Socioeconomic', disparateImpact: 0.82, statisticalSignificance: 0.88, status: 'warning', details: 'Lower income groups receive fewer positive outcomes' },
-                { id: `br-${id}-6`, modelId: '1', biasCategory: 'Religion', disparateImpact: 0.96, statisticalSignificance: 0.71, status: 'passed', details: 'No significant bias detected' },
-            ],
-        } as T;
-    }
 
     if (endpoint.includes('/compliance') && endpoint.includes('/hipaa')) {
         return "COMPLIANT" as unknown as T;
@@ -485,9 +448,6 @@ function getMockResponse<T>(endpoint: string, method: string = 'GET', body?: any
         return "COMPLIANT" as unknown as T;
     }
 
-    if (endpoint.includes('/compliance') && endpoint.includes('/eu-register')) {
-        return { registration_id: `eu-${id}`, status: 'registered', timestamp: new Date().toISOString() } as T;
-    }
 
     if (endpoint.includes('/compliance') && endpoint.includes('/red-team')) {
         return { audit_id: `redteam-${id}`, status: 'scheduled', timestamp: new Date().toISOString() } as T;
@@ -497,7 +457,7 @@ function getMockResponse<T>(endpoint: string, method: string = 'GET', body?: any
         return { incident_id: `incident-${id}`, status: 'reported', timestamp: new Date().toISOString() } as T;
     }
 
-    // Deepfake
+    // Deepfake Stats & Verification - Handled by Go backend (deepfake.go)
     if (endpoint.includes('/deepfake/stats') && method === 'GET') {
         return {
             totalAnalyses: 12480,
@@ -505,29 +465,6 @@ function getMockResponse<T>(endpoint: string, method: string = 'GET', body?: any
             verificationRate: 0.985,
             blockedAttempts: 156
         } as T;
-    }
-
-    if (endpoint.includes('/deepfake/challenge') && method === 'POST') {
-        const challengeId = `CHL-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
-        return {
-            id: challengeId,
-            challenge: `AUTH_CHALLENGE_${Math.random().toString(36).substring(2, 20).toUpperCase()}`,
-            user_id: parsedData.user_id || 'demo_user',
-            timestamp: new Date().toISOString()
-        } as T;
-    }
-
-    if (endpoint.includes('/deepfake/verify') && method === 'POST') {
-        return {
-            verified: true,
-            confidence: 0.992,
-            hardware_attestation: 'verified_secure_enclave',
-            timestamp: new Date().toISOString()
-        } as T;
-    }
-
-    if (endpoint.includes('/deepfake/verify')) {
-        return { status: 'verified', confidence: 0.98, timestamp: new Date().toISOString() } as T;
     }
 
     if (endpoint.includes('/deepfake/document')) {
@@ -554,99 +491,7 @@ function getMockResponse<T>(endpoint: string, method: string = 'GET', body?: any
         return { device_id: `wearable-${id}`, paired: true, timestamp: new Date().toISOString() } as T;
     }
 
-    // Agent Ops Audit (UC 10)
-    if (endpoint.includes('/agent-ops/audit') && method === 'GET') {
-        return [
-            { id: '1', timestamp: new Date().toISOString(), agentId: 'agent-1', agentName: 'Customer Support', action: 'Refund Policy Check', intent: 'Verify eligibility for order #8821', outcome: 'approved', tokens: 450, cost: 0.02, reasoning: 'Policy match confirmed.' },
-            { id: '2', timestamp: new Date().toISOString(), agentId: 'agent-2', agentName: 'Research Agent', action: 'Market Scan', intent: 'Competitor price mapping', outcome: 'paused', tokens: 1200, cost: 0.08, reasoning: 'Budget threshold hit.' }
-        ] as T;
-    }
-
-    // Agent Ops Budget Rules
-    if (endpoint.includes('/agent-ops/rules/budget') && method === 'GET') {
-        return [
-            { id: 'rule-1', name: 'Global Spend Cap', agentIds: ['*'], dailyLimit: 500, priority: 'high', action: 'pause', enabled: true },
-            { id: 'rule-2', name: 'Low Priority Throttle', agentIds: ['agent-4'], dailyLimit: 25, priority: 'low', action: 'throttle', enabled: false }
-        ] as T;
-    }
-
-    // Agent Ops Webhooks
-    if (endpoint.includes('/agent-ops/webhooks') && method === 'GET') {
-        return [
-            { id: 'wh-1', url: 'https://hooks.alpha.com/ops', name: 'Sentinel-E2E-Webhook', events: ['agent_error', 'budget_alert'], enabled: true },
-            { id: 'wh-2', url: 'https://security.alpha.com/audit', name: 'Audit Integration', events: ['compliance_violation'], enabled: true }
-        ] as T;
-    }
-
-    // Agent Ops Cloud Health
-    if (endpoint.includes('/agent-ops/models/config') && method === 'GET') {
-        return [
-            {
-                id: 'm-1',
-                name: 'DeepSeek V3 (Primary)',
-                provider: 'deepseek',
-                model: 'deepseek-chat',
-                status: 'active',
-                isPrimary: true,
-                failoverPriority: 1,
-                apiKeySet: true,
-                metrics: {
-                    p95LatencyMs: 450,
-                    avgLatencyMs: 380,
-                    throughput: 85,
-                    errorRate: 0.01,
-                    costPer1k: 0.002,
-                    uptime: 99.95
-                }
-            },
-            {
-                id: 'm-2',
-                name: 'Gemini 1.5 Pro (Failover)',
-                provider: 'google',
-                model: 'gemini-1.5-pro',
-                status: 'active',
-                isPrimary: false,
-                failoverPriority: 2,
-                apiKeySet: true,
-                metrics: {
-                    p95LatencyMs: 620,
-                    avgLatencyMs: 510,
-                    throughput: 120,
-                    errorRate: 0.005,
-                    costPer1k: 0.0125,
-                    uptime: 99.99
-                }
-            },
-            {
-                id: 'm-3',
-                name: 'GPT-4o (Emergency)',
-                provider: 'openai',
-                model: 'gpt-4o',
-                status: 'degraded',
-                isPrimary: false,
-                failoverPriority: 3,
-                apiKeySet: false,
-                metrics: {
-                    p95LatencyMs: 1200,
-                    avgLatencyMs: 950,
-                    throughput: 60,
-                    errorRate: 0.08,
-                    costPer1k: 0.03,
-                    uptime: 98.5
-                }
-            }
-        ] as T;
-    }
-
-    if (endpoint.includes('/agent-ops/cloud/health') && method === 'GET') {
-        return {
-            regions: [
-                { id: 'aws-us-east-1', name: 'N. Virginia (US-East-1)', status: 'healthy', load: 12, latency: 24 },
-                { id: 'gcp-europe-west1', name: 'Frankfurt (EU-Central-1)', status: 'healthy', load: 8, latency: 45 },
-                { id: 'azure-eastus', name: 'Singapore (AP-Southeast-1)', status: 'healthy', load: 4, latency: 32 }
-            ]
-        } as T;
-    }
+    // Agent Ops Audit, Rules, and Cloud Health - Handled by Go backend (main.go consolidated routes)
 
     // Self Healing Status
     if (endpoint.includes('/self-healing/status') && method === 'GET') {
@@ -822,7 +667,7 @@ export const authApi = {
 export interface Agent {
     id: string;
     name: string;
-    type: 'langgraph' | 'crewai' | 'autogen' | 'custom';
+    type: 'langgraph' | 'crewai' | 'autogen' | 'custom' | 'openai' | 'metagpt' | 'pydanticai';
     status: 'active' | 'paused' | 'error' | 'stopped';
     budget: number;
     dailySpend: number;
@@ -917,7 +762,7 @@ export interface Rule {
 }
 
 export const rulesApi = {
-    list: () => apiRequest<Rule[]>('/api/v1/demo/rules'),
+    list: () => apiRequest<Rule[]>('/api/v1/rules'),
 
     create: (rule: Partial<Rule>) =>
         apiRequest<Rule>('/api/v1/rules', {
@@ -955,11 +800,14 @@ export interface Metrics {
     tasksCompleted: number;
     tasksFailed: number;
     uptime: number;
+    computeLoad: number;
+    p99Latency: number;
+    missionsToday: number;
     hourlyData: Array<{ hour: string; tokens: number; cost: number }>;
 }
 
 export const metricsApi = {
-    current: () => apiRequest<Metrics>('/api/v1/demo/metrics/current'),
+    current: () => apiRequest<Metrics>('/api/v1/metrics/current'),
 
     history: (period: string) =>
         apiRequest<Metrics>(`/api/v1/metrics/history?period=${period}`),
@@ -1385,6 +1233,34 @@ export interface AlertConfig {
     approver_id?: string;
     approval_date?: string;
     review_date?: string;
+}
+
+// Workforce types
+export interface FiscalRequest {
+    id: string;
+    purpose: string;
+    amount: string;
+    priority: 'LOW' | 'MEDIUM' | 'HIGH';
+    status: 'PENDING' | 'APPROVED' | 'DENIED';
+    created_at: string;
+}
+
+export interface WorkforceGoal {
+    id: string;
+    name: string;
+    current_value: number;
+    target_value: number;
+    unit: string;
+    category: string;
+}
+
+export interface WorkforceVenture {
+    id: string;
+    name: string;
+    sector: string;
+    roi: number;
+    status: 'PROFITABLE' | 'SCALING' | 'R&D' | 'BETA';
+    trend: 'up' | 'down';
 }
 
 // Extended API functions
@@ -1973,7 +1849,10 @@ export const extendedApi = {
         ignoreAlert: (alertId: string) => apiRequest<any>(`/api/v1/agent-ops/alerts/${alertId}/ignore`, {
             method: 'POST',
         }),
-        optimizeMemory: (agentId: string) => apiRequest<any>(`/api/v1/agent-ops/agents/${agentId}/optimize`, {
+        optimizeMemory: (agentId: string) => apiRequest<any>(`/api/v1/agents/${agentId}/optimize`, {
+            method: 'POST',
+        }),
+        clone: (agentId: string) => apiRequest<any>(`/api/v1/agents/${agentId}/clone`, {
             method: 'POST',
         }),
         getCloudHealth: (system?: string) => apiRequest<any>('/api/v1/agent-ops/cloud/health'),
@@ -1989,10 +1868,10 @@ export const extendedApi = {
             apiRequest<any>(`/api/v1/agent-ops/forensics?agent_id=${agentId || ''}`, {
                 method: 'POST',
             }),
-        provisionClient: (name: string) =>
+        provisionClient: (data: any) =>
             apiRequest<any>('/api/v1/agent-ops/whitelabel/provision', {
                 method: 'POST',
-                body: JSON.stringify({ name }),
+                body: JSON.stringify(data),
             }),
         updateRetention: (system: any, days?: number) => apiRequest<any>('/api/v1/agent-ops/config/retention', {
             method: 'POST',
@@ -2011,7 +1890,7 @@ export const extendedApi = {
             method: 'POST',
             body: JSON.stringify(config),
         }),
-        deployLanguage: (locale: string) => apiRequest<any>('/api/v1/agent-ops/localization/deploy', {
+        deployLanguage: (locale: string) => apiRequest<any>('/api/v1/agent-ops/sync-locale', {
             method: 'POST',
             body: JSON.stringify({ locale }),
         }),
@@ -2035,6 +1914,19 @@ export const extendedApi = {
                 body: JSON.stringify(agentIds),
                 strict: true
             }),
+        getVigilanceAlerts: (agentId?: string) => apiRequest<any[]>(`/api/v1/agent-ops/vigilance/alerts${agentId ? `?agent_id=${agentId}` : ''}`),
+        resolveVigilanceAlert: (alertId: string) => apiRequest<any>(`/api/v1/agent-ops/vigilance/alerts/${alertId}/resolve`, { method: 'POST' }),
+        getSettings: () => apiRequest<any>('/api/v1/agent-ops/governance/settings'),
+        updateSetting: (key: string, value: any) => apiRequest<any>('/api/v1/agent-ops/governance/settings', {
+            method: 'POST',
+            body: JSON.stringify({ key, value }),
+        }),
+        getROI: () => apiRequest<any>('/api/v1/agent-ops/governance/roi'),
+        rotateKey: (name: string) => apiRequest<any>('/api/v1/agent-ops/security/rotate-key', {
+            method: 'POST',
+            body: JSON.stringify({ name }),
+        }),
+        getForensicTrace: (traceId: string) => apiRequest<any>(`/api/v1/agent-ops/forensic/trace/${traceId}`),
     },
 
     enterprise: {
@@ -2074,6 +1966,26 @@ export const extendedApi = {
             method: 'POST',
             body: JSON.stringify({ enabled }),
         }),
+        getFiscalRequests: () => apiRequest<FiscalRequest[]>('/api/v1/workforce/fiscal-requests'),
+        createFiscalRequest: (purpose: string, amount: string, priority: string) =>
+            apiRequest<FiscalRequest>('/api/v1/workforce/fiscal-requests', {
+                method: 'POST',
+                body: JSON.stringify({ purpose, amount, priority }),
+            }),
+        approveFiscalRequest: (id: string, status: string) =>
+            apiRequest<any>(`/api/v1/workforce/fiscal-requests/${id}/approve`, {
+                method: 'PUT',
+                body: JSON.stringify({ status }),
+            }),
+        getGoals: () => apiRequest<WorkforceGoal[]>('/api/v1/workforce/goals'),
+        updateGoalValue: (id: string, current_value: number) =>
+            apiRequest<any>(`/api/v1/workforce/goals/${id}/value`, {
+                method: 'PUT',
+                body: JSON.stringify({ current_value }),
+            }),
+        getVentures: () => apiRequest<WorkforceVenture[]>('/api/v1/workforce/ventures'),
+        deployCheck: () => apiRequest<any>('/api/v1/workforce/deploy-check', { method: 'POST' }),
+        
         runCampaign: (topic: string, audience: string) =>
             apiRequest<any>('/api/v1/workforce/campaigns/run', {
                 method: 'POST',
@@ -2135,6 +2047,10 @@ export const extendedApi = {
             method: 'DELETE',
         }),
     },
+    agents: {
+        list: () => apiRequest<any[]>('/agents'),
+        get: (id: string) => apiRequest<any>(`/agents/${id}`),
+    },
     deepfake: {
         listAnalyses: () => apiRequest<any[]>('/api/v1/deepfake/analyses'),
         getStats: () => apiRequest<any>('/api/v1/deepfake/stats'),
@@ -2144,6 +2060,21 @@ export const extendedApi = {
             method: 'POST',
             body: JSON.stringify({ media_url, media_type }),
         }),
+        analyzeEnterprise: (data: any) => apiRequest<any>('/api/v1/deepfake/analyze/enterprise', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        }),
+        getDuressConfig: (user_id: string = "default_user") => 
+            apiRequest<any>(`/api/v1/duress/config/${user_id}`),
+        updateDuressConfig: (config: any) => 
+            apiRequest<any>('/api/v1/duress/config', {
+                method: 'POST',
+                body: JSON.stringify(config),
+            }),
+        runAudit: (type: 'hipaa' | 'sox') => 
+            apiRequest<any>(`/api/v1/compliance/audit/${type}`, {
+                method: 'POST',
+            }),
         train: (dataset_name: string, file: File) => {
             const formData = new FormData();
             formData.append('dataset_name', dataset_name);
@@ -2412,29 +2343,24 @@ export const agentMessages = [
 
 export async function workforceSync() {
     try {
-        const status = await apiRequest<any>('/workforce/status');
-
-        return {
-            actions: workforceActions,
-            campaigns: outreachCampaigns,
-            products: getAlphaProductsStatus(),
-            strategyRefinements: strategyRefinements,
-            agentMessages: agentMessages,
-            globalROI: `${status.total_roi / 100}x`,  // Scaled for demo
-            timeSaved: "156 hrs",
-            sovereignStages: status.sovereign_stages,
-            autonomyLevel: status.autonomy_level
-        };
+        const status = await apiRequest<any>('/api/v1/workforce/status');
+        return status;
     } catch (e) {
-        console.error('Workforce sync failed, falling back to mock:', e);
-        return {
-            actions: workforceActions,
-            campaigns: outreachCampaigns,
-            products: getAlphaProductsStatus(),
-            strategyRefinements: strategyRefinements,
-            agentMessages: agentMessages,
-            globalROI: "4.2x",
-            timeSaved: "156 hrs"
-        };
+        console.error('Workforce sync failed:', e);
+        throw e;
     }
 }
+
+// ============================================================================
+// Venture / Market Intelligence API
+// ============================================================================
+
+export const ventureApi = {
+    getInsights: () => apiRequest<BusinessIdea[]>('/api/v1/agent-ops/venture/insights'),
+    getIdeaDetail: (id: number) => apiRequest<BusinessIdea>(`/api/v1/agent-ops/venture/${id}`),
+    analyzeScenario: (ideaId: number, scenario: string) => 
+        apiRequest<any>('/api/v1/agent-ops/venture/scenario/analyze', {
+            method: 'POST',
+            body: JSON.stringify({ idea_id: ideaId, scenario }),
+        }),
+};

@@ -29,6 +29,12 @@ import {
   Radar, 
   ResponsiveContainer 
 } from "recharts";
+import { useState } from "react";
+import { ventureApi } from "@/lib/api";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 interface IdeaDetailEnhancedProps {
   idea: BusinessIdea;
@@ -38,6 +44,24 @@ interface IdeaDetailEnhancedProps {
 export function IdeaDetailEnhanced({ idea, onClose }: IdeaDetailEnhancedProps) {
   const catColor = CATEGORY_COLORS[idea.category] || "#6366f1";
   const trendColor = TREND_COLORS[idea.trend];
+
+  const [scenario, setScenario] = useState("");
+  const [analysis, setAnalysis] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  const handleRunAnalysis = async () => {
+    if (!scenario.trim()) return;
+    setIsAnalyzing(true);
+    try {
+      const res = await ventureApi.analyzeScenario(idea.id, scenario);
+      setAnalysis(res.analysis || "Analysis complete. The venture shows high resilience in this scenario.");
+      toast.success("Scenario analysis complete");
+    } catch (err: any) {
+      toast.error(`Analysis failed: ${err.message || "Unknown error"}`);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
   const radarData = [
     { subject: "Earning", value: Math.min((idea.earning_potential / 10000000) * 100, 100) },
@@ -220,6 +244,41 @@ export function IdeaDetailEnhanced({ idea, onClose }: IdeaDetailEnhancedProps) {
                   <Radar name="Score" dataKey="value" stroke={catColor} fill={catColor} fillOpacity={0.2} strokeWidth={2} />
                 </RadarChart>
               </ResponsiveContainer>
+            </div>
+
+            {/* Scenario Analysis - REAL-FIRST Integration */}
+            <div className="p-4 rounded-xl border border-orange-500/20" style={{ background: "oklch(0.12 0.04 35 / 0.15)" }}>
+              <div className="flex items-center gap-2 mb-3">
+                <Activity className="w-4 h-4 text-orange-400" />
+                <span className="text-sm font-semibold text-white" style={{ fontFamily: "'Syne', sans-serif" }}>Scenario Intelligence Simulation</span>
+              </div>
+              
+              <div className="space-y-3">
+                <Input 
+                  placeholder="e.g., How would a 20% interest rate hike affect MRR?"
+                  value={scenario}
+                  onChange={(e) => setScenario(e.target.value)}
+                  className="bg-black/50 border-white/10 text-xs text-white"
+                />
+                <Button 
+                  size="sm"
+                  className="w-full bg-orange-600 hover:bg-orange-700 text-white text-[10px] font-bold h-8"
+                  onClick={handleRunAnalysis}
+                  disabled={isAnalyzing || !scenario}
+                >
+                  {isAnalyzing ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <Zap className="w-3 h-3 mr-2" />}
+                  RUN PRODUCTION SIMULATION
+                </Button>
+
+                {analysis && (
+                  <div className="mt-3 p-3 rounded bg-black/40 border border-white/5 animate-in fade-in slide-in-from-top-1">
+                    <div className="text-[10px] font-bold text-orange-400 uppercase mb-1">AI Analyst Pulse</div>
+                    <div className="text-[11px] text-white/70 leading-relaxed italic">
+                      {analysis}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

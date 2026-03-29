@@ -170,8 +170,12 @@ export default function Billing() {
     toast.info("Securely redirecting to your Customer Portal...");
     try {
         const response = await billingApi.updatePaymentMethod("portal");
-        // Typically handles redirection to Stripe Customer Portal
-        toast.success("Portal access granted");
+        // REAL-FIRST: Redirect to actual portal URL if provided
+        if (response && (response as any).url) {
+            window.location.assign((response as any).url);
+        } else {
+            toast.success("Portal access granted - No direct redirect provided");
+        }
     } catch (err) {
         toast.error("Cloud vault connection failed");
     }

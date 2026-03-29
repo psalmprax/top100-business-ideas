@@ -191,6 +191,8 @@ func main() {
 				agents.GET("/:id/forecast", agentOpsHandler.GetForecast)
 				agents.POST("/:id/stop", agentOpsHandler.StopAgent)
 				agents.POST("/:id/restart", agentOpsHandler.RestartAgent)
+				agents.POST("/:id/clone", agentOpsHandler.CloneConfig)
+				agents.POST("/:id/optimize", agentOpsHandler.OptimizeMemory)
 				agents.POST("/:id/hint", agentOpsHandler.ProxyToPython)
 			}
 
@@ -216,15 +218,9 @@ func main() {
 				compliance.GET("/models", agentOpsHandler.ProxyToPython)
 				compliance.POST("/models", agentOpsHandler.ProxyToPython)
 				compliance.PATCH("/models/:id/guardrails", agentOpsHandler.ProxyToPython)
-				compliance.GET("/bias-reports/:id", agentOpsHandler.ProxyToPython)
-				compliance.POST("/bias-scan", agentOpsHandler.ProxyToPython)
-				compliance.POST("/connect", agentOpsHandler.ProxyToPython)
-				compliance.POST("/scan", agentOpsHandler.ProxyToPython)
-				compliance.GET("/connections", agentOpsHandler.ProxyToPython)
-				compliance.GET("/scans", agentOpsHandler.ProxyToPython)
-				compliance.GET("/scans/:id", agentOpsHandler.ProxyToPython)
-				compliance.POST("/red-team", agentOpsHandler.ProxyToPython)
-				compliance.POST("/eu-register", agentOpsHandler.ProxyToPython)
+				compliance.POST("/bias-scan", complianceHandler.TriggerBiasScan)
+				compliance.POST("/eu-register", complianceHandler.EURegister)
+				compliance.POST("/documentation/:id", complianceHandler.GenerateDocumentation)
 				compliance.GET("/incidents", agentOpsHandler.ProxyToPython)
 				compliance.POST("/incidents", agentOpsHandler.ProxyToPython)
 				compliance.POST("/upload", complianceHandler.UploadArtifact)
@@ -335,6 +331,7 @@ func main() {
 				agentOps.POST("/compliance/sox", agentOpsHandler.ProxyToPython)
 				agentOps.POST("/gateway/gql", agentOpsHandler.ProxyToPython)
 				agentOps.POST("/deploy/language", agentOpsHandler.ProxyToPython)
+				agentOps.POST("/sync-locale", agentOpsHandler.SyncLinguisticPackage)
 				agentOps.POST("/self-healing/deploy", agentOpsHandler.ProxyToPython)
 				agentOps.GET("/snapshots", agentOpsHandler.ProxyToPython)
 				agentOps.GET("/governance/healing/snapshots", agentOpsHandler.ProxyToPython)
@@ -464,7 +461,24 @@ func main() {
 				workforce.GET("/status", workforceHandler.GetStatus)
 				workforce.POST("/sovereign/request", workforceHandler.RequestApproval)
 				workforce.POST("/sovereign/callback", workforceHandler.HandleCallback)
+
+				// Real-First Hardening
+				workforce.POST("/cashclaw/recover", workforceHandler.RecoverRevenue)
+				workforce.POST("/campaigns/run", workforceHandler.RunCampaign)
+				workforce.GET("/leads/source", workforceHandler.SourceLeads)
+				workforce.POST("/insights/analyze", workforceHandler.AnalyzeInsights)
+				workforce.POST("/inbound/handle", workforceHandler.HandleInbound)
+				workforce.POST("/feedback", workforceHandler.ProvideFeedback)
 			}
+
+			// Venture Intelligence (Market Intelligence)
+			venture := protected.Group("/agent-ops/venture")
+			venture.Use(middleware.ProductAccess("agent-ops"))
+			{
+				venture.GET("/insights", agentOpsHandler.ListVentureInsights)
+				venture.POST("/scenario/analyze", agentOpsHandler.AnalyzeVentureScenario)
+			}
+
 			// On-Premise (Agent Ops UC18)
 			onPrem := protected.Group("/on-prem")
 			onPrem.Use(middleware.ProductAccess("agent-ops"))
