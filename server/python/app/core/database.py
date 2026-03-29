@@ -33,6 +33,15 @@ def init_db():
     for i in range(max_retries):
         try:
             SQLModel.metadata.create_all(engine)
+            
+            # Manual Migration: Add 'limit' column to alertconfig if it doesn't exist
+            # This is necessary because SQLModel.metadata.create_all doesn't handle migrations
+            if not DATABASE_URL.startswith("sqlite"):
+                from sqlalchemy import text
+                with engine.connect() as conn:
+                    conn.execute(text("ALTER TABLE alertconfig ADD COLUMN IF NOT EXISTS \"limit\" FLOAT DEFAULT 100.0;"))
+                    conn.commit()
+            
             # Seed initial data
             seed_compliance_articles()
             seed_agents()
