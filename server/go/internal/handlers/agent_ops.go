@@ -349,10 +349,15 @@ func (h *AgentOpsHandler) ProxyToPython(c *gin.Context) {
 			path = "/compliance/healing/events"
 		} else if path == "/agent-ops/security/rotate-key" {
 			path = "/security/rotate-key"
-		} else if path == "/agent-ops/venture/insights" {
-			path = "/venture/insights"
-		} else if len(path) > 17 && path[10:18] == "/venture/" {
-			path = "/venture" + path[10:]
+		} else if len(path) > 21 && path[10:22] == "/governance/" {
+			// Strip /agent-ops for all other governance routes
+			path = path[10:]
+		} else if len(path) > 14 && path[10:23] == "/self-healing/" {
+			// Strip /agent-ops for all self-healing routes
+			path = path[10:]
+		} else if len(path) > 9 && path[10:18] == "/venture" {
+			// Strip /agent-ops for all venture routes
+			path = path[10:]
 		}
 	}
 

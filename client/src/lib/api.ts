@@ -1337,18 +1337,18 @@ export const extendedApi = {
     // Self-Healing (Agent Ops UC 17)
     selfHealing: {
         events: (agentId?: string, resolved?: boolean) => {
-            let url = '/api/v1/self-healing/events?';
+            let url = '/agent-ops/self-healing/events?';
             if (agentId) url += `agent_id=${agentId}&`;
             if (resolved !== undefined) url += `resolved=${resolved}`;
             return apiRequest<SelfHealingEvent[]>(url);
         },
         createEvent: (event: SelfHealingEvent) =>
-            apiRequest<SelfHealingEvent>('/api/v1/self-healing/events', {
+            apiRequest<SelfHealingEvent>('/agent-ops/self-healing/events', {
                 method: 'POST',
                 body: JSON.stringify(event),
             }),
         resolveEvent: (eventId: string) =>
-            apiRequest<SelfHealingEvent>(`/api/v1/self-healing/events/${eventId}/resolve`, {
+            apiRequest<SelfHealingEvent>(`/agent-ops/self-healing/events/${eventId}/resolve`, {
                 method: 'PUT',
             }),
         stats: () =>
@@ -1357,19 +1357,19 @@ export const extendedApi = {
                 resolved_events: number;
                 pending_events: number;
                 resolution_rate: number;
-            }>('/api/v1/self-healing/stats'),
+            }>('/agent-ops/self-healing/stats'),
         updateHealingConfig: (config: any) =>
-            apiRequest<any>('/api/v1/self-healing/config', {
+            apiRequest<any>('/agent-ops/self-healing/config', {
                 method: 'POST',
                 body: JSON.stringify(config),
             }),
         injectHint: (agent_id: string, hint: string) =>
-            apiRequest<any>('/api/v1/self-healing/hint', {
+            apiRequest<any>('/agent-ops/self-healing/hint', {
                 method: 'POST',
                 body: JSON.stringify({ agent_id, hint }),
             }),
-        getHealingStatus: () => apiRequest<any>('/api/v1/self-healing/status'),
-        getStreamingMetrics: () => apiRequest<any>('/api/v1/self-healing/metrics/streaming'),
+        getHealingStatus: () => apiRequest<any>('/agent-ops/self-healing/status'),
+        getStreamingMetrics: () => apiRequest<any>('/agent-ops/self-healing/metrics/streaming'),
     },
 
     // GraphQL Proxy (UC 14, 16, 13)
@@ -2018,19 +2018,19 @@ export const extendedApi = {
     },
 
     sentinel: {
-        getHealingStatus: () => apiRequest<any>('/api/v1/self-healing/status'),
+        getHealingStatus: () => apiRequest<any>('/agent-ops/self-healing/status'),
         registerNode: (node_id: string, url: string, provider: string) =>
-            apiRequest<any>('/api/v1/self-healing/nodes/register', {
+            apiRequest<any>('/agent-ops/self-healing/nodes/register', {
                 method: 'POST',
                 body: JSON.stringify({ node_id, url, provider }),
             }),
         injectHint: (agentId: string, hint: string) =>
-            apiRequest<any>(`/agents/${agentId}/hint`, {
+            apiRequest<any>(`/agent-ops/agents/${agentId}/hint`, {
                 method: 'POST',
                 body: JSON.stringify({ hint }),
             }),
         updateHealingConfig: (config: { auto_refine?: boolean; safety_rollback?: boolean; error_threshold?: number }) =>
-            apiRequest<any>('/api/v1/agent-ops/governance/healing/configs', {
+            apiRequest<any>('/agent-ops/governance/healing/configs', {
                 method: 'POST',
                 body: JSON.stringify(config),
             }),
@@ -2091,22 +2091,22 @@ export const extendedApi = {
     },
     governance: {
         budget: {
-            listRules: () => apiRequest<any[]>('/api/v1/agent-ops/rules/budget'),
-            createRule: (rule: any) => apiRequest<any>('/api/v1/agent-ops/rules/budget', {
+            listRules: () => apiRequest<any[]>('/agent-ops/rules/budget'),
+            createRule: (rule: any) => apiRequest<any>('/agent-ops/rules/budget', {
                 method: 'POST',
                 body: JSON.stringify(rule),
                 strict: true
             }),
         },
         compliance: {
-            getDashboard: () => apiRequest<any>('/api/v1/governance/compliance/dashboard'),
-            getArticles: () => apiRequest<any[]>('/api/v1/governance/compliance/articles'),
-            assessArticle: (articleId: string, assessment: any) => apiRequest<any>(`/api/v1/governance/compliance/assess/${articleId}`, {
+            getDashboard: () => apiRequest<any>('/agent-ops/governance/compliance/dashboard'),
+            getArticles: () => apiRequest<any[]>('/agent-ops/governance/compliance/articles'),
+            assessArticle: (articleId: string, assessment: any) => apiRequest<any>(`/agent-ops/governance/compliance/assess/${articleId}`, {
                 method: 'POST',
                 body: JSON.stringify(assessment),
             }),
             alerts: {
-                update: (alertId: string, data: Partial<AlertConfig>) => apiRequest<any>(`/api/v1/governance/compliance/alerts/${alertId}`, {
+                update: (alertId: string, data: Partial<AlertConfig>) => apiRequest<any>(`/agent-ops/governance/compliance/alerts/${alertId}`, {
                     method: 'POST',
                     body: JSON.stringify(data),
                     strict: true
@@ -2114,44 +2114,44 @@ export const extendedApi = {
             },
         },
         sla: {
-            getDashboard: () => apiRequest<any>('/api/v1/governance/sla/dashboard'),
-            getMetrics: () => apiRequest<any[]>('/api/v1/governance/sla/metrics'),
+            getDashboard: () => apiRequest<any>('/agent-ops/governance/sla/dashboard'),
+            getMetrics: () => apiRequest<any[]>('/agent-ops/governance/sla/metrics'),
         },
         partners: {
-            list: () => apiRequest<any[]>('/api/v1/governance/partners'),
-            sync: (partnerId: string) => apiRequest<any>(`/api/v1/governance/partners/${partnerId}/sync`, {
+            list: () => apiRequest<any[]>('/agent-ops/governance/partners'),
+            sync: (partnerId: string) => apiRequest<any>(`/agent-ops/governance/partners/${partnerId}/sync`, {
                 method: 'POST',
             }),
         },
         forecast: {
-            getUsage: () => apiRequest<any[]>('/api/v1/governance/forecast/usage'),
+            getUsage: () => apiRequest<any[]>('/agent-ops/governance/forecast/usage'),
         },
         analytics: {
-            getROI: () => apiRequest<any[]>('/api/v1/governance/analytics/roi'),
+            getROI: () => apiRequest<any[]>('/agent-ops/governance/analytics/roi'),
             realizeImpact: (insight_id: string) =>
-                apiRequest<any>('/api/v1/governance/analytics/realize', {
+                apiRequest<any>('/agent-ops/governance/analytics/realize', {
                     method: 'POST',
                     body: JSON.stringify({ insight_id }),
                 }),
         },
         localization: {
-            getConfigs: () => apiRequest<any[]>('/api/v1/governance/localization/configs'),
+            getConfigs: () => apiRequest<any[]>('/agent-ops/governance/localization/configs'),
         },
         healing: {
-            getConfigs: () => apiRequest<any[]>('/api/v1/governance/healing/configs'),
+            getConfigs: () => apiRequest<any[]>('/agent-ops/governance/healing/configs'),
         },
         insights: {
-            getStrategic: () => apiRequest<any[]>('/api/v1/governance/insights/strategic'),
+            getStrategic: () => apiRequest<any[]>('/agent-ops/governance/insights/strategic'),
         },
         settings: {
-            list: () => apiRequest<any[]>('/api/v1/governance/settings'),
-            update: (settingId: string, value: string) => apiRequest<any>(`/api/v1/governance/settings/${settingId}?value=${encodeURIComponent(value)}`, {
+            list: () => apiRequest<any[]>('/agent-ops/governance/settings'),
+            update: (settingId: string, value: string) => apiRequest<any>(`/agent-ops/governance/settings/${settingId}?value=${encodeURIComponent(value)}`, {
                 method: 'PUT',
             }),
         },
         onPrem: {
-            listDeployments: () => apiRequest<any[]>('/api/v1/governance/on-prem/deployments'),
-            triggerAction: (deploymentId: string, action: string) => apiRequest<any>(`/api/v1/governance/on-prem/deploy/${deploymentId}?action=${action}`, {
+            listDeployments: () => apiRequest<any[]>('/agent-ops/governance/on-prem/deployments'),
+            triggerAction: (deploymentId: string, action: string) => apiRequest<any>(`/agent-ops/governance/on-prem/deploy/${deploymentId}?action=${action}`, {
                 method: 'POST',
             }),
         },
