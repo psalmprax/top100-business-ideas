@@ -352,7 +352,6 @@ func main() {
 				agentOps.PATCH("/governance/healing/configs/:id", agentOpsHandler.ProxyToPython)
 				agentOps.GET("/governance/healing/events", agentOpsHandler.ProxyToPython)
 				agentOps.POST("/security/rotate-key", agentOpsHandler.ProxyToPython)
-				agentOps.GET("/venture/insights", agentOpsHandler.ProxyToPython)
 				agentOps.POST("/venture/realize/:id", agentOpsHandler.ProxyToPython)
 			}
 
