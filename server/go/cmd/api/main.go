@@ -353,6 +353,53 @@ func main() {
 				agentOps.GET("/governance/healing/events", agentOpsHandler.ProxyToPython)
 				agentOps.POST("/security/rotate-key", agentOpsHandler.ProxyToPython)
 				agentOps.POST("/venture/realize/:id", agentOpsHandler.ProxyToPython)
+
+				// Vigilance (Sentinel Monitoring)
+				vigilance := agentOps.Group("/vigilance")
+				{
+					vigilance.GET("/alerts", agentOpsHandler.ProxyToPython)
+					vigilance.POST("/alerts/:id/acknowledge", agentOpsHandler.ProxyToPython)
+				}
+
+				// Self-Healing (Agent Ops UC17)
+				selfHealing := agentOps.Group("/self-healing")
+				{
+					selfHealing.GET("/status", selfHealingHandler.GetHealingStatus)
+					selfHealing.GET("/events", selfHealingHandler.GetEvents)
+					selfHealing.GET("/stats", selfHealingHandler.GetStats)
+					selfHealing.GET("/metrics/streaming", agentOpsHandler.ProxyToPython)
+					selfHealing.POST("/config", agentOpsHandler.ProxyToPython)
+					selfHealing.POST("/recover", selfHealingHandler.TriggerRecovery)
+					selfHealing.POST("/hint", agentOpsHandler.ProxyToPython)
+				}
+
+				// Venture Intelligence (Market Intelligence)
+				venture := agentOps.Group("/venture")
+				{
+					venture.GET("/insights", agentOpsHandler.ListVentureInsights)
+					venture.POST("/scenario/analyze", agentOpsHandler.AnalyzeVentureScenario)
+				}
+
+				// Governance & Advanced Analytics (Sentinel)
+				governance := agentOps.Group("/governance")
+				{
+					governance.GET("/compliance/dashboard", agentOpsHandler.ProxyToPython)
+					governance.GET("/compliance/articles", agentOpsHandler.ProxyToPython)
+					governance.POST("/compliance/assess/:id", agentOpsHandler.ProxyToPython)
+					governance.GET("/sla/dashboard", agentOpsHandler.ProxyToPython)
+					governance.GET("/sla/metrics", agentOpsHandler.ProxyToPython)
+					governance.GET("/partners", agentOpsHandler.ProxyToPython)
+					governance.POST("/partners/:id/sync", agentOpsHandler.ProxyToPython)
+					governance.GET("/forecast/usage", agentOpsHandler.ProxyToPython)
+					governance.GET("/analytics/roi", agentOpsHandler.ProxyToPython)
+					governance.GET("/localization/configs", agentOpsHandler.ProxyToPython)
+					governance.GET("/healing/configs", agentOpsHandler.ProxyToPython)
+					governance.GET("/insights/strategic", agentOpsHandler.ProxyToPython)
+					governance.GET("/settings", agentOpsHandler.ProxyToPython)
+					governance.PUT("/settings/:id", agentOpsHandler.ProxyToPython)
+					governance.GET("/on-prem/deployments", agentOpsHandler.ProxyToPython)
+					governance.POST("/on-prem/deploy/:id", agentOpsHandler.ProxyToPython)
+				}
 			}
 
 			// Multi-Cloud (Agent Ops UC16)
@@ -361,19 +408,6 @@ func main() {
 			{
 				multiCloud.GET("/status", multiCloudHandler.GetStatus)
 				multiCloud.POST("/failover", multiCloudHandler.InitiateFailover)
-			}
-
-			// Self-Healing (Agent Ops UC17)
-			selfHealing := protected.Group("/self-healing")
-			selfHealing.Use(middleware.ProductAccess("agent-ops"))
-			{
-				selfHealing.GET("/status", selfHealingHandler.GetHealingStatus)
-				selfHealing.GET("/events", selfHealingHandler.GetEvents)
-				selfHealing.GET("/stats", selfHealingHandler.GetStats)
-				selfHealing.GET("/metrics/streaming", agentOpsHandler.ProxyToPython)
-				selfHealing.POST("/config", agentOpsHandler.ProxyToPython)
-				selfHealing.POST("/recover", selfHealingHandler.TriggerRecovery)
-				selfHealing.POST("/hint", agentOpsHandler.ProxyToPython)
 			}
 
 			// Training (AI Compliance UC10)
@@ -432,9 +466,6 @@ func main() {
 				mobileSDK.GET("/stats", agentOpsHandler.ProxyToPython)
 			}
 
-
-
-
 			// Crypto (Deepfake UC12)
 			crypto := protected.Group("/crypto")
 			crypto.Use(middleware.ProductAccess("deepfake"))
@@ -470,14 +501,6 @@ func main() {
 				workforce.POST("/feedback", workforceHandler.ProvideFeedback)
 			}
 
-			// Venture Intelligence (Market Intelligence)
-			venture := protected.Group("/agent-ops/venture")
-			venture.Use(middleware.ProductAccess("agent-ops"))
-			{
-				venture.GET("/insights", agentOpsHandler.ListVentureInsights)
-				venture.POST("/scenario/analyze", agentOpsHandler.AnalyzeVentureScenario)
-			}
-
 			// On-Premise (Agent Ops UC18)
 			onPrem := protected.Group("/on-prem")
 			onPrem.Use(middleware.ProductAccess("agent-ops"))
@@ -487,28 +510,6 @@ func main() {
 				onPrem.GET("/checklist", agentOpsHandler.ProxyToPython)
 				onPrem.GET("/deployments", agentOpsHandler.ProxyToPython)
 				onPrem.POST("/deploy/:id", agentOpsHandler.ProxyToPython)
-			}
-
-			// Governance & Advanced Analytics (Sentinel)
-			governance := protected.Group("/governance")
-			governance.Use(middleware.ProductAccess("agent-ops"))
-			{
-				governance.GET("/compliance/dashboard", agentOpsHandler.ProxyToPython)
-				governance.GET("/compliance/articles", agentOpsHandler.ProxyToPython)
-				governance.POST("/compliance/assess/:id", agentOpsHandler.ProxyToPython)
-				governance.GET("/sla/dashboard", agentOpsHandler.ProxyToPython)
-				governance.GET("/sla/metrics", agentOpsHandler.ProxyToPython)
-				governance.GET("/partners", agentOpsHandler.ProxyToPython)
-				governance.POST("/partners/:id/sync", agentOpsHandler.ProxyToPython)
-				governance.GET("/forecast/usage", agentOpsHandler.ProxyToPython)
-				governance.GET("/analytics/roi", agentOpsHandler.ProxyToPython)
-				governance.GET("/localization/configs", agentOpsHandler.ProxyToPython)
-				governance.GET("/healing/configs", agentOpsHandler.ProxyToPython)
-				governance.GET("/insights/strategic", agentOpsHandler.ProxyToPython)
-				governance.GET("/settings", agentOpsHandler.ProxyToPython)
-				governance.PUT("/settings/:id", agentOpsHandler.ProxyToPython)
-				governance.GET("/on-prem/deployments", agentOpsHandler.ProxyToPython)
-				governance.POST("/on-prem/deploy/:id", agentOpsHandler.ProxyToPython)
 			}
 		}
 	}

@@ -202,22 +202,15 @@ async def get_self_healing_stats():
 # Agent Operations & Budget Tracking
 # ============================================================================
 
-@router.get("/agents")
-async def list_agents(session: Session = Depends(get_session)):
-    """List all autonomous agents"""
-    from app.core.models import Agent
-    agents = session.exec(select(Agent)).all()
-    return agents
+@router.get("/self-healing/metrics/streaming")
+async def get_self_healing_streaming_metrics():
+    """Get real-time streaming metrics for the self-healing dashboard"""
+    # In a real system, this would be a WebSocket or SSE stream.
+    # For this hardened demo, we return the current cluster health snapshot.
+    from app.services.self_healing_manager import self_healing_manager
+    return self_healing_manager.get_cluster_status()
 
 
-@router.get("/agents/{agent_id}")
-async def get_agent(agent_id: str, session: Session = Depends(get_session)):
-    """Get details for a specific agent"""
-    from app.core.models import Agent
-    agent = session.get(Agent, agent_id)
-    if not agent:
-        raise HTTPException(status_code=404, detail="Agent not found")
-    return agent
 
 
 @router.post("/agents/{agent_id}/stop")
