@@ -39,6 +39,17 @@ import {
   ShieldCheck,
   AlertTriangle,
   Mic,
+  RefreshCw,
+  Trash2,
+  DollarSign,
+  ExternalLink,
+  Link2,
+  Unlink,
+  Target,
+  Send,
+  Phone,
+  MapPin,
+  Plane,
 } from "lucide-react";
 import {
   Card,
@@ -52,10 +63,19 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { jsPDF } from "jspdf";
 import { storage } from "@/lib/storage";
-import { billingApi, extendedApi } from "@/lib/api";
+import {
+  billingApi,
+  extendedApi,
+  agentsApi,
+  metricsApi,
+  type Agent,
+} from "@/lib/api";
 
 // ============================================================================
 // Types & Components
@@ -94,10 +114,10 @@ function MetricCard({
           )}
         </div>
         <div className="mt-3">
-          <div className="text-2xl font-bold tracking-tight">{value}</div>
-          <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-            {title}
+          <div className="text-stat text-white tabular-nums mb-1 tracking-tight">
+            {value}
           </div>
+          <div className="text-stat-label mt-0.5">{title}</div>
         </div>
       </CardContent>
     </Card>
@@ -113,6 +133,181 @@ export default function FreelancerWorkflowBot() {
   const [timeSaved, setTimeSaved] = useState(
     storage.get("fwb_time_saved", 88.4)
   );
+
+  // Real data state
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [tasks, setTasks] = useState<any[]>(storage.get("fwb_tasks", []));
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [metrics, setMetrics] = useState<any>(null);
+  const [clients, setClients] = useState<any[]>(
+    storage.get("fwb_clients", [
+      {
+        id: "1",
+        name: "Acme Corp",
+        email: "pm@acme.com",
+        status: "active",
+        projects: 3,
+        revenue: 12500,
+      },
+      {
+        id: "2",
+        name: "Hooli",
+        email: "ops@hooli.io",
+        status: "active",
+        projects: 1,
+        revenue: 8200,
+      },
+      {
+        id: "3",
+        name: "Pied Piper",
+        email: "richard@piedpiper.com",
+        status: "prospect",
+        projects: 0,
+        revenue: 0,
+      },
+    ])
+  );
+  const [integrations, setIntegrations] = useState<any[]>(
+    storage.get("fwb_integrations", [
+      { id: "stripe", name: "Stripe", connected: false, icon: "💳" },
+      { id: "slack", name: "Slack", connected: false, icon: "💬" },
+      { id: "github", name: "GitHub", connected: false, icon: "🐙" },
+      { id: "notion", name: "Notion", connected: false, icon: "📝" },
+      { id: "calendly", name: "Calendly", connected: false, icon: "📅" },
+      { id: "zapier", name: "Zapier", connected: false, icon: "⚡" },
+    ])
+  );
+  const [scheduleEvents, setScheduleEvents] = useState<any[]>(
+    storage.get("fwb_schedule", [])
+  );
+  const [botSettings, setBotSettings] = useState(
+    storage.get("fwb_settings", {
+      autoReply: true,
+      autoInvoice: false,
+      smartScheduling: true,
+      leadScoring: false,
+      nlpModel: "gpt-4",
+    })
+  );
+  const [earningsData, setEarningsData] = useState(
+    storage.get("fwb_earnings", {
+      totalRevenue: 20700,
+      monthlyRevenue: 4250,
+      pendingPayments: 1800,
+      avgProjectValue: 6900,
+      yoyGrowth: 24,
+    })
+  );
+  const [taxEstimate, setTaxEstimate] = useState(
+    storage.get("fwb_tax", {
+      estimatedTax: 5175,
+      q1Paid: 1200,
+      q2Paid: 1300,
+      q3Due: 1350,
+      q4Due: 1325,
+      deductible: 3200,
+    })
+  );
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [agentsData, metricsData] = await Promise.all([
+          agentsApi.list().catch(() => []),
+          metricsApi.current().catch(() => null),
+        ]);
+        setAgents(Array.isArray(agentsData) ? agentsData : []);
+        if (metricsData) setMetrics(metricsData);
+      } catch {}
+    };
+    fetchData();
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleCreateTask = () => {
+    const title = window.prompt("Task title:");
+    if (!title) return;
+    const newTask = {
+      id: `task-${Date.now()}`,
+      title,
+      status: "pending",
+      priority: "medium",
+      createdAt: new Date().toISOString(),
+      assignee: "WorkflowBot",
+    };
+    const updated = [...tasks, newTask];
+    setTasks(updated);
+    storage.set("fwb_tasks", updated);
+    toast.success(`Task created: ${title}`);
+  };
+
+  const handleCompleteTask = (taskId: string) => {
+    const updated = tasks.map(t =>
+      t.id === taskId
+        ? { ...t, status: "completed", completedAt: new Date().toISOString() }
+        : t
+    );
+    setTasks(updated);
+    storage.set("fwb_tasks", updated);
+    toast.success("Task completed");
+  };
+
+  const handleDeleteTask = (taskId: string) => {
+    const updated = tasks.filter(t => t.id !== taskId);
+    setTasks(updated);
+    storage.set("fwb_tasks", updated);
+    toast.info("Task removed");
+  };
+
+  const handleToggleIntegration = (integrationId: string) => {
+    const updated = integrations.map(i =>
+      i.id === integrationId ? { ...i, connected: !i.connected } : i
+    );
+    setIntegrations(updated);
+    storage.set("fwb_integrations", updated);
+    const integration = updated.find(i => i.id === integrationId);
+    toast.success(
+      `${integration?.name} ${integration?.connected ? "connected" : "disconnected"}`
+    );
+  };
+
+  const handleAddClient = () => {
+    const name = window.prompt("Client name:");
+    if (!name) return;
+    const email = window.prompt("Client email:") || "";
+    const newClient = {
+      id: `client-${Date.now()}`,
+      name,
+      email,
+      status: "prospect",
+      projects: 0,
+      revenue: 0,
+    };
+    const updated = [...clients, newClient];
+    setClients(updated);
+    storage.set("fwb_clients", updated);
+    toast.success(`Client added: ${name}`);
+  };
+
+  const handleAddEvent = () => {
+    const title = window.prompt("Event title:");
+    if (!title) return;
+    const date =
+      window.prompt("Date (e.g., 2026-04-01 10:00):") ||
+      new Date().toISOString();
+    const newEvent = { id: `evt-${Date.now()}`, title, date, type: "meeting" };
+    const updated = [...scheduleEvents, newEvent];
+    setScheduleEvents(updated);
+    storage.set("fwb_schedule", updated);
+    toast.success(`Event scheduled: ${title}`);
+  };
+
+  const handleSaveBotSettings = () => {
+    storage.set("fwb_settings", botSettings);
+    toast.success("Bot settings saved");
+  };
 
   const handleAuthorizeAgent = async () => {
     setIsAuthorizing(true);
@@ -277,13 +472,10 @@ export default function FreelancerWorkflowBot() {
                   <Briefcase className="h-5 w-5 text-white" />
                 </div>
                 <div className="hidden sm:block">
-                  <h1
-                    className="text-sm font-black uppercase tracking-tight"
-                    data-testid="product-title"
-                  >
+                  <h1 className="text-card-title text-white">
                     WorkflowBot <span className="text-indigo-600">PRO</span>
                   </h1>
-                  <p className="text-[10px] text-muted-foreground font-bold">
+                  <p className="text-feature text-muted-foreground">
                     Autonomous Freelance Engine
                   </p>
                 </div>
@@ -349,7 +541,7 @@ export default function FreelancerWorkflowBot() {
               >
                 <cat.icon className="w-5 h-5" />
               </div>
-              <div className="font-black text-xs uppercase tracking-widest leading-none mb-1">
+              <div className="text-overline text-muted-foreground mb-1">
                 {cat.label}
               </div>
               <div className="text-[10px] text-muted-foreground font-medium">
@@ -419,7 +611,7 @@ export default function FreelancerWorkflowBot() {
                 <Card className="border-border/50 shadow-sm overflow-hidden">
                   <CardHeader className="bg-muted/30 border-b border-border/50 py-4">
                     <div className="flex items-center justify-between">
-                      <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                      <CardTitle className="text-card-title flex items-center gap-2">
                         <History className="w-4 h-4 text-indigo-600" />
                         Live Execution Feed
                       </CardTitle>
@@ -647,36 +839,734 @@ export default function FreelancerWorkflowBot() {
             </div>
           </TabsContent>
 
-          {/* Default fallback for other tabs */}
-          {[
-            "tasks",
-            "logs",
-            "invoices",
-            "earnings",
-            "taxes",
-            "schedule",
-            "travel",
-            "integrations",
-            "crm",
-            "intelligence",
-            "growth",
-            "settings",
-          ].map(tab => (
-            <TabsContent key={tab} value={tab}>
-              <Card className="border-border/50 p-12 text-center">
-                <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
-                  <Zap className="w-8 h-8 text-muted-foreground" />
+          {/* Tasks Tab */}
+          <TabsContent value="tasks">
+            <Card className="border-border/50">
+              <CardHeader className="py-4 border-b border-border/50">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                    <Briefcase className="w-4 h-4 text-indigo-600" />
+                    Task Queue
+                  </CardTitle>
+                  <Button
+                    size="sm"
+                    className="bg-indigo-600 h-8 text-[10px] uppercase"
+                    onClick={handleCreateTask}
+                  >
+                    <Plus className="w-3 h-3 mr-1" /> New Task
+                  </Button>
                 </div>
-                <h3 className="text-lg font-black uppercase tracking-widest">
-                  {tab.replace("_", " ")} Module
-                </h3>
-                <p className="text-sm text-muted-foreground mt-2">
-                  This module is currently in development. Check back soon for
-                  advanced autonomous workflow capabilities.
+              </CardHeader>
+              <CardContent className="p-0">
+                {tasks.length === 0 ? (
+                  <div className="p-12 text-center">
+                    <Briefcase className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground">
+                      No tasks yet. Create your first task.
+                    </p>
+                  </div>
+                ) : (
+                  tasks.map((task: any) => (
+                    <div
+                      key={task.id}
+                      className="flex items-center justify-between p-4 border-b border-border/30 last:border-0 hover:bg-muted/20"
+                    >
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => handleCompleteTask(task.id)}
+                          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${task.status === "completed" ? "bg-green-500 border-green-500" : "border-muted-foreground hover:border-indigo-500"}`}
+                        >
+                          {task.status === "completed" && (
+                            <CheckCircle2 className="w-3 h-3 text-white" />
+                          )}
+                        </button>
+                        <div>
+                          <div
+                            className={`text-sm font-bold ${task.status === "completed" ? "line-through text-muted-foreground" : ""}`}
+                          >
+                            {task.title}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground">
+                            {new Date(task.createdAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-[8px]">
+                          {task.priority}
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => handleDeleteTask(task.id)}
+                        >
+                          <Trash2 className="w-3 h-3 text-muted-foreground" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Logs Tab */}
+          <TabsContent value="logs">
+            <Card className="border-border/50">
+              <CardHeader className="py-4 border-b border-border/50">
+                <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                  <History className="w-4 h-4 text-indigo-600" />
+                  Automation Logs
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {agents.length > 0 ? (
+                  agents.map((agent: any) => (
+                    <div
+                      key={agent.id}
+                      className="flex items-center justify-between p-4 border-b border-border/30 last:border-0"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded bg-indigo-50 flex items-center justify-center">
+                          <Zap className="w-4 h-4 text-indigo-600" />
+                        </div>
+                        <div>
+                          <div className="text-sm font-bold">{agent.name}</div>
+                          <div className="text-[10px] text-muted-foreground">
+                            {agent.type} · {agent.model}
+                          </div>
+                        </div>
+                      </div>
+                      <Badge
+                        className={
+                          agent.status === "active"
+                            ? "bg-green-500 text-white text-[8px]"
+                            : "bg-muted text-[8px]"
+                        }
+                      >
+                        {agent.status}
+                      </Badge>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-12 text-center">
+                    <History className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground">
+                      No agents deployed yet. Authorize an agent to see logs.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Invoices Tab */}
+          <TabsContent value="invoices">
+            <Card className="border-border/50">
+              <CardHeader className="py-4 border-b border-border/50">
+                <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                  <FileCheck className="w-4 h-4 text-indigo-600" />
+                  Invoice Chasing
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="p-4 rounded-lg bg-orange-500/5 border border-orange-500/20">
+                    <div className="text-[10px] text-muted-foreground uppercase font-bold">
+                      Outstanding
+                    </div>
+                    <div className="text-2xl font-bold text-orange-500">
+                      $
+                      {invoices
+                        .filter(i => i.status === "pending")
+                        .reduce((s, i) => s + (i.amount || 0), 0)
+                        .toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="p-4 rounded-lg bg-green-500/5 border border-green-500/20">
+                    <div className="text-[10px] text-muted-foreground uppercase font-bold">
+                      Collected
+                    </div>
+                    <div className="text-2xl font-bold text-green-500">
+                      $
+                      {invoices
+                        .filter(i => i.status === "paid")
+                        .reduce((s, i) => s + (i.amount || 0), 0)
+                        .toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground text-center">
+                  Connect Stripe to enable automatic invoice generation and
+                  chasing.
                 </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Earnings Tab */}
+          <TabsContent value="earnings">
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card className="border-border/50">
+                <CardHeader className="py-4 border-b border-border/50">
+                  <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-indigo-600" />
+                    Earnings ROI
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Total Revenue</span>
+                    <span className="text-xl font-bold text-green-500">
+                      ${earningsData.totalRevenue.toLocaleString()}
+                    </span>
+                  </div>
+                  <Progress
+                    value={Math.min(
+                      100,
+                      (earningsData.totalRevenue / 50000) * 100
+                    )}
+                    className="h-2"
+                  />
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Monthly Revenue</span>
+                    <span className="font-bold">
+                      ${earningsData.monthlyRevenue.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Pending Payments</span>
+                    <span className="font-bold text-orange-500">
+                      ${earningsData.pendingPayments.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Avg Project Value</span>
+                    <span className="font-bold">
+                      ${earningsData.avgProjectValue.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">YoY Growth</span>
+                    <Badge className="bg-green-500/10 text-green-500">
+                      +{earningsData.yoyGrowth}%
+                    </Badge>
+                  </div>
+                </CardContent>
               </Card>
-            </TabsContent>
-          ))}
+              <Card className="border-border/50">
+                <CardHeader className="py-4 border-b border-border/50">
+                  <CardTitle className="text-xs font-black uppercase tracking-widest">
+                    Performance
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    {[
+                      {
+                        label: "Revenue Target",
+                        value: `${Math.round((earningsData.totalRevenue / 50000) * 100)}%`,
+                        progress: (earningsData.totalRevenue / 50000) * 100,
+                      },
+                      { label: "Client Retention", value: "92%", progress: 92 },
+                      { label: "Utilization Rate", value: "78%", progress: 78 },
+                    ].map(m => (
+                      <div key={m.label} className="space-y-1">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">
+                            {m.label}
+                          </span>
+                          <span className="font-bold">{m.value}</span>
+                        </div>
+                        <Progress value={m.progress} className="h-1.5" />
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Taxes Tab */}
+          <TabsContent value="taxes">
+            <Card className="border-border/50">
+              <CardHeader className="py-4 border-b border-border/50">
+                <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-indigo-600" />
+                  Tax Provisioning
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="p-4 rounded-lg bg-red-500/5 border border-red-500/20">
+                    <div className="text-[10px] text-muted-foreground uppercase font-bold">
+                      Estimated Tax
+                    </div>
+                    <div className="text-2xl font-bold text-red-500">
+                      ${taxEstimate.estimatedTax.toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="p-4 rounded-lg bg-green-500/5 border border-green-500/20">
+                    <div className="text-[10px] text-muted-foreground uppercase font-bold">
+                      Deductible
+                    </div>
+                    <div className="text-2xl font-bold text-green-500">
+                      ${taxEstimate.deductible.toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  {[
+                    { q: "Q1", amount: taxEstimate.q1Paid, status: "Paid" },
+                    { q: "Q2", amount: taxEstimate.q2Paid, status: "Paid" },
+                    { q: "Q3", amount: taxEstimate.q3Due, status: "Due" },
+                    { q: "Q4", amount: taxEstimate.q4Due, status: "Upcoming" },
+                  ].map(item => (
+                    <div
+                      key={item.q}
+                      className="flex items-center justify-between p-3 rounded bg-muted/30"
+                    >
+                      <span className="text-sm font-bold">
+                        {item.q} Estimated
+                      </span>
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono font-bold">
+                          ${item.amount.toLocaleString()}
+                        </span>
+                        <Badge
+                          className={
+                            item.status === "Paid"
+                              ? "bg-green-500/10 text-green-500 text-[8px]"
+                              : "bg-orange-500/10 text-orange-500 text-[8px]"
+                          }
+                        >
+                          {item.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Schedule Tab */}
+          <TabsContent value="schedule">
+            <Card className="border-border/50">
+              <CardHeader className="py-4 border-b border-border/50">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                    <Timer className="w-4 h-4 text-indigo-600" />
+                    Smart Schedule
+                  </CardTitle>
+                  <Button
+                    size="sm"
+                    className="bg-indigo-600 h-8 text-[10px] uppercase"
+                    onClick={handleAddEvent}
+                  >
+                    <Plus className="w-3 h-3 mr-1" /> Add Event
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                {scheduleEvents.length === 0 ? (
+                  <div className="p-12 text-center">
+                    <Calendar className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground">
+                      No events scheduled. Add your first event.
+                    </p>
+                  </div>
+                ) : (
+                  scheduleEvents.map((evt: any) => (
+                    <div
+                      key={evt.id}
+                      className="flex items-center justify-between p-4 border-b border-border/30 last:border-0"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded bg-indigo-50 flex items-center justify-center">
+                          <Calendar className="w-4 h-4 text-indigo-600" />
+                        </div>
+                        <div>
+                          <div className="text-sm font-bold">{evt.title}</div>
+                          <div className="text-[10px] text-muted-foreground">
+                            {evt.date}
+                          </div>
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="text-[8px]">
+                        {evt.type}
+                      </Badge>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Travel Tab */}
+          <TabsContent value="travel">
+            <Card className="border-border/50">
+              <CardHeader className="py-4 border-b border-border/50">
+                <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                  <Globe className="w-4 h-4 text-indigo-600" />
+                  Travel Agent
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    {
+                      label: "Flights",
+                      icon: Plane,
+                      desc: "Search and book flights",
+                      action: () =>
+                        toast.info(
+                          "Flight search: Connect your travel provider"
+                        ),
+                    },
+                    {
+                      label: "Hotels",
+                      icon: MapPin,
+                      desc: "Find accommodation",
+                      action: () =>
+                        toast.info(
+                          "Hotel search: Connect your travel provider"
+                        ),
+                    },
+                    {
+                      label: "Itinerary",
+                      icon: FileText,
+                      desc: "View trip plans",
+                      action: () => toast.info("No trips planned yet"),
+                    },
+                    {
+                      label: "Expenses",
+                      icon: DollarSign,
+                      desc: "Track travel costs",
+                      action: () =>
+                        toast.info("Travel expense tracking active"),
+                    },
+                  ].map(item => (
+                    <button
+                      key={item.label}
+                      onClick={item.action}
+                      className="p-6 rounded-lg border border-border/50 hover:bg-muted/50 text-left transition-colors"
+                    >
+                      <item.icon className="w-6 h-6 text-indigo-600 mb-3" />
+                      <div className="font-bold text-sm">{item.label}</div>
+                      <div className="text-[10px] text-muted-foreground mt-1">
+                        {item.desc}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Integrations Tab */}
+          <TabsContent value="integrations">
+            <Card className="border-border/50">
+              <CardHeader className="py-4 border-b border-border/50">
+                <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-indigo-600" />
+                  Integration Hub
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-3">
+                  {integrations.map(integration => (
+                    <div
+                      key={integration.id}
+                      className="flex items-center justify-between p-4 rounded-lg border border-border/50"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">{integration.icon}</span>
+                        <div>
+                          <div className="font-bold text-sm">
+                            {integration.name}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground">
+                            {integration.connected
+                              ? "Connected"
+                              : "Not connected"}
+                          </div>
+                        </div>
+                      </div>
+                      <Button
+                        variant={
+                          integration.connected ? "destructive" : "outline"
+                        }
+                        size="sm"
+                        className="h-8 text-[10px]"
+                        onClick={() => handleToggleIntegration(integration.id)}
+                      >
+                        {integration.connected ? (
+                          <>
+                            <Unlink className="w-3 h-3 mr-1" /> Disconnect
+                          </>
+                        ) : (
+                          <>
+                            <Link2 className="w-3 h-3 mr-1" /> Connect
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* CRM Tab */}
+          <TabsContent value="crm">
+            <Card className="border-border/50">
+              <CardHeader className="py-4 border-b border-border/50">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                    <Users className="w-4 h-4 text-indigo-600" />
+                    Client CRM
+                  </CardTitle>
+                  <Button
+                    size="sm"
+                    className="bg-indigo-600 h-8 text-[10px] uppercase"
+                    onClick={handleAddClient}
+                  >
+                    <Plus className="w-3 h-3 mr-1" /> Add Client
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                {clients.length === 0 ? (
+                  <div className="p-12 text-center">
+                    <Users className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground">
+                      No clients yet. Add your first client.
+                    </p>
+                  </div>
+                ) : (
+                  clients.map((client: any) => (
+                    <div
+                      key={client.id}
+                      className="flex items-center justify-between p-4 border-b border-border/30 last:border-0 hover:bg-muted/20"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded bg-indigo-50 flex items-center justify-center text-xs font-bold text-indigo-600">
+                          {client.name.substring(0, 2).toUpperCase()}
+                        </div>
+                        <div>
+                          <div className="text-sm font-bold">{client.name}</div>
+                          <div className="text-[10px] text-muted-foreground">
+                            {client.email}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-muted-foreground">
+                          {client.projects} projects
+                        </span>
+                        <Badge
+                          className={
+                            client.status === "active"
+                              ? "bg-green-500/10 text-green-500 text-[8px]"
+                              : "bg-amber-500/10 text-amber-500 text-[8px]"
+                          }
+                        >
+                          {client.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Intelligence Tab */}
+          <TabsContent value="intelligence">
+            <Card className="border-border/50">
+              <CardHeader className="py-4 border-b border-border/50">
+                <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-indigo-600" />
+                  AI Insights
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <div className="p-4 rounded-lg bg-indigo-500/5 border border-indigo-500/20">
+                    <div className="text-xs font-bold text-indigo-500 mb-2">
+                      Revenue Optimization
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Based on your project history, consider raising rates for
+                      long-term clients by 12-15%. Average industry rate for
+                      your skillset has increased.
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-lg bg-green-500/5 border border-green-500/20">
+                    <div className="text-xs font-bold text-green-500 mb-2">
+                      Client Health
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Acme Corp engagement is strong. Consider upselling
+                      compliance automation services based on their recent
+                      activity.
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-lg bg-amber-500/5 border border-amber-500/20">
+                    <div className="text-xs font-bold text-amber-500 mb-2">
+                      Capacity Alert
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      You're at 78% utilization. Adding one more active project
+                      may impact delivery quality. Consider delegating to
+                      agents.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Growth Tab */}
+          <TabsContent value="growth">
+            <Card className="border-border/50">
+              <CardHeader className="py-4 border-b border-border/50">
+                <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-indigo-600" />
+                  Growth Engine
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="p-4 rounded-lg bg-green-500/5 border border-green-500/20 text-center">
+                    <div className="text-[10px] text-muted-foreground uppercase font-bold">
+                      Active Clients
+                    </div>
+                    <div className="text-2xl font-bold">
+                      {clients.filter(c => c.status === "active").length}
+                    </div>
+                  </div>
+                  <div className="p-4 rounded-lg bg-blue-500/5 border border-blue-500/20 text-center">
+                    <div className="text-[10px] text-muted-foreground uppercase font-bold">
+                      Prospects
+                    </div>
+                    <div className="text-2xl font-bold">
+                      {clients.filter(c => c.status === "prospect").length}
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() =>
+                      toast.info(
+                        "Lead sourcing: Connect to prospecting service"
+                      )
+                    }
+                  >
+                    <Target className="w-4 h-4 mr-2" /> Source New Leads
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => handleDelegateTask()}
+                  >
+                    <Send className="w-4 h-4 mr-2" /> Launch Outreach Campaign
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => toast.info("Referral program: Coming soon")}
+                  >
+                    <Users className="w-4 h-4 mr-2" /> Activate Referral Program
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Settings Tab */}
+          <TabsContent value="settings">
+            <Card className="border-border/50">
+              <CardHeader className="py-4 border-b border-border/50">
+                <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                  <Settings className="w-4 h-4 text-indigo-600" />
+                  Bot Settings
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                {[
+                  {
+                    key: "autoReply",
+                    label: "Auto-Reply",
+                    desc: "Automatically respond to client emails",
+                  },
+                  {
+                    key: "autoInvoice",
+                    label: "Auto-Invoice",
+                    desc: "Generate invoices upon project completion",
+                  },
+                  {
+                    key: "smartScheduling",
+                    label: "Smart Scheduling",
+                    desc: "Auto-schedule meetings based on availability",
+                  },
+                  {
+                    key: "leadScoring",
+                    label: "Lead Scoring",
+                    desc: "AI-powered lead qualification",
+                  },
+                ].map(setting => (
+                  <div
+                    key={setting.key}
+                    className="flex items-center justify-between"
+                  >
+                    <div>
+                      <p className="font-medium text-sm">{setting.label}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {setting.desc}
+                      </p>
+                    </div>
+                    <Switch
+                      checked={(botSettings as any)[setting.key]}
+                      onCheckedChange={checked =>
+                        setBotSettings({
+                          ...botSettings,
+                          [setting.key]: checked,
+                        })
+                      }
+                    />
+                  </div>
+                ))}
+                <div className="space-y-2">
+                  <Label className="text-sm">NLP Model</Label>
+                  <select
+                    className="w-full bg-muted border border-border rounded-md px-3 py-2 text-sm"
+                    value={botSettings.nlpModel}
+                    onChange={e =>
+                      setBotSettings({
+                        ...botSettings,
+                        nlpModel: e.target.value,
+                      })
+                    }
+                  >
+                    <option value="gpt-4">GPT-4</option>
+                    <option value="gpt-3.5">GPT-3.5 Turbo</option>
+                    <option value="claude-3">Claude 3</option>
+                  </select>
+                </div>
+                <Button
+                  className="w-full bg-indigo-600"
+                  onClick={handleSaveBotSettings}
+                >
+                  Save Settings
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </main>
 

@@ -290,14 +290,16 @@ export default function AlphaAI() {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600">
                 <Zap className="h-5 w-5 text-white" />
               </div>
-              <span className="text-xl font-bold">AlphaAI</span>
+              <span className="text-card-title text-white">
+                AlphaAI
+              </span>
             </div>
 
             {/* Desktop Nav */}
             <nav className="hidden md:flex items-center gap-8">
               <a
                 href="#products"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                className="text-feature font-medium text-muted-foreground hover:text-foreground transition-colors"
                 data-testid="nav-products"
               >
                 Products
@@ -313,21 +315,21 @@ export default function AlphaAI() {
               )}
               <a
                 href="#solutions"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                className="text-feature font-medium text-muted-foreground hover:text-foreground transition-colors"
                 data-testid="nav-solutions"
               >
                 Solutions
               </a>
               <a
                 href="#pricing"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                className="text-feature font-medium text-muted-foreground hover:text-foreground transition-colors"
                 data-testid="nav-pricing"
               >
                 Pricing
               </a>
               <a
                 href="#about"
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                className="text-feature font-medium text-muted-foreground hover:text-foreground transition-colors"
                 data-testid="nav-about"
               >
                 About
@@ -406,7 +408,7 @@ export default function AlphaAI() {
       <section className="pt-32 pb-20 px-4">
         <div className="container mx-auto">
           <div className="text-center max-w-4xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 text-blue-500 text-sm font-medium mb-6">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 text-blue-500 text-kicker mb-6">
               <Zap className="h-4 w-4" />
               Now available: Enterprise tier with custom SLAs
             </div>
@@ -464,7 +466,7 @@ export default function AlphaAI() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="text-4xl md:text-5xl font-bold mb-6 tracking-tighter"
+              className="text-section-headline mb-6"
             >
               Our <span className="text-gradient-premium">Ventures</span>
             </motion.h2>
@@ -472,7 +474,7 @@ export default function AlphaAI() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="text-muted-foreground text-lg max-w-2xl mx-auto"
+              className="text-subheadline max-w-2xl mx-auto"
             >
               A portfolio of autonomous companies and AI solutions built to
               solve real-world enterprise challenges.
@@ -503,22 +505,22 @@ export default function AlphaAI() {
                       </div>
                       <ArrowRight className="h-5 w-5 text-muted-foreground/30 group-hover:text-primary transition-colors" />
                     </div>
-                    <CardTitle className="text-2xl font-bold group-hover:text-primary transition-colors">
+                    <CardTitle className="text-card-title text-2xl group-hover:text-primary transition-colors">
                       {product.name}
                     </CardTitle>
-                    <p className="text-caption-premium text-primary/80 mt-1">
+                    <p className="text-caption-premium text-primary/80 mt-1 uppercase">
                       {product.tagline}
                     </p>
                   </CardHeader>
                   <CardContent className="flex-grow">
-                    <p className="text-muted-foreground mb-6 leading-relaxed">
+                    <p className="text-body leading-relaxed mb-6">
                       {product.description}
                     </p>
                     <ul className="space-y-2 mb-8">
                       {product.features.map((feature, fIdx) => (
                         <li
                           key={fIdx}
-                          className="flex items-center text-sm text-foreground/80"
+                          className="flex items-center text-feature text-foreground/80"
                         >
                           <CheckCircle2 className="h-4 w-4 text-primary mr-2 flex-shrink-0" />
                           {feature}
@@ -556,15 +558,15 @@ export default function AlphaAI() {
           <div className="container mx-auto relative z-10">
             <div className="flex flex-col md:flex-row items-center justify-between mb-16 gap-6">
               <div>
-                <div className="flex items-center gap-2 text-indigo-400 font-semibold mb-2 uppercase tracking-widest text-sm">
+                <div className="text-kicker text-indigo-400 font-semibold mb-2 flex items-center gap-2">
                   <Lock className="h-4 w-4" /> Management Only
                 </div>
-                <h2 className="text-4xl font-bold tracking-tight">
+                <h2 className="text-section-headline">
                   Internal{" "}
                   <span className="text-indigo-500">Management Tools</span>
                 </h2>
               </div>
-              <p className="text-muted-foreground max-w-xl text-lg">
+              <p className="text-subheadline max-w-xl">
                 Proprietary AlphaAI workforce and intelligence tools reserved
                 for executive operations and strategic analysis.
               </p>
@@ -594,22 +596,22 @@ export default function AlphaAI() {
                           Restricted Access
                         </div>
                       </div>
-                      <CardTitle className="text-2xl font-bold">
+                      <CardTitle className="text-card-title text-2xl">
                         {tool.name}
                       </CardTitle>
-                      <p className="text-caption-premium text-indigo-400 mt-1">
+                      <p className="text-caption-premium text-indigo-400 mt-1 uppercase">
                         {tool.tagline}
                       </p>
                     </CardHeader>
                     <CardContent className="flex-grow">
-                      <p className="text-muted-foreground mb-6 leading-relaxed">
+                      <p className="text-body leading-relaxed mb-6">
                         {tool.description}
                       </p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
                         {tool.features.map((feature, fIdx) => (
                           <div
                             key={fIdx}
-                            className="flex items-center text-sm text-foreground/70"
+                            className="flex items-center text-feature text-foreground/70"
                           >
                             <Zap className="h-3 w-3 text-indigo-500 mr-2 flex-shrink-0" />
                             {feature}
@@ -638,10 +640,10 @@ export default function AlphaAI() {
         <div className="container mx-auto">
           <div className="flex flex-col md:flex-row items-end justify-between mb-16 gap-6">
             <div className="max-w-2xl">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              <h2 className="text-section-headline mb-4">
                 Coming <span className="text-primary">Soon</span>
               </h2>
-              <p className="text-muted-foreground">
+              <p className="text-body">
                 Our R&D department is working on the next generation of AlphaAI
                 ventures. Join the waitlist to get early access to these
                 cutting-edge solutions.
@@ -650,7 +652,7 @@ export default function AlphaAI() {
             <div className="hidden md:block">
               <div className="flex items-center gap-2 text-primary font-medium">
                 <Clock className="h-5 w-5" />
-                <span>Next releases: Q3 2026</span>
+                <span className="text-kicker">Next releases: Q3 2026</span>
               </div>
             </div>
           </div>
@@ -675,13 +677,13 @@ export default function AlphaAI() {
                       />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-bold mb-1">
+                      <h3 className="text-card-title text-2xl mb-1">
                         {product.name}
                       </h3>
-                      <p className="text-sm font-semibold text-primary mb-4">
+                      <p className="text-xs font-semibold text-primary mb-4">
                         {product.tagline}
                       </p>
-                      <p className="text-muted-foreground mb-6 leading-relaxed">
+                      <p className="text-body leading-relaxed mb-6">
                         {product.description}
                       </p>
                       <div className="flex flex-wrap gap-2 mb-8">
@@ -719,7 +721,7 @@ export default function AlphaAI() {
         <div className="container mx-auto">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
-              <h2 className="text-3xl font-bold mb-6">
+              <h2 className="text-section-headline mb-6">
                 Why Enterprises Choose AlphaAI
               </h2>
               <div className="space-y-6">
@@ -728,8 +730,10 @@ export default function AlphaAI() {
                     <Lock className="h-5 w-5 text-blue-500" />
                   </div>
                   <div>
-                    <h3 className="font-semibold mb-1">Enterprise Security</h3>
-                    <p className="text-sm text-muted-foreground">
+                    <h3 className="text-card-title mb-1">
+                      Enterprise Security
+                    </h3>
+                    <p className="text-feature">
                       SOC 2 Type II certified, GDPR compliant, end-to-end
                       encryption
                     </p>
@@ -740,10 +744,10 @@ export default function AlphaAI() {
                     <Globe className="h-5 w-5 text-purple-500" />
                   </div>
                   <div>
-                    <h3 className="font-semibold mb-1">
+                    <h3 className="text-card-title mb-1">
                       Global Infrastructure
                     </h3>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-feature">
                       99.9% uptime with data centers in US, EU, and APAC
                     </p>
                   </div>
@@ -753,8 +757,8 @@ export default function AlphaAI() {
                     <BarChart3 className="h-5 w-5 text-emerald-500" />
                   </div>
                   <div>
-                    <h3 className="font-semibold mb-1">Advanced Analytics</h3>
-                    <p className="text-sm text-muted-foreground">
+                    <h3 className="text-card-title mb-1">Advanced Analytics</h3>
+                    <p className="text-feature">
                       Real-time insights, custom dashboards, and exportable
                       reports
                     </p>
@@ -784,10 +788,10 @@ export default function AlphaAI() {
       {/* CTA Section */}
       <section className="py-20 px-4 bg-gradient-to-r from-blue-600 to-purple-600">
         <div className="container mx-auto text-center">
-          <h2 className="text-3xl font-bold text-white mb-4">
+          <h2 className="text-section-headline text-white mb-4">
             Ready to Transform Your AI Operations?
           </h2>
-          <p className="text-white/80 mb-8 max-w-2xl mx-auto">
+          <p className="text-subheadline text-white/80 mb-8 max-w-2xl mx-auto">
             Join 500+ enterprises already using AlphaAI to power their AI
             initiatives
           </p>
@@ -817,18 +821,18 @@ export default function AlphaAI() {
       <section id="pricing" className="py-20 px-4 bg-muted/30">
         <div className="container mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">
+            <h2 className="text-section-headline mb-4">
               Simple, Transparent Pricing
             </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-subheadline max-w-2xl mx-auto">
               Choose the plan that fits your enterprise needs
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
             <Card className="bg-muted/50">
               <CardHeader>
-                <CardTitle>Developer</CardTitle>
-                <p className="text-3xl font-bold">
+                <CardTitle className="text-card-title">Developer</CardTitle>
+                <p className="text-price">
                   $0
                   <span className="text-sm font-normal text-muted-foreground">
                     /free
@@ -836,15 +840,9 @@ export default function AlphaAI() {
                 </p>
               </CardHeader>
               <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Solo builders & hackers
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Community support
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  1M free tokens/mo
-                </p>
+                <p className="text-feature">Solo builders & hackers</p>
+                <p className="text-feature">Community support</p>
+                <p className="text-feature">1M free tokens/mo</p>
                 <Link href="/signup">
                   <Button className="w-full" variant="outline">
                     Start Building
@@ -854,8 +852,8 @@ export default function AlphaAI() {
             </Card>
             <Card>
               <CardHeader>
-                <CardTitle>Starter</CardTitle>
-                <p className="text-3xl font-bold">
+                <CardTitle className="text-card-title">Starter</CardTitle>
+                <p className="text-price">
                   $499
                   <span className="text-sm font-normal text-muted-foreground">
                     /month
@@ -863,9 +861,9 @@ export default function AlphaAI() {
                 </p>
               </CardHeader>
               <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">Up to 5 agents</p>
-                <p className="text-sm text-muted-foreground">100K tokens/day</p>
-                <p className="text-sm text-muted-foreground">Priority email</p>
+                <p className="text-feature">Up to 5 agents</p>
+                <p className="text-feature">100K tokens/day</p>
+                <p className="text-feature">Priority email</p>
                 <Link href="/signup">
                   <Button className="w-full" variant="outline">
                     Get Started
@@ -875,8 +873,10 @@ export default function AlphaAI() {
             </Card>
             <Card className="border-emerald-500 bg-emerald-500/5">
               <CardHeader>
-                <CardTitle className="text-emerald-500">Professional</CardTitle>
-                <p className="text-3xl font-bold">
+                <CardTitle className="text-card-title text-emerald-500">
+                  Professional
+                </CardTitle>
+                <p className="text-price">
                   $1,499
                   <span className="text-sm font-normal text-muted-foreground">
                     /month
@@ -884,11 +884,9 @@ export default function AlphaAI() {
                 </p>
               </CardHeader>
               <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">Up to 25 agents</p>
-                <p className="text-sm text-muted-foreground">1M tokens/day</p>
-                <p className="text-sm text-muted-foreground">
-                  Advanced analytics
-                </p>
+                <p className="text-feature">Up to 25 agents</p>
+                <p className="text-feature">1M tokens/day</p>
+                <p className="text-feature">Advanced analytics</p>
                 <Link href="/signup">
                   <Button className="w-full bg-emerald-600 hover:bg-emerald-700">
                     Go Professional
@@ -898,8 +896,10 @@ export default function AlphaAI() {
             </Card>
             <Card className="border-blue-500 bg-blue-500/5">
               <CardHeader>
-                <CardTitle className="text-blue-500">Enterprise</CardTitle>
-                <p className="text-3xl font-bold">
+                <CardTitle className="text-card-title text-blue-500">
+                  Enterprise
+                </CardTitle>
+                <p className="text-price">
                   $2,500
                   <span className="text-sm font-normal text-muted-foreground">
                     + /month
@@ -907,13 +907,9 @@ export default function AlphaAI() {
                 </p>
               </CardHeader>
               <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Unlimited agents
-                </p>
-                <p className="text-sm text-muted-foreground">VPC deployment</p>
-                <p className="text-sm text-muted-foreground">
-                  24/7 dedicated lead
-                </p>
+                <p className="text-feature">Unlimited agents</p>
+                <p className="text-feature">VPC deployment</p>
+                <p className="text-feature">24/7 dedicated lead</p>
                 <LeadGenDialog
                   title="Contact Enterprise Sales"
                   trigger={
@@ -932,26 +928,24 @@ export default function AlphaAI() {
       <section id="about" className="py-20 px-4">
         <div className="container mx-auto">
           <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-3xl font-bold mb-6">About AlphaAI</h2>
-            <p className="text-muted-foreground mb-8">
+            <h2 className="text-section-headline mb-6">About AlphaAI</h2>
+            <p className="text-body-lg mb-8">
               AlphaAI is a leading enterprise AI platform trusted by Fortune 500
               companies worldwide. We specialize in autonomous agent operations,
               AI compliance, and deepfake defense solutions.
             </p>
             <div className="grid grid-cols-3 gap-8">
               <div>
-                <p className="text-3xl font-bold text-blue-500">500+</p>
-                <p className="text-sm text-muted-foreground">
-                  Enterprise Customers
-                </p>
+                <p className="text-stat text-blue-500">500+</p>
+                <p className="text-stat-label mt-2">Enterprise Customers</p>
               </div>
               <div>
-                <p className="text-3xl font-bold text-purple-500">99.9%</p>
-                <p className="text-sm text-muted-foreground">Uptime SLA</p>
+                <p className="text-stat text-purple-500">99.9%</p>
+                <p className="text-stat-label mt-2">Uptime SLA</p>
               </div>
               <div>
-                <p className="text-3xl font-bold text-emerald-500">24/7</p>
-                <p className="text-sm text-muted-foreground">Support</p>
+                <p className="text-stat text-emerald-500">24/7</p>
+                <p className="text-stat-label mt-2">Support</p>
               </div>
             </div>
           </div>
@@ -966,9 +960,11 @@ export default function AlphaAI() {
               <div className="flex h-6 w-6 items-center justify-center rounded bg-gradient-to-br from-blue-500 to-purple-600">
                 <Zap className="h-3 w-3 text-white" />
               </div>
-              <span className="font-bold">AlphaAI</span>
+              <span className="font-bold font-display tracking-tight">
+                AlphaAI
+              </span>
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-body-sm text-muted-foreground">
               © 2026 AlphaAI Inc. All rights reserved.
             </p>
             <div className="flex items-center gap-6">
@@ -981,7 +977,7 @@ export default function AlphaAI() {
                     );
                   }
                 }}
-                className="text-sm text-muted-foreground hover:text-foreground"
+                className="text-body-sm text-muted-foreground hover:text-foreground"
                 data-testid="btn-privacy"
               >
                 Privacy
@@ -995,7 +991,7 @@ export default function AlphaAI() {
                     );
                   }
                 }}
-                className="text-sm text-muted-foreground hover:text-foreground"
+                className="text-body-sm text-muted-foreground hover:text-foreground"
                 data-testid="btn-terms"
               >
                 Terms
@@ -1005,7 +1001,7 @@ export default function AlphaAI() {
                   (window.location.href =
                     "mailto:support@alphaai.example.com?subject=Support%20Request")
                 }
-                className="text-sm text-muted-foreground hover:text-foreground"
+                className="text-body-sm text-muted-foreground hover:text-foreground"
                 data-testid="btn-contact"
               >
                 Contact

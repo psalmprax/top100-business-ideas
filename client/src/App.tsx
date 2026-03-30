@@ -17,6 +17,7 @@ import Home from "./pages/Home";
 import LoginPage from "./pages/Login";
 import BillingPage from "./pages/Billing";
 import SettingsPage from "./pages/Settings";
+import VentureDetailPage from "./pages/VentureDetail";
 
 
 import { useAuth } from "./contexts/AuthContext";
@@ -111,6 +112,10 @@ function Router() {
       <Route path={"/dashboard"}>
         {() => { window.location.replace("/products/agent-ops"); return null; }}
       </Route>
+      
+      {/* 130+ Dynamic Ventures */}
+      <Route path="/ventures/:id" component={VentureDetailPage} />
+
       {/* 404 */}
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />

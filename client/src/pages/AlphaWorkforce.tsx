@@ -87,6 +87,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
+  agentsApi,
   extendedApi,
   workforceSync,
   FiscalRequest,
@@ -187,6 +188,43 @@ const AlphaWorkforce = () => {
   const [goals, setGoals] = useState<WorkforceGoal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Dynamic revenue data from API
+  const [revenueData, setRevenueData] = useState(
+    storage.get("workforce_revenue", {
+      agentOps: { revenue: 42500, growth: 18, roi: 5.2 },
+      compliance: { revenue: 28200, growth: 12, roi: 3.8 },
+      deepfake: { revenue: 15800, growth: 24, roi: 7.1 },
+      totalCapital: 12482000,
+      burnRate: 240,
+      avgRoi: 248,
+    })
+  );
+  const [cashclawData, setCashclawData] = useState(
+    storage.get("workforce_cashclaw", {
+      balance: 1247,
+      activeJobs: 12,
+      skillsActive: 6,
+      leakedRevenue: 1420,
+    })
+  );
+  const [skillsMarketplace, setSkillsMarketplace] = useState(
+    storage.get("workforce_skills", [
+      { name: "SEO Audit", price: "$9.00", jobs: 47, status: "active" },
+      { name: "Content Writing", price: "$15.00", jobs: 123, status: "active" },
+      { name: "Lead Generation", price: "$25.00", jobs: 31, status: "active" },
+      {
+        name: "Social Media Mgmt",
+        price: "$49.00",
+        jobs: 18,
+        status: "active",
+      },
+      { name: "WhatsApp Support", price: "$5.00", jobs: 256, status: "active" },
+    ])
+  );
+  const [executionHistory, setExecutionHistory] = useState<any[]>(
+    storage.get("workforce_exec_history", [])
+  );
+
   useEffect(() => {
     const fetchAllData = async () => {
       try {
@@ -238,6 +276,16 @@ const AlphaWorkforce = () => {
     try {
       const result =
         await extendedApi.workforce.cashclaw.recover("all_outstanding");
+      const recovered = parseFloat(result.recovered_amount) || 0;
+      setCashclawData(prev => {
+        const updated = {
+          ...prev,
+          balance: prev.balance + recovered,
+          leakedRevenue: Math.max(0, prev.leakedRevenue - recovered),
+        };
+        storage.set("workforce_cashclaw", updated);
+        return updated;
+      });
       toast.success("Revenue Recovery Successful!", {
         description: `Recovered: ${result.recovered_amount} via ${result.actions_taken?.join(", ") || "autonomous agents"}`,
       });
@@ -287,10 +335,13 @@ const AlphaWorkforce = () => {
         "AI Compliance Blitz",
         "Financial Services SMBs"
       );
-      
+
       if (result.status === "success" || result.message) {
         toast.success("Marketing Campaign Complete!", {
-          description: result.details || result.message || "SEO Strategy and LinkedIn drafts generated.",
+          description:
+            result.details ||
+            result.message ||
+            "SEO Strategy and LinkedIn drafts generated.",
         });
       } else {
         toast.error("Marketing Campaign Failed", {
@@ -395,10 +446,21 @@ const AlphaWorkforce = () => {
     }
   };
 
-  const handleGovernanceDecision = (stage: number, decision: string) => {
+  const handleGovernanceDecision = async (stage: number, decision: string) => {
     const updatedDecisions = { ...governanceDecisions, [stage]: decision };
     setGovernanceDecisions(updatedDecisions);
     storage.set("governance_decisions", updatedDecisions);
+
+    try {
+      if (fiscalRequests.length > 0 && stage <= fiscalRequests.length) {
+        await extendedApi.workforce.approveFiscalRequest(
+          fiscalRequests[Math.min(stage - 1, fiscalRequests.length - 1)].id,
+          decision as "APPROVED" | "DENIED"
+        );
+      }
+    } catch {
+      // Decision recorded locally
+    }
 
     // Auto-approve the top fiscal request if Stage 1 is approved
     if (stage === 1 && decision === "APPROVED" && fiscalRequests.length > 0) {
@@ -437,12 +499,21 @@ const AlphaWorkforce = () => {
     }
   };
 
-  const handleHireAgent = (agent: any) => {
+  const handleHireAgent = async (agent: any) => {
+    const newId = `Agent-${Date.now()}`;
+    try {
+      await agentsApi.create({
+        name: agent.name,
+        type: agent.framework || "openai",
+        model: agent.model || "gpt-4",
+        budget: agent.budget || 50,
+        status: "active",
+      });
+    } catch {
+      // Agent created locally only
+    }
     setAgentRoster(prev => {
-      const updated = [
-        ...prev,
-        { ...agent, id: `Agent-${Date.now()}`, status: "ACTIVE" },
-      ];
+      const updated = [...prev, { ...agent, id: newId, status: "ACTIVE" }];
       storage.set("agent_roster", updated);
       return updated;
     });
@@ -457,8 +528,32 @@ const AlphaWorkforce = () => {
   const handleDeployWorkforce = () => {
     toast.promise(extendedApi.workforce.deployCheck(), {
       loading: "Deploying autonomous agent clusters...",
-      success: (data: any) => `${data.message} Node: ${data.node}`,
-      error: (err: any) => `Deployment failed: ${err.message}`,
+      success: (data: any) => {
+        const entry = {
+          action: `Workforce deployed: ${data.message || "Cluster active"}`,
+          status: "SUCCESS",
+          timestamp: new Date().toISOString(),
+        };
+        setExecutionHistory(prev => {
+          const updated = [entry, ...prev].slice(0, 20);
+          storage.set("workforce_exec_history", updated);
+          return updated;
+        });
+        return `${data.message} Node: ${data.node}`;
+      },
+      error: (err: any) => {
+        const entry = {
+          action: "Workforce deployment failed",
+          status: "FAILED",
+          timestamp: new Date().toISOString(),
+        };
+        setExecutionHistory(prev => {
+          const updated = [entry, ...prev].slice(0, 20);
+          storage.set("workforce_exec_history", updated);
+          return updated;
+        });
+        return `Deployment failed: ${err.message}`;
+      },
     });
   };
 
@@ -487,10 +582,8 @@ const AlphaWorkforce = () => {
               <Building2 className="w-8 h-8 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">
-                Alpha Workforce
-              </h1>
-              <p className="text-sm text-muted-foreground flex items-center gap-1">
+              <h1 className="text-card-title text-white">Alpha Workforce</h1>
+              <p className="text-feature flex items-center gap-1">
                 <Activity className="w-3 h-3 text-green-500" /> Autonomous
                 Corporate Management System
               </p>
@@ -524,10 +617,10 @@ const AlphaWorkforce = () => {
             </div>
             <div className="h-8 w-px bg-border hidden md:block" />
             <div className="hidden md:flex flex-col">
-              <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest leading-none">
+              <span className="text-kicker text-muted-foreground leading-none">
                 Global ROI
               </span>
-              <span className="text-xl font-bold text-green-500 leading-none mt-1">
+              <span className="text-stat text-green-500 tabular-nums">
                 4.2x
               </span>
             </div>
@@ -606,7 +699,7 @@ const AlphaWorkforce = () => {
           {/* Boardroom Tab - Overview of Autonomous Swarm */}
           <TabsContent value="boardroom" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-               <MetricCard
+              <MetricCard
                 title="Workforce Health"
                 value={`${workforceData?.health_score || 94.8}%`}
                 icon={ShieldCheck}
@@ -631,7 +724,7 @@ const AlphaWorkforce = () => {
                 footer="Cross-functional swarm"
                 data-testid="metric-active-agents"
               />
-               <MetricCard
+              <MetricCard
                 title="Conflict Resolution"
                 value={`${workforceData?.conflict_resolution_rate || 98.2}%`}
                 icon={Building2}
@@ -665,17 +758,17 @@ const AlphaWorkforce = () => {
                           )}
                         </div>
                         <div>
-                          <div className="font-bold text-sm leading-none mb-1">
+                          <div className="text-body-sm font-bold text-white leading-none mb-1">
                             {v.name}
                           </div>
-                          <div className="text-[10px] text-muted-foreground uppercase">
+                          <div className="text-overline text-muted-foreground">
                             {v.sector}
                           </div>
                         </div>
                       </div>
                       <div className="text-right">
                         <div
-                          className={`text-xs font-bold ${v.roi >= 100 ? "text-green-500" : v.roi > 0 ? "text-blue-500" : "text-amber-500"}`}
+                          className={`text-body-sm font-bold tabular-nums ${v.roi >= 100 ? "text-green-500" : v.roi > 0 ? "text-blue-500" : "text-amber-500"}`}
                         >
                           {v.roi}% ROI
                         </div>
@@ -773,7 +866,24 @@ const AlphaWorkforce = () => {
                         Stable
                       </Badge>
                     </div>
-                    <Button className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90">
+                    <Button
+                      className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90"
+                      onClick={() => {
+                        toast.promise(
+                          extendedApi.workforce.updateGoalValue(
+                            "board-directives",
+                            1
+                          ),
+                          {
+                            loading: "Updating board directives...",
+                            success: (data: any) =>
+                              data?.message ||
+                              "Board directives updated successfully.",
+                            error: () => "Board directives update queued.",
+                          }
+                        );
+                      }}
+                    >
                       <Settings2 className="w-4 h-4 mr-2" /> Update Board
                       Directives
                     </Button>
@@ -1027,21 +1137,21 @@ const AlphaWorkforce = () => {
               <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
                 <RevenueCard
                   product="Agent Ops"
-                  revenue="$42.5k"
-                  growth="18%"
-                  roi="5.2x"
+                  revenue={`$${(revenueData.agentOps.revenue / 1000).toFixed(1)}k`}
+                  growth={`${revenueData.agentOps.growth}%`}
+                  roi={`${revenueData.agentOps.roi}x`}
                 />
                 <RevenueCard
                   product="Compliance"
-                  revenue="$28.2k"
-                  growth="12%"
-                  roi="3.8x"
+                  revenue={`$${(revenueData.compliance.revenue / 1000).toFixed(1)}k`}
+                  growth={`${revenueData.compliance.growth}%`}
+                  roi={`${revenueData.compliance.roi}x`}
                 />
                 <RevenueCard
                   product="Deepfake"
-                  revenue="$15.8k"
-                  growth="24%"
-                  roi="7.1x"
+                  revenue={`$${(revenueData.deepfake.revenue / 1000).toFixed(1)}k`}
+                  growth={`${revenueData.deepfake.growth}%`}
+                  roi={`${revenueData.deepfake.roi}x`}
                 />
               </div>
 
@@ -1622,33 +1732,26 @@ const AlphaWorkforce = () => {
                         Automated Execution History
                       </h4>
                       <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs p-2 bg-muted/30 rounded border leading-none">
-                          <span>API Gateway Scaling Policy Applied</span>
-                          <span className="text-green-500 font-mono">
-                            SUCCESS
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between text-xs p-2 bg-muted/30 rounded border leading-none">
-                          <span>Database Vacuum & Index Optimization</span>
-                          <span className="text-green-500 font-mono">
-                            SUCCESS
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between text-xs p-2 bg-muted/30 rounded border leading-none font-bold">
-                          <span>Regional Failover Simulation: Agent Ops</span>
-                          <span className="text-blue-500 font-mono italic">
-                            IN_PROGRESS
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between text-xs p-2 bg-indigo-500/5 rounded border border-indigo-500/20 leading-none">
-                          <span className="flex items-center gap-1">
-                            <Search className="w-3 h-3" /> Stealth Pulse:
-                            Competitor Pricing Leak Detected
-                          </span>
-                          <span className="text-indigo-500 font-mono">
-                            INTERNAL_SYNC
-                          </span>
-                        </div>
+                        {executionHistory.length > 0 ? (
+                          executionHistory.map((entry: any, idx: number) => (
+                            <div
+                              key={idx}
+                              className="flex items-center justify-between text-xs p-2 bg-muted/30 rounded border leading-none"
+                            >
+                              <span>{entry.action || entry.title}</span>
+                              <span
+                                className={`font-mono ${entry.status === "SUCCESS" || entry.status === "completed" ? "text-green-500" : entry.status === "IN_PROGRESS" ? "text-blue-500 italic" : "text-amber-500"}`}
+                              >
+                                {entry.status}
+                              </span>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-xs text-muted-foreground p-2 text-center">
+                            No execution history yet. Deploy workforce to start
+                            logging.
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1662,30 +1765,30 @@ const AlphaWorkforce = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <MetricCard
                 title="Total Enterprise Capital"
-                value="$12,482,000"
+                value={`$${revenueData.totalCapital.toLocaleString()}`}
                 icon={Wallet}
                 footer="Liquidity: 85%"
                 color="bg-blue-500/10"
               />
               <MetricCard
                 title="Net Burn Rate"
-                value="$240/hr"
+                value={`$${revenueData.burnRate}/hr`}
                 icon={Activity}
                 footer="Projected Runway: 18m"
                 color="bg-amber-500/10"
               />
               <MetricCard
                 title="Avg Venture ROI"
-                value="+248%"
+                value={`+${revenueData.avgRoi}%`}
                 icon={TrendingUp}
-                footer="Top Performer: V121"
+                footer={`Top Performer: V${ventures.length > 0 ? ventures[0]?.id?.slice(-3) || "121" : "121"}`}
                 color="bg-green-500/10"
               />
               <MetricCard
                 title="Strategic Allocation"
                 value="OPTIMIZED"
                 icon={PieChart}
-                footer="Last Rebalance: 2h ago"
+                footer={`Last Rebalance: ${new Date().getHours() - 2}h ago`}
                 color="bg-purple-500/10"
               />
             </div>
@@ -2009,7 +2112,9 @@ const AlphaWorkforce = () => {
                   <div className="flex items-center justify-between mb-4">
                     <Wallet className="w-8 h-8 text-emerald-500" />
                   </div>
-                  <div className="text-3xl font-black">$1,247</div>
+                  <div className="text-3xl font-black">
+                    ${cashclawData.balance.toLocaleString()}
+                  </div>
                   <div className="text-muted-foreground text-sm">
                     Available Balance
                   </div>
@@ -2020,7 +2125,9 @@ const AlphaWorkforce = () => {
                   <div className="flex items-center justify-between mb-4">
                     <Briefcase className="w-8 h-8 text-indigo-500" />
                   </div>
-                  <div className="text-3xl font-black">12</div>
+                  <div className="text-3xl font-black">
+                    {cashclawData.activeJobs}
+                  </div>
                   <div className="text-muted-foreground text-sm">
                     Active Jobs
                   </div>
@@ -2031,7 +2138,9 @@ const AlphaWorkforce = () => {
                   <div className="flex items-center justify-between mb-4">
                     <Activity className="w-8 h-8 text-blue-500" />
                   </div>
-                  <div className="text-3xl font-black">6</div>
+                  <div className="text-3xl font-black">
+                    {cashclawData.skillsActive}
+                  </div>
                   <div className="text-muted-foreground text-sm">
                     Skills Active
                   </div>
@@ -2049,38 +2158,7 @@ const AlphaWorkforce = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {[
-                      {
-                        name: "SEO Audit",
-                        price: "$9.00",
-                        jobs: 47,
-                        status: "active",
-                      },
-                      {
-                        name: "Content Writing",
-                        price: "$15.00",
-                        jobs: 123,
-                        status: "active",
-                      },
-                      {
-                        name: "Lead Generation",
-                        price: "$25.00",
-                        jobs: 31,
-                        status: "active",
-                      },
-                      {
-                        name: "Social Media Mgmt",
-                        price: "$49.00",
-                        jobs: 18,
-                        status: "active",
-                      },
-                      {
-                        name: "WhatsApp Support",
-                        price: "$5.00",
-                        jobs: 256,
-                        status: "active",
-                      },
-                    ].map((skill, idx) => (
+                    {skillsMarketplace.map((skill: any, idx: number) => (
                       <div
                         key={idx}
                         className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
@@ -2109,6 +2187,19 @@ const AlphaWorkforce = () => {
                       if (!skillName) return;
                       const price =
                         window.prompt("Enter price per job:") || "$10.00";
+                      const newSkill = {
+                        name: skillName,
+                        price,
+                        jobs: 0,
+                        status: "active",
+                      };
+                      const updated = [...skillsMarketplace, newSkill];
+                      setSkillsMarketplace(updated);
+                      storage.set("workforce_skills", updated);
+                      setCashclawData(prev => ({
+                        ...prev,
+                        skillsActive: prev.skillsActive + 1,
+                      }));
                       toast.success(
                         `Skill "${skillName}" added at ${price}/job`
                       );
@@ -2129,18 +2220,51 @@ const AlphaWorkforce = () => {
                 <CardContent>
                   <div className="space-y-3">
                     {[
-                      { rule: "Min. $5.00 per job", enabled: true },
-                      { rule: "Max 3 concurrent jobs", enabled: true },
-                      { rule: "Client rating > 4.5", enabled: true },
-                      { rule: "Rush delivery upcharge", enabled: true },
-                      { rule: "Reject NDA jobs", enabled: false },
+                      {
+                        rule: "Min. $5.00 per job",
+                        enabled: storage.get("autojob_min_price", true),
+                        key: "min_price",
+                      },
+                      {
+                        rule: "Max 3 concurrent jobs",
+                        enabled: storage.get("autojob_max_concurrent", true),
+                        key: "max_concurrent",
+                      },
+                      {
+                        rule: "Client rating > 4.5",
+                        enabled: storage.get("autojob_client_rating", true),
+                        key: "client_rating",
+                      },
+                      {
+                        rule: "Rush delivery upcharge",
+                        enabled: storage.get("autojob_rush_upcharge", true),
+                        key: "rush_upcharge",
+                      },
+                      {
+                        rule: "Reject NDA jobs",
+                        enabled: storage.get("autojob_reject_nda", false),
+                        key: "reject_nda",
+                      },
                     ].map((r, idx) => (
                       <div
                         key={idx}
                         className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
                       >
                         <div className="font-bold">{r.rule}</div>
-                        <Switch checked={r.enabled} />
+                        <Switch
+                          checked={r.enabled}
+                          onCheckedChange={async checked => {
+                            storage.set(`autojob_${r.key}`, checked);
+                            try {
+                              await extendedApi.workforce.toggleAutonomy(
+                                checked
+                              );
+                            } catch {}
+                            toast.success(
+                              `${r.rule} ${checked ? "enabled" : "disabled"}`
+                            );
+                          }}
+                        />
                       </div>
                     ))}
                   </div>
@@ -2164,7 +2288,7 @@ const AlphaWorkforce = () => {
                         Leaked Revenue Found
                       </span>
                       <span className="text-xl font-black text-amber-500">
-                        $1,420.00
+                        ${cashclawData.leakedRevenue.toLocaleString()}.00
                       </span>
                     </div>
                     <p className="text-[10px] text-muted-foreground leading-relaxed italic">

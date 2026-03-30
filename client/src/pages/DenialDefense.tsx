@@ -76,24 +76,42 @@ export default function DenialDefense() {
   const [recoveryRate, setRecoveryRate] = useState(94.2);
   const [revenueRecovered, setRevenueRecovered] = useState(2.4);
 
-  const handleAddClaim = () => {
+  const handleAddClaim = async () => {
     if (!newClaim.id || !newClaim.payer) {
       toast.error("Please fill in Claim ID and Payer");
       return;
     }
-    const updated = [
-      {
-        ...newClaim,
-        amount: parseFloat(newClaim.amount) || 0,
-        status: "New",
-        risk: "Calculating...",
-      },
-      ...activeClaims,
-    ];
+    const claimData = {
+      ...newClaim,
+      amount: parseFloat(newClaim.amount) || 0,
+      status: "New",
+      risk: "Calculating...",
+    };
+    const updated = [claimData, ...activeClaims];
     setActiveClaims(updated);
     storage.set("dd_claims", updated);
     setNewClaim({ id: "", payer: "", amount: "" });
-    toast.success("Claim submitted to Engine");
+
+    try {
+      const result = await mlApi.classifyAgentOperation(
+        `Classify claim risk for ${newClaim.payer} amount ${newClaim.amount}`,
+        "denial-defense"
+      );
+      const riskLevel =
+        result?.confidence && result.confidence > 0.8
+          ? "Low"
+          : result?.confidence && result.confidence > 0.5
+            ? "Medium"
+            : "High";
+      const finalUpdated = updated.map(c =>
+        c.id === newClaim.id ? { ...c, risk: riskLevel } : c
+      );
+      setActiveClaims(finalUpdated);
+      storage.set("dd_claims", finalUpdated);
+      toast.success(`Claim submitted to Engine. Risk: ${riskLevel}`);
+    } catch {
+      toast.success("Claim submitted to Engine (risk calculation pending)");
+    }
   };
 
   const runScrubber = (id: string) => {
@@ -197,7 +215,7 @@ export default function DenialDefense() {
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
                 <Stethoscope className="w-5 h-5 text-white" />
               </div>
-              <h1 className="font-bold tracking-tight text-xl bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
+              <h1 className="text-card-title text-white">
                 DenialDefense{" "}
                 <span className="text-cyan-500 text-xs align-top ml-1">AI</span>
               </h1>
@@ -231,7 +249,7 @@ export default function DenialDefense() {
                 Recovery Rate
               </div>
               <div
-                className="text-3xl font-bold text-white"
+                className="text-stat text-white tabular-nums tracking-tight"
                 data-testid="stat-recovery-rate"
               >
                 {recoveryRate.toFixed(1)}%
@@ -248,7 +266,7 @@ export default function DenialDefense() {
                 Claims Processed
               </div>
               <div
-                className="text-3xl font-bold text-white"
+                className="text-stat text-white tabular-nums tracking-tight"
                 data-testid="stat-claims-processed"
               >
                 12.5K
@@ -264,7 +282,7 @@ export default function DenialDefense() {
                 Pending Denials
               </div>
               <div
-                className="text-3xl font-bold text-white"
+                className="text-stat text-white tabular-nums tracking-tight"
                 data-testid="stat-pending-denials"
               >
                 84
@@ -280,7 +298,7 @@ export default function DenialDefense() {
                 Revenue Recovered
               </div>
               <div
-                className="text-3xl font-bold text-white"
+                className="text-stat text-white tabular-nums tracking-tight"
                 data-testid="stat-revenue-recovered"
               >
                 ${revenueRecovered.toFixed(1)}M
@@ -326,8 +344,10 @@ export default function DenialDefense() {
             <div className="grid gap-6 md:grid-cols-3">
               <Card className="bg-black/40 border-white/5 h-fit">
                 <CardHeader>
-                  <CardTitle className="text-sm">Submit New Claim</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="text-card-title text-sm">
+                    Submit New Claim
+                  </CardTitle>
+                  <CardDescription className="text-feature">
                     Direct injection into the AI Scrubber Engine
                   </CardDescription>
                 </CardHeader>

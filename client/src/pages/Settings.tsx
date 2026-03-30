@@ -109,7 +109,7 @@ export default function Settings() {
           authApi.me(),
           userApi.apiKeys(),
         ]);
-        
+
         if (userData) {
           setProfile({
             name: (userData as any).name || profile.name,
@@ -118,16 +118,18 @@ export default function Settings() {
             role: (userData as any).role || profile.role,
           });
         }
-        
+
         if (Array.isArray(keysData)) {
-          setApiKeys(keysData.map((k: any) => ({
-            id: k.id,
-            name: k.name,
-            key: k.key,
-            status: k.status || "Active",
-            created: k.createdAt || "Recently",
-            hidden: true
-          })));
+          setApiKeys(
+            keysData.map((k: any) => ({
+              id: k.id,
+              name: k.name,
+              key: k.key,
+              status: k.status || "Active",
+              created: k.createdAt || "Recently",
+              hidden: true,
+            }))
+          );
         }
       } catch (err) {
         console.error("Failed to sync settings with backend:", err);
@@ -147,11 +149,11 @@ export default function Settings() {
       await userApi.deleteApiKey(id);
       const result = await userApi.createApiKey(name);
       setApiKeys(prev =>
-        prev.map(k => (k.id === id ? { ...k, key: result.key, id: result.id } : k))
+        prev.map(k =>
+          k.id === id ? { ...k, key: result.key, id: result.id } : k
+        )
       );
-      toast.success(
-        `${name} rotated.`
-      );
+      toast.success(`${name} rotated.`);
     } catch {
       toast.error("Cloud key rotation failed. Service unavailable.");
     }
@@ -204,7 +206,7 @@ export default function Settings() {
         id: result.id,
         name,
         key: result.key,
-        status: "Test Mode",
+        status: result.status || "Active",
         created: new Date().toLocaleDateString("en-US", {
           month: "short",
           day: "numeric",
@@ -214,21 +216,11 @@ export default function Settings() {
       };
       setApiKeys(prev => [...prev, newKey]);
       toast.success(`API Key '${name}' created.`);
-    } catch {
-      const newKey = {
-        id: `key_${Date.now()}`,
-        name,
-        key: `sk_test_${Math.random().toString(36).substring(2, 15)}`,
-        status: "Test Mode",
-        created: new Date().toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        }),
-        hidden: true,
-      };
-      setApiKeys(prev => [...prev, newKey]);
-      toast.success(`API Key '${name}' created locally.`);
+    } catch (err: any) {
+      console.error("Failed to create API key:", err);
+      toast.error(
+        `Failed to create API key: ${err.message || "Service unavailable"}`
+      );
     }
   };
 
@@ -257,6 +249,7 @@ export default function Settings() {
 
   const handleSaveProfile = async () => {
     setIsLoading(true);
+    setSaved(false);
     try {
       await userApi.update({
         name: profile.name,
@@ -265,13 +258,13 @@ export default function Settings() {
       });
       setIsLoading(false);
       setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      setTimeout(() => setSaved(false), 3000);
       toast.success("Profile updated successfully");
-    } catch (err) {
+    } catch (err: any) {
+      console.error("Failed to update profile:", err);
       setIsLoading(false);
-      toast.error("Failed to update profile. Service unavailable.");
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      setSaved(false);
+      toast.error(`Sync Failure: ${err.message || "Endpoint offline"}`);
     }
   };
 
@@ -279,8 +272,12 @@ export default function Settings() {
     <div className="min-h-screen bg-background text-foreground p-8">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-display-hero text-4xl mb-2 font-display tracking-tighter text-white">Settings</h1>
-          <p className="text-subheadline text-base text-white/60 font-outfit tracking-tight">Manage your account and preferences</p>
+          <h1 className="text-display-hero text-white mb-2">
+            Settings
+          </h1>
+          <p className="text-subheadline text-white/60">
+            Manage your account and preferences
+          </p>
         </div>
 
         <Tabs defaultValue="profile" className="space-y-6">
@@ -305,11 +302,11 @@ export default function Settings() {
           <TabsContent value="profile">
             <Card className="bg-card/50 backdrop-blur-sm border-border/50 glass-premium-hover">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 font-display tracking-tight text-white">
+                <CardTitle className="text-card-title flex items-center gap-2 text-white">
                   <UserIcon className="w-5 h-5 text-blue-400" />
                   Profile Information
                 </CardTitle>
-                <CardDescription className="text-slate-400 text-sm tracking-tight font-outfit">
+                <CardDescription className="text-body-sm text-slate-400">
                   Update your personal information
                 </CardDescription>
               </CardHeader>
@@ -362,40 +359,6 @@ export default function Settings() {
                       }
                       className="bg-muted border-border"
                       data-testid="input-profile-role"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={profile.email}
-                      onChange={e =>
-                        setProfile({ ...profile, email: e.target.value })
-                      }
-                      className="bg-muted border-border"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="company">Company</Label>
-                    <Input
-                      id="company"
-                      value={profile.company}
-                      onChange={e =>
-                        setProfile({ ...profile, company: e.target.value })
-                      }
-                      className="bg-muted border-border"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="role">Role</Label>
-                    <Input
-                      id="role"
-                      value={profile.role}
-                      onChange={e =>
-                        setProfile({ ...profile, role: e.target.value })
-                      }
-                      className="bg-muted border-border"
                     />
                   </div>
                 </div>
@@ -521,21 +484,18 @@ export default function Settings() {
                     </div>
                     <Button
                       variant="outline"
-                      className="border-slate-600"
-                      onClick={async () => {
-                        try {
-                          const result = await userApi.update({} as any);
-                          toast.success("Authenticator app linked", {
-                            description: "2FA is now active for your account.",
-                          });
-                        } catch {
-                          toast.success("Authenticator app linked", {
-                            description: "2FA is now active for your account.",
-                          });
-                        }
+                      className="border-slate-600 opacity-50 cursor-not-allowed"
+                      onClick={() => {
+                        toast.info(
+                          "Multi-Factor Authentication is a planned Enterprise feature.",
+                          {
+                            description:
+                              "Contact sales to join the early access waitlist for hardware security keys and TOTP support.",
+                          }
+                        );
                       }}
                     >
-                      Enable
+                      Coming Soon
                     </Button>
                   </div>
                 </CardContent>
@@ -625,12 +585,26 @@ export default function Settings() {
                         checked={
                           notifications[item.key as keyof typeof notifications]
                         }
-                        onCheckedChange={checked =>
-                          setNotifications({
+                        onCheckedChange={async checked => {
+                          const updated = {
                             ...notifications,
                             [item.key]: checked,
-                          })
-                        }
+                          };
+                          setNotifications(updated);
+                          storage.set("settings_notifications", updated);
+                          try {
+                            await userApi.update({
+                              notifications: updated,
+                            } as any);
+                            toast.success(
+                              `${item.label} ${checked ? "enabled" : "disabled"}`
+                            );
+                          } catch {
+                            toast.info(
+                              `${item.label} saved locally (service unavailable)`
+                            );
+                          }
+                        }}
                       />
                     </div>
                   ))}
@@ -662,9 +636,17 @@ export default function Settings() {
                             preferences.theme === theme ? "default" : "outline"
                           }
                           size="sm"
-                          onClick={() =>
-                            setPreferences({ ...preferences, theme })
-                          }
+                          onClick={async () => {
+                            const updated = { ...preferences, theme };
+                            setPreferences(updated);
+                            storage.set("settings_preferences", updated);
+                            try {
+                              await userApi.update({
+                                preferences: updated,
+                              } as any);
+                            } catch {}
+                            toast.success(`Theme set to ${theme}`);
+                          }}
                           className="capitalize"
                         >
                           {theme}
@@ -684,9 +666,19 @@ export default function Settings() {
                               : "outline"
                           }
                           size="sm"
-                          onClick={() =>
-                            setPreferences({ ...preferences, language: lang })
-                          }
+                          onClick={async () => {
+                            const updated = { ...preferences, language: lang };
+                            setPreferences(updated);
+                            storage.set("settings_preferences", updated);
+                            try {
+                              await userApi.update({
+                                preferences: updated,
+                              } as any);
+                            } catch {}
+                            toast.success(
+                              `Language set to ${lang.toUpperCase()}`
+                            );
+                          }}
                         >
                           {lang.toUpperCase()}
                         </Button>
@@ -698,12 +690,18 @@ export default function Settings() {
                     <select
                       className="w-full bg-slate-700 border border-slate-600 rounded-md px-3 py-2"
                       value={preferences.defaultModel}
-                      onChange={e =>
-                        setPreferences({
+                      onChange={async e => {
+                        const updated = {
                           ...preferences,
                           defaultModel: e.target.value,
-                        })
-                      }
+                        };
+                        setPreferences(updated);
+                        storage.set("settings_preferences", updated);
+                        try {
+                          await userApi.update({ preferences: updated } as any);
+                        } catch {}
+                        toast.success(`Default model set to ${e.target.value}`);
+                      }}
                     >
                       <option value="gpt-4">GPT-4</option>
                       <option value="gpt-3.5">GPT-3.5 Turbo</option>
@@ -716,9 +714,19 @@ export default function Settings() {
                     <div className="flex items-center gap-2">
                       <Switch
                         checked={preferences.autoSave}
-                        onCheckedChange={checked =>
-                          setPreferences({ ...preferences, autoSave: checked })
-                        }
+                        onCheckedChange={async checked => {
+                          const updated = { ...preferences, autoSave: checked };
+                          setPreferences(updated);
+                          storage.set("settings_preferences", updated);
+                          try {
+                            await userApi.update({
+                              preferences: updated,
+                            } as any);
+                          } catch {}
+                          toast.success(
+                            `Auto-save ${checked ? "enabled" : "disabled"}`
+                          );
+                        }}
                       />
                       <span className="text-sm text-slate-400">
                         Automatically save changes

@@ -178,10 +178,10 @@ export default function Login() {
               <Rocket className="w-8 h-8 text-blue-500" />
             </div>
           </div>
-          <CardTitle className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
+          <CardTitle className="text-display-hero text-white mb-2">
             AlphaAI Access
           </CardTitle>
-          <CardDescription className="text-slate-400 text-lg">
+          <CardDescription className="text-feature text-slate-400">
             Secure product-aware gateway
           </CardDescription>
         </CardHeader>

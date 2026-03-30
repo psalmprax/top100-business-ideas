@@ -429,7 +429,9 @@ function MetricCard({
     <Card className="glass-premium-hover border-border/40">
       <CardContent className="p-5">
         <div className="flex items-center justify-between">
-          <div className={`p-2.5 rounded-xl ${color} bg-opacity-10 backdrop-blur-sm border border-current border-opacity-10`}>
+          <div
+            className={`p-2.5 rounded-xl ${color} bg-opacity-10 backdrop-blur-sm border border-current border-opacity-10`}
+          >
             <Icon className="w-5 h-5" />
           </div>
           {change !== undefined && (
@@ -446,8 +448,10 @@ function MetricCard({
           )}
         </div>
         <div className="mt-4">
-          <div className="text-3xl font-bold font-display tracking-tighter leading-none mb-1">{value}</div>
-          <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground/70">{title}</div>
+          <div className="text-stat text-white tabular-nums mb-1 tracking-tight">
+            {value}
+          </div>
+          <div className="text-stat-label">{title}</div>
         </div>
         {footer && (
           <div className="mt-4 pt-4 border-t border-border/30 text-[10px] text-muted-foreground italic leading-relaxed">
@@ -482,10 +486,10 @@ function BudgetProgress({ spent, limit }: { spent: number; limit: number }) {
 
   return (
     <div className="space-y-1">
-      <div className="flex justify-between text-sm">
+      <div className="flex justify-between text-sm tabular-nums">
         <span>${(spent ?? 0).toFixed(2)}</span>
-        <span className="text-muted-foreground">
-          ${(limit ?? 10).toFixed(2)}/day
+        <span className="text-muted-foreground opacity-60">
+          ${(limit ?? 10).toFixed(2)} / day
         </span>
       </div>
       <Progress
@@ -971,7 +975,9 @@ export default function AlphaAgentOps() {
       refreshData();
     } catch (e) {
       console.error("Cloning failed", e);
-      toast.error(`Cloning failed: ${e instanceof Error ? e.message : "Unknown error"}`);
+      toast.error(
+        `Cloning failed: ${e instanceof Error ? e.message : "Unknown error"}`
+      );
     }
   };
 
@@ -1053,10 +1059,8 @@ export default function AlphaAgentOps() {
   const handleSSOHandshake = async () => {
     toast.info("Initiating SSO handshake with identity provider...");
     try {
-      const res = await extendedApi.sso.handshake("default") as any;
-      toast.success(
-        res.message || "SSO Handshake Complete! Domain verified."
-      );
+      const res = (await extendedApi.sso.handshake("default")) as any;
+      toast.success(res.message || "SSO Handshake Complete! Domain verified.");
     } catch (e: any) {
       console.error("SSO Handshake failed", e);
       toast.error(
@@ -1607,6 +1611,8 @@ export default function AlphaAgentOps() {
         llmRes,
         alertsRes,
         vigilanceRes,
+        roiRes,
+        healingConfigRes,
       ] = await Promise.all([
         agentsApi.list(),
         extendedApi.agentOps.getAuditLogs(),
@@ -1617,7 +1623,12 @@ export default function AlphaAgentOps() {
         extendedApi.agentOps.listLLMConfigs(),
         extendedApi.alerts.list(),
         extendedApi.agentOps.getVigilanceAlerts(),
+        extendedApi.governance.analytics.getROI(),
+        extendedApi.governance.healing.getConfigs(),
       ]);
+
+      if (Array.isArray(roiRes)) setRoiMetrics(roiRes);
+      if (Array.isArray(healingConfigRes)) setHealingConfigs(healingConfigRes);
 
       // Transform backend Agent[] to frontend DashboardAgent[]
       const transformedAgents: DashboardAgent[] = (
@@ -2156,8 +2167,7 @@ export default function AlphaAgentOps() {
       toast.loading("Provisioning client workspace...");
       await extendedApi.agentOps.provisionClient({
         name: "New Enterprise Partner",
-        master_contract_id:
-          "MC-" + Math.random().toString(36).substr(2, 9).toUpperCase(),
+        master_contract_id: "MC-" + Date.now().toString(36).toUpperCase(),
       });
       refreshData();
       toast.success("Enterprise client space provisioned.");
@@ -2301,7 +2311,9 @@ export default function AlphaAgentOps() {
                     <Shield className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-display-hero text-xl tracking-tighter">AgentOps Sentinel</h1>
+                    <h1 className="text-display-hero text-xl tracking-tighter">
+                      AgentOps Sentinel
+                    </h1>
                     <p className="text-caption-premium text-[9px] text-muted-foreground/60 leading-none mt-0.5">
                       Autonomous AI Governance
                     </p>
@@ -2959,7 +2971,18 @@ export default function AlphaAgentOps() {
                             <TableCell>
                               <div className="flex items-center gap-2">
                                 <Badge variant="outline" className="text-xs">
-                                  {Math.floor(Math.random() * 30) + 70}% used
+                                  {agent.metrics?.totalRequests
+                                    ? Math.min(
+                                        99,
+                                        Math.max(
+                                          60,
+                                          Math.floor(
+                                            agent.metrics.totalRequests / 100
+                                          ) + 70
+                                        )
+                                      )
+                                    : 75}
+                                  % used
                                 </Badge>
                                 <Button
                                   variant="ghost"
@@ -3570,7 +3593,10 @@ export default function AlphaAgentOps() {
                       <div className="flex items-center justify-between">
                         <span>Uptime Assurance</span>
                         <Badge className="bg-emerald-500/10 text-emerald-500 border-none">
-                          {slaDashboard?.current_metrics?.uptime_percentage !== undefined ? `${slaDashboard.current_metrics.uptime_percentage}%` : "---%"}
+                          {slaDashboard?.current_metrics?.uptime_percentage !==
+                          undefined
+                            ? `${slaDashboard.current_metrics.uptime_percentage}%`
+                            : "---%"}
                         </Badge>
                       </div>
                       <div className="flex items-center justify-between">
@@ -4131,7 +4157,9 @@ export default function AlphaAgentOps() {
                                   );
                                   fetchGovernanceData();
                                 } catch (e) {
-                                  toast.error(`Sync failed for ${partner.name}`);
+                                  toast.error(
+                                    `Sync failed for ${partner.name}`
+                                  );
                                 }
                               }}
                             >

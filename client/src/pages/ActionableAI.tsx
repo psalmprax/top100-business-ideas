@@ -58,7 +58,7 @@ export default function ActionableAI() {
           if (data.computeLoad !== undefined) {
             setComputeLoad(data.computeLoad);
           }
-          
+
           // REAL-FIRST: Using direct p99 latency metric
           if (data.p99Latency !== undefined) {
             setLatency(data.p99Latency);
@@ -136,7 +136,9 @@ export default function ActionableAI() {
       await extendedApi.workforce.toggleAutonomy(newState);
       toast.success(newState ? "Engine resumed" : "Engine paused");
     } catch (error: any) {
-      toast.error(`Control Error: ${error.message || "Failed to toggle engine state"}`);
+      toast.error(
+        `Control Error: ${error.message || "Failed to toggle engine state"}`
+      );
     }
   };
 
@@ -150,7 +152,7 @@ export default function ActionableAI() {
         storage.set("actionable_ai_executing", false);
         return "All mission threads terminated safely.";
       },
-      error: (err) => {
+      error: err => {
         setIsTerminating(false);
         return `Termination Failed: ${err.message || "Unknown error"}`;
       },
@@ -171,7 +173,7 @@ export default function ActionableAI() {
             data?.message || "New mission spawned: OMEGA_RECON initialized."
           );
         },
-        error: (err) => {
+        error: err => {
           setIsNewMission(false);
           return `Mission Launch Failed: ${err.message || "Check backend availability"}`;
         },
@@ -202,7 +204,7 @@ export default function ActionableAI() {
                   <Zap className="w-4 h-4 text-orange-500" />
                 </div>
               </div>
-              <h1 className="text-display-hero text-2xl tracking-tighter text-white">
+              <h1 className="text-card-title text-white">
                 Actionable<span className="text-orange-500">AI</span>
               </h1>
             </div>
@@ -232,17 +234,17 @@ export default function ActionableAI() {
         <div className="grid gap-6 md:grid-cols-4 mb-8">
           <Card className="bg-black/40 border-white/5 backdrop-blur-sm">
             <CardContent className="pt-6">
-              <div className="flex items-center gap-2 text-[10px] text-muted-foreground mb-1 uppercase tracking-widest font-bold">
+              <div className="flex items-center gap-2 text-kicker text-muted-foreground mb-1">
                 <Cpu className="w-3 h-3 text-orange-500" /> Compute Load
               </div>
               <div
-                className="text-3xl font-bold text-white"
+                className="text-stat text-white tabular-nums"
                 data-testid="stat-compute-load"
               >
                 {computeLoad !== null ? `${computeLoad.toFixed(1)}%` : "---%"}
               </div>
               <div
-                className="text-[10px] text-muted-foreground mt-2"
+                className="text-feature mt-2"
                 data-testid="stat-active-threads"
               >
                 {activeThreads !== null
@@ -253,42 +255,41 @@ export default function ActionableAI() {
           </Card>
           <Card className="bg-black/40 border-white/5 backdrop-blur-sm">
             <CardContent className="pt-6">
-              <div className="flex items-center gap-2 text-[10px] text-muted-foreground mb-1 uppercase tracking-widest font-bold">
+              <div className="flex items-center gap-2 text-kicker text-muted-foreground mb-1">
                 <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Success
                 Rate
               </div>
-              <div className="text-3xl font-bold text-white">
+              <div className="text-stat text-white tabular-nums">
                 {successRate !== null ? `${successRate}%` : "---%"}
               </div>
-              <div className="text-[10px] text-muted-foreground mt-2">
-                Task resolution accuracy
-              </div>
+              <div className="text-body-sm mt-2 opacity-60">Task resolution accuracy</div>
             </CardContent>
           </Card>
           <Card className="bg-black/40 border-white/5 backdrop-blur-sm">
             <CardContent className="pt-6">
-              <div className="flex items-center gap-2 text-[10px] text-muted-foreground mb-1 uppercase tracking-widest font-bold">
+              <div className="flex items-center gap-2 text-kicker text-muted-foreground mb-1">
                 <Layers className="w-3 h-3 text-blue-500" /> Missions Today
               </div>
-              <div className="text-3xl font-bold text-white">
-                {missionsToday !== null
-                  ? missionsToday.toLocaleString()
-                  : "0"}
+              <div className="text-stat text-white tabular-nums">
+                {missionsToday !== null ? missionsToday.toLocaleString() : "0"}
               </div>
-              <div className="text-[10px] text-muted-foreground mt-2">
+              <div className="text-body-sm mt-2 opacity-60">
                 Real-time daily throughput
               </div>
             </CardContent>
           </Card>
           <Card className="bg-black/40 border-white/5 backdrop-blur-sm">
             <CardContent className="pt-6">
-              <div className="flex items-center gap-2 text-[10px] text-muted-foreground mb-1 uppercase tracking-widest font-bold">
+              <div className="flex items-center gap-2 text-kicker text-muted-foreground mb-1">
                 <Activity className="w-3 h-3 text-purple-500" /> Latency
               </div>
               <div
-                className="text-3xl font-bold text-white"
+                className="text-stat text-white tabular-nums"
                 data-testid="stat-latency"
               >
+                {latency !== null ? `${Math.round(latency)}ms` : "---ms"}
+              </div>
+              <div className="text-feature mt-2" data-testid="stat-p99-time">
                 {latency !== null ? `${Math.round(latency)}ms` : "---ms"}
               </div>
               <div
@@ -307,7 +308,7 @@ export default function ActionableAI() {
             <div className="absolute inset-0 bg-gradient-to-tr from-orange-500/5 via-transparent to-transparent pointer-events-none" />
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle className="text-white">Mission Control</CardTitle>
+                <CardTitle className="text-card-title text-white">Mission Control</CardTitle>
                 <CardDescription>
                   Direct execution and orchestration logs
                 </CardDescription>
@@ -351,7 +352,8 @@ export default function ActionableAI() {
                   ))
                 ) : (
                   <div className="flex items-center justify-center h-full text-muted-foreground italic">
-                    No active mission logs detected. Initialize a new mission to begin.
+                    No active mission logs detected. Initialize a new mission to
+                    begin.
                   </div>
                 )}
                 {isExecuting && missionLogs.length > 0 && (
@@ -360,7 +362,8 @@ export default function ActionableAI() {
                       <span className="text-muted-foreground font-bold">
                         [{new Date().toLocaleTimeString()}]
                       </span>{" "}
-                      <span className="text-orange-500">SYSTEM:</span> Monitoring active thread pool...
+                      <span className="text-orange-500">SYSTEM:</span>{" "}
+                      Monitoring active thread pool...
                     </div>
                   </>
                 )}

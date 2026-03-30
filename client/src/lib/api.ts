@@ -100,7 +100,13 @@ async function apiRequest<T>(
 ): Promise<T> {
     const token = getAuthToken();
     const demoMode = isDemoMode();
-    console.log(`[API_DEBUG] Request to ${endpoint}, demoMode: ${demoMode}`);
+    const method = options.method || 'GET';
+    const isMutation = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(method);
+    
+    // REAL-FIRST: Mutations are always strict unless explicitly opt-out
+    const strict = options.strict !== undefined ? options.strict : isMutation;
+
+    console.log(`[API_DEBUG] ${method} ${endpoint}, demoMode: ${demoMode}, strict: ${strict}`);
 
     const headers: HeadersInit = {
         'Content-Type': 'application/json',
@@ -163,27 +169,27 @@ async function apiRequest<T>(
         });
 
         if (!response.ok) {
-            // Hardening: Propagate definitive API errors (400, 401, 403) without falling back to mocks.
-            // These should be handled by the UI (e.g., redirect to login or show error toast).
-            if (response.status === 401 || response.status === 403 || response.status === 400) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.error || `HTTP Error ${response.status}: ${response.statusText}`);
+            const errorData = await response.json().catch(() => ({}));
+            const errorMessage = errorData.error || `HTTP Error ${response.status}: ${response.statusText}`;
+            
+            // REAL-FIRST: Definitive API errors (4xx) should not fall back to mocks
+            if (response.status >= 400 && response.status < 500) {
+                console.error(`[API Error] REAL-FIRST FAILURE (Client Error ${response.status}): ${errorMessage}`);
+                throw new Error(errorMessage);
             }
-            throw new Error(`HTTP Error ${response.status}: ${response.statusText}`);
+            throw new Error(errorMessage);
         }
 
         return await response.json();
     } catch (e: any) {
-        // REAL-FIRST HARDENING: Fallback to mock data ONLY if the endpoint is explicitly a demo route
-        // and NOT a production mission-critical path.
+        // REAL-FIRST FAILURE HANDLING
         const isDemoRoute = endpoint.includes('/demo/') || endpoint.includes('/mock/');
-        const isCriticalPath = endpoint.includes('/auth/') || endpoint.includes('/billing/') || options.strict === true;
-
-        if (demoMode && isDemoRoute && !isCriticalPath && !e.message.includes('HTTP Error 401') && !e.message.includes('403') && !e.message.includes('400')) {
-            console.warn(`[API Failover] Request to ${normalizedEndpoint} failed (${e.message}). Falling back to mock/simulation data...`);
-            return getMockResponse<T>(endpoint, options.method || 'GET', options.body);
+        
+        if (demoMode && !strict && (isDemoRoute || !endpoint.startsWith('/api/v1/auth'))) {
+            console.warn(`[API Failover] Request to ${normalizedEndpoint} failed (${e.message}). Serving REAL-FALLBACK data...`);
+            return getMockResponse<T>(endpoint, method, options.body);
         } else {
-            console.error(`[API Error] REAL-FIRST FAILURE on ${normalizedEndpoint}:`, e.message);
+            console.error(`[API Error] REAL-FIRST HARD-FAILURE on ${normalizedEndpoint}:`, e.message);
             throw e;
         }
     }
@@ -214,7 +220,9 @@ async function apiBlobRequest(
 
 // Mock response generator for demo mode
 function getMockResponse<T>(endpoint: string, method: string = 'GET', body?: any): T {
-    console.warn(`[SENTINEL_HARDENING] Serving REAL-FALLBACK data for endpoint: ${endpoint}. This should only happen in Demo Mode or when backend is unreachable.`);
+    console.error(`[REAL-FIRST GAPS] SERVING SIMULATED DATA for: ${method} ${endpoint}`);
+    console.warn(`[REAL-FIRST GAPS] Action Required: Implement a real backend solution for this endpoint to eliminate this placeholder.`);
+    
     const id = Math.random().toString(36).substr(2, 9);
 
     // Training modules
@@ -1017,7 +1025,7 @@ export const userApi = {
     apiKeys: () => apiRequest<Array<{ id: string; name: string; key: string; createdAt: string }>>('/api/v1/user/api-keys'),
 
     createApiKey: (name: string) =>
-        apiRequest<{ id: string; key: string }>('/api/v1/user/api-keys', {
+        apiRequest<{ id: string; key: string; status?: string; createdAt?: string }>('/api/v1/user/api-keys', {
             method: 'POST',
             body: JSON.stringify({ name }),
         }),
@@ -1392,10 +1400,18 @@ export const extendedApi = {
             apiRequest<any>('/api/v1/compliance/bias-scan', {
                 method: 'POST',
                 body: JSON.stringify({ modelId }),
+                strict: true,
             }),
         generateDocumentation: (modelId: string) =>
             apiRequest<any>(`/api/v1/compliance/documentation/${modelId}`, {
                 method: 'POST',
+                strict: true,
+            }),
+        eURegister: (modelId: string) =>
+            apiRequest<any>('/api/v1/compliance/eu-register', {
+                method: 'POST',
+                body: JSON.stringify({ model_id: modelId }),
+                strict: true,
             }),
         getLiveMetrics: () => apiRequest<any>('/api/v1/compliance/live-metrics'),
         remediateDrift: (target_id: string) =>
@@ -2059,21 +2075,25 @@ export const extendedApi = {
         analyze: (media_url: string, media_type: string) => apiRequest<any>('/api/v1/deepfake/analyze', {
             method: 'POST',
             body: JSON.stringify({ media_url, media_type }),
+            strict: true,
         }),
         analyzeEnterprise: (data: any) => apiRequest<any>('/api/v1/deepfake/analyze/enterprise', {
             method: 'POST',
             body: JSON.stringify(data),
+            strict: true,
         }),
         getDuressConfig: (user_id: string = "default_user") => 
-            apiRequest<any>(`/api/v1/duress/config/${user_id}`),
+            apiRequest<any>(`/api/v1/duress/config/${user_id}`, { strict: true }),
         updateDuressConfig: (config: any) => 
             apiRequest<any>('/api/v1/duress/config', {
                 method: 'POST',
                 body: JSON.stringify(config),
+                strict: true,
             }),
         runAudit: (type: 'hipaa' | 'sox') => 
             apiRequest<any>(`/api/v1/compliance/audit/${type}`, {
                 method: 'POST',
+                strict: true,
             }),
         train: (dataset_name: string, file: File) => {
             const formData = new FormData();
@@ -2087,6 +2107,7 @@ export const extendedApi = {
         deployModel: (model: any) => apiRequest<any>('/api/v1/deepfake/models', {
             method: 'POST',
             body: JSON.stringify(model),
+            strict: true,
         }),
     },
     governance: {

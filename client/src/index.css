@@ -41,9 +41,10 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* Custom font families */
-  --font-display: 'Syne', sans-serif;
-  --font-body: 'Outfit', sans-serif;
+  /* Premium Typography — Inter UI */
+  --font-display: "Inter", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
 }
 
 :root {
@@ -73,7 +74,7 @@
   --chart-3: oklch(0.75 0.18 75);
   --chart-4: oklch(0.65 0.22 320);
   --chart-5: oklch(0.7 0.2 190);
-  --sidebar: oklch(0.10 0.02 265);
+  --sidebar: oklch(0.1 0.02 265);
   --sidebar-foreground: oklch(0.95 0.005 265);
   --sidebar-primary: oklch(0.65 0.2 250);
   --sidebar-primary-foreground: oklch(0.98 0 0);
@@ -91,12 +92,14 @@
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-body);
-    font-size: 15px;
+    font-size: 16px;
     line-height: 1.6;
-    letter-spacing: -0.015em;
+    letter-spacing: -0.011em;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    font-feature-settings:
+      "cv02", "cv03", "cv04", "cv11";
   }
 
   h1,
@@ -105,10 +108,18 @@
   h4,
   h5,
   h6 {
+    @apply font-bold tracking-tight;
     font-family: var(--font-display);
-    @apply tracking-tighter;
-    letter-spacing: -0.025em;
+    letter-spacing: -0.02em;
     text-wrap: balance;
+  }
+
+  h1 {
+    letter-spacing: -0.04em;
+  }
+
+  h2 {
+    letter-spacing: -0.03em;
   }
 
   button:not(:disabled),
@@ -122,6 +133,11 @@
   input[type="radio"]:not(:disabled) {
     @apply cursor-pointer;
   }
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
 }
 
 @layer components {
@@ -285,7 +301,11 @@
 
 /* Gradient text */
 .gradient-text {
-  background: linear-gradient(135deg, oklch(0.75 0.2 250), oklch(0.72 0.18 145));
+  background: linear-gradient(
+    135deg,
+    oklch(0.75 0.2 250),
+    oklch(0.72 0.18 145)
+  );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -293,7 +313,10 @@
 
 /* Card hover effect */
 .idea-card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .idea-card:hover {
@@ -304,7 +327,6 @@
 
 /* Animated pulse for trend badges */
 @keyframes pulse-glow {
-
   0%,
   100% {
     opacity: 1;
@@ -353,25 +375,135 @@
   animation: card-enter 0.4s ease-out forwards;
 }
 
-/* Premium Typography Utilities */
+/* Premium Typography Utilities — SaaS Grade (Inter Optimized) */
+
+/* Hero display: massive landing headline */
 .text-display-hero {
-  @apply text-5xl md:text-7xl font-bold tracking-tighter;
+  @apply font-black tracking-tighter;
   font-family: var(--font-display);
+  font-size: clamp(2.5rem, 6vw + 1rem, 5rem);
   line-height: 0.95;
+  letter-spacing: -0.05em;
+  text-wrap: balance;
+}
+
+/* Section headline: major section titles */
+.text-section-headline {
+  @apply font-bold tracking-tight;
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 3.5vw + 0.5rem, 3rem);
+  line-height: 1.1;
   letter-spacing: -0.04em;
+  text-wrap: balance;
 }
 
+/* Subheadline: supporting hero/section text */
 .text-subheadline {
-  @apply text-lg md:text-xl font-medium tracking-tight text-muted-foreground;
-  line-height: 1.5;
+  @apply font-medium tracking-tight text-muted-foreground/90;
+  font-size: clamp(1.125rem, 1.5vw + 0.25rem, 1.25rem);
+  line-height: 1.6;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
 }
 
+/* Kicker / Eyebrow: small label above headlines */
+.text-kicker {
+  @apply font-bold uppercase tracking-[0.05em] text-primary;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+/* Caption premium: ultra-refined small labels */
 .text-caption-premium {
-  @apply text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/80;
+  @apply font-semibold uppercase tracking-[0.2em] text-muted-foreground/60;
+  font-size: 0.65rem;
+  line-height: 1;
 }
 
+/* Body large: prominent body copy */
+.text-body-lg {
+  @apply text-foreground/90;
+  font-size: 1.125rem;
+  line-height: 1.6;
+  letter-spacing: -0.012em;
+}
+
+/* Body: standard body copy */
+.text-body {
+  @apply text-foreground/85;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  letter-spacing: -0.008em;
+}
+
+/* Body small: compact body copy */
+.text-body-sm {
+  @apply text-foreground/75;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  letter-spacing: -0.005em;
+}
+
+/* Stat number: large metric display */
+.text-stat {
+  @apply font-bold tracking-tighter tabular-nums;
+  font-family: var(--font-display);
+  font-size: clamp(2.25rem, 4.5vw + 0.5rem, 4rem);
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+
+/* Stat label: text under stat numbers */
+.text-stat-label {
+  @apply font-bold uppercase tracking-[0.15em] text-muted-foreground/50;
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
+/* Card title: for card components */
+.text-card-title {
+  @apply font-bold tracking-tight;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+
+/* Overline: section overline label */
+.text-overline {
+  @apply font-black uppercase tracking-[0.25em] text-primary/80;
+  font-size: 0.6875rem;
+  line-height: 1;
+}
+
+/* Gradient text: premium accent */
 .text-gradient-premium {
-  background: linear-gradient(135deg, oklch(0.65 0.2 250), oklch(0.72 0.18 145), oklch(0.75 0.18 75));
+  background: linear-gradient(
+    135deg,
+    oklch(0.65 0.2 250),
+    oklch(0.72 0.18 145),
+    oklch(0.75 0.18 75)
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Gradient text warm: amber/orange accent */
+.text-gradient-warm {
+  background: linear-gradient(135deg, oklch(0.75 0.18 75), oklch(0.72 0.2 50));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Gradient text cool: blue/cyan accent */
+.text-gradient-cool {
+  background: linear-gradient(
+    135deg,
+    oklch(0.7 0.15 230),
+    oklch(0.75 0.15 200)
+  );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -379,6 +511,23 @@
 
 .text-balance {
   text-wrap: balance;
+}
+
+/* Pricing price text */
+.text-price {
+  @apply font-bold tracking-tighter;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 3vw + 0.5rem, 3rem);
+  line-height: 1;
+  letter-spacing: -0.035em;
+}
+
+/* Feature description text */
+.text-feature {
+  @apply text-foreground/60;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  letter-spacing: -0.005em;
 }
 
 /* Glassmorphism Refinements */
@@ -396,7 +545,7 @@
 }
 
 .noise-overlay::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");

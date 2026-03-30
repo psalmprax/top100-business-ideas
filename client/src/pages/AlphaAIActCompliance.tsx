@@ -226,8 +226,10 @@ function ComplianceScoreCard({
   return (
     <Card>
       <CardContent className="p-4">
-        <div className="text-3xl font-bold">{score}%</div>
-        <div className="text-sm text-muted-foreground">{title}</div>
+        <div className="text-stat text-white tabular-nums">
+          {score}%
+        </div>
+        <div className="text-stat-label mt-0.5">{title}</div>
         <Progress value={score} className="mt-2 h-2" />
       </CardContent>
     </Card>
@@ -294,10 +296,10 @@ const ModelProfileDialog = ({
               <Box className="w-6 h-6 text-blue-500" />
             </div>
             <div>
-              <DialogTitle className="text-xl">
+              <DialogTitle className="text-card-title">
                 {selectedModelForView?.name}
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-body-sm text-slate-400">
                 Technical Compliance Profile & Audit History
               </DialogDescription>
             </div>
@@ -1072,38 +1074,38 @@ const ComplianceChecklistContent = ({
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>EU AI Act Compliance Overview</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-card-title">
+            EU AI Act Compliance Overview
+          </CardTitle>
+          <CardDescription className="text-feature">
             Track compliance status across all EU AI Act requirements
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-4 gap-4 mb-6">
             <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
-              <div className="text-2xl font-bold text-green-500">
+              <div className="text-2xl font-bold font-display tracking-tighter text-green-500">
                 {compliantCount}
               </div>
-              <div className="text-sm text-muted-foreground">Compliant</div>
+              <div className="text-stat-label mt-0.5">Compliant</div>
             </div>
             <div className="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
-              <div className="text-2xl font-bold text-yellow-500">
+              <div className="text-2xl font-bold font-display tracking-tighter text-yellow-500">
                 {inProgressCount}
               </div>
-              <div className="text-sm text-muted-foreground">In Progress</div>
+              <div className="text-stat-label mt-0.5">In Progress</div>
             </div>
             <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
-              <div className="text-2xl font-bold text-red-500">
+              <div className="text-2xl font-bold font-display tracking-tighter text-red-500">
                 {notStartedCount}
               </div>
-              <div className="text-sm text-muted-foreground">Not Started</div>
+              <div className="text-stat-label mt-0.5">Not Started</div>
             </div>
             <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
-              <div className="text-2xl font-bold text-blue-500">
+              <div className="text-2xl font-bold font-display tracking-tighter text-blue-500">
                 {progressPercent}%
               </div>
-              <div className="text-sm text-muted-foreground">
-                Overall Progress
-              </div>
+              <div className="text-stat-label mt-0.5">Overall Progress</div>
             </div>
           </div>
           <Progress value={progressPercent} className="h-2" />
@@ -1116,10 +1118,10 @@ const ComplianceChecklistContent = ({
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="text-lg font-mono font-bold">
+                  <span className="text-lg font-mono font-bold font-display tracking-tight">
                     {article.article}
                   </span>
-                  <span className="font-semibold">{article.title}</span>
+                  <span className="text-card-title">{article.title}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   {getRiskBadge(article.risk)}
@@ -1201,7 +1203,10 @@ const ComplianceChecklistContent = ({
                           </div>
                           <div className="text-right">
                             <p className="text-xs font-mono text-emerald-500">
-                              {lastScanResults[article.article]?.results?.certainty !== undefined ? `${(lastScanResults[article.article].results.certainty * 100).toFixed(1)}% CERTAINTY` : "---% CERTAINTY"}
+                              {lastScanResults[article.article]?.results
+                                ?.certainty !== undefined
+                                ? `${(lastScanResults[article.article].results.certainty * 100).toFixed(1)}% CERTAINTY`
+                                : "---% CERTAINTY"}
                             </p>
                             <p className="text-[10px] text-muted-foreground">
                               LATENCY: 12ms
@@ -2137,16 +2142,7 @@ export default function AlphaAIActCompliance() {
         "Vendor onboarded and assessment triggered (EU AI Act Supply Chain Governance)."
       );
     } catch (error) {
-      toast.error("Failed to onboard vendor. Retrying in demo mode...");
-      const temp: Vendor = {
-        id: `v-demo-${Date.now()}`,
-        ...newVendorData,
-        complianceStatus: "Pending",
-        lastAssessment: new Date(),
-      };
-      setVendors(prev => [...prev, temp]);
-      setShowVendorDialog(false);
-      setNewVendorData({ name: "", type: "model", riskLevel: "medium" });
+      toast.error("Failed to onboard vendor. Please try again.");
     }
   };
 
@@ -2391,15 +2387,7 @@ export default function AlphaAIActCompliance() {
       setSelectedModelForView({ ...selectedModelForView, [key]: value } as any);
       toast.success(`Guardrail updated successfully`);
     } catch (err) {
-      // Fallback: update locally in demo mode
-      setModels(
-        prev =>
-          prev.map(m =>
-            m.id === selectedModelForView.id ? { ...m, [key]: value } : m
-          ) as any[]
-      );
-      setSelectedModelForView({ ...selectedModelForView, [key]: value } as any);
-      toast.success(`Guardrail updated (locally)`);
+      toast.error("Failed to update guardrail. Please try again.");
     }
   };
 
@@ -2453,37 +2441,7 @@ export default function AlphaAIActCompliance() {
         );
       }
     } catch (error) {
-      // Fallback: add locally in demo mode with full structure
-      const score = newModel.endpointUrl
-        ? Math.floor(Math.random() * 30) + 65
-        : 0;
-      const fallbackModel = {
-        ...newModel,
-        id: Math.random().toString(36).substr(2, 9),
-        status:
-          score >= 80 ? "compliant" : score > 0 ? "non_compliant" : "pending",
-        complianceScore: score,
-        lastAudit: new Date(),
-        activeBiasMitigation: false,
-        toxicLanguageFilter: false,
-        promptPrivacyGuard: false,
-      };
-      setModels(prev => [fallbackModel, ...prev] as any[]);
-      setShowModelDialog(false);
-      setNewModelData({
-        name: "",
-        riskCategory: "high",
-        provider: "none",
-        endpointUrl: "",
-        apiKey: "",
-      });
-      if (newModel.endpointUrl) {
-        toast.success(
-          `${fallbackModel.name} scanned! Score: ${fallbackModel.complianceScore}`
-        );
-      } else {
-        toast.success(`${fallbackModel.name} registered for compliance audit.`);
-      }
+      toast.error("Failed to register model. Please try again.");
     } finally {
       setIsScanning(false);
     }
@@ -2563,7 +2521,9 @@ export default function AlphaAIActCompliance() {
                   <Scale className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-display-hero text-xl tracking-tighter">AI Compliance Hub</h1>
+                  <h1 className="text-display-hero text-xl tracking-tighter">
+                    AI Compliance Hub
+                  </h1>
                   <p className="text-caption-premium text-[9px] text-muted-foreground/60 leading-none mt-0.5">
                     EU AI Act Compliance
                   </p>
@@ -2669,7 +2629,9 @@ export default function AlphaAIActCompliance() {
               >
                 <cat.icon className="w-5 h-5" />
               </div>
-              <div className="text-caption-premium text-[11px] mb-1">{cat.label}</div>
+              <div className="text-caption-premium text-[11px] mb-1">
+                {cat.label}
+              </div>
               <div className="text-[10px] text-muted-foreground line-clamp-1 opacity-70">
                 {cat.description}
               </div>
@@ -4508,29 +4470,8 @@ bsContent>
                                           : `${module.title}: ${newProgress}% complete`
                                       );
                                     } catch (error) {
-                                      const newProgress = Math.min(
-                                        (module.progress || 0) + 25,
-                                        100
-                                      );
-                                      const updatedModules =
-                                        trainingModules.map(m =>
-                                          m.id === module.id
-                                            ? {
-                                                ...m,
-                                                progress: newProgress,
-                                                status: (newProgress >= 100
-                                                  ? "completed"
-                                                  : "in_progress") as TrainingModule["status"],
-                                              }
-                                            : m
-                                        );
-                                      setTrainingModules(
-                                        updatedModules as TrainingModule[]
-                                      );
-                                      toast.success(
-                                        newProgress >= 100
-                                          ? `${module.title} completed! Quiz unlocked.`
-                                          : `${module.title}: ${newProgress}% complete`
+                                      toast.error(
+                                        "Failed to update training progress. Please try again."
                                       );
                                     }
                                   }}
@@ -4713,18 +4654,8 @@ bsContent>
                                     `Node ${deployment.name} synchronized.`
                                   );
                                 } catch (error) {
-                                  const updated = edgeDeployments.map(d =>
-                                    d.id === deployment.id
-                                      ? {
-                                          ...d,
-                                          status: "online" as const,
-                                          last_sync: new Date().toISOString(),
-                                        }
-                                      : d
-                                  );
-                                  setEdgeDeployments(updated);
-                                  toast.success(
-                                    `Node ${deployment.name} synchronized (locally).`
+                                  toast.error(
+                                    `Failed to sync node ${deployment.name}. Please try again.`
                                   );
                                 }
                               }}
@@ -4819,15 +4750,8 @@ bsContent>
                                     `Remediation started for ${detection.tool_name}`
                                   );
                                 } catch (error) {
-                                  // Fallback: mark as remediated locally
-                                  const updated = shadowAIDetections.map(d =>
-                                    d.id === detection.id
-                                      ? { ...d, status: "remediated" }
-                                      : d
-                                  );
-                                  setShadowAIDetections(updated);
-                                  toast.success(
-                                    `Remediation started for ${detection.tool_name}`
+                                  toast.error(
+                                    `Failed to start remediation for ${detection.tool_name}. Please try again.`
                                   );
                                 }
                               }}
@@ -5661,8 +5585,8 @@ bsContent>
                           `Risk categorization submitted: ${riskLevel.toUpperCase()}.`
                         );
                       } catch (err) {
-                        toast.success(
-                          `Risk categorization recorded locally: ${riskLevel.toUpperCase()}.`
+                        toast.error(
+                          "Failed to submit risk categorization. Please try again."
                         );
                       }
                     }}
@@ -6061,15 +5985,9 @@ bsContent>
                         "New API token created. Copy it now - it won't be shown again."
                       );
                     } catch (err) {
-                      const newKey = {
-                        id: `key-${Date.now()}`,
-                        name: keyName,
-                        key: `act_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 8)}`,
-                        createdAt: new Date().toISOString().split("T")[0],
-                        scope: "Read Only",
-                      };
-                      setApiKeys(prev => [...prev, newKey]);
-                      toast.success("API token created (local mode).");
+                      toast.error(
+                        "Failed to create API token. Please try again."
+                      );
                     }
                   }}
                 >
@@ -6589,7 +6507,10 @@ bsContent>
                 className="bg-emerald-600 hover:bg-emerald-700"
                 onClick={async () => {
                   try {
-                    const res = await extendedApi.compliance.euRegister("Credit-Model-v2");
+                    const modelId =
+                      selectedModelForView?.id || "Credit-Model-v2";
+                    const res =
+                      await extendedApi.compliance.eURegister(modelId);
                     toast.success(
                       `System registered with EU Central Database. ID: ${res.registration_id}`
                     );

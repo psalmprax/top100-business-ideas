@@ -20,7 +20,8 @@ import {
   AlertTriangle,
   Search,
   MessageSquare,
-  Scale
+  Scale,
+  ExternalLink
 } from "lucide-react";
 import { 
   RadarChart, 
@@ -92,6 +93,15 @@ export function IdeaDetailEnhanced({ idea, onClose }: IdeaDetailEnhancedProps) {
               <DialogTitle className="text-white text-2xl leading-tight" style={{ fontFamily: "'Syne', sans-serif" }}>
                 {idea.title}
               </DialogTitle>
+              <div className="flex items-center gap-4 mt-2">
+                <a 
+                  href={`/ventures/${idea.id}`} 
+                  className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors group"
+                >
+                  <ExternalLink className="w-3 h-3 group-hover:scale-110" />
+                  PERMANENT INTELLIGENCE LINK
+                </a>
+              </div>
             </div>
           </div>
         </DialogHeader>
