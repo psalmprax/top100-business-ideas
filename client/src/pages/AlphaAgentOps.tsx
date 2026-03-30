@@ -2204,20 +2204,6 @@ export default function AlphaAgentOps() {
     }
   };
 
-  const handleProvisionClient = async () => {
-    try {
-      toast.loading("Provisioning client workspace...");
-      await extendedApi.agentOps.provisionClient({
-        name: "New Enterprise Partner",
-        master_contract_id: "MC-" + Date.now().toString(36).toUpperCase(),
-      });
-      refreshData();
-      toast.success("Enterprise client space provisioned.");
-    } catch (e) {
-      toast.error("Failed to provision workspace");
-    }
-  };
-
   const handleViewForensicTrace = (id: string) => {
     setActiveForensicId(id);
     setShowForensicDialog(true);
