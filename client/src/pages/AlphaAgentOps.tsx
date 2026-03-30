@@ -1756,7 +1756,7 @@ export default function AlphaAgentOps() {
         );
         if (healingRes.nodes) setClusterNodes(healingRes.nodes);
       }
-      setLlmConfigs(llmRes as any);
+      setLlmConfigs(Array.isArray(llmRes) ? llmRes : []);
       setAlertConfigs(alertsRes as any);
       if (Array.isArray(vigilanceRes)) {
         setVigilanceAlerts(vigilanceRes);
