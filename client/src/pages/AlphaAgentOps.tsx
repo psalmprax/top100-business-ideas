@@ -740,7 +740,6 @@ export default function AlphaAgentOps() {
   const isDemo = !isAuthenticated;
   const [activeTab, setActiveTab] = useState("overview");
 
-
   // Hardened Logic Handlers (UC12, UC13, UC14)
   const [isProvisioningClient, setIsProvisioningClient] = useState(false);
   const handleProvisionClient = async (data: any = {}) => {
@@ -750,11 +749,13 @@ export default function AlphaAgentOps() {
         name: "New Client Space",
         region: "US-EAST-1",
         tier: "enterprise",
-        ...data
+        ...data,
       });
       toast.success("Enterprise Client Space provisioned successfully.");
     } catch (err) {
-      toast.error("Failed to provision client space. Retrying with simulation...");
+      toast.error(
+        "Failed to provision client space. Retrying with simulation..."
+      );
     } finally {
       setIsProvisioningClient(false);
     }
@@ -764,7 +765,7 @@ export default function AlphaAgentOps() {
   const handleSyncNow = async () => {
     setIsSyncingSSO(true);
     try {
-      await apiRequest('/api/v1/sso/sync', { method: 'POST', strict: true });
+      await apiRequest("/api/v1/sso/sync", { method: "POST", strict: true });
       toast.success("User synchronization event triggered.");
     } catch (err) {
       toast.info("Backend sync unavailable. Simulating local user refresh.");
@@ -773,14 +774,19 @@ export default function AlphaAgentOps() {
     }
   };
 
-  const handleSelfHealingToggle = async (type: 'auto_refine' | 'safety_rollback', val: boolean) => {
+  const handleSelfHealingToggle = async (
+    type: "auto_refine" | "safety_rollback",
+    val: boolean
+  ) => {
     try {
       await extendedApi.sentinel.updateHealingConfig({
-        [type]: val
+        [type]: val,
       });
-      toast.success(`${type.replace('_', ' ')} updated for autonomous governance.`);
+      toast.success(
+        `${type.replace("_", " ")} updated for autonomous governance.`
+      );
     } catch (err) {
-      toast.error(`Failed to update ${type.replace('_', ' ')} policy.`);
+      toast.error(`Failed to update ${type.replace("_", " ")} policy.`);
     }
   };
   // Governance & Advanced State
@@ -2770,7 +2776,10 @@ export default function AlphaAgentOps() {
                           <Switch
                             defaultChecked
                             onCheckedChange={(checked: boolean) =>
-                              handleSelfHealingToggle("safety_rollback", checked)
+                              handleSelfHealingToggle(
+                                "safety_rollback",
+                                checked
+                              )
                             }
                           />
                         </div>
@@ -3406,34 +3415,40 @@ export default function AlphaAgentOps() {
                               </div>
                               <div className="flex items-center gap-2">
                                 {!alert.is_resolved && (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-8 text-[10px] uppercase font-bold text-emerald-500 hover:text-emerald-400 border-emerald-500/20 bg-emerald-500/5"
-                                    onClick={async () => {
-                                      try {
-                                        await extendedApi.agentOps.resolveVigilanceAlert(
-                                          alert.id
-                                        );
-                                        refreshData();
-                                        toast.success(
-                                          "Security anomaly resolved."
-                                        );
-                                      } catch (e) {
-                                        toast.error("Failed to resolve alert");
+                                  <>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-8 text-[10px] uppercase font-bold text-emerald-500 hover:text-emerald-400 border-emerald-500/20 bg-emerald-500/5"
+                                      onClick={async () => {
+                                        try {
+                                          await extendedApi.agentOps.resolveVigilanceAlert(
+                                            alert.id
+                                          );
+                                          refreshData();
+                                          toast.success(
+                                            "Security anomaly resolved."
+                                          );
+                                        } catch (e) {
+                                          toast.error(
+                                            "Failed to resolve alert"
+                                          );
+                                        }
+                                      }}
+                                    >
+                                      RESOLVE
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-8 text-[10px] uppercase font-bold text-zinc-500 hover:text-zinc-400 border-zinc-800"
+                                      onClick={() =>
+                                        handleIgnoreAlert(alert.id)
                                       }
-                                    }}
-                                  >
-                                    RESOLVE
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-8 text-[10px] uppercase font-bold text-zinc-500 hover:text-zinc-400 border-zinc-800"
-                                    onClick={() => handleIgnoreAlert(alert.id)}
-                                  >
-                                    Ignore
-                                  </Button>
+                                    >
+                                      Ignore
+                                    </Button>
+                                  </>
                                 )}
                               </div>
                             </div>
