@@ -878,7 +878,6 @@ export default function AlphaAgentOps() {
 
   // Phase 2 Gaps State
   const [isDeployingLanguage, setIsDeployingLanguage] = useState(false);
-  const [isProvisioningClient, setIsProvisioningClient] = useState(false);
   const [isPerformingForensics, setIsPerformingForensics] = useState(false);
   const [isRollingBack, setIsRollingBack] = useState(false);
   const [ssoConfig, setSsoConfig] = useState<any>({
