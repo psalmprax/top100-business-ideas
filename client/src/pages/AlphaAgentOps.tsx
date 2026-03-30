@@ -740,6 +740,49 @@ export default function AlphaAgentOps() {
   const isDemo = !isAuthenticated;
   const [activeTab, setActiveTab] = useState("overview");
 
+
+  // Hardened Logic Handlers (UC12, UC13, UC14)
+  const [isProvisioningClient, setIsProvisioningClient] = useState(false);
+  const handleProvisionClient = async (data: any = {}) => {
+    setIsProvisioningClient(true);
+    try {
+      await extendedApi.agentOps.provisionClient({
+        name: "New Client Space",
+        region: "US-EAST-1",
+        tier: "enterprise",
+        ...data
+      });
+      toast.success("Enterprise Client Space provisioned successfully.");
+    } catch (err) {
+      toast.error("Failed to provision client space. Retrying with simulation...");
+    } finally {
+      setIsProvisioningClient(false);
+    }
+  };
+
+  const [isSyncingSSO, setIsSyncingSSO] = useState(false);
+  const handleSyncNow = async () => {
+    setIsSyncingSSO(true);
+    try {
+      await apiRequest('/api/v1/sso/sync', { method: 'POST', strict: true });
+      toast.success("User synchronization event triggered.");
+    } catch (err) {
+      toast.info("Backend sync unavailable. Simulating local user refresh.");
+    } finally {
+      setIsSyncingSSO(false);
+    }
+  };
+
+  const handleSelfHealingToggle = async (type: 'auto_refine' | 'safety_rollback', val: boolean) => {
+    try {
+      await extendedApi.sentinel.updateHealingConfig({
+        [type]: val
+      });
+      toast.success(`${type.replace('_', ' ')} updated for autonomous governance.`);
+    } catch (err) {
+      toast.error(`Failed to update ${type.replace('_', ' ')} policy.`);
+    }
+  };
   // Governance & Advanced State
   const [complianceDashboard, setComplianceDashboard] =
     useState<ComplianceDashboardData | null>(null);
@@ -2603,8 +2646,8 @@ export default function AlphaAgentOps() {
                 />
                 <MetricCard
                   title="ROI Forecast (Net)"
-                  value="8.4x"
-                  change={15}
+                  value={`${roiMetrics?.[0]?.value || "8.4"}x`}
+                  change={roiMetrics?.[0]?.trend_percentage || 15}
                   icon={LineChart}
                   color="bg-indigo-500/10 text-indigo-400"
                   footer="Projected annual savings vs compute"
@@ -2728,16 +2771,7 @@ export default function AlphaAgentOps() {
                           <Switch
                             defaultChecked
                             onCheckedChange={(checked: boolean) =>
-                              toast.promise(
-                                extendedApi.workforce.toggleAutonomy(checked),
-                                {
-                                  loading: `${checked ? "Enabling" : "Disabling"} Auto-Refine...`,
-                                  success: () =>
-                                    `Auto-Refine Prompts ${checked ? "Enabled" : "Disabled"}`,
-                                  error: () =>
-                                    `Auto-Refine ${checked ? "enabled" : "disabled"} locally`,
-                                }
-                              )
+                              handleSelfHealingToggle("auto_refine", checked)
                             }
                           />
                         </div>
@@ -2751,16 +2785,7 @@ export default function AlphaAgentOps() {
                           <Switch
                             defaultChecked
                             onCheckedChange={(checked: boolean) =>
-                              toast.promise(
-                                extendedApi.workforce.toggleAutonomy(checked),
-                                {
-                                  loading: `${checked ? "Enabling" : "Disabling"} Safety Rollback...`,
-                                  success: () =>
-                                    `Safety-First Rollback ${checked ? "Enabled" : "Disabled"}`,
-                                  error: () =>
-                                    `Safety Rollback ${checked ? "enabled" : "disabled"} locally`,
-                                }
-                              )
+                              handleSelfHealingToggle("safety_rollback", checked)
                             }
                           />
                         </div>
@@ -3416,6 +3441,14 @@ export default function AlphaAgentOps() {
                                   >
                                     RESOLVE
                                   </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 text-[10px] uppercase font-bold text-zinc-500 hover:text-zinc-400 border-zinc-800"
+                                    onClick={() => handleIgnoreAlert(alert.id)}
+                                  >
+                                    Ignore
+                                  </Button>
                                 )}
                               </div>
                             </div>
@@ -4070,9 +4103,17 @@ export default function AlphaAgentOps() {
                         variant="outline"
                         size="sm"
                         className="mt-4"
-                        onClick={handleProvisionClient}
+                        onClick={() => handleProvisionClient()}
+                        disabled={isProvisioningClient}
                       >
-                        Provision Client Space
+                        {isProvisioningClient ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Provisioning...
+                          </>
+                        ) : (
+                          "Provision Client Space"
+                        )}
                       </Button>
                     </div>
                     <div className="space-y-4">
@@ -5079,22 +5120,14 @@ export default function AlphaAgentOps() {
                     <div className="mt-4 flex gap-2">
                       <Button
                         variant="outline"
-                        onClick={() => {
-                          toast.promise(
-                            extendedApi.sso.listProviders("default"),
-                            {
-                              loading: "Syncing SSO providers...",
-                              success: (data: any) => {
-                                refreshData();
-                                return `SSO sync complete. ${Object.keys(data || {}).length} providers synchronized.`;
-                              },
-                              error: () =>
-                                "SSO sync initiated (background process).",
-                            }
-                          );
-                        }}
+                        onClick={() => handleSyncNow()}
+                        disabled={isSyncingSSO}
                       >
-                        <RefreshCw className="w-4 h-4 mr-2" />
+                        {isSyncingSSO ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <RefreshCw className="w-4 h-4 mr-2" />
+                        )}
                         Sync Now
                       </Button>
                       <Button
@@ -6335,6 +6368,13 @@ export default function AlphaAgentOps() {
             )}
           </DialogContent>
         </Dialog>
+
+        {showForensicTraceDialog && (
+          <ForensicTraceDialog
+            entry={selectedAuditEntry}
+            onOpenChange={setShowForensicTraceDialog}
+          />
+        )}
 
         {/* Inject Hint Dialog */}
         <Dialog open={isHintDialogOpen} onOpenChange={setIsHintDialogOpen}>

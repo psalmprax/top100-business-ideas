@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/top100-business-ideas/api/internal/models"
 	"github.com/top100-business-ideas/api/internal/services"
@@ -177,19 +176,13 @@ func (h *ComplianceHandler) TriggerBiasScan(c *gin.Context) {
 		return
 	}
 
-	// REAL-FIRST: Simulate orchestration with dynamic response structure
-	// This replaces the frontend-side mock data.
-	reports := []gin.H{
-		{"id": "br-gen-001", "modelId": req.ModelID, "biasCategory": "Gender", "disparateImpact": 0.98, "statisticalSignificance": 0.94, "status": "passed", "details": "No significant disparate impact detected in validation set."},
-		{"id": "br-gen-002", "modelId": req.ModelID, "biasCategory": "Race", "disparateImpact": 0.88, "statisticalSignificance": 0.91, "status": "passed", "details": "Controlled subgroup analysis shows parity within 1 standard deviation."},
-		{"id": "br-gen-003", "modelId": req.ModelID, "biasCategory": "Age", "disparateImpact": 0.76, "statisticalSignificance": 0.95, "status": "warning", "details": "Potential skew detected for age groups 55+. Recalibration recommended."},
+	response, err := h.proxyService.TriggerBiasScan(req)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to trigger bias scan", Details: err.Error()})
+		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"reports": reports,
-		"status":  "scan_completed",
-		"ts":      time.Now().Unix(),
-	})
+	c.Data(http.StatusOK, "application/json", response)
 }
 
 func (h *ComplianceHandler) EURegister(c *gin.Context) {
@@ -201,26 +194,25 @@ func (h *ComplianceHandler) EURegister(c *gin.Context) {
 		return
 	}
 
-	// REAL-FIRST: Implementation for Article 51/60 EU Database Registration
-	registrationID := fmt.Sprintf("EU-ACT-%s-%d", req.ModelID, time.Now().Unix()%10000)
-	c.JSON(http.StatusOK, gin.H{
-		"registration_id": registrationID,
-		"status":          "registered",
-		"timestamp":       time.Now().Format(time.RFC3339),
-	})
+	response, err := h.proxyService.Forward("POST", "/compliance/eu-register", req)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to register with EU database", Details: err.Error()})
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json", response)
 }
 
 func (h *ComplianceHandler) GenerateDocumentation(c *gin.Context) {
 	modelID := c.Param("id")
 
-	// REAL-FIRST: Implementation for Article 11 / Annex IV Technical Documentation
-	documentID := fmt.Sprintf("DOC-ANNEX4-%s-%d", modelID, time.Now().Unix()%10000)
-	c.JSON(http.StatusOK, gin.H{
-		"document_id":  documentID,
-		"generated_at": time.Now().Format(time.RFC3339),
-		"status":       "ready",
-		"articles":     []string{"Article 9", "Article 10", "Article 11", "Article 14", "Article 15"},
-	})
+	response, err := h.proxyService.Forward("GET", fmt.Sprintf("/compliance/reports/export?model_id=%s", modelID), nil)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to generate documentation", Details: err.Error()})
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json", response)
 }
 
 func (h *ComplianceHandler) UploadArtifact(c *gin.Context) {

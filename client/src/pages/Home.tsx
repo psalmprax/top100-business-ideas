@@ -177,7 +177,7 @@ function TrendBadge({ trend }: { trend: BusinessIdea["trend"] }) {
   const color = TREND_COLORS[trend];
   return (
     <span
-      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold"
+      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-caption-premium font-semibold"
       style={{
         backgroundColor: color + "22",
         color,
@@ -198,7 +198,7 @@ function SpeedBar({ value, label }: { value: number; label: string }) {
   return (
     <div>
       <div className="flex justify-between items-center mb-1">
-        <span className="text-xs text-white/50">Rollout Speed</span>
+        <span className="text-body-sm text-white/50">Rollout Speed</span>
         <span className="text-xs font-semibold" style={{ color }}>
           {label}
         </span>
@@ -219,7 +219,7 @@ function EarningBar({ value }: { value: number }) {
   return (
     <div>
       <div className="flex justify-between items-center mb-1">
-        <span className="text-xs text-white/50">Earning Potential</span>
+        <span className="text-body-sm text-white/50">Earning Potential</span>
         <span className="text-xs font-semibold text-amber-400">
           {pct >= 50 ? "Very High" : pct >= 25 ? "High" : "Medium"}
         </span>
@@ -424,7 +424,7 @@ function IdeaModal({
               >
                 {idea.category}
               </span>
-              <DialogTitle className="text-white text-xl leading-tight font-display tracking-tight">
+              <DialogTitle className="text-card-title text-white text-xl leading-tight">
                 {idea.title}
               </DialogTitle>
             </div>
@@ -505,9 +505,9 @@ function IdeaModal({
                   style={{ color }}
                 >
                   {icon}
-                  <span className="text-xs text-white/50">{label}</span>
+                  <span className="text-body-sm text-white/50">{label}</span>
                 </div>
-                <div className="text-sm font-bold text-white">{value}</div>
+                <div className="text-body-sm font-bold text-white">{value}</div>
               </div>
             ))}
           </div>
@@ -1049,7 +1049,7 @@ export default function Home() {
             </span>
           </div>
           <div className="flex items-center gap-4">
-            <div className="hidden md:flex items-center gap-6 text-xs text-white/50">
+            <div className="hidden md:flex items-center gap-6 text-body-sm text-white/50">
               <span>US · UK · EU · Canada</span>
               <span
                 className="px-2 py-1 rounded-full text-emerald-400 font-semibold"
@@ -1166,7 +1166,8 @@ export default function Home() {
               Opportunities · Fast Rollout
             </div>
             <h1 className="text-display-hero text-white mb-5">
-              Top 100 <span className="text-gradient-premium">High-Earning</span>
+              Top 100{" "}
+              <span className="text-gradient-premium">High-Earning</span>
               <br />
               Business Ideas 2026
             </h1>

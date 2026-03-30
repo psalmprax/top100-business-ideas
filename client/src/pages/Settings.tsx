@@ -272,9 +272,7 @@ export default function Settings() {
     <div className="min-h-screen bg-background text-foreground p-8">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-display-hero text-white mb-2">
-            Settings
-          </h1>
+          <h1 className="text-display-hero text-white mb-2">Settings</h1>
           <p className="text-subheadline text-white/60">
             Manage your account and preferences
           </p>
@@ -393,11 +391,11 @@ export default function Settings() {
             <div className="space-y-6">
               <Card className="bg-card/50 backdrop-blur-sm border-border/50 glass-premium-hover">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 font-display tracking-tight text-white">
+                  <CardTitle className="flex items-center gap-2 text-card-title">
                     <Lock className="w-5 h-5 text-amber-400" />
                     Change Password
                   </CardTitle>
-                  <CardDescription className="text-slate-400 text-sm tracking-tight font-outfit">
+                  <CardDescription className="text-body-sm">
                     Update your password regularly for security
                   </CardDescription>
                 </CardHeader>
@@ -466,19 +464,21 @@ export default function Settings() {
 
               <Card className="bg-card/50 backdrop-blur-sm border-border/50 glass-premium-hover">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 font-display tracking-tight text-white">
+                  <CardTitle className="flex items-center gap-2 text-card-title">
                     <Shield className="w-5 h-5 text-emerald-400" />
                     Two-Factor Authentication
                   </CardTitle>
-                  <CardDescription className="text-slate-400 text-sm tracking-tight font-outfit">
+                  <CardDescription className="text-body-sm">
                     Add an extra layer of security to your account
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium">Authenticator App</p>
-                      <p className="text-sm text-slate-400">
+                      <p className="text-body-sm font-medium">
+                        Authenticator App
+                      </p>
+                      <p className="text-body-sm">
                         Use an app like Google Authenticator
                       </p>
                     </div>
@@ -503,19 +503,19 @@ export default function Settings() {
 
               <Card className="bg-card/50 backdrop-blur-sm border-border/50 glass-premium-hover">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-red-400 font-display tracking-tight">
+                  <CardTitle className="flex items-center gap-2 text-card-title text-red-400">
                     <LogOut className="w-5 h-5" />
                     Danger Zone
                   </CardTitle>
-                  <CardDescription className="text-slate-400 text-sm tracking-tight font-outfit">
+                  <CardDescription className="text-body-sm">
                     Irreversible actions
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between p-4 rounded-lg bg-red-500/10 border border-red-500/20">
                     <div>
-                      <p className="font-medium">Delete Account</p>
-                      <p className="text-sm text-slate-400">
+                      <p className="text-body-sm font-medium">Delete Account</p>
+                      <p className="text-body-sm">
                         Permanently delete your account and all data
                       </p>
                     </div>
@@ -536,11 +536,11 @@ export default function Settings() {
           <TabsContent value="notifications">
             <Card className="bg-card/50 backdrop-blur-sm border-border/50 glass-premium-hover">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 font-display tracking-tight text-white">
+                <CardTitle className="flex items-center gap-2 text-card-title">
                   <Bell className="w-5 h-5 text-purple-400" />
                   Notification Preferences
                 </CardTitle>
-                <CardDescription className="text-slate-400 text-sm tracking-tight font-outfit">
+                <CardDescription className="text-body-sm">
                   Choose how you want to be notified
                 </CardDescription>
               </CardHeader>
@@ -578,8 +578,8 @@ export default function Settings() {
                       className="flex items-center justify-between"
                     >
                       <div>
-                        <p className="font-medium">{item.label}</p>
-                        <p className="text-sm text-slate-400">{item.desc}</p>
+                        <p className="text-body-sm font-medium">{item.label}</p>
+                        <p className="text-body-sm">{item.desc}</p>
                       </div>
                       <Switch
                         checked={
@@ -616,11 +616,11 @@ export default function Settings() {
           <TabsContent value="preferences">
             <Card className="bg-card/50 backdrop-blur-sm border-border/50 glass-premium-hover">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 font-display tracking-tight text-white">
+                <CardTitle className="flex items-center gap-2 text-card-title">
                   <Monitor className="w-5 h-5 text-indigo-400" />
                   User Preferences
                 </CardTitle>
-                <CardDescription className="text-slate-400 text-sm tracking-tight font-outfit">
+                <CardDescription className="text-body-sm">
                   Customize your experience
                 </CardDescription>
               </CardHeader>
@@ -728,7 +728,7 @@ export default function Settings() {
                           );
                         }}
                       />
-                      <span className="text-sm text-slate-400">
+                      <span className="text-body-sm">
                         Automatically save changes
                       </span>
                     </div>
@@ -742,11 +742,11 @@ export default function Settings() {
             <div className="space-y-6">
               <Card className="bg-card/50 backdrop-blur-sm border-border/50 glass-premium-hover">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 font-display tracking-tight text-white">
+                  <CardTitle className="flex items-center gap-2 text-card-title">
                     <Key className="w-5 h-5 text-yellow-400" />
                     API Keys
                   </CardTitle>
-                  <CardDescription className="text-slate-400 text-sm tracking-tight font-outfit">
+                  <CardDescription className="text-body-sm">
                     Manage your API keys for programmatic access
                   </CardDescription>
                 </CardHeader>
@@ -757,7 +757,7 @@ export default function Settings() {
                       className="p-4 rounded-lg bg-slate-700/50 border border-slate-600"
                     >
                       <div className="flex items-center justify-between mb-2">
-                        <p className="font-medium">{key.name}</p>
+                        <p className="text-body-sm font-medium">{key.name}</p>
                         <Badge
                           className={
                             key.id === "prod"
@@ -769,7 +769,7 @@ export default function Settings() {
                         </Badge>
                       </div>
                       <div className="flex items-center gap-2 mb-2">
-                        <p className="font-mono text-sm text-slate-400">
+                        <p className="font-mono text-body-sm">
                           {key.hidden
                             ? `${key.key.substring(0, 8)}••••••••••••••••••••••••`
                             : key.key}
@@ -819,11 +819,11 @@ export default function Settings() {
 
               <Card className="bg-card/50 backdrop-blur-sm border-border/50 glass-premium-hover">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 text-card-title">
                     <Globe className="w-5 h-5" />
                     Webhooks
                   </CardTitle>
-                  <CardDescription className="text-slate-400">
+                  <CardDescription className="text-body-sm">
                     Configure webhooks for real-time events
                   </CardDescription>
                 </CardHeader>

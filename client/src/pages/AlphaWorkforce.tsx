@@ -126,7 +126,7 @@ const SovereignStageItem = ({
         >
           {stage}
         </span>
-        <span className="font-bold text-sm tracking-tight">{name}</span>
+        <span className="text-card-title tracking-tight">{name}</span>
       </div>
       <Badge
         variant="outline"
@@ -135,9 +135,7 @@ const SovereignStageItem = ({
         {currentDecision || status.replace("_", " ")}
       </Badge>
     </div>
-    <p className="text-[10px] text-muted-foreground leading-tight pl-7">
-      {description}
-    </p>
+    <p className="text-caption-premium leading-tight pl-7">{description}</p>
 
     {!isAutonomous && !currentDecision && onDecision && (
       <div className="flex gap-2 mt-3 pl-7">
@@ -595,7 +593,7 @@ const AlphaWorkforce = () => {
               <div className="flex flex-col items-end">
                 <Label
                   htmlFor="auto-mode"
-                  className="text-xs font-bold uppercase tracking-wider text-muted-foreground"
+                  className="text-caption-premium text-muted-foreground"
                 >
                   Autonomous Company Mode
                 </Label>
@@ -734,7 +732,7 @@ const AlphaWorkforce = () => {
             </div>
 
             <div className="mt-8">
-              <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-4 flex items-center gap-2">
+              <h3 className="text-overline mb-4 flex items-center gap-2">
                 <Cpu className="w-4 h-4" /> Alpha Quartet: Product Management
                 Engine
               </h3>
@@ -772,9 +770,7 @@ const AlphaWorkforce = () => {
                         >
                           {v.roi}% ROI
                         </div>
-                        <div className="text-[10px] text-muted-foreground">
-                          {v.status}
-                        </div>
+                        <div className="text-caption-premium">{v.status}</div>
                       </div>
                     </CardContent>
                   </Card>
@@ -949,7 +945,7 @@ const AlphaWorkforce = () => {
                   currentDecision={governanceDecisions[5]}
                 />
                 <div className="pt-4 mt-4 border-t border-indigo-500/20">
-                  <div className="flex items-center justify-between text-[11px] text-indigo-400/80 uppercase font-bold mb-3">
+                  <div className="flex items-center justify-between text-caption-premium text-indigo-400/80 mb-3">
                     <span>Active Governance Link</span>
                     <span className="flex items-center gap-1">
                       <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />{" "}
@@ -1001,7 +997,7 @@ const AlphaWorkforce = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="p-4 rounded-xl bg-background border border-indigo-500/10">
-                    <h4 className="font-bold text-indigo-500 mb-2">
+                    <h4 className="text-body-sm font-bold text-indigo-500 mb-2">
                       Ideal Customer Profile (ICP)
                     </h4>
                     <ul className="space-y-2 text-sm">
@@ -1034,11 +1030,11 @@ const AlphaWorkforce = () => {
               <Card className="shadow-lg border-indigo-500/10">
                 <CardHeader className="bg-indigo-500/5">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-md flex items-center gap-2">
+                    <CardTitle className="text-card-title flex items-center gap-2">
                       <Target className="w-5 h-5 text-indigo-500" /> Strategy
                       Refinement Lab
                     </CardTitle>
-                    <div className="text-[10px] font-mono text-muted-foreground uppercase px-2 py-0.5 rounded border border-indigo-500/20">
+                    <div className="text-caption-premium px-2 py-0.5 rounded border border-indigo-500/20">
                       Live Iteration
                     </div>
                   </div>
@@ -1059,10 +1055,10 @@ const AlphaWorkforce = () => {
                   </div>
                   <div className="p-4 rounded-lg bg-green-500/5 border border-green-500/20 mt-4">
                     <div className="flex items-center justify-between mb-2">
-                      <div className="text-xs font-bold text-green-600 uppercase">
+                      <div className="text-caption-premium text-green-600">
                         Aggregated ROI Lift
                       </div>
-                      <div className="text-lg font-black text-green-500">
+                      <div className="text-body-lg font-black text-green-500">
                         +42%
                       </div>
                     </div>
@@ -1104,8 +1100,8 @@ const AlphaWorkforce = () => {
               <div className="flex items-center gap-3">
                 <TrendingUp className="w-5 h-5 text-purple-500" />
                 <div>
-                  <div className="font-bold text-sm">Growth Engine Active</div>
-                  <div className="text-[10px] text-muted-foreground uppercase">
+                  <div className="text-card-title">Growth Engine Active</div>
+                  <div className="text-caption-premium">
                     Multi-Agent Coordination Matrix
                   </div>
                 </div>
@@ -1165,7 +1161,7 @@ const AlphaWorkforce = () => {
                 <CardContent className="pb-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-3">
-                      <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                      <h4 className="text-caption-premium">
                         Recent Acquisition Wins
                       </h4>
                       <div className="space-y-2">
@@ -1190,7 +1186,7 @@ const AlphaWorkforce = () => {
                       </div>
                     </div>
                     <div className="space-y-3">
-                      <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                      <h4 className="text-caption-premium">
                         Strategy ROI Refinement
                       </h4>
                       <div className="p-4 rounded-xl bg-background border border-indigo-500/10 space-y-4">
@@ -1203,7 +1199,7 @@ const AlphaWorkforce = () => {
                           </span>
                         </div>
                         <Progress value={85} className="h-1" />
-                        <div className="text-[10px] text-muted-foreground italic leading-relaxed">
+                        <div className="text-caption-premium italic leading-relaxed">
                           "AI Marketing has refined the cold-email strategy for
                           Deepfake Defense by shifting from 'Security Focus' to
                           'Executive Liability Focus'—resulting in a{" "}
@@ -1249,7 +1245,7 @@ const AlphaWorkforce = () => {
                 </div>
                 <Card className="mt-6 border-green-500/10 shadow-lg">
                   <CardHeader className="bg-green-500/5">
-                    <CardTitle className="text-md flex items-center gap-2">
+                    <CardTitle className="text-card-title flex items-center gap-2">
                       <Shield className="w-5 h-5 text-green-500" /> Offer
                       Engineering
                     </CardTitle>
@@ -1257,7 +1253,7 @@ const AlphaWorkforce = () => {
                   <CardContent className="py-6 space-y-4">
                     <div className="grid md:grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <Label className="text-muted-foreground uppercase text-[10px] font-bold">
+                        <Label className="text-caption-premium">
                           Current Offer
                         </Label>
                         <div className="p-4 rounded-lg bg-muted/30 font-medium italic border border-primary/5">
@@ -1266,7 +1262,7 @@ const AlphaWorkforce = () => {
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-muted-foreground uppercase text-[10px] font-bold">
+                        <Label className="text-caption-premium">
                           Experiment In Progress
                         </Label>
                         <div className="p-4 rounded-lg bg-blue-500/5 border border-blue-500/20 text-blue-500">
@@ -1455,7 +1451,7 @@ const AlphaWorkforce = () => {
                           </TableCell>
                         </TableRow>
                         <TableRow>
-                          <TableCell className="font-bold text-indigo-500">
+                          <TableCell className="text-body-sm font-bold text-indigo-500">
                             Deepfake
                           </TableCell>
                           <TableCell>High-Alpha Moat</TableCell>
@@ -1503,7 +1499,7 @@ const AlphaWorkforce = () => {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="space-y-2">
-                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">
+                        <Label className="text-caption-premium">
                           Inbound Feedback Data
                         </Label>
                         <textarea
@@ -1593,7 +1589,7 @@ const AlphaWorkforce = () => {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="space-y-2">
-                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">
+                        <Label className="text-caption-premium">
                           Inbound Customer Query
                         </Label>
                         <Input
@@ -1677,7 +1673,7 @@ const AlphaWorkforce = () => {
                   <CardContent className="pb-6">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="p-3 rounded-lg border bg-background/50">
-                        <div className="text-[10px] font-bold uppercase text-muted-foreground mb-1">
+                        <div className="text-caption-premium mb-1">
                           Audit Trails
                         </div>
                         <div className="text-xs text-emerald-500 font-mono">
@@ -1685,7 +1681,7 @@ const AlphaWorkforce = () => {
                         </div>
                       </div>
                       <div className="p-3 rounded-lg border bg-background/50">
-                        <div className="text-[10px] font-bold uppercase text-muted-foreground mb-1">
+                        <div className="text-caption-premium mb-1">
                           EU AI Act
                         </div>
                         <div className="text-xs text-emerald-500 font-mono">
@@ -1693,7 +1689,7 @@ const AlphaWorkforce = () => {
                         </div>
                       </div>
                       <div className="p-3 rounded-lg border bg-background/50">
-                        <div className="text-[10px] font-bold uppercase text-muted-foreground mb-1">
+                        <div className="text-caption-premium mb-1">
                           Switching Cost
                         </div>
                         <div className="text-xs text-orange-500 font-bold">
@@ -2291,7 +2287,7 @@ const AlphaWorkforce = () => {
                         ${cashclawData.leakedRevenue.toLocaleString()}.00
                       </span>
                     </div>
-                    <p className="text-[10px] text-muted-foreground leading-relaxed italic">
+                    <p className="text-caption-premium leading-relaxed italic">
                       "AI agents have identified uncollected payments from 3
                       historical invoices and 1 recurring billing error."
                     </p>
@@ -2424,13 +2420,13 @@ const AlphaWorkforce = () => {
                                 <Briefcase className="w-4 h-4 text-primary" />
                               </div>
                               <div>
-                                <div className="font-bold text-sm flex items-center gap-2">
+                                <div className="text-card-title flex items-center gap-2">
                                   {agent.name}
                                   {agent.id === "CEO" && (
                                     <Crown className="w-3 h-3 text-amber-500" />
                                   )}
                                 </div>
-                                <div className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest">
+                                <div className="text-caption-premium font-mono uppercase tracking-widest">
                                   {agent.framework} Agent
                                 </div>
                               </div>
@@ -2442,11 +2438,11 @@ const AlphaWorkforce = () => {
                         ))}
                         <div className="p-3 bg-background rounded-lg border border-indigo-500/20 shadow-sm flex items-center justify-between col-span-2">
                           <div>
-                            <div className="font-bold text-sm flex items-center gap-2">
+                            <div className="text-card-title flex items-center gap-2">
                               Market Intelligence{" "}
                               <Lock className="w-3 h-3 text-indigo-500" />
                             </div>
-                            <div className="text-[10px] text-muted-foreground font-mono">
+                            <div className="text-caption-premium font-mono">
                               CrewAI / Stealth Mode
                             </div>
                           </div>
@@ -2456,10 +2452,10 @@ const AlphaWorkforce = () => {
                         </div>
                         <div className="p-3 bg-background rounded-lg border flex items-center justify-between">
                           <div>
-                            <div className="font-bold text-sm">
+                            <div className="text-card-title">
                               Inbound Receptionist
                             </div>
-                            <div className="text-[10px] text-muted-foreground font-mono">
+                            <div className="text-caption-premium font-mono">
                               Concierge AI
                             </div>
                           </div>
@@ -3052,7 +3048,7 @@ const DecisionItem = ({
             </Badge>
           )}
         </div>
-        <span className="text-[10px] text-muted-foreground">{time}</span>
+        <span className="text-caption-premium">{time}</span>
       </div>
       <p className="text-sm leading-tight text-foreground/80">{details}</p>
       <div className="mt-2 flex items-center gap-2">
@@ -3096,9 +3092,7 @@ const PriorityItem = ({ label, priority, roi }: PriorityItemProps) => (
   <div className="flex items-center justify-between p-3 rounded-lg border bg-card/50">
     <div>
       <div className="text-sm font-medium">{label}</div>
-      <div className="text-[10px] text-muted-foreground">
-        ROI Projection: {roi}
-      </div>
+      <div className="text-caption-premium">ROI Projection: {roi}</div>
     </div>
     <Badge
       className={
@@ -3132,7 +3126,7 @@ const ContentDraftItem = ({
       </div>
       <div>
         <div className="text-sm font-medium leading-none mb-1">{title}</div>
-        <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">
+        <div className="text-caption-premium font-bold tracking-tighter">
           {type} · {status}
         </div>
       </div>
@@ -3151,7 +3145,7 @@ const NewRoleHire = ({ name, bottleneck, framework }: NewRoleHireProps) => (
   <div className="p-3 rounded-lg border bg-muted/20 flex items-center justify-between group cursor-pointer hover:bg-muted/40 transition-colors">
     <div className="flex-grow">
       <div className="flex items-center justify-between mb-1">
-        <div className="text-sm font-bold leading-none group-hover:text-primary transition-colors">
+        <div className="text-body-sm font-bold leading-none group-hover:text-primary transition-colors">
           {name}
         </div>
         {framework && (
@@ -3163,9 +3157,7 @@ const NewRoleHire = ({ name, bottleneck, framework }: NewRoleHireProps) => (
           </Badge>
         )}
       </div>
-      <div className="text-[10px] text-muted-foreground italic">
-        Reduces: {bottleneck}
-      </div>
+      <div className="text-caption-premium italic">Reduces: {bottleneck}</div>
     </div>
     <div className="p-1.5 bg-muted rounded group-hover:bg-primary/10 transition-colors ml-4">
       <Zap className="w-3 h-3 text-muted-foreground group-hover:text-primary" />
@@ -3193,16 +3185,14 @@ const StrategyIterationCard = ({
       <Badge className="bg-indigo-500/10 text-indigo-500 border-indigo-500/20 text-[10px]">
         {status}
       </Badge>
-      <div className="text-green-500 font-bold text-sm flex items-center gap-1">
+      <div className="text-green-500 text-card-title flex items-center gap-1">
         <TrendingUp className="w-3 h-3" /> {roiDelta} ROI LIFT
       </div>
     </div>
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30" />
-        <div className="text-[10px] text-muted-foreground uppercase font-bold">
-          Original Strategy
-        </div>
+        <div className="text-caption-premium font-bold">Original Strategy</div>
       </div>
       <div className="text-sm text-muted-foreground line-through opacity-50 px-3.5">
         {original}
@@ -3224,7 +3214,7 @@ const StrategyIterationCard = ({
           Refined Strategy
         </div>
       </div>
-      <div className="text-sm font-bold text-foreground px-3.5 flex items-center gap-2">
+      <div className="text-body-sm font-bold text-foreground px-3.5 flex items-center gap-2">
         <CheckCircle2 className="w-4 h-4 text-green-500" /> {refined}
       </div>
     </div>
@@ -3262,15 +3252,13 @@ const RevenueCard = ({ product, revenue, growth, roi }: RevenueCardProps) => (
       <DollarSign className="w-12 h-12" />
     </div>
     <div className="relative z-10">
-      <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">
-        {product}
-      </div>
+      <div className="text-caption-premium mb-1">{product}</div>
       <div className="text-2xl font-black mb-1">{revenue}</div>
       <div className="flex items-center gap-2 mb-3">
         <Badge className="bg-green-500/10 text-green-500 border-green-500/20 text-[9px]">
           <TrendingUp className="w-2 h-2 mr-1" /> {growth}
         </Badge>
-        <span className="text-[10px] text-muted-foreground">
+        <span className="text-caption-premium">
           ROI: <span className="text-foreground font-bold">{roi}</span>
         </span>
       </div>
@@ -3298,8 +3286,8 @@ const AcquisitionWin = ({
         <Target className="w-4 h-4 text-green-500" />
       </div>
       <div>
-        <div className="text-sm font-bold">{client}</div>
-        <div className="text-[10px] text-muted-foreground uppercase tracking-tighter">
+        <div className="text-body-sm font-bold">{client}</div>
+        <div className="text-caption-premium tracking-tighter">
           {source} · {time}
         </div>
       </div>
@@ -3368,7 +3356,7 @@ const AgentMessage = ({
       <div className="flex-grow space-y-1">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-sm text-foreground">{agent}</span>
+            <span className="text-card-title text-foreground">{agent}</span>
             <Badge
               variant="outline"
               className="text-[10px] font-mono px-1 h-4 leading-none"
@@ -3381,9 +3369,7 @@ const AgentMessage = ({
               {getPlatformIcon(platform)} {platform} / {channel}
             </Badge>
           </div>
-          <span className="text-[10px] text-muted-foreground font-mono">
-            {timestamp}
-          </span>
+          <span className="text-caption-premium font-mono">{timestamp}</span>
         </div>
         <p className="text-sm text-foreground/80 leading-relaxed bg-muted/10 p-2 rounded-md italic group-hover:bg-muted/20 transition-colors">
           "{content}"
@@ -3427,7 +3413,7 @@ const AgentCommsHub = ({ messages }: { messages: any[] }) => {
             </div>
             <div>
               <CardTitle className="text-lg">Inter-Agent Discourse</CardTitle>
-              <CardDescription className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
+              <CardDescription className="text-caption-premium">
                 Internal Messaging Subsystem
               </CardDescription>
             </div>

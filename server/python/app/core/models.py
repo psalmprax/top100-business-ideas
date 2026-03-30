@@ -417,6 +417,15 @@ class AIModel(SQLModel, table=True):
     bias_reports: List["BiasReport"] = Relationship(back_populates="ai_model", sa_relationship_kwargs={"lazy": "selectin", "cascade": "all, delete-orphan"})
 
 
+class AIModelCreate(SQLModel):
+    """AI Model creation schema"""
+    name: str
+    riskCategory: str
+    provider: str
+    endpointUrl: Optional[str] = None
+    apiKey: Optional[str] = None
+
+
 class TrainingModule(SQLModel):
     id: Optional[str] = None
     title: str

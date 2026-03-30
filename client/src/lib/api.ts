@@ -1394,6 +1394,7 @@ export const extendedApi = {
             apiRequest<any>('/api/v1/compliance/models', {
                 method: 'POST',
                 body: JSON.stringify(modelData),
+                strict: true,
             }),
         getBiasReports: (modelId: string) => apiRequest<any[]>(`/api/v1/compliance/bias-reports/${modelId}`),
         triggerBiasScan: (modelId: string) =>
@@ -1418,6 +1419,7 @@ export const extendedApi = {
             apiRequest<any>('/api/v1/compliance/remediate', {
                 method: 'POST',
                 body: JSON.stringify({ target_id }),
+                strict: true,
             }),
         testNotification: (channel: string = 'slack') =>
             apiRequest<any>(`/api/v1/notifications/test?channel=${channel}`, {
@@ -1427,17 +1429,20 @@ export const extendedApi = {
             apiRequest<any>(`/api/v1/compliance/models/${modelId}/guardrails`, {
                 method: 'PATCH',
                 body: JSON.stringify(guardrails),
+                strict: true,
             }),
 
         connectSystem: (article_id: string, connection_type: string, config: any = {}) =>
             apiRequest<any>('/api/v1/compliance/connect', {
                 method: 'POST',
                 body: JSON.stringify({ article_id, connection_type, config }),
+                strict: true,
             }),
         runScan: (articleId: string, scanType: string) =>
             apiRequest<any>('/api/v1/compliance/scan', {
                 method: 'POST',
                 body: JSON.stringify({ article_id: articleId, scan_type: scanType }),
+                strict: true,
             }),
         getArticles: () => apiRequest<any[]>('/api/v1/compliance/articles'),
         listConnections: () => apiRequest<any[]>('/api/v1/compliance/connections'),
@@ -1449,22 +1454,26 @@ export const extendedApi = {
             apiRequest<any>('/api/v1/compliance/red-team', {
                 method: 'POST',
                 body: JSON.stringify({ article_id }),
+                strict: true,
             }),
         euRegister: (modelId: string) =>
             apiRequest<any>('/api/v1/compliance/eu-register', {
                 method: 'POST',
                 body: JSON.stringify({ model_id: modelId }),
+                strict: true,
             }),
         reportIncident: (incidentData: any) =>
             apiRequest<Incident>('/api/v1/compliance/incidents', {
                 method: 'POST',
                 body: JSON.stringify(incidentData),
+                strict: true,
             }),
         listArticles: () => apiRequest<any[]>('/api/v1/compliance/articles'),
         uploadArtifact: (formData: FormData) =>
             apiRequest<any>('/api/v1/compliance/upload', {
                 method: 'POST',
                 body: formData,
+                strict: true,
             }),
         listArtifacts: () => apiRequest<any[]>('/api/v1/compliance/artifacts'),
         getROIMetrics: () => apiRequest<any>('/api/v1/compliance/roi'),
@@ -1497,6 +1506,7 @@ export const extendedApi = {
             apiRequest<any>(`/api/v1/compliance/incidents/${id}`, {
                 method: 'PATCH',
                 body: JSON.stringify({ status }),
+                strict: true,
             }),
         deleteVendor: (id: string) =>
             apiRequest<any>(`/api/v1/vendors/${id}`, {
@@ -1810,6 +1820,7 @@ export const extendedApi = {
             apiRequest<Incident>('/api/v1/compliance/incidents', {
                 method: 'POST',
                 body: JSON.stringify(incidentData),
+                strict: true,
             }),
         listIncidents: () =>
             apiRequest<any[]>('/api/v1/compliance/incidents'),
@@ -1867,9 +1878,11 @@ export const extendedApi = {
         }),
         optimizeMemory: (agentId: string) => apiRequest<any>(`/api/v1/agents/${agentId}/optimize`, {
             method: 'POST',
+            strict: true
         }),
         clone: (agentId: string) => apiRequest<any>(`/api/v1/agents/${agentId}/clone`, {
             method: 'POST',
+            strict: true
         }),
         getCloudHealth: (system?: string) => apiRequest<any>('/api/v1/agent-ops/cloud/health'),
         triggerFailover: (region_id: string) => apiRequest<any>('/api/v1/agent-ops/cloud/failover', {
@@ -1909,6 +1922,7 @@ export const extendedApi = {
         deployLanguage: (locale: string) => apiRequest<any>('/api/v1/agent-ops/sync-locale', {
             method: 'POST',
             body: JSON.stringify({ locale }),
+            strict: true
         }),
         deployRecoveryDaemon: (node_id: string) => apiRequest<any>('/api/v1/agent-ops/self-healing/deploy', {
             method: 'POST',

@@ -226,9 +226,7 @@ function ComplianceScoreCard({
   return (
     <Card>
       <CardContent className="p-4">
-        <div className="text-stat text-white tabular-nums">
-          {score}%
-        </div>
+        <div className="text-stat text-white tabular-nums">{score}%</div>
         <div className="text-stat-label mt-0.5">{title}</div>
         <Progress value={score} className="mt-2 h-2" />
       </CardContent>
@@ -311,7 +309,7 @@ const ModelProfileDialog = ({
           <Card className="bg-muted/30 border-none">
             <CardContent className="p-4 space-y-4">
               <div>
-                <Label className="text-[10px] uppercase text-muted-foreground tracking-wider font-bold">
+                <Label className="text-caption-premium text-muted-foreground">
                   Risk Taxonomy
                 </Label>
                 <div className="mt-1">
@@ -319,7 +317,7 @@ const ModelProfileDialog = ({
                 </div>
               </div>
               <div>
-                <Label className="text-[10px] uppercase text-muted-foreground tracking-wider font-bold">
+                <Label className="text-caption-premium text-muted-foreground">
                   Aggregated Score
                 </Label>
                 <div className="flex items-center gap-2 mt-1">
@@ -327,13 +325,13 @@ const ModelProfileDialog = ({
                     value={selectedModelForView?.complianceScore}
                     className="h-2 flex-1"
                   />
-                  <span className="font-mono font-bold text-sm">
+                  <span className="font-mono text-card-title">
                     {selectedModelForView?.complianceScore}%
                   </span>
                 </div>
               </div>
               <div>
-                <Label className="text-[10px] uppercase text-muted-foreground tracking-wider font-bold">
+                <Label className="text-caption-premium text-muted-foreground">
                   Lifecycle Status
                 </Label>
                 <div className="mt-1">
@@ -393,25 +391,25 @@ const ModelProfileDialog = ({
           <TabsList className="w-full justify-start border-b rounded-none h-9 bg-transparent p-0 gap-6">
             <TabsTrigger
               value="audit"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent px-0 font-bold text-xs"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent px-0 text-caption-premium font-bold"
             >
               Audit History
             </TabsTrigger>
             <TabsTrigger
               value="integrations"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent px-0 font-bold text-xs"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent px-0 text-caption-premium font-bold"
             >
               System Handshakes
             </TabsTrigger>
             <TabsTrigger
               value="files"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent px-0 font-bold text-xs"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent px-0 text-caption-premium font-bold"
             >
               Artifact Files
             </TabsTrigger>
             <TabsTrigger
               value="ethical"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent px-0 font-bold text-xs"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent px-0 text-caption-premium font-bold"
             >
               Ethical Guardrails
             </TabsTrigger>
@@ -438,7 +436,7 @@ const ModelProfileDialog = ({
                   </div>
                 ))
               ) : (
-                <div className="text-center py-8 text-muted-foreground text-xs">
+                <div className="text-body-sm text-center text-muted-foreground py-8">
                   No audit history for this model.
                 </div>
               )}
@@ -460,10 +458,10 @@ const ModelProfileDialog = ({
                         <Database className="w-5 h-5 text-orange-500" />
                       )}
                       <div>
-                        <div className="font-bold text-sm">
+                        <div className="text-card-title">
                           {handshake.system}
                         </div>
-                        <div className="text-[10px] text-muted-foreground font-mono">
+                        <div className="text-caption-premium font-mono">
                           {handshake.endpoint}
                         </div>
                       </div>
@@ -475,7 +473,7 @@ const ModelProfileDialog = ({
                   </div>
                 ))
               ) : (
-                <div className="md:col-span-2 text-center py-8 text-muted-foreground text-xs">
+                <div className="md:col-span-2 text-body-sm text-center text-muted-foreground py-8">
                   No active handshakes found.
                 </div>
               )}
@@ -519,7 +517,7 @@ const ModelProfileDialog = ({
                   </div>
                 ))
               ) : (
-                <div className="text-center py-8 text-muted-foreground text-xs">
+                <div className="text-body-sm text-center text-muted-foreground py-8">
                   No artifacts uploaded yet
                 </div>
               )}
@@ -544,7 +542,7 @@ const ModelProfileDialog = ({
                       <div className="flex items-center justify-between">
                         <div className="space-y-0.5">
                           <Label>Active Bias Mitigation</Label>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-body-sm text-muted-foreground">
                             Automatically adjust weights to prevent disparate
                             impact
                           </p>
@@ -561,7 +559,7 @@ const ModelProfileDialog = ({
                       <div className="flex items-center justify-between">
                         <div className="space-y-0.5">
                           <Label>Toxic Language Filter</Label>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-body-sm text-muted-foreground">
                             Real-time prevention of offensive content generation
                           </p>
                         </div>
@@ -577,7 +575,7 @@ const ModelProfileDialog = ({
                       <div className="flex items-center justify-between">
                         <div className="space-y-0.5">
                           <Label>Prompt Privacy Guard</Label>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-body-sm text-muted-foreground">
                             Redact PII before it reaches the model core
                           </p>
                         </div>
@@ -1084,27 +1082,19 @@ const ComplianceChecklistContent = ({
         <CardContent>
           <div className="grid grid-cols-4 gap-4 mb-6">
             <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
-              <div className="text-2xl font-bold font-display tracking-tighter text-green-500">
-                {compliantCount}
-              </div>
+              <div className="text-stat text-green-500">{compliantCount}</div>
               <div className="text-stat-label mt-0.5">Compliant</div>
             </div>
             <div className="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
-              <div className="text-2xl font-bold font-display tracking-tighter text-yellow-500">
-                {inProgressCount}
-              </div>
+              <div className="text-stat text-yellow-500">{inProgressCount}</div>
               <div className="text-stat-label mt-0.5">In Progress</div>
             </div>
             <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
-              <div className="text-2xl font-bold font-display tracking-tighter text-red-500">
-                {notStartedCount}
-              </div>
+              <div className="text-stat text-red-500">{notStartedCount}</div>
               <div className="text-stat-label mt-0.5">Not Started</div>
             </div>
             <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
-              <div className="text-2xl font-bold font-display tracking-tighter text-blue-500">
-                {progressPercent}%
-              </div>
+              <div className="text-stat text-blue-500">{progressPercent}%</div>
               <div className="text-stat-label mt-0.5">Overall Progress</div>
             </div>
           </div>
@@ -1118,7 +1108,7 @@ const ComplianceChecklistContent = ({
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="text-lg font-mono font-bold font-display tracking-tight">
+                  <span className="text-card-title font-mono">
                     {article.article}
                   </span>
                   <span className="text-card-title">{article.title}</span>
@@ -1196,7 +1186,7 @@ const ComplianceChecklistContent = ({
                               <p className="text-sm font-bold">
                                 Live Forensic Stream
                               </p>
-                              <p className="text-[10px] text-muted-foreground uppercase font-mono">
+                              <p className="text-caption-premium text-muted-foreground uppercase font-mono">
                                 Channel: BIOMETRY_SEC_4
                               </p>
                             </div>
@@ -1208,7 +1198,7 @@ const ComplianceChecklistContent = ({
                                 ? `${(lastScanResults[article.article].results.certainty * 100).toFixed(1)}% CERTAINTY`
                                 : "---% CERTAINTY"}
                             </p>
-                            <p className="text-[10px] text-muted-foreground">
+                            <p className="text-caption-premium text-muted-foreground">
                               LATENCY: 12ms
                             </p>
                           </div>
@@ -1551,7 +1541,18 @@ export default function AlphaAIActCompliance() {
         console.error("Dashboard hardening fetch error:", err);
       }
     };
+
+    const fetchAuditLogs = async (search?: string, filter?: string) => {
+      try {
+        const logs = await extendedApi.compliance.getAuditLogs(undefined, search, filter === "all" ? undefined : filter);
+        setAuditLogs(logs || []);
+      } catch (error) {
+        console.error("Failed to fetch audit logs:", error);
+      }
+    };
+
     fetchExtendedMetrics();
+    fetchAuditLogs();
   }, []);
 
   // Model Deep-Dive Fetch
@@ -2277,24 +2278,20 @@ export default function AlphaAIActCompliance() {
 
   const handleAuditSearch = async (query: string) => {
     setAuditSearch(query);
+    // Debounced server-side search would go here, but for now direct fetch
+    try {
+      const logs = await extendedApi.compliance.getAuditLogs(undefined, query, auditFilterType === "all" ? undefined : auditFilterType);
+      setAuditLogs(logs || []);
+    } catch (e) {
+      console.error("Audit search failed", e);
+    }
   };
 
   const filteredAuditLogs = useMemo(() => {
-    if (!auditSearch && auditFilterType === "all") return auditLogs;
-    return auditLogs.filter((log: any) => {
-      const searchLower = auditSearch.toLowerCase();
-      const matchesSearch =
-        !auditSearch ||
-        (log.action || "").toLowerCase().includes(searchLower) ||
-        (log.actor || "").toLowerCase().includes(searchLower) ||
-        (log.outcome || log.status || "").toLowerCase().includes(searchLower);
-      const matchesFilter =
-        auditFilterType === "all" ||
-        (log.outcome || log.status || "").toLowerCase() ===
-          auditFilterType.toLowerCase();
-      return matchesSearch && matchesFilter;
-    });
-  }, [auditLogs, auditSearch, auditFilterType]);
+    // With server-side search, we don't need useMemo for search anymore, 
+    // but we'll keep it for any small client-side adjustments or just return auditLogs
+    return auditLogs;
+  }, [auditLogs]);
 
   const handleAuditExport = async () => {
     toast.info("Preparing immutable audit export...");
@@ -2632,7 +2629,7 @@ export default function AlphaAIActCompliance() {
               <div className="text-caption-premium text-[11px] mb-1">
                 {cat.label}
               </div>
-              <div className="text-[10px] text-muted-foreground line-clamp-1 opacity-70">
+              <div className="text-caption-premium text-muted-foreground line-clamp-1 opacity-70">
                 {cat.description}
               </div>
             </button>
@@ -2773,7 +2770,7 @@ export default function AlphaAIActCompliance() {
                   <div className="text-3xl font-bold">
                     {compliantModels}/{totalModels}
                   </div>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-body-sm text-muted-foreground">
                     Compliant Models
                   </div>
                 </CardContent>
@@ -2781,7 +2778,7 @@ export default function AlphaAIActCompliance() {
               <Card>
                 <CardContent className="p-4">
                   <div className="text-3xl font-bold">{highRiskModels}</div>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-body-sm text-muted-foreground">
                     High Risk Models
                   </div>
                 </CardContent>
@@ -2795,7 +2792,7 @@ export default function AlphaAIActCompliance() {
                       ).length
                     }
                   </div>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-body-sm text-muted-foreground">
                     Open Incidents
                   </div>
                 </CardContent>
@@ -2823,7 +2820,7 @@ export default function AlphaAIActCompliance() {
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-3 gap-4">
                     <div className="p-3 rounded-lg bg-background border">
-                      <p className="text-[10px] text-muted-foreground uppercase font-bold">
+                      <p className="text-caption-premium text-muted-foreground">
                         Manual Cost
                       </p>
                       <p className="text-xl font-bold">
@@ -2831,7 +2828,7 @@ export default function AlphaAIActCompliance() {
                       </p>
                     </div>
                     <div className="p-3 rounded-lg bg-background border">
-                      <p className="text-[10px] text-muted-foreground uppercase font-bold">
+                      <p className="text-caption-premium text-muted-foreground">
                         Alpha Cost
                       </p>
                       <p className="text-xl font-bold text-emerald-500">
@@ -2839,7 +2836,7 @@ export default function AlphaAIActCompliance() {
                       </p>
                     </div>
                     <div className="p-3 rounded-lg bg-background border">
-                      <p className="text-[10px] text-muted-foreground uppercase font-bold">
+                      <p className="text-caption-premium text-muted-foreground">
                         Net ROI
                       </p>
                       <p className="text-xl font-bold text-blue-500">
@@ -2849,7 +2846,7 @@ export default function AlphaAIActCompliance() {
                   </div>
                   <div className="grid grid-cols-2 gap-4 mt-4 py-4 border-t border-muted/20">
                     <div className="p-4 rounded-xl border bg-muted/20">
-                      <div className="text-[10px] text-muted-foreground uppercase font-bold mb-1">
+                      <div className="text-caption-premium text-muted-foreground mb-1">
                         Traditional (Human)
                       </div>
                       <div className="text-xl font-bold">$120/hr</div>
@@ -2967,7 +2964,7 @@ export default function AlphaAIActCompliance() {
                               {d.date}
                             </Badge>
                           </div>
-                          <div className="text-sm text-muted-foreground mt-1">
+                          <div className="text-body-sm text-muted-foreground mt-1">
                             {d.description}
                           </div>
                         </div>
@@ -2991,7 +2988,7 @@ export default function AlphaAIActCompliance() {
                   <h3 className="text-lg font-semibold">
                     Live Compliance Monitoring
                   </h3>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-body-sm text-muted-foreground">
                     Real-time compliance metrics and alerts
                   </p>
                 </div>
@@ -3012,7 +3009,7 @@ export default function AlphaAIActCompliance() {
                       <div className="text-3xl font-bold">
                         {liveMetrics.overall_compliance_score}%
                       </div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-body-sm text-muted-foreground">
                         Overall Compliance
                       </div>
                       <Progress
@@ -3026,7 +3023,7 @@ export default function AlphaAIActCompliance() {
                       <div className="text-3xl font-bold">
                         {liveMetrics.active_alerts}
                       </div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-body-sm text-muted-foreground">
                         Active Alerts
                       </div>
                       <div className="text-xs text-muted-foreground mt-1">
@@ -3041,7 +3038,7 @@ export default function AlphaAIActCompliance() {
                       <div className="text-3xl font-bold">
                         {liveMetrics.models_monitored}
                       </div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-body-sm text-muted-foreground">
                         Models Monitored
                       </div>
                       <div className="text-xs text-muted-foreground mt-1">
@@ -3058,7 +3055,9 @@ export default function AlphaAIActCompliance() {
                             ? "↘"
                             : "→"}
                       </div>
-                      <div className="text-sm text-muted-foreground">Trend</div>
+                      <div className="text-body-sm text-muted-foreground">
+                        Trend
+                      </div>
                       <Badge variant="outline" className="mt-1 capitalize">
                         {liveMetrics.trends?.compliance_trend}
                       </Badge>
@@ -3196,7 +3195,7 @@ export default function AlphaAIActCompliance() {
                         <TableCell>
                           <div>
                             <div className="font-medium">{model.name}</div>
-                            <div className="text-sm text-muted-foreground">
+                            <div className="text-body-sm text-muted-foreground">
                               ID: {model.id}
                             </div>
                           </div>
@@ -3355,7 +3354,7 @@ export default function AlphaAIActCompliance() {
                             </Badge>
                           </div>
                           <div className="text-sm mb-2">{report.details}</div>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-4 text-body-sm text-muted-foreground">
                             <span>
                               Disparate Impact:{" "}
                               {(report.disparateImpact * 100).toFixed(0)}%
@@ -3457,7 +3456,7 @@ bsContent>
                               ? "Red Team Assessment"
                               : "Penetration Test"}
                           </div>
-                          <div className="text-sm text-muted-foreground">
+                          <div className="text-body-sm text-muted-foreground">
                             Model ID: {audit.modelId} ·{" "}
                             {audit.date
                               ? audit.date.toLocaleDateString()
@@ -3508,7 +3507,7 @@ bsContent>
                     <div className="text-3xl font-bold">
                       {edgeDeployments.length}
                     </div>
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-body-sm text-muted-foreground">
                       Total Devices
                     </div>
                   </CardContent>
@@ -3521,7 +3520,9 @@ bsContent>
                           .length
                       }
                     </div>
-                    <div className="text-sm text-muted-foreground">Online</div>
+                    <div className="text-body-sm text-muted-foreground">
+                      Online
+                    </div>
                   </CardContent>
                 </Card>
                 <Card>
@@ -3532,7 +3533,9 @@ bsContent>
                           .length
                       }
                     </div>
-                    <div className="text-sm text-muted-foreground">Offline</div>
+                    <div className="text-body-sm text-muted-foreground">
+                      Offline
+                    </div>
                   </CardContent>
                 </Card>
                 <Card>
@@ -3542,7 +3545,7 @@ bsContent>
                         .reduce((sum, d) => sum + (d.requests_count || 0), 0)
                         .toLocaleString()}
                     </div>
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-body-sm text-muted-foreground">
                       Total Calls Today
                     </div>
                   </CardContent>
@@ -3656,7 +3659,7 @@ bsContent>
                       <AlertTriangle className="w-4 h-4 text-yellow-500" />
                       Drift Detected: EU Central 1
                     </h4>
-                    <p className="text-sm text-muted-foreground mb-4">
+                    <p className="text-body-sm text-muted-foreground mb-4">
                       Model LLM-7-EU policy variance detected in data retention
                       (Art. 10).
                     </p>
@@ -3726,7 +3729,7 @@ bsContent>
                     </div>
                     <div>
                       <h5 className="font-bold">Self-Healing Overview</h5>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-body-sm text-muted-foreground">
                         Autonomous compliance monitoring is ACTIVE
                       </p>
                     </div>
@@ -3738,7 +3741,7 @@ bsContent>
                           selfHealingStats?.resolved_events ??
                           "142"}
                       </div>
-                      <div className="text-[10px] text-muted-foreground">
+                      <div className="text-caption-premium text-muted-foreground">
                         AUTO-FIXES (MTD)
                       </div>
                     </div>
@@ -3746,7 +3749,7 @@ bsContent>
                       <div className="text-xl font-bold">
                         {selfHealingStats?.avg_resolution_time ?? "1.2s"}
                       </div>
-                      <div className="text-[10px] text-muted-foreground">
+                      <div className="text-caption-premium text-muted-foreground">
                         AVG RESOLUTION
                       </div>
                     </div>
@@ -3757,7 +3760,7 @@ bsContent>
                           : "---"}
                         %
                       </div>
-                      <div className="text-[10px] text-muted-foreground">
+                      <div className="text-caption-premium text-muted-foreground">
                         SUCCESS RATE
                       </div>
                     </div>
@@ -3799,7 +3802,7 @@ bsContent>
                       </SelectContent>
                     </Select>
                   </div>
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="text-caption-premium text-muted-foreground">
                     Required for Article 71 logs and incident history.
                   </p>
                 </div>
@@ -3807,7 +3810,7 @@ bsContent>
                 <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/20">
                   <div className="space-y-0.5">
                     <Label>Global Policy Sync</Label>
-                    <p className="text-[10px] text-muted-foreground">
+                    <p className="text-caption-premium text-muted-foreground">
                       Sync policies across all model endpoints
                     </p>
                   </div>
@@ -3863,7 +3866,7 @@ bsContent>
                       {ssoConfig.status?.toUpperCase() || "OFFLINE"}
                     </Badge>
                   </div>
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="text-caption-premium text-muted-foreground">
                     Last Handshake:{" "}
                     {new Date(ssoConfig.lastHandshake).toLocaleString()}
                   </p>
@@ -4343,7 +4346,7 @@ bsContent>
                               )}
                             </div>
                           </div>
-                          <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                          <p className="text-body-sm text-muted-foreground mb-3 line-clamp-2">
                             {module.description || "No description available."}
                           </p>
                           <Progress
@@ -4516,7 +4519,7 @@ bsContent>
                     <div className="text-3xl font-bold">
                       {edgeDeployments.length}
                     </div>
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-body-sm text-muted-foreground">
                       Total Devices
                     </div>
                   </CardContent>
@@ -4529,7 +4532,9 @@ bsContent>
                           .length
                       }
                     </div>
-                    <div className="text-sm text-muted-foreground">Online</div>
+                    <div className="text-body-sm text-muted-foreground">
+                      Online
+                    </div>
                   </CardContent>
                 </Card>
                 <Card>
@@ -4540,7 +4545,9 @@ bsContent>
                           .length
                       }
                     </div>
-                    <div className="text-sm text-muted-foreground">Offline</div>
+                    <div className="text-body-sm text-muted-foreground">
+                      Offline
+                    </div>
                   </CardContent>
                 </Card>
                 <Card>
@@ -4550,7 +4557,7 @@ bsContent>
                         .reduce((sum, d) => sum + (d.requests_count || 0), 0)
                         .toLocaleString()}
                     </div>
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-body-sm text-muted-foreground">
                       Total Calls Today
                     </div>
                   </CardContent>
@@ -4994,19 +5001,19 @@ bsContent>
                                 <CardContent>
                                     <div className="space-y-4">
                                         <div className="flex justify-between items-center">
-                                            <span className="text-sm text-muted-foreground">Blended CAC</span>
+                                            <span className="text-body-sm text-muted-foreground">Blended CAC</span>
                                             <span className="font-bold">${financialMetrics?.economics?.cac || "2,050"}</span>
                                         </div>
                                         <div className="flex justify-between items-center">
-                                            <span className="text-sm text-muted-foreground">ARPU</span>
+                                            <span className="text-body-sm text-muted-foreground">ARPU</span>
                                             <span className="font-bold">${financialMetrics?.economics?.arpu || "1,500"}/mo</span>
                                         </div>
                                         <div className="flex justify-between items-center">
-                                            <span className="text-sm text-muted-foreground">Gross Margin</span>
+                                            <span className="text-body-sm text-muted-foreground">Gross Margin</span>
                                             <span className="font-bold">{financialMetrics?.economics?.margin || "90"}%</span>
                                         </div>
                                         <div className="flex justify-between items-center">
-                                            <span className="text-sm text-muted-foreground">Churn Rate</span>
+                                            <span className="text-body-sm text-muted-foreground">Churn Rate</span>
                                             <span className="font-bold">{financialMetrics?.economics?.churn || "1"}%/mo</span>
                                         </div>
                                         <div className="border-t pt-2 mt-2">
@@ -5015,7 +5022,7 @@ bsContent>
                                                 <span className="font-bold text-green-500">${financialMetrics?.economics?.ltv || "135,000"}</span>
                                             </div>
                                             <div className="flex justify-between items-center mt-1">
-                                                <span className="text-sm text-muted-foreground">LTV:CAC Ratio</span>
+                                                <span className="text-body-sm text-muted-foreground">LTV:CAC Ratio</span>
                                                 <span className="font-bold text-green-500">{financialMetrics?.economics?.ratio || "65"}:1</span>
                                             </div>
                                         </div>
@@ -5351,23 +5358,25 @@ bsContent>
             <div className="grid gap-4 md:grid-cols-4">
               <div className="text-center p-4 rounded-lg bg-blue-500/10">
                 <div className="text-2xl font-bold text-blue-500">30%</div>
-                <div className="text-sm text-muted-foreground">Cold Email</div>
+                <div className="text-body-sm text-muted-foreground">
+                  Cold Email
+                </div>
               </div>
               <div className="text-center p-4 rounded-lg bg-purple-500/10">
                 <div className="text-2xl font-bold text-purple-500">30%</div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-body-sm text-muted-foreground">
                   Content/Whitepapers
                 </div>
               </div>
               <div className="text-center p-4 rounded-lg bg-green-500/10">
                 <div className="text-2xl font-bold text-green-500">25%</div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-body-sm text-muted-foreground">
                   Law Firm Partners
                 </div>
               </div>
               <div className="text-center p-4 rounded-lg bg-orange-500/10">
                 <div className="text-2xl font-bold text-orange-500">15%</div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-body-sm text-muted-foreground">
                   LinkedIn Ads
                 </div>
               </div>
@@ -5539,7 +5548,7 @@ bsContent>
                         <div className="text-xs font-bold">
                           1. Intended Use Case
                         </div>
-                        <div className="text-[10px] text-muted-foreground">
+                        <div className="text-caption-premium text-muted-foreground">
                           Does the system influence human behavior?
                         </div>
                       </div>
@@ -5553,7 +5562,7 @@ bsContent>
                         <div className="text-xs font-bold">
                           2. Data Sensitivity
                         </div>
-                        <div className="text-[10px] text-muted-foreground">
+                        <div className="text-caption-premium text-muted-foreground">
                           Does the system process special categories of data?
                         </div>
                       </div>
@@ -5690,7 +5699,7 @@ bsContent>
                       <TableRow>
                         <TableCell
                           colSpan={5}
-                          className="text-center py-8 text-muted-foreground text-xs"
+                          className="text-body-sm text-center text-muted-foreground py-8"
                         >
                           No audit logs found
                         </TableCell>
@@ -5901,7 +5910,7 @@ bsContent>
                   <div className="flex items-center gap-2">
                     <Label
                       htmlFor="gql-toggle"
-                      className="text-[10px] text-muted-foreground uppercase tracking-widest"
+                      className="text-caption-premium text-muted-foreground uppercase tracking-widest"
                     >
                       GraphQL Gateway
                     </Label>
@@ -5933,7 +5942,7 @@ bsContent>
                   >
                     <div className="space-y-1">
                       <div className="text-sm font-mono">{apiKey.key}</div>
-                      <div className="text-[10px] text-muted-foreground">
+                      <div className="text-caption-premium text-muted-foreground">
                         Created: {apiKey.createdAt} · Scope: {apiKey.scope}
                       </div>
                     </div>
@@ -5997,7 +6006,7 @@ bsContent>
                   <h4 className="text-xs font-bold mb-2 text-white">
                     Documentation
                   </h4>
-                  <p className="text-[10px] text-muted-foreground mb-3">
+                  <p className="text-caption-premium text-muted-foreground mb-3">
                     Send your AI model logs directly to the compliance hub via
                     our secure API.
                   </p>
@@ -6463,7 +6472,7 @@ bsContent>
                 </div>
               </div>
               <div className="p-3 rounded-lg border bg-muted/50">
-                <p className="text-[10px] text-muted-foreground font-mono">
+                <p className="text-caption-premium font-mono">
                   SIG_HASH: 0x82a8bf...928c
                   <br />
                   TIMESTAMP: {new Date().toISOString()}
@@ -6486,7 +6495,7 @@ bsContent>
                   {`Status: ${selectedModelForView?.status?.toUpperCase() || "PENDING"}`}
                 </p>
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-body-sm text-muted-foreground">
                 By confirming, you submit this system to the EU Registry. This
                 action is irreversible and satisfying Article 51 requirements.
               </p>

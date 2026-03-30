@@ -504,7 +504,7 @@ export default function FreelancerWorkflowBot() {
               </Button>
               <Button
                 size="sm"
-                className="bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[10px] uppercase h-9 px-6 shadow-lg shadow-indigo-600/20"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white text-caption-premium h-9 px-6 shadow-lg shadow-indigo-600/20"
                 onClick={handleDelegateTask}
               >
                 <Plus className="w-4 h-4 mr-2" /> Delegate Task
@@ -544,9 +544,7 @@ export default function FreelancerWorkflowBot() {
               <div className="text-overline text-muted-foreground mb-1">
                 {cat.label}
               </div>
-              <div className="text-[10px] text-muted-foreground font-medium">
-                {cat.description}
-              </div>
+              <div className="text-caption-premium">{cat.description}</div>
 
               {activeCategory === cat.id && (
                 <div className="absolute top-0 right-0 p-4">
@@ -564,7 +562,7 @@ export default function FreelancerWorkflowBot() {
                 <TabsTrigger
                   key={tab.value}
                   value={tab.value}
-                  className="data-[state=active]:bg-background data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm px-6 h-9 font-black text-[10px] uppercase tracking-wider transition-all"
+                  className="data-[state=active]:bg-background data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm px-6 h-9 text-caption-premium transition-all"
                   data-testid={`tab-${tab.value}`}
                 >
                   <tab.icon className="w-3.5 h-3.5 mr-2" />
@@ -617,7 +615,7 @@ export default function FreelancerWorkflowBot() {
                       </CardTitle>
                       <Badge
                         variant="outline"
-                        className="text-[8px] bg-background"
+                        className="text-caption-premium bg-background"
                       >
                         REAL-TIME
                       </Badge>
@@ -664,17 +662,15 @@ export default function FreelancerWorkflowBot() {
                             )}
                           </div>
                           <div>
-                            <div className="font-bold text-sm text-foreground tracking-tight">
-                              {item.task}
-                            </div>
-                            <div className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-0.5">
+                            <div className="text-card-title">{item.task}</div>
+                            <div className="text-caption-premium mt-0.5">
                               {item.client} &middot; {item.time}
                             </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
                           <Badge
-                            className={`${item.status === "Done" ? "bg-emerald-500" : "bg-indigo-500 animate-pulse"} text-white border-none text-[8px] h-4 rounded-sm font-black uppercase tracking-tighter px-1.5`}
+                            className={`${item.status === "Done" ? "bg-emerald-500" : "bg-indigo-500 animate-pulse"} text-white border-none text-caption-premium h-4 rounded-sm font-black uppercase tracking-tighter px-1.5`}
                           >
                             {item.status}
                           </Badge>
@@ -690,16 +686,16 @@ export default function FreelancerWorkflowBot() {
                   <div className="absolute top-0 right-0 translate-x-1/4 -translate-y-1/4 w-48 h-48 bg-white/10 rounded-full blur-3xl group-hover:scale-110 transition-transform duration-700" />
                   <CardContent className="p-6 relative z-10">
                     <Sparkles className="w-8 h-8 text-indigo-200 mb-6" />
-                    <h3 className="text-xl font-black uppercase tracking-tighter italic mb-4">
+                    <h3 className="text-section-headline italic mb-4">
                       Optimization Insight
                     </h3>
-                    <p className="text-indigo-50 text-xs leading-relaxed mb-6">
+                    <p className="text-body-sm text-indigo-50 mb-6">
                       I've detected you spend ~14 hours monthly on repetitive
                       CRM updates. Authorize an autonomous agent to handle this
                       permanently?
                     </p>
                     <Button
-                      className="w-full bg-white text-indigo-600 font-black hover:bg-indigo-50 text-[10px] uppercase h-10 tracking-widest"
+                      className="w-full bg-white text-indigo-600 hover:bg-indigo-50 text-caption-premium h-10"
                       data-testid="btn-authorize-agent"
                       onClick={handleAuthorizeAgent}
                       disabled={isAuthorizing}
@@ -711,33 +707,27 @@ export default function FreelancerWorkflowBot() {
 
                 <Card className="border-border/50">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                    <CardTitle className="text-caption-premium text-muted-foreground">
                       Queue Status
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
                       <div className="flex justify-between items-center">
-                        <span className="text-sm font-bold">
+                        <span className="text-body-sm font-bold">
                           12 Tasks Pending
                         </span>
-                        <span className="text-xs text-muted-foreground">
-                          3.5h left
-                        </span>
+                        <span className="text-body-sm">3.5h left</span>
                       </div>
                       <Progress value={65} className="h-1.5" />
                       <div className="grid grid-cols-2 gap-2 pt-2">
                         <div className="p-2 rounded bg-muted/50 text-center">
                           <div className="text-lg font-bold">4</div>
-                          <div className="text-[8px] text-muted-foreground font-black uppercase">
-                            Priority
-                          </div>
+                          <div className="text-caption-premium">Priority</div>
                         </div>
                         <div className="p-2 rounded bg-muted/50 text-center">
                           <div className="text-lg font-bold">8</div>
-                          <div className="text-[8px] text-muted-foreground font-black uppercase">
-                            Routine
-                          </div>
+                          <div className="text-caption-premium">Routine</div>
                         </div>
                       </div>
                     </div>
@@ -753,10 +743,8 @@ export default function FreelancerWorkflowBot() {
                 <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center mx-auto mb-4">
                   <Mail className="w-8 h-8 text-indigo-600" />
                 </div>
-                <h3 className="text-lg font-black uppercase tracking-widest">
-                  Inbox Manager Hub
-                </h3>
-                <p className="text-sm text-muted-foreground mt-2 max-w-sm">
+                <h3 className="text-section-headline">Inbox Manager Hub</h3>
+                <p className="text-body-sm mt-2 max-w-sm">
                   Smart email filtering and auto-reply drafting is ready for
                   activation.
                 </p>
@@ -777,10 +765,8 @@ export default function FreelancerWorkflowBot() {
                 <div className="p-4 rounded-full bg-indigo-100 mb-6">
                   <CreditCard className="w-8 h-8 text-indigo-600" />
                 </div>
-                <h3 className="text-xl font-black uppercase mb-2">
-                  Connect Stripe
-                </h3>
-                <p className="text-sm text-muted-foreground max-w-xs mb-8">
+                <h3 className="text-section-headline mb-2">Connect Stripe</h3>
+                <p className="text-body-sm max-w-xs mb-8">
                   Authorizing Stripe allows WorkflowBot to automatically
                   generate and chase invoices on your behalf.
                 </p>
@@ -804,7 +790,7 @@ export default function FreelancerWorkflowBot() {
                 />
                 <Card>
                   <CardHeader className="pb-3 border-b border-border/50">
-                    <CardTitle className="text-[10px] font-black uppercase tracking-widest">
+                    <CardTitle className="text-caption-premium">
                       Recent Invoices
                     </CardTitle>
                   </CardHeader>
@@ -815,19 +801,21 @@ export default function FreelancerWorkflowBot() {
                         className="p-4 border-b border-border/30 last:border-0 flex items-center justify-between"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded bg-background border flex items-center justify-center text-[10px] font-bold">
+                          <div className="w-8 h-8 rounded bg-background border flex items-center justify-center text-caption-premium font-bold">
                             INV
                           </div>
                           <div>
-                            <div className="text-xs font-bold">INV-029{i}</div>
-                            <div className="text-[8px] text-muted-foreground uppercase font-black">
+                            <div className="text-body-sm font-bold">
+                              INV-029{i}
+                            </div>
+                            <div className="text-caption-premium">
                               Hooli Corp &middot; Dec 2024
                             </div>
                           </div>
                         </div>
                         <Badge
                           variant="outline"
-                          className="text-[8px] uppercase"
+                          className="text-caption-premium uppercase"
                         >
                           Paid
                         </Badge>
@@ -844,7 +832,7 @@ export default function FreelancerWorkflowBot() {
             <Card className="border-border/50">
               <CardHeader className="py-4 border-b border-border/50">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                  <CardTitle className="text-caption-premium flex items-center gap-2">
                     <Briefcase className="w-4 h-4 text-indigo-600" />
                     Task Queue
                   </CardTitle>
@@ -861,7 +849,7 @@ export default function FreelancerWorkflowBot() {
                 {tasks.length === 0 ? (
                   <div className="p-12 text-center">
                     <Briefcase className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-body-sm">
                       No tasks yet. Create your first task.
                     </p>
                   </div>
@@ -882,17 +870,20 @@ export default function FreelancerWorkflowBot() {
                         </button>
                         <div>
                           <div
-                            className={`text-sm font-bold ${task.status === "completed" ? "line-through text-muted-foreground" : ""}`}
+                            className={`text-body-sm font-bold ${task.status === "completed" ? "line-through text-muted-foreground" : ""}`}
                           >
                             {task.title}
                           </div>
-                          <div className="text-[10px] text-muted-foreground">
+                          <div className="text-caption-premium">
                             {new Date(task.createdAt).toLocaleDateString()}
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-[8px]">
+                        <Badge
+                          variant="outline"
+                          className="text-caption-premium"
+                        >
                           {task.priority}
                         </Badge>
                         <Button
@@ -915,7 +906,7 @@ export default function FreelancerWorkflowBot() {
           <TabsContent value="logs">
             <Card className="border-border/50">
               <CardHeader className="py-4 border-b border-border/50">
-                <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                <CardTitle className="text-caption-premium flex items-center gap-2">
                   <History className="w-4 h-4 text-indigo-600" />
                   Automation Logs
                 </CardTitle>
@@ -932,8 +923,10 @@ export default function FreelancerWorkflowBot() {
                           <Zap className="w-4 h-4 text-indigo-600" />
                         </div>
                         <div>
-                          <div className="text-sm font-bold">{agent.name}</div>
-                          <div className="text-[10px] text-muted-foreground">
+                          <div className="text-body-sm font-bold">
+                            {agent.name}
+                          </div>
+                          <div className="text-caption-premium">
                             {agent.type} · {agent.model}
                           </div>
                         </div>
@@ -941,8 +934,8 @@ export default function FreelancerWorkflowBot() {
                       <Badge
                         className={
                           agent.status === "active"
-                            ? "bg-green-500 text-white text-[8px]"
-                            : "bg-muted text-[8px]"
+                            ? "bg-green-500 text-white text-caption-premium"
+                            : "bg-muted text-caption-premium"
                         }
                       >
                         {agent.status}
@@ -952,7 +945,7 @@ export default function FreelancerWorkflowBot() {
                 ) : (
                   <div className="p-12 text-center">
                     <History className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-body-sm">
                       No agents deployed yet. Authorize an agent to see logs.
                     </p>
                   </div>
@@ -965,7 +958,7 @@ export default function FreelancerWorkflowBot() {
           <TabsContent value="invoices">
             <Card className="border-border/50">
               <CardHeader className="py-4 border-b border-border/50">
-                <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                <CardTitle className="text-caption-premium flex items-center gap-2">
                   <FileCheck className="w-4 h-4 text-indigo-600" />
                   Invoice Chasing
                 </CardTitle>
@@ -973,10 +966,8 @@ export default function FreelancerWorkflowBot() {
               <CardContent className="p-6">
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div className="p-4 rounded-lg bg-orange-500/5 border border-orange-500/20">
-                    <div className="text-[10px] text-muted-foreground uppercase font-bold">
-                      Outstanding
-                    </div>
-                    <div className="text-2xl font-bold text-orange-500">
+                    <div className="text-caption-premium">Outstanding</div>
+                    <div className="text-stat text-orange-500">
                       $
                       {invoices
                         .filter(i => i.status === "pending")
@@ -985,10 +976,8 @@ export default function FreelancerWorkflowBot() {
                     </div>
                   </div>
                   <div className="p-4 rounded-lg bg-green-500/5 border border-green-500/20">
-                    <div className="text-[10px] text-muted-foreground uppercase font-bold">
-                      Collected
-                    </div>
-                    <div className="text-2xl font-bold text-green-500">
+                    <div className="text-caption-premium">Collected</div>
+                    <div className="text-stat text-green-500">
                       $
                       {invoices
                         .filter(i => i.status === "paid")
@@ -997,7 +986,7 @@ export default function FreelancerWorkflowBot() {
                     </div>
                   </div>
                 </div>
-                <p className="text-sm text-muted-foreground text-center">
+                <p className="text-body-sm text-center">
                   Connect Stripe to enable automatic invoice generation and
                   chasing.
                 </p>
@@ -1010,7 +999,7 @@ export default function FreelancerWorkflowBot() {
             <div className="grid gap-6 md:grid-cols-2">
               <Card className="border-border/50">
                 <CardHeader className="py-4 border-b border-border/50">
-                  <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                  <CardTitle className="text-caption-premium flex items-center gap-2">
                     <TrendingUp className="w-4 h-4 text-indigo-600" />
                     Earnings ROI
                   </CardTitle>
@@ -1057,7 +1046,7 @@ export default function FreelancerWorkflowBot() {
               </Card>
               <Card className="border-border/50">
                 <CardHeader className="py-4 border-b border-border/50">
-                  <CardTitle className="text-xs font-black uppercase tracking-widest">
+                  <CardTitle className="text-caption-premium">
                     Performance
                   </CardTitle>
                 </CardHeader>
@@ -1092,7 +1081,7 @@ export default function FreelancerWorkflowBot() {
           <TabsContent value="taxes">
             <Card className="border-border/50">
               <CardHeader className="py-4 border-b border-border/50">
-                <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                <CardTitle className="text-caption-premium flex items-center gap-2">
                   <Shield className="w-4 h-4 text-indigo-600" />
                   Tax Provisioning
                 </CardTitle>
@@ -1100,18 +1089,14 @@ export default function FreelancerWorkflowBot() {
               <CardContent className="p-6">
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div className="p-4 rounded-lg bg-red-500/5 border border-red-500/20">
-                    <div className="text-[10px] text-muted-foreground uppercase font-bold">
-                      Estimated Tax
-                    </div>
-                    <div className="text-2xl font-bold text-red-500">
+                    <div className="text-caption-premium">Estimated Tax</div>
+                    <div className="text-stat text-red-500">
                       ${taxEstimate.estimatedTax.toLocaleString()}
                     </div>
                   </div>
                   <div className="p-4 rounded-lg bg-green-500/5 border border-green-500/20">
-                    <div className="text-[10px] text-muted-foreground uppercase font-bold">
-                      Deductible
-                    </div>
-                    <div className="text-2xl font-bold text-green-500">
+                    <div className="text-caption-premium">Deductible</div>
+                    <div className="text-stat text-green-500">
                       ${taxEstimate.deductible.toLocaleString()}
                     </div>
                   </div>
@@ -1127,7 +1112,7 @@ export default function FreelancerWorkflowBot() {
                       key={item.q}
                       className="flex items-center justify-between p-3 rounded bg-muted/30"
                     >
-                      <span className="text-sm font-bold">
+                      <span className="text-body-sm font-bold">
                         {item.q} Estimated
                       </span>
                       <div className="flex items-center gap-3">
@@ -1137,8 +1122,8 @@ export default function FreelancerWorkflowBot() {
                         <Badge
                           className={
                             item.status === "Paid"
-                              ? "bg-green-500/10 text-green-500 text-[8px]"
-                              : "bg-orange-500/10 text-orange-500 text-[8px]"
+                              ? "bg-green-500/10 text-green-500 text-caption-premium"
+                              : "bg-orange-500/10 text-orange-500 text-caption-premium"
                           }
                         >
                           {item.status}
@@ -1156,7 +1141,7 @@ export default function FreelancerWorkflowBot() {
             <Card className="border-border/50">
               <CardHeader className="py-4 border-b border-border/50">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                  <CardTitle className="text-caption-premium flex items-center gap-2">
                     <Timer className="w-4 h-4 text-indigo-600" />
                     Smart Schedule
                   </CardTitle>
@@ -1173,7 +1158,7 @@ export default function FreelancerWorkflowBot() {
                 {scheduleEvents.length === 0 ? (
                   <div className="p-12 text-center">
                     <Calendar className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-body-sm">
                       No events scheduled. Add your first event.
                     </p>
                   </div>
@@ -1188,13 +1173,13 @@ export default function FreelancerWorkflowBot() {
                           <Calendar className="w-4 h-4 text-indigo-600" />
                         </div>
                         <div>
-                          <div className="text-sm font-bold">{evt.title}</div>
-                          <div className="text-[10px] text-muted-foreground">
-                            {evt.date}
+                          <div className="text-body-sm font-bold">
+                            {evt.title}
                           </div>
+                          <div className="text-caption-premium">{evt.date}</div>
                         </div>
                       </div>
-                      <Badge variant="outline" className="text-[8px]">
+                      <Badge variant="outline" className="text-caption-premium">
                         {evt.type}
                       </Badge>
                     </div>
@@ -1208,7 +1193,7 @@ export default function FreelancerWorkflowBot() {
           <TabsContent value="travel">
             <Card className="border-border/50">
               <CardHeader className="py-4 border-b border-border/50">
-                <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                <CardTitle className="text-caption-premium flex items-center gap-2">
                   <Globe className="w-4 h-4 text-indigo-600" />
                   Travel Agent
                 </CardTitle>
@@ -1254,8 +1239,8 @@ export default function FreelancerWorkflowBot() {
                       className="p-6 rounded-lg border border-border/50 hover:bg-muted/50 text-left transition-colors"
                     >
                       <item.icon className="w-6 h-6 text-indigo-600 mb-3" />
-                      <div className="font-bold text-sm">{item.label}</div>
-                      <div className="text-[10px] text-muted-foreground mt-1">
+                      <div className="text-card-title">{item.label}</div>
+                      <div className="text-caption-premium mt-1">
                         {item.desc}
                       </div>
                     </button>
@@ -1269,7 +1254,7 @@ export default function FreelancerWorkflowBot() {
           <TabsContent value="integrations">
             <Card className="border-border/50">
               <CardHeader className="py-4 border-b border-border/50">
-                <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                <CardTitle className="text-caption-premium flex items-center gap-2">
                   <Layers className="w-4 h-4 text-indigo-600" />
                   Integration Hub
                 </CardTitle>
@@ -1284,10 +1269,10 @@ export default function FreelancerWorkflowBot() {
                       <div className="flex items-center gap-3">
                         <span className="text-2xl">{integration.icon}</span>
                         <div>
-                          <div className="font-bold text-sm">
+                          <div className="text-card-title">
                             {integration.name}
                           </div>
-                          <div className="text-[10px] text-muted-foreground">
+                          <div className="text-caption-premium">
                             {integration.connected
                               ? "Connected"
                               : "Not connected"}
@@ -1324,7 +1309,7 @@ export default function FreelancerWorkflowBot() {
             <Card className="border-border/50">
               <CardHeader className="py-4 border-b border-border/50">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                  <CardTitle className="text-caption-premium flex items-center gap-2">
                     <Users className="w-4 h-4 text-indigo-600" />
                     Client CRM
                   </CardTitle>
@@ -1341,7 +1326,7 @@ export default function FreelancerWorkflowBot() {
                 {clients.length === 0 ? (
                   <div className="p-12 text-center">
                     <Users className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-body-sm">
                       No clients yet. Add your first client.
                     </p>
                   </div>
@@ -1352,25 +1337,27 @@ export default function FreelancerWorkflowBot() {
                       className="flex items-center justify-between p-4 border-b border-border/30 last:border-0 hover:bg-muted/20"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded bg-indigo-50 flex items-center justify-center text-xs font-bold text-indigo-600">
+                        <div className="w-8 h-8 rounded bg-indigo-50 flex items-center justify-center text-body-sm font-bold text-indigo-600">
                           {client.name.substring(0, 2).toUpperCase()}
                         </div>
                         <div>
-                          <div className="text-sm font-bold">{client.name}</div>
-                          <div className="text-[10px] text-muted-foreground">
+                          <div className="text-body-sm font-bold">
+                            {client.name}
+                          </div>
+                          <div className="text-caption-premium">
                             {client.email}
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-body-sm">
                           {client.projects} projects
                         </span>
                         <Badge
                           className={
                             client.status === "active"
-                              ? "bg-green-500/10 text-green-500 text-[8px]"
-                              : "bg-amber-500/10 text-amber-500 text-[8px]"
+                              ? "bg-green-500/10 text-green-500 text-caption-premium"
+                              : "bg-amber-500/10 text-amber-500 text-caption-premium"
                           }
                         >
                           {client.status}
@@ -1387,7 +1374,7 @@ export default function FreelancerWorkflowBot() {
           <TabsContent value="intelligence">
             <Card className="border-border/50">
               <CardHeader className="py-4 border-b border-border/50">
-                <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                <CardTitle className="text-caption-premium flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-indigo-600" />
                   AI Insights
                 </CardTitle>
@@ -1395,30 +1382,30 @@ export default function FreelancerWorkflowBot() {
               <CardContent className="p-6">
                 <div className="space-y-4">
                   <div className="p-4 rounded-lg bg-indigo-500/5 border border-indigo-500/20">
-                    <div className="text-xs font-bold text-indigo-500 mb-2">
+                    <div className="text-body-sm font-bold text-indigo-500 mb-2">
                       Revenue Optimization
                     </div>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-body-sm">
                       Based on your project history, consider raising rates for
                       long-term clients by 12-15%. Average industry rate for
                       your skillset has increased.
                     </p>
                   </div>
                   <div className="p-4 rounded-lg bg-green-500/5 border border-green-500/20">
-                    <div className="text-xs font-bold text-green-500 mb-2">
+                    <div className="text-body-sm font-bold text-green-500 mb-2">
                       Client Health
                     </div>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-body-sm">
                       Acme Corp engagement is strong. Consider upselling
                       compliance automation services based on their recent
                       activity.
                     </p>
                   </div>
                   <div className="p-4 rounded-lg bg-amber-500/5 border border-amber-500/20">
-                    <div className="text-xs font-bold text-amber-500 mb-2">
+                    <div className="text-body-sm font-bold text-amber-500 mb-2">
                       Capacity Alert
                     </div>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-body-sm">
                       You're at 78% utilization. Adding one more active project
                       may impact delivery quality. Consider delegating to
                       agents.
@@ -1433,7 +1420,7 @@ export default function FreelancerWorkflowBot() {
           <TabsContent value="growth">
             <Card className="border-border/50">
               <CardHeader className="py-4 border-b border-border/50">
-                <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                <CardTitle className="text-caption-premium flex items-center gap-2">
                   <Zap className="w-4 h-4 text-indigo-600" />
                   Growth Engine
                 </CardTitle>
@@ -1441,17 +1428,13 @@ export default function FreelancerWorkflowBot() {
               <CardContent className="p-6">
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div className="p-4 rounded-lg bg-green-500/5 border border-green-500/20 text-center">
-                    <div className="text-[10px] text-muted-foreground uppercase font-bold">
-                      Active Clients
-                    </div>
+                    <div className="text-caption-premium">Active Clients</div>
                     <div className="text-2xl font-bold">
                       {clients.filter(c => c.status === "active").length}
                     </div>
                   </div>
                   <div className="p-4 rounded-lg bg-blue-500/5 border border-blue-500/20 text-center">
-                    <div className="text-[10px] text-muted-foreground uppercase font-bold">
-                      Prospects
-                    </div>
+                    <div className="text-caption-premium">Prospects</div>
                     <div className="text-2xl font-bold">
                       {clients.filter(c => c.status === "prospect").length}
                     </div>
@@ -1492,7 +1475,7 @@ export default function FreelancerWorkflowBot() {
           <TabsContent value="settings">
             <Card className="border-border/50">
               <CardHeader className="py-4 border-b border-border/50">
-                <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                <CardTitle className="text-caption-premium flex items-center gap-2">
                   <Settings className="w-4 h-4 text-indigo-600" />
                   Bot Settings
                 </CardTitle>
@@ -1526,9 +1509,7 @@ export default function FreelancerWorkflowBot() {
                   >
                     <div>
                       <p className="font-medium text-sm">{setting.label}</p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {setting.desc}
-                      </p>
+                      <p className="text-caption-premium">{setting.desc}</p>
                     </div>
                     <Switch
                       checked={(botSettings as any)[setting.key]}
@@ -1572,7 +1553,7 @@ export default function FreelancerWorkflowBot() {
 
       <footer className="border-t bg-background py-8">
         <div className="container mx-auto px-4 text-center">
-          <p className="text-xs text-muted-foreground font-black uppercase tracking-[0.2em] opacity-40">
+          <p className="text-body-sm font-black uppercase tracking-[0.2em] opacity-40">
             Alpha Sentinel &middot; WorkflowBot Strategic Autonomy &middot; 2026
           </p>
         </div>

@@ -131,7 +131,7 @@ export default function Billing() {
       try {
         const [sub, inv] = await Promise.all([
           billingApi.subscription(),
-          billingApi.invoices()
+          billingApi.invoices(),
         ]);
         setSubscription(sub);
         setInvoiceHistory(inv);
@@ -145,14 +145,19 @@ export default function Billing() {
     fetchData();
   }, []);
 
-  const handleUpgrade = async (planId: string, provider: "stripe" | "paypal" = "stripe") => {
+  const handleUpgrade = async (
+    planId: string,
+    provider: "stripe" | "paypal" = "stripe"
+  ) => {
     setIsLoading(true);
     setSelectedPlan(planId);
 
     try {
-      toast.loading(`Redirecting to ${provider.charAt(0).toUpperCase() + provider.slice(1)}...`);
+      toast.loading(
+        `Redirecting to ${provider.charAt(0).toUpperCase() + provider.slice(1)}...`
+      );
       const response = await billingApi.createCheckout(planId);
-      
+
       if (response && response.url) {
         window.location.assign(response.url);
       } else {
@@ -160,7 +165,7 @@ export default function Billing() {
       }
     } catch (err: any) {
       toast.error("Failed to initiate checkout", {
-        description: err.message || "Please check your network connection."
+        description: err.message || "Please check your network connection.",
       });
       setIsLoading(false);
     }
@@ -169,15 +174,15 @@ export default function Billing() {
   const handleAddPayment = async () => {
     toast.info("Securely redirecting to your Customer Portal...");
     try {
-        const response = await billingApi.updatePaymentMethod("portal");
-        // REAL-FIRST: Redirect to actual portal URL if provided
-        if (response && (response as any).url) {
-            window.location.assign((response as any).url);
-        } else {
-            toast.success("Portal access granted - No direct redirect provided");
-        }
+      const response = await billingApi.updatePaymentMethod("portal");
+      // REAL-FIRST: Redirect to actual portal URL if provided
+      if (response && (response as any).url) {
+        window.location.assign((response as any).url);
+      } else {
+        toast.success("Portal access granted - No direct redirect provided");
+      }
     } catch (err) {
-        toast.error("Cloud vault connection failed");
+      toast.error("Cloud vault connection failed");
     }
   };
 
@@ -186,15 +191,15 @@ export default function Billing() {
     // In production, this would open the pdfUrl from the invoice object
     const invoice = invoiceHistory.find(inv => inv.id === id);
     if (invoice && invoice.pdfUrl) {
-        window.open(invoice.pdfUrl, "_blank");
+      window.open(invoice.pdfUrl, "_blank");
     }
   };
 
   if (isDataLoading) {
     return (
-        <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-            <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
-        </div>
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
+      </div>
     );
   }
 
@@ -202,7 +207,7 @@ export default function Billing() {
     <div className="min-h-screen bg-slate-900 text-white p-8">
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-display-hero text-3xl tracking-tighter mb-2">Billing & Subscription</h1>
+          <h1 className="text-display-hero mb-2">Billing & Subscription</h1>
           <p className="text-caption-premium text-[11px] text-slate-400/80 leading-none mt-1">
             Real-time subscription management via Stripe & PayPal
           </p>
@@ -227,12 +232,20 @@ export default function Billing() {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-lg font-semibold text-blue-400">
+                    <h3 className="text-card-title text-blue-400">
                       Current Plan:{" "}
-                      {subscription?.plan ? subscription.plan.charAt(0).toUpperCase() + subscription.plan.slice(1) : "Free"}
+                      {subscription?.plan
+                        ? subscription.plan.charAt(0).toUpperCase() +
+                          subscription.plan.slice(1)
+                        : "Free"}
                     </h3>
                     <p className="text-sm text-slate-400">
-                      Renews on: {subscription?.currentPeriodEnd ? new Date(subscription.currentPeriodEnd).toLocaleDateString() : "N/A"}
+                      Renews on:{" "}
+                      {subscription?.currentPeriodEnd
+                        ? new Date(
+                            subscription.currentPeriodEnd
+                          ).toLocaleDateString()
+                        : "N/A"}
                     </p>
                   </div>
                   <Badge
@@ -272,7 +285,7 @@ export default function Billing() {
                       {plan.features.map((feature, idx) => (
                         <li
                           key={idx}
-                          className="flex items-center gap-2 text-sm"
+                          className="flex items-center gap-2 text-body-sm"
                         >
                           <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
                           {feature}
@@ -310,7 +323,8 @@ export default function Billing() {
               <CardHeader>
                 <CardTitle>Secure Checkout & Portal</CardTitle>
                 <CardDescription className="text-slate-400">
-                  Manage your payment methods via the Stripe/PayPal native environments
+                  Manage your payment methods via the Stripe/PayPal native
+                  environments
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -329,7 +343,8 @@ export default function Billing() {
                 <div className="flex items-center gap-2 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
                   <Shield className="w-5 h-5 text-blue-500" />
                   <p className="text-sm text-blue-200">
-                    Your payment data is fully encrypted and managed by Stripe/PayPal.
+                    Your payment data is fully encrypted and managed by
+                    Stripe/PayPal.
                   </p>
                 </div>
               </CardContent>
@@ -346,44 +361,50 @@ export default function Billing() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {invoiceHistory.length > 0 ? invoiceHistory.map(invoice => (
-                    <div
-                      key={invoice.id}
-                      className="flex items-center justify-between p-4 rounded-lg bg-slate-700/30 border border-slate-600"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-lg bg-slate-600 flex items-center justify-center">
-                          <History className="w-5 h-5 text-slate-300" />
+                  {invoiceHistory.length > 0 ? (
+                    invoiceHistory.map(invoice => (
+                      <div
+                        key={invoice.id}
+                        className="flex items-center justify-between p-4 rounded-lg bg-slate-700/30 border border-slate-600"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-lg bg-slate-600 flex items-center justify-center">
+                            <History className="w-5 h-5 text-slate-300" />
+                          </div>
+                          <div>
+                            <p className="text-body-sm font-medium">
+                              {invoice.id}
+                            </p>
+                            <p className="text-body-sm text-slate-400">
+                              {new Date(invoice.date).toLocaleDateString()}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium">{invoice.id}</p>
-                          <p className="text-sm text-slate-400">
-                            {new Date(invoice.date).toLocaleDateString()}
-                          </p>
+                        <div className="flex items-center gap-4">
+                          <span className="font-semibold">
+                            ${invoice.amount / 100}
+                          </span>
+                          <Badge
+                            variant="outline"
+                            className="bg-green-500/20 text-green-400 border-green-500/30"
+                          >
+                            {invoice.status}
+                          </Badge>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            data-testid={`btn-download-invoice-${invoice.id}`}
+                            onClick={() => handleDownloadInvoice(invoice.id)}
+                          >
+                            <Download className="w-4 h-4" />
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <span className="font-semibold">
-                          ${invoice.amount / 100}
-                        </span>
-                        <Badge
-                          variant="outline"
-                          className="bg-green-500/20 text-green-400 border-green-500/30"
-                        >
-                          {invoice.status}
-                        </Badge>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          data-testid={`btn-download-invoice-${invoice.id}`}
-                          onClick={() => handleDownloadInvoice(invoice.id)}
-                        >
-                          <Download className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  )) : (
-                    <p className="text-center text-slate-500 py-8">No invoices found for this account.</p>
+                    ))
+                  ) : (
+                    <p className="text-center text-slate-500 py-8">
+                      No invoices found for this account.
+                    </p>
                   )}
                 </div>
               </CardContent>
@@ -391,7 +412,7 @@ export default function Billing() {
           </TabsContent>
         </Tabs>
       </div>
-      
+
       <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
         <DialogContent className="sm:max-w-[425px] bg-slate-900 border-slate-800 text-white">
           <DialogHeader>
@@ -400,11 +421,12 @@ export default function Billing() {
                 <CheckCircle2 className="w-12 h-12" />
               </div>
             </div>
-            <DialogTitle className="text-center text-2xl font-bold">
+            <DialogTitle className="text-section-headline text-center">
               Subscription Active
             </DialogTitle>
-            <DialogDescription className="text-center text-slate-400">
-              Your account has been successfully synchronized with the payment provider.
+            <DialogDescription className="text-body-sm text-center">
+              Your account has been successfully synchronized with the payment
+              provider.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

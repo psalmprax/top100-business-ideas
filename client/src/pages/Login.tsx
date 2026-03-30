@@ -232,10 +232,10 @@ export default function Login() {
                                     <Icon className="w-4 h-4" />
                                   </div>
                                   <div>
-                                    <div className="text-xs text-slate-400 font-medium uppercase tracking-wider">
+                                    <div className="text-caption-premium">
                                       Signing into
                                     </div>
-                                    <div className="text-sm font-bold text-white">
+                                    <div className="text-body-sm font-bold">
                                       {P.label}
                                     </div>
                                   </div>
@@ -286,7 +286,7 @@ export default function Login() {
                             href="/forgot-password"
                             title="Forgot password?"
                           >
-                            <span className="text-sm text-blue-400 hover:text-blue-300 cursor-pointer">
+                            <span className="text-body-sm text-blue-400 hover:text-blue-300 cursor-pointer">
                               Forgot password?
                             </span>
                           </Link>
@@ -455,8 +455,10 @@ export default function Login() {
           ) : (
             <div className="space-y-6">
               <div className="text-center space-y-2">
-                <h3 className="text-xl font-bold text-white">Select Product</h3>
-                <p className="text-sm text-slate-400">
+                <h3 className="text-section-headline text-white">
+                  Select Product
+                </h3>
+                <p className="text-body-sm">
                   Please choose which product you'd like to sign into
                 </p>
               </div>
@@ -486,7 +488,7 @@ export default function Login() {
                       </div>
                       <div className="flex-1">
                         <div className="font-bold text-white">{P.label}</div>
-                        <div className="text-xs text-slate-500 uppercase tracking-widest mt-0.5">
+                        <div className="text-caption-premium mt-0.5">
                           Active Subscription
                         </div>
                       </div>

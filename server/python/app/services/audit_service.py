@@ -1,89 +1,84 @@
 """
-Audit and Compliance Service for Agent Ops
-Handles persistent logging of agent actions and report generation.
+Audit Service for AgentOps Sentinel Hardening
+Unifies querying of ComplianceAuditLog and AgentAuditLog for a real-time audit trail.
 """
 
-import logging
-import json
+from typing import List, Dict, Any, Optional
 from datetime import datetime
-from typing import List, Optional, Dict, Any
-from sqlmodel import Session, select
-from app.core.database import engine
-from app.core.models import AgentAuditLog
+import logging
+from sqlmodel import Session, select, desc, or_
+from app.core.models import ComplianceAuditLog, AgentAuditLog
 
 logger = logging.getLogger(__name__)
 
 class AuditService:
-    """Service to handle agent audit records and compliance auditing"""
+    """
+    Unified search service for all system and compliance actions.
+    Ensures 100% audit visibility across PostgreSQL log tables.
+    """
 
-    def log_action(
-        self,
-        agent_id: str,
-        action: str,
-        intent: str,
-        outcome: str,
-        reasoning: Optional[str] = None,
-        risk_score: float = 0.0,
-        metadata: Optional[Dict[str, Any]] = None
-    ) -> str:
-        """Create a new audit entry"""
-        try:
-            with Session(engine) as session:
-                log = AgentAuditLog(
-                    agent_id=agent_id,
-                    action=action,
-                    intent=intent,
-                    outcome=outcome,
-                    reasoning=reasoning,
-                    risk_score=risk_score,
-                    metadata_json=metadata or {}
-                )
-                session.add(log)
-                session.commit()
-                session.refresh(log)
-                return log.id
-        except Exception as e:
-            logger.error(f"Failed to log audit action: {e}")
-            return None
+    def get_combined_logs(
+        self, 
+        session: Session, 
+        agent_id: Optional[str] = None, 
+        resource: Optional[str] = None,
+        action: Optional[str] = None,
+        status: Optional[str] = None,
+        limit: int = 50
+    ) -> List[Dict[str, Any]]:
+        """
+        Fetch and merge compliance and operational logs into a single view.
+        """
+        combined = []
 
-    def get_logs(self, agent_id: Optional[str] = None, limit: int = 50) -> List[AgentAuditLog]:
-        """Retrieve recent audit logs"""
-        with Session(engine) as session:
-            statement = select(AgentAuditLog).order_by(AgentAuditLog.timestamp.desc()).limit(limit)
-            if agent_id:
-                statement = statement.where(AgentAuditLog.agent_id == agent_id)
-            return session.exec(statement).all()
-
-    def generate_hipaa_report(self) -> Dict[str, Any]:
-        """Analyze logs for HIPAA compliance (Protected Health Information access)"""
-        logs = self.get_logs(limit=1000)
-        phi_related = [log for log in logs if "PHI" in log.action or "patient" in log.intent.lower()]
+        # 1. Fetch Compliance Audit Logs (AI Act Registration, Scans, etc.)
+        comp_query = select(ComplianceAuditLog)
+        if resource:
+            comp_query = comp_query.where(ComplianceAuditLog.resource.contains(resource))
+        if action:
+            comp_query = comp_query.where(ComplianceAuditLog.action == action)
+        if status:
+            comp_query = comp_query.where(ComplianceAuditLog.status == status)
         
-        status = "COMPLIANT" if all(log.outcome == "approved" for log in phi_related) else "NON_COMPLIANT"
+        comp_logs = session.exec(comp_query.order_by(desc(ComplianceAuditLog.timestamp)).limit(limit)).all()
         
-        return {
-            "report_type": "HIPAA_AUDIT",
-            "timestamp": datetime.utcnow().isoformat(),
-            "status": status,
-            "total_records_analyzed": len(logs),
-            "phi_access_events": len(phi_related),
-            "summary": "Verified all agents followed encryption and authorization protocols for PHI data."
-        }
+        for log in comp_logs:
+            combined.append({
+                "id": str(log.id),
+                "timestamp": log.timestamp.isoformat(),
+                "user": log.user_id,
+                "action": log.action,
+                "resource": log.resource,
+                "status": log.status,
+                "type": "compliance",
+                "complianceType": log.compliance_type,
+                "metadata": log.metadata_json
+            })
 
-    def generate_sox_report(self) -> Dict[str, Any]:
-        """Analyze logs for SOX compliance (Financial controls)"""
-        logs = self.get_logs(limit=1000)
-        finance_related = [log for log in logs if "finance" in log.action.lower() or "budget" in log.intent.lower()]
+        # 2. Fetch Agent Audit Logs (Cloning, Optimization, etc.)
+        agent_query = select(AgentAuditLog)
+        if agent_id:
+            agent_query = agent_query.where(AgentAuditLog.agent_id == agent_id)
+        if action:
+            agent_query = agent_query.where(AgentAuditLog.action == action)
         
-        high_risk_events = [log for log in finance_related if log.risk_score > 0.7]
+        agent_logs = session.exec(agent_query.order_by(desc(AgentAuditLog.timestamp)).limit(limit)).all()
         
-        return {
-            "report_type": "SOX_FINANCIAL_CONTROL",
-            "timestamp": datetime.utcnow().isoformat(),
-            "status": "APPROVED" if not high_risk_events else "REVIEW_REQUIRED",
-            "high_risk_anomalies": len(high_risk_events),
-            "summary": "Financial boundaries enforced. All large-scale treasury movements required multi-agent consensus."
-        }
+        for log in agent_logs:
+            combined.append({
+                "id": str(log.id),
+                "timestamp": log.timestamp.isoformat(),
+                "user": log.user_id,
+                "action": log.action,
+                "resource": f"Agent:{log.agent_id}",
+                "status": "completed", # Implicit success for these logs
+                "type": "operational",
+                "metadata": log.metadata_json
+            })
 
-# Singleton instance
+        # Sort by timestamp descending
+        combined.sort(key=lambda x: x["timestamp"], reverse=True)
+        return combined[:limit]
+
+# Singleton
 audit_service = AuditService()

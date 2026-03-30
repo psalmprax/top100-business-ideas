@@ -290,9 +290,7 @@ export default function AlphaAI() {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600">
                 <Zap className="h-5 w-5 text-white" />
               </div>
-              <span className="text-card-title text-white">
-                AlphaAI
-              </span>
+              <span className="text-card-title text-white">AlphaAI</span>
             </div>
 
             {/* Desktop Nav */}
@@ -307,7 +305,7 @@ export default function AlphaAI() {
               {isManagement && (
                 <a
                   href="#internal"
-                  className="text-sm font-medium text-indigo-500 hover:text-indigo-400 transition-colors flex items-center gap-1"
+                  className="text-feature font-medium text-indigo-500 hover:text-indigo-400 transition-colors flex items-center gap-1"
                   data-testid="nav-internal"
                 >
                   <Lock className="h-3 w-3" /> Internal
@@ -356,7 +354,7 @@ export default function AlphaAI() {
             <nav className="flex flex-col gap-4">
               <a
                 href="#products"
-                className="text-sm font-medium"
+                className="text-feature font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Products
@@ -364,7 +362,7 @@ export default function AlphaAI() {
               {isManagement && (
                 <a
                   href="#internal"
-                  className="text-sm font-medium text-indigo-500"
+                  className="text-feature font-medium text-indigo-500"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Internal Tools
@@ -372,21 +370,21 @@ export default function AlphaAI() {
               )}
               <a
                 href="#solutions"
-                className="text-sm font-medium"
+                className="text-feature font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Solutions
               </a>
               <a
                 href="#pricing"
-                className="text-sm font-medium"
+                className="text-feature font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Pricing
               </a>
               <a
                 href="#about"
-                className="text-sm font-medium"
+                className="text-feature font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 About
@@ -505,7 +503,7 @@ export default function AlphaAI() {
                       </div>
                       <ArrowRight className="h-5 w-5 text-muted-foreground/30 group-hover:text-primary transition-colors" />
                     </div>
-                    <CardTitle className="text-card-title text-2xl group-hover:text-primary transition-colors">
+                    <CardTitle className="text-card-title group-hover:text-primary transition-colors">
                       {product.name}
                     </CardTitle>
                     <p className="text-caption-premium text-primary/80 mt-1 uppercase">
@@ -592,11 +590,11 @@ export default function AlphaAI() {
                             className={`h-6 w-6 ${tool.color.replace("bg-", "text-")}`}
                           />
                         </div>
-                        <div className="text-[10px] font-bold px-2 py-1 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 uppercase tracking-tighter">
+                        <div className="text-caption-premium px-2 py-1 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 uppercase">
                           Restricted Access
                         </div>
                       </div>
-                      <CardTitle className="text-card-title text-2xl">
+                      <CardTitle className="text-card-title">
                         {tool.name}
                       </CardTitle>
                       <p className="text-caption-premium text-indigo-400 mt-1 uppercase">
@@ -677,10 +675,8 @@ export default function AlphaAI() {
                       />
                     </div>
                     <div>
-                      <h3 className="text-card-title text-2xl mb-1">
-                        {product.name}
-                      </h3>
-                      <p className="text-xs font-semibold text-primary mb-4">
+                      <h3 className="text-card-title mb-1">{product.name}</h3>
+                      <p className="text-caption-premium text-primary mb-4">
                         {product.tagline}
                       </p>
                       <p className="text-body leading-relaxed mb-6">
@@ -834,7 +830,7 @@ export default function AlphaAI() {
                 <CardTitle className="text-card-title">Developer</CardTitle>
                 <p className="text-price">
                   $0
-                  <span className="text-sm font-normal text-muted-foreground">
+                  <span className="text-body-sm text-muted-foreground">
                     /free
                   </span>
                 </p>
@@ -855,7 +851,7 @@ export default function AlphaAI() {
                 <CardTitle className="text-card-title">Starter</CardTitle>
                 <p className="text-price">
                   $499
-                  <span className="text-sm font-normal text-muted-foreground">
+                  <span className="text-body-sm text-muted-foreground">
                     /month
                   </span>
                 </p>
@@ -878,7 +874,7 @@ export default function AlphaAI() {
                 </CardTitle>
                 <p className="text-price">
                   $1,499
-                  <span className="text-sm font-normal text-muted-foreground">
+                  <span className="text-body-sm text-muted-foreground">
                     /month
                   </span>
                 </p>
@@ -901,7 +897,7 @@ export default function AlphaAI() {
                 </CardTitle>
                 <p className="text-price">
                   $2,500
-                  <span className="text-sm font-normal text-muted-foreground">
+                  <span className="text-body-sm text-muted-foreground">
                     + /month
                   </span>
                 </p>
@@ -960,9 +956,7 @@ export default function AlphaAI() {
               <div className="flex h-6 w-6 items-center justify-center rounded bg-gradient-to-br from-blue-500 to-purple-600">
                 <Zap className="h-3 w-3 text-white" />
               </div>
-              <span className="font-bold font-display tracking-tight">
-                AlphaAI
-              </span>
+              <span className="text-card-title">AlphaAI</span>
             </div>
             <p className="text-body-sm text-muted-foreground">
               © 2026 AlphaAI Inc. All rights reserved.
@@ -970,10 +964,10 @@ export default function AlphaAI() {
             <div className="flex items-center gap-6">
               <button
                 onClick={() => {
-                  const w = window.open("", "_blank", "width=600,height=400");
+                  const w = window.open("", "_blank", "width=700,height=600");
                   if (w) {
                     w.document.write(
-                      '<html><head><title>Privacy Policy</title></head><body style="font-family:sans-serif;padding:2rem;background:#0f172a;color:#e2e8f0"><h1>Privacy Policy</h1><p>AlphaAI Inc. respects your privacy. We collect only necessary data to provide our services. Data is encrypted at rest and in transit. We do not sell user data to third parties. For inquiries, contact privacy@alphaai.example.com</p><p>Last updated: March 2026</p></body></html>'
+                      `<!DOCTYPE html><html><head><title>Privacy Policy - AlphaAI</title><meta charset="utf-8"><style>body{font-family:system-ui,sans-serif;padding:2rem;max-width:700px;margin:0 auto;background:#0f172a;color:#e2e8f0;line-height:1.7}h1{font-size:1.5rem;margin-bottom:1rem;border-bottom:1px solid #334155;padding-bottom:.5rem}h2{font-size:1.1rem;margin-top:1.5rem;color:#94a3b8}p,li{font-size:.9rem;color:#94a3b8}ul{padding-left:1.5rem}</style></head><body><h1>Privacy Policy</h1><p><strong>Effective Date:</strong> March 1, 2026</p><h2>1. Data Collection</h2><p>AlphaAI collects account information (name, email), usage analytics, and API request logs to provide and improve our services.</p><h2>2. Data Usage</h2><p>We use collected data to: provide AI services, improve model accuracy, ensure security, and comply with legal obligations.</p><h2>3. Data Protection</h2><p>All data is encrypted at rest (AES-256) and in transit (TLS 1.3). We undergo annual SOC 2 Type II audits.</p><h2>4. Third Parties</h2><p>We do not sell user data. We share data only with sub-processors listed in our DPA, under strict contractual obligations.</p><h2>5. Your Rights</h2><p>You may request data export, correction, or deletion at any time via settings or by contacting privacy@alphaai.com.</p><h2>6. Contact</h2><p>For privacy inquiries: privacy@alphaai.com</p></body></html>`
                     );
                   }
                 }}
@@ -984,10 +978,10 @@ export default function AlphaAI() {
               </button>
               <button
                 onClick={() => {
-                  const w = window.open("", "_blank", "width=600,height=400");
+                  const w = window.open("", "_blank", "width=700,height=600");
                   if (w) {
                     w.document.write(
-                      '<html><head><title>Terms of Service</title></head><body style="font-family:sans-serif;padding:2rem;background:#0f172a;color:#e2e8f0"><h1>Terms of Service</h1><p>By using AlphaAI services, you agree to our terms. Services are provided as-is. Usage is subject to fair use policies. Enterprise clients receive dedicated SLA terms under separate agreement.</p><p>Last updated: March 2026</p></body></html>'
+                      `<!DOCTYPE html><html><head><title>Terms of Service - AlphaAI</title><meta charset="utf-8"><style>body{font-family:system-ui,sans-serif;padding:2rem;max-width:700px;margin:0 auto;background:#0f172a;color:#e2e8f0;line-height:1.7}h1{font-size:1.5rem;margin-bottom:1rem;border-bottom:1px solid #334155;padding-bottom:.5rem}h2{font-size:1.1rem;margin-top:1.5rem;color:#94a3b8}p,li{font-size:.9rem;color:#94a3b8}ul{padding-left:1.5rem}</style></head><body><h1>Terms of Service</h1><p><strong>Effective Date:</strong> March 1, 2026</p><h2>1. Acceptance</h2><p>By using AlphaAI services, you agree to these terms. If you are using on behalf of an organization, you represent authority to bind that organization.</p><h2>2. Services</h2><p>AlphaAI provides AI-powered compliance, security, and workforce automation services. Services are provided as described in your subscription plan.</p><h2>3. Usage Limits</h2><p>Usage is subject to fair use policies and plan-specific rate limits. Excessive usage may require plan upgrades.</p><h2>4. Liability</h2><p>Services are provided "as-is." AlphaAI's liability is limited to the fees paid in the preceding 12 months. Enterprise SLA terms apply under separate agreement.</p><h2>5. Termination</h2><p>Either party may terminate with 30 days written notice. Upon termination, data export is available for 60 days.</p><h2>6. Contact</h2><p>For legal inquiries: legal@alphaai.com</p></body></html>`
                     );
                   }
                 }}
@@ -997,10 +991,11 @@ export default function AlphaAI() {
                 Terms
               </button>
               <button
-                onClick={() =>
-                  (window.location.href =
-                    "mailto:support@alphaai.example.com?subject=Support%20Request")
-                }
+                onClick={() => {
+                  toast.info(
+                    "Contact us at support@alphaai.com or use the lead capture form."
+                  );
+                }}
                 className="text-body-sm text-muted-foreground hover:text-foreground"
                 data-testid="btn-contact"
               >

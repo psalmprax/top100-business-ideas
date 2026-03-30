@@ -906,9 +906,7 @@ export default function AlphaDeepfakeDefense() {
                     <Eye className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <h1 className="font-display text-xl font-bold tracking-tight">
-                      Deepfake Defense
-                    </h1>
+                    <h1 className="text-card-title">Deepfake Defense</h1>
                     <p className="text-caption-premium text-muted-foreground/60 leading-none mt-0.5">
                       LivenessLink Protection
                     </p>
@@ -1023,10 +1021,8 @@ export default function AlphaDeepfakeDefense() {
                 >
                   <cat.icon className="w-5 h-5" />
                 </div>
-                <div className="text-caption-premium text-[11px] mb-1">
-                  {cat.label}
-                </div>
-                <div className="text-feature text-[11px] line-clamp-1 opacity-70">
+                <div className="text-caption-premium mb-1">{cat.label}</div>
+                <div className="text-feature line-clamp-1 opacity-70">
                   {cat.description}
                 </div>
               </button>
@@ -1120,30 +1116,30 @@ export default function AlphaDeepfakeDefense() {
                     <div className="flex flex-col gap-6">
                       <div className="grid grid-cols-2 gap-4">
                         <div className="p-4 rounded-lg bg-muted/30 border border-dashed border-muted-foreground/30 text-center">
-                          <p className="text-xs text-muted-foreground font-mono mb-2 uppercase tracking-wider">
+                          <p className="text-caption-premium font-mono mb-2">
                             Passive detection
                           </p>
-                          <div className="text-lg font-bold text-blue-500">
+                          <div className="text-body-lg font-bold text-blue-500">
                             98.4% Real
                           </div>
-                          <p className="text-[10px] text-muted-foreground mt-1">
+                          <p className="text-caption-premium text-muted-foreground mt-1">
                             Artifact Analysis (ML)
                           </p>
                         </div>
                         <div
                           className={`p-4 rounded-lg border text-center transition-all ${authStatus === "verified" ? "bg-green-500/10 border-green-500/50" : "bg-muted/30 border-dashed border-muted-foreground/30"}`}
                         >
-                          <p className="text-xs text-muted-foreground font-mono mb-2 uppercase tracking-wider">
+                          <p className="text-caption-premium font-mono mb-2">
                             Active Authentication
                           </p>
                           <div
-                            className={`text-lg font-bold ${authStatus === "verified" ? "text-green-500" : "text-muted-foreground"}`}
+                            className={`text-body-lg font-bold ${authStatus === "verified" ? "text-green-500" : "text-muted-foreground"}`}
                           >
                             {authStatus === "verified"
                               ? "CRYPT_SIG_OK"
                               : "WAITING_SIG"}
                           </div>
-                          <p className="text-[10px] text-muted-foreground mt-1">
+                          <p className="text-caption-premium text-muted-foreground mt-1">
                             Hardware Biometric Pulse
                           </p>
                         </div>
@@ -1163,7 +1159,7 @@ export default function AlphaDeepfakeDefense() {
                           </Button>
                         ) : authStatus === "challenging" && currentChallenge ? (
                           <div className="p-4 bg-muted rounded-lg border border-purple-500/30 animate-pulse">
-                            <div className="text-sm font-medium mb-2 text-center">
+                            <div className="text-body-sm font-medium mb-2 text-center">
                               FIDO2 Challenge:{" "}
                               <code className="text-xs">
                                 {currentChallenge?.challenge?.substring(
@@ -1205,7 +1201,7 @@ export default function AlphaDeepfakeDefense() {
                           <div className="p-3 bg-green-500/10 border border-green-500/50 rounded-lg flex items-center justify-between">
                             <div className="flex items-center gap-2 text-green-600">
                               <CheckCircle2 className="w-4 h-4" />
-                              <span className="text-sm font-semibold">
+                              <span className="text-body-sm font-semibold">
                                 Identity 100% Verified
                               </span>
                             </div>
@@ -1478,7 +1474,7 @@ export default function AlphaDeepfakeDefense() {
                           </TableCell>
                           <TableCell>
                             <div className="font-bold">{model.name}</div>
-                            <div className="text-[10px] text-muted-foreground">
+                            <div className="text-caption-premium text-muted-foreground">
                               Version {model.version}
                             </div>
                           </TableCell>
@@ -1669,7 +1665,7 @@ export default function AlphaDeepfakeDefense() {
                           className="p-3 rounded-lg border bg-muted/30"
                         >
                           <div className="flex items-center justify-between mb-2">
-                            <span className="font-mono text-[10px] text-muted-foreground">
+                            <span className="font-mono text-caption-premium text-muted-foreground">
                               {session.id}
                             </span>
                             <Badge
@@ -1762,7 +1758,7 @@ export default function AlphaDeepfakeDefense() {
                           <span className="font-bold">
                             Upload training set (.zip)
                           </span>
-                          <span className="text-[10px] text-muted-foreground mt-1">
+                          <span className="text-caption-premium text-muted-foreground mt-1">
                             Accepts RAW, PNG, WAV formats
                           </span>
                         </Button>
@@ -1807,7 +1803,7 @@ export default function AlphaDeepfakeDefense() {
                             {threat.timestamp.toLocaleDateString()}
                           </span>
                         </div>
-                        <p className="text-sm font-medium">
+                        <p className="text-body-sm font-medium">
                           {threat.description}
                         </p>
                       </div>
@@ -1868,7 +1864,7 @@ export default function AlphaDeepfakeDefense() {
                     <div className="p-4 rounded-lg border flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <FileText className="w-4 h-4 text-blue-500" />
-                        <span className="text-sm font-medium">
+                        <span className="text-body-sm font-medium">
                           Monthly Threat Summary
                         </span>
                       </div>
@@ -1888,7 +1884,7 @@ export default function AlphaDeepfakeDefense() {
                     <div className="p-4 rounded-lg border flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <FileText className="w-4 h-4 text-blue-500" />
-                        <span className="text-sm font-medium">
+                        <span className="text-body-sm font-medium">
                           GDPR Compliance Export
                         </span>
                       </div>
@@ -1964,7 +1960,9 @@ export default function AlphaDeepfakeDefense() {
                     <div className="space-y-4">
                       <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/20">
                         <div>
-                          <div className="text-sm font-medium">SDK Version</div>
+                          <div className="text-body-sm font-medium">
+                            SDK Version
+                          </div>
                           <div className="text-2xl font-bold">
                             {sdkStatus?.version || "v2.4.1"}
                           </div>
@@ -2215,7 +2213,7 @@ export default function AlphaDeepfakeDefense() {
                   <div className="grid gap-6 md:grid-cols-2">
                     <div className="space-y-4">
                       <div className="p-4 rounded-lg border">
-                        <div className="text-sm font-medium mb-1">
+                        <div className="text-body-sm font-medium mb-1">
                           Active Kiosk ID
                         </div>
                         <div className="text-xl font-mono">
@@ -2235,7 +2233,7 @@ export default function AlphaDeepfakeDefense() {
                           <div className="text-xs text-muted-foreground uppercase">
                             Last Threat
                           </div>
-                          <div className="text-lg font-bold text-orange-500">
+                          <div className="text-body-lg font-bold text-orange-500">
                             {kioskStatus?.last_threat_type || "None"}
                           </div>
                         </div>
@@ -2564,7 +2562,7 @@ export default function AlphaDeepfakeDefense() {
                 <CardContent className="space-y-6">
                   <div className="p-8 border-2 border-dashed rounded-xl text-center bg-purple-500/5 border-purple-500/20">
                     <Upload className="w-12 h-12 mx-auto mb-4 text-purple-500 opacity-50" />
-                    <h3 className="text-lg font-bold mb-2">
+                    <h3 className="text-body-lg font-bold mb-2">
                       Ready for High-Res Analysis
                     </h3>
                     <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
@@ -3009,7 +3007,7 @@ export default function AlphaDeepfakeDefense() {
                     <div className="flex items-center justify-between">
                       <div>
                         <Label>Strict Liveness Enforcement</Label>
-                        <p className="text-[10px] text-muted-foreground">
+                        <p className="text-caption-premium text-muted-foreground">
                           Reject any session with &lt;90% confidence
                         </p>
                       </div>
@@ -3028,14 +3026,14 @@ export default function AlphaDeepfakeDefense() {
                   <CardContent className="space-y-4">
                     <div className="p-3 rounded-lg border bg-blue-500/5 border-blue-500/10">
                       <div className="flex justify-between items-center mb-1">
-                        <span className="text-sm font-medium">
+                        <span className="text-body-sm font-medium">
                           Provider: {ssoConfig.provider.toUpperCase()}
                         </span>
                         <Badge className="bg-green-500">
                           {ssoConfig.status.toUpperCase()}
                         </Badge>
                       </div>
-                      <p className="text-[10px] text-muted-foreground font-mono">
+                      <p className="text-caption-premium text-muted-foreground font-mono">
                         HANDSHAKE_HASH:{" "}
                         {ssoConfig.lastHandshake
                           ? btoa(ssoConfig.lastHandshake).substring(0, 16)
@@ -3128,7 +3126,7 @@ export default function AlphaDeepfakeDefense() {
                       <div className="flex items-center gap-2">
                         <Label
                           htmlFor="gql-toggle"
-                          className="text-[10px] text-muted-foreground uppercase tracking-widest"
+                          className="text-caption-premium text-muted-foreground uppercase tracking-widest"
                         >
                           GraphQL Gateway
                         </Label>
@@ -3465,7 +3463,7 @@ export default function AlphaDeepfakeDefense() {
                       <div className="w-16 h-16 rounded-full bg-indigo-500/10 flex items-center justify-center mb-4">
                         <Globe className="w-8 h-8 text-indigo-500 animate-pulse" />
                       </div>
-                      <h3 className="text-lg font-bold mb-2">
+                      <h3 className="text-body-lg font-bold mb-2">
                         Ready to Scan NFC Chip
                       </h3>
                       <p className="text-sm text-muted-foreground mb-4">
@@ -3668,7 +3666,7 @@ export default function AlphaDeepfakeDefense() {
                           <Badge className="bg-purple-500">ACTIVE</Badge>
                         )}
                       </div>
-                      <CardDescription className="text-lg font-bold text-white">
+                      <CardDescription className="text-body-lg font-bold text-white">
                         {tier.price}
                       </CardDescription>
                     </CardHeader>
@@ -3768,7 +3766,7 @@ export default function AlphaDeepfakeDefense() {
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="p-4 rounded-xl border bg-muted/20">
-                        <div className="text-[10px] text-muted-foreground uppercase font-bold mb-1">
+                        <div className="text-caption-premium text-muted-foreground uppercase font-bold mb-1">
                           Human Review
                         </div>
                         <div className="text-xl font-bold">$45/case</div>
@@ -3948,7 +3946,7 @@ export default function AlphaDeepfakeDefense() {
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">
+                    <CardTitle className="text-body-sm font-medium">
                       North Star
                     </CardTitle>
                   </CardHeader>
@@ -3961,7 +3959,7 @@ export default function AlphaDeepfakeDefense() {
                 </Card>
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">
+                    <CardTitle className="text-body-sm font-medium">
                       Secondary
                     </CardTitle>
                   </CardHeader>
@@ -3974,7 +3972,7 @@ export default function AlphaDeepfakeDefense() {
                 </Card>
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">
+                    <CardTitle className="text-body-sm font-medium">
                       Avg Deal Size
                     </CardTitle>
                   </CardHeader>
@@ -3985,7 +3983,7 @@ export default function AlphaDeepfakeDefense() {
                 </Card>
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">
+                    <CardTitle className="text-body-sm font-medium">
                       Sales Cycle
                     </CardTitle>
                   </CardHeader>
@@ -4416,7 +4414,7 @@ export default function AlphaDeepfakeDefense() {
                         <div className="absolute top-6 left-1/2 -translate-x-1/2 w-20 h-4 bg-zinc-800 rounded-full" />
                         <div className="flex-1 p-6 space-y-6 flex flex-col">
                           <div className="text-center space-y-1">
-                            <div className="text-lg font-bold text-white">
+                            <div className="text-body-lg font-bold text-white">
                               Identity Verify
                             </div>
                             <div className="text-xs text-muted-foreground">
@@ -4461,7 +4459,7 @@ export default function AlphaDeepfakeDefense() {
                               <span className="font-mono">0.85</span>
                             </div>
                             <div className="space-y-1">
-                              <div className="text-[10px] text-muted-foreground uppercase">
+                              <div className="text-caption-premium text-muted-foreground uppercase">
                                 Integration Code (TypeScript)
                               </div>
                               <div className="p-3 rounded bg-black font-mono text-[10px] text-blue-400 overflow-x-auto whitespace-normal">
@@ -4920,7 +4918,7 @@ export default function AlphaDeepfakeDefense() {
             <div className="grid gap-6 py-4">
               <div className="grid grid-cols-3 gap-4">
                 <div className="p-4 rounded-xl bg-muted/50 border border-border/50 text-center">
-                  <div className="text-[10px] text-muted-foreground uppercase font-bold mb-1">
+                  <div className="text-caption-premium text-muted-foreground uppercase font-bold mb-1">
                     Threats Blocked
                   </div>
                   <div className="text-2xl font-mono font-bold text-red-500">
@@ -4928,7 +4926,7 @@ export default function AlphaDeepfakeDefense() {
                   </div>
                 </div>
                 <div className="p-4 rounded-xl bg-muted/50 border border-border/50 text-center">
-                  <div className="text-[10px] text-muted-foreground uppercase font-bold mb-1">
+                  <div className="text-caption-premium text-muted-foreground uppercase font-bold mb-1">
                     Avg. Loss / Threat
                   </div>
                   <div className="text-2xl font-mono font-bold text-orange-500">
@@ -4990,7 +4988,7 @@ export default function AlphaDeepfakeDefense() {
                   </div>
                 </div>
 
-                <p className="text-[10px] text-muted-foreground italic text-center">
+                <p className="text-caption-premium text-muted-foreground italic text-center">
                   * ROI estimates based on industry average fraud loss of $50k
                   per compromised financial session (Source: H1 2026 Deepfake
                   Security Report).
@@ -5108,7 +5106,7 @@ export default function AlphaDeepfakeDefense() {
                   defaultValue="alaska"
                   placeholder="Enter a word or phrase"
                 />
-                <p className="text-[10px] text-muted-foreground italic">
+                <p className="text-caption-premium text-muted-foreground italic">
                   Try to choose something that sounds natural in conversation
                   but is unique to you.
                 </p>
@@ -5180,7 +5178,7 @@ export default function AlphaDeepfakeDefense() {
                 <Mic className="w-10 h-10 text-blue-500 " />
               </div>
               <div className="text-center space-y-1">
-                <div className="text-sm font-medium italic">
+                <div className="text-body-sm font-medium italic">
                   "The quick brown fox jumps over the lazy dog"
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -5188,7 +5186,7 @@ export default function AlphaDeepfakeDefense() {
                 </p>
               </div>
               <div className="w-full space-y-2">
-                <div className="flex items-center justify-between text-[10px] text-muted-foreground uppercase">
+                <div className="flex items-center justify-between text-caption-premium text-muted-foreground uppercase">
                   <span>Liveness Score</span>
                   <span>98.2%</span>
                 </div>

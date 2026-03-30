@@ -15,7 +15,7 @@ from sqlmodel import select
 
 from app.core.database import get_session
 from app.core.models import (
-    AIModel, BiasReport, TrainingModule, SovereignStatus, SovereignStage,
+    AIModel, AIModelCreate, BiasReport, TrainingModule, SovereignStatus, SovereignStage,
     WebhookConfig, WebhookExecution, AlertConfig, SovereignRequest, AgentAuditLog,
     MultiCloudStatus, SelfHealingEvent, ArticleStatus, ComplianceArticle,
     Vendor, ComplianceIncident, FiscalRequest, WorkforceGoal, WorkforceVenture,
@@ -42,6 +42,7 @@ from app.services.localization import localization_service
 from app.services.documentation_service import documentation_service
 from app.services.deepfake_service import deepfake_service
 from app.services.self_healing_manager import self_healing_manager
+from app.services.audit_service import audit_service
 
 router = APIRouter()
 
@@ -286,6 +287,16 @@ async def get_budget_status(session: Session = Depends(get_session)):
     }
 
 
+@router.post("/agent-ops/sync-locale")
+async def sync_locale(request: Dict[str, Any]):
+    """Sync linguistic package across the cluster"""
+    locale = request.get("locale", "en")
+    result = localization_service.deploy_package(locale)
+    if result.get("status") == "error":
+        raise HTTPException(status_code=400, detail=result.get("message"))
+    return result
+
+
 # ============================================================================
 # Alert Endpoints (Agent Ops UC 4)
 # ============================================================================
@@ -444,9 +455,9 @@ async def provision_client(request: Dict[str, Any]):
     return result
 
 @router.post("/compliance/forensics")
-async def run_forensic_analysis(agent_id: Optional[str] = None):
+async def run_forensic_analysis(agent_id: Optional[str] = None, session: Session = Depends(get_session)):
     """Trigger deep behavioral forensic analysis"""
-    return await compliance_service.run_forensic_analysis(agent_id)
+    return compliance_service.run_forensic_analysis(session, agent_id)
 
 @router.post("/graphql-proxy")
 async def graphql_proxy(query: Dict[str, Any]):
@@ -793,16 +804,52 @@ async def run_red_team_audit(request: RedTeamRequest):
         # Fallback if no connection exists
         return {"status": "scheduled", "audit_id": str(uuid.uuid4()), "message": str(e)}
 
+class EURegistrationRequest(BaseModel):
+    model_id: str
+
 @router.post("/compliance/eu-register")
-async def register_eu_database(model_id: str):
-    """Automate EU Database registration (Article 51)"""
-    return {"status": "pending", "registration_id": f"EU-AI-{uuid.uuid4().hex[:8]}"}
+async def register_eu_database(request: EURegistrationRequest, session: Session = Depends(get_session)):
+    """Automate EU Database registration (Article 51) and persist to Audit Trail"""
+    model = session.get(AIModel, request.model_id)
+    if not model:
+        raise HTTPException(status_code=404, detail="Model not found")
+    
+    registration_id = f"EU-AI-{uuid.uuid4().hex[:8].upper()}"
+    
+    # Log to Compliance Audit
+    audit = ComplianceAuditLog(
+        user_id="sentinel-admin",
+        action="EU_REGISTRATION",
+        resource=f"AIModel:{request.model_id}",
+        status="verified",
+        compliance_type="Article 51",
+        metadata_json={
+            "registration_id": registration_id,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    )
+    session.add(audit)
+    session.commit()
+    
+    return {
+        "status": "registered", 
+        "registration_id": registration_id,
+        "timestamp": datetime.utcnow().isoformat()
+    }
 
 @router.get("/compliance/summary")
 async def get_compliance_summary(session: Session = Depends(get_session)):
-    """Get high-level summary of compliance status"""
+    """Get high-level summary of compliance status across Articles and Models"""
     articles = session.exec(select(ComplianceArticle)).all()
-    return {"total": len(articles), "compliant": sum(1 for a in articles if a.status == "compliant")}
+    models = session.exec(select(AIModel)).all()
+    
+    return {
+        "total_articles": len(articles), 
+        "compliant_articles": sum(1 for a in articles if a.status == "compliant"),
+        "total_models": len(models),
+        "compliant_models": sum(1 for m in models if m.status == "compliant"),
+        "high_risk_models": sum(1 for m in models if m.riskCategory == "high")
+    }
 
 
 @router.get("/compliance/categories")
@@ -895,34 +942,14 @@ async def list_ai_models(session: Session = Depends(get_session)):
 
 @router.post("/compliance/models", response_model=AIModel)
 async def register_ai_model(model_in: AIModelCreate, session: Session = Depends(get_session)):
-    """Register a new AI model"""
-    db_model = AIModel(
-        id=str(uuid.uuid4()),
+    """Register a new AI model with real Article assessment"""
+    return compliance_service.register_model(
+        session=session,
         name=model_in.name,
-        riskCategory=model_in.riskCategory,
+        risk_category=model_in.riskCategory,
         provider=model_in.provider,
-        endpointUrl=model_in.endpointUrl,
-        apiKey=model_in.apiKey,
-        lastAudit=datetime.utcnow()
+        endpoint_url=model_in.endpointUrl
     )
-        
-    if db_model.endpointUrl:
-        # Simulate an integration scan
-        await asyncio.sleep(1.5)
-        db_model.complianceScore = random.randint(65, 95)
-        db_model.status = "compliant" if db_model.complianceScore >= 80 else "review"
-        
-        # Populate article statuses on the relations array
-        db_model.articles = [
-            ArticleStatus(article="Article 9", title="Risk Management", status="compliant" if db_model.complianceScore > 70 else "pending"),
-            ArticleStatus(article="Article 10", title="Data Governance", status="compliant" if db_model.complianceScore > 80 else "review"),
-            ArticleStatus(article="Article 15", title="Accuracy", status="compliant" if db_model.complianceScore > 75 else "non_compliant")
-        ]
-
-    session.add(db_model)
-    session.commit()
-    session.refresh(db_model)
-    return db_model
 
 class BiasScanRequest(BaseModel):
     modelId: str
@@ -930,58 +957,8 @@ class BiasScanRequest(BaseModel):
 @router.post("/compliance/bias-scan")
 async def trigger_bias_scan(request: BiasScanRequest, session: Session = Depends(get_session)):
     """Run a comprehensive bias scan covering the full taxonomy"""
-    await asyncio.sleep(2.0)  # Simulate scan time
-    
-    model_id = request.modelId
-    # Clear old reports for this model
-    old_reports = session.exec(select(BiasReport).where(BiasReport.modelId == model_id)).all()
-    for _r in old_reports:
-        session.delete(_r)
-    
-    categories = [
-        ("Gender / Sexual Orientation", "Demographic Bias"),
-        ("Race / Ethnicity", "Demographic Bias"),
-        ("Age (Ageism)", "Demographic Bias"),
-        ("Disability Status", "Demographic Bias"),
-        ("Religion", "Demographic Bias"),
-        ("Socioeconomic Status", "Demographic Bias"),
-        ("Selection / Sampling Bias", "Statistical Bias"),
-        ("Representation Bias", "Statistical Bias"),
-        ("Measurement / Labeling Bias", "Statistical Bias"),
-        ("Confirmation Bias", "Cognitive Bias"),
-        ("Automation Bias", "Cognitive Bias"),
-        ("Linguistic / Dialect Bias", "Application Bias")
-    ]
-    
-    new_reports = []
-    for cat, group in categories:
-        impact = round(random.uniform(0.01, 0.45), 2)
-        sig = round(random.uniform(0.70, 0.99), 2)
-        
-        status = 'passed'
-        if impact > 0.30:
-            status = 'failed'
-            details = f"High disparate impact detected in {cat} ({group}). Threshold exceeded."
-        elif impact > 0.15:
-            status = 'warning'
-            details = f"Moderate variance detected in {cat} ({group}). Review recommended."
-        else:
-            details = f"Variance within acceptable limits for {cat} ({group})."
-            
-        report = BiasReport(
-            id=str(uuid.uuid4()),
-            modelId=model_id,
-            biasCategory=cat,
-            disparateImpact=impact,
-            statisticalSignificance=sig,
-            status=status,
-            details=details
-        )
-        new_reports.append(report)
-        session.add(report)
-        
-    session.commit()
-    return {"status": "completed", "reports": new_reports}
+    reports = compliance_service.run_bias_scan(session, request.modelId)
+    return {"status": "completed", "reports": reports}
 
 @router.get("/compliance/bias-reports/{model_id}", response_model=List[BiasReport])
 async def list_bias_reports(model_id: str, session: Session = Depends(get_session)):
@@ -1603,9 +1580,16 @@ from app.services.governance_service import governance_service
 from app.services.agent_ops_service import agent_ops_service
 
 @router.get("/agent-ops/audit")
-async def get_agent_audit_logs(agent_id: Optional[str] = None, limit: int = 50):
-    """Retrieve persistent audit logs for agents"""
-    return audit_service.get_logs(agent_id, limit)
+async def get_agent_audit_logs(agent_id: Optional[str] = None, resource: Optional[str] = None, action: Optional[str] = None, status: Optional[str] = None, limit: int = 50, session: Session = Depends(get_session)):
+    """Retrieve persistent, unified audit logs for compliance and operations"""
+    return audit_service.get_combined_logs(
+        session=session,
+        agent_id=agent_id,
+        resource=resource,
+        action=action,
+        status=status,
+        limit=limit
+    )
 
 @router.post("/agent-ops/compliance/hipaa")
 async def run_hipaa_audit():

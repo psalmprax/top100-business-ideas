@@ -11,7 +11,11 @@ const VentureDetailPage = () => {
   const [, setLocation] = useLocation();
   const id = params?.id ? parseInt(params.id) : null;
 
-  const { data: idea, isLoading, error } = useQuery({
+  const {
+    data: idea,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["venture-detail", id],
     queryFn: async () => {
       if (!id) throw new Error("Invalid Venture ID");
@@ -28,7 +32,7 @@ const VentureDetailPage = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white">
         <Loader2 className="w-8 h-8 animate-spin text-indigo-500 mb-4" />
-        <p className="text-sm font-medium animate-pulse uppercase tracking-widest">
+        <p className="text-caption-premium animate-pulse">
           Synchronizing Venture Intelligence...
         </p>
       </div>
@@ -39,11 +43,12 @@ const VentureDetailPage = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-6 text-center">
         <div className="bg-red-500/10 border border-red-500/30 p-8 rounded-2xl max-w-md">
-          <h2 className="text-2xl font-bold mb-2">Venture Out of Reach</h2>
-          <p className="text-white/60 mb-6 text-sm">
-            We couldn't retrieve the intelligence for this specific venture. It may have been decommissioned or moved to a restricted silo.
+          <h2 className="text-section-headline mb-2">Venture Out of Reach</h2>
+          <p className="text-body-sm text-white/60 mb-6">
+            We couldn't retrieve the intelligence for this specific venture. It
+            may have been decommissioned or moved to a restricted silo.
           </p>
-          <Button 
+          <Button
             className="bg-white text-black font-bold"
             onClick={() => setLocation("/market-intelligence")}
           >
@@ -56,9 +61,9 @@ const VentureDetailPage = () => {
 
   return (
     <div className="min-h-screen bg-black">
-      <IdeaDetailEnhanced 
-        idea={idea} 
-        onClose={() => setLocation("/market-intelligence")} 
+      <IdeaDetailEnhanced
+        idea={idea}
+        onClose={() => setLocation("/market-intelligence")}
       />
     </div>
   );

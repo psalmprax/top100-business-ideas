@@ -260,13 +260,7 @@ func (h *AgentOpsHandler) CloneConfig(c *gin.Context) {
 
 	response, err := h.proxyService.Forward("POST", path, nil)
 	if err != nil {
-		// Real-First Fallback: Simulate success if backend is missing for this demo
-		c.JSON(http.StatusOK, gin.H{
-			"id":             fmt.Sprintf("%s-clone", id),
-			"status":         "cloned",
-			"cloned_from_id": id,
-			"timestamp":      time.Now().Format(time.RFC3339),
-		})
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to clone agent", Details: err.Error()})
 		return
 	}
 
@@ -286,12 +280,7 @@ func (h *AgentOpsHandler) SyncLinguisticPackage(c *gin.Context) {
 
 	response, err := h.proxyService.Forward("POST", "/agent-ops/sync-locale", req)
 	if err != nil {
-		// Real-First Fallback
-		c.JSON(http.StatusOK, gin.H{
-			"status":    "synchronized",
-			"locale":    req.Locale,
-			"timestamp": time.Now().Format(time.RFC3339),
-		})
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to sync linguistic package", Details: err.Error()})
 		return
 	}
 
@@ -306,13 +295,7 @@ func (h *AgentOpsHandler) OptimizeMemory(c *gin.Context) {
 
 	response, err := h.proxyService.Forward("POST", path, nil)
 	if err != nil {
-		// Real-First Fallback
-		c.JSON(http.StatusOK, gin.H{
-			"id":             id,
-			"status":         "optimized",
-			"tokens_pruned": 1420,
-			"timestamp":      time.Now().Format(time.RFC3339),
-		})
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to optimize agent memory", Details: err.Error()})
 		return
 	}
 

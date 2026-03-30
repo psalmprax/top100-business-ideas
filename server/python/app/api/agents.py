@@ -186,34 +186,25 @@ async def get_agent_roi(agent_id: str, session: Session = Depends(get_session)):
     }
 
 
-@router.post("/{agent_id}/dump")
-async def dump_agent_memory(agent_id: str, session: Session = Depends(get_session)):
-    """Capture a full memory/state dump for an agent for behavioral forensics"""
-    agent = session.get(Agent, agent_id)
-    if not agent:
+@router.post("/{agent_id}/clone", response_model=Agent)
+async def clone_agent(agent_id: str, session: Session = Depends(get_session)):
+    """Clone an existing agent configuration"""
+    source_agent = session.get(Agent, agent_id)
+    if not source_agent:
         raise HTTPException(status_code=404, detail="Agent not found")
     
-    # Simulate forensic export
+    # Create new clone data
     import uuid
-    dump_id = f"dump_{agent_id}_{str(uuid.uuid4())[:8]}"
-    return {
-        "message": "Memory dump initiated",
-        "dump_id": dump_id,
-        "status": "capturing",
-        "timestamp": datetime.utcnow().isoformat()
-    }
-
-
-@router.post("/{agent_id}/compress")
-async def compress_agent_context(agent_id: str, session: Session = Depends(get_session)):
-    """Trigger recursive context compression for long-running agent threads"""
-    agent = session.get(Agent, agent_id)
-    if not agent:
-        raise HTTPException(status_code=404, detail="Agent not found")
+    clone_data = source_agent.model_dump(exclude={"id", "created_at", "updated_at"})
+    clone_data["name"] = f"{source_agent.name} (Clone)"
+    clone_data["id"] = f"agent_{str(uuid.uuid4())[:8]}"
     
-    return {
-        "message": "Context compression scheduled",
-        "agent_id": agent_id,
-        "compression_ratio": 0.42,
-        "estimated_savings_tokens": 1420
-    }
+    new_agent = Agent.model_validate(clone_data)
+    new_agent.status = AgentStatus.STOPPED
+    new_agent.created_at = datetime.utcnow()
+    new_agent.updated_at = datetime.utcnow()
+    
+    session.add(new_agent)
+    session.commit()
+    session.refresh(new_agent)
+    return new_agent

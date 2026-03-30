@@ -245,11 +245,11 @@ export default function DenialDefense() {
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
           <Card className="bg-black/40 border-white/5 backdrop-blur-sm">
             <CardContent className="pt-6">
-              <div className="text-xs text-cyan-500 font-bold uppercase tracking-wider mb-1">
+              <div className="text-caption-premium text-cyan-500 mb-1">
                 Recovery Rate
               </div>
               <div
-                className="text-stat text-white tabular-nums tracking-tight"
+                className="text-stat text-white tabular-nums"
                 data-testid="stat-recovery-rate"
               >
                 {recoveryRate.toFixed(1)}%
@@ -262,27 +262,25 @@ export default function DenialDefense() {
           </Card>
           <Card className="bg-black/40 border-white/5 backdrop-blur-sm">
             <CardContent className="pt-6">
-              <div className="text-xs text-purple-400 font-bold uppercase tracking-wider mb-1">
+              <div className="text-caption-premium text-purple-400 mb-1">
                 Claims Processed
               </div>
               <div
-                className="text-stat text-white tabular-nums tracking-tight"
+                className="text-stat text-white tabular-nums"
                 data-testid="stat-claims-processed"
               >
                 12.5K
               </div>
-              <div className="text-[10px] text-muted-foreground mt-2">
-                Last 30 days
-              </div>
+              <div className="text-caption-premium mt-2">Last 30 days</div>
             </CardContent>
           </Card>
           <Card className="bg-black/40 border-white/5 backdrop-blur-sm">
             <CardContent className="pt-6">
-              <div className="text-xs text-orange-400 font-bold uppercase tracking-wider mb-1">
+              <div className="text-caption-premium text-orange-400 mb-1">
                 Pending Denials
               </div>
               <div
-                className="text-stat text-white tabular-nums tracking-tight"
+                className="text-stat text-white tabular-nums"
                 data-testid="stat-pending-denials"
               >
                 84
@@ -294,11 +292,11 @@ export default function DenialDefense() {
           </Card>
           <Card className="bg-black/40 border-white/5 backdrop-blur-sm">
             <CardContent className="pt-6">
-              <div className="text-xs text-blue-400 font-bold uppercase tracking-wider mb-1">
+              <div className="text-caption-premium text-blue-400 mb-1">
                 Revenue Recovered
               </div>
               <div
-                className="text-stat text-white tabular-nums tracking-tight"
+                className="text-stat text-white tabular-nums"
                 data-testid="stat-revenue-recovered"
               >
                 ${revenueRecovered.toFixed(1)}M
@@ -344,7 +342,7 @@ export default function DenialDefense() {
             <div className="grid gap-6 md:grid-cols-3">
               <Card className="bg-black/40 border-white/5 h-fit">
                 <CardHeader>
-                  <CardTitle className="text-card-title text-sm">
+                  <CardTitle className="text-card-title">
                     Submit New Claim
                   </CardTitle>
                   <CardDescription className="text-feature">
@@ -353,7 +351,7 @@ export default function DenialDefense() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label className="text-xs">Claim ID</Label>
+                    <Label className="text-body-sm">Claim ID</Label>
                     <Input
                       placeholder="e.g. CLM-XXXX"
                       className="bg-white/5 border-white/10"
@@ -364,7 +362,7 @@ export default function DenialDefense() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs">Payer</Label>
+                    <Label className="text-body-sm">Payer</Label>
                     <Input
                       placeholder="e.g. BlueShield"
                       className="bg-white/5 border-white/10"
@@ -378,7 +376,7 @@ export default function DenialDefense() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs">Billed Amount ($)</Label>
+                    <Label className="text-body-sm">Billed Amount ($)</Label>
                     <Input
                       type="number"
                       placeholder="0.00"
@@ -403,7 +401,9 @@ export default function DenialDefense() {
 
               <Card className="md:col-span-2 bg-black/40 border-white/5">
                 <CardHeader>
-                  <CardTitle className="text-sm">Engine Queue</CardTitle>
+                  <CardTitle className="text-card-title">
+                    Engine Queue
+                  </CardTitle>
                   <CardDescription>
                     Live tracking of claims entering the denial defense layer
                   </CardDescription>
@@ -412,11 +412,11 @@ export default function DenialDefense() {
                   <Table>
                     <TableHeader className="border-white/10">
                       <TableRow className="hover:bg-transparent border-white/10">
-                        <TableHead className="text-xs">ID</TableHead>
-                        <TableHead className="text-xs">Payer</TableHead>
-                        <TableHead className="text-xs">Status</TableHead>
-                        <TableHead className="text-xs">AI Risk</TableHead>
-                        <TableHead className="text-xs text-right">
+                        <TableHead className="text-body-sm">ID</TableHead>
+                        <TableHead className="text-body-sm">Payer</TableHead>
+                        <TableHead className="text-body-sm">Status</TableHead>
+                        <TableHead className="text-body-sm">AI Risk</TableHead>
+                        <TableHead className="text-body-sm text-right">
                           Action
                         </TableHead>
                       </TableRow>
@@ -427,10 +427,10 @@ export default function DenialDefense() {
                           key={claim.id}
                           className="border-white/5 hover:bg-white/[0.02]"
                         >
-                          <TableCell className="font-mono text-xs">
+                          <TableCell className="text-body-sm font-mono">
                             {claim.id}
                           </TableCell>
-                          <TableCell className="text-xs">
+                          <TableCell className="text-body-sm">
                             {claim.payer}
                           </TableCell>
                           <TableCell>
@@ -482,7 +482,7 @@ export default function DenialDefense() {
             <div className="grid gap-6 md:grid-cols-2">
               <Card className="bg-black/40 border-white/5 border-l-2 border-l-purple-500">
                 <CardHeader>
-                  <CardTitle className="text-sm flex items-center gap-2">
+                  <CardTitle className="text-body-sm flex items-center gap-2">
                     <Zap className="w-4 h-4 text-purple-400" />
                     Autonomous CPT Optimization
                   </CardTitle>
@@ -493,7 +493,7 @@ export default function DenialDefense() {
                 <CardContent className="space-y-4">
                   <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
                     <div className="flex justify-between mb-2">
-                      <span className="text-xs font-bold">
+                      <span className="text-body-sm font-bold">
                         Optimization Lift
                       </span>
                       <span className="text-xs text-emerald-400">
@@ -514,7 +514,7 @@ export default function DenialDefense() {
 
               <Card className="bg-black/40 border-white/5 border-l-2 border-l-blue-500">
                 <CardHeader>
-                  <CardTitle className="text-sm flex items-center gap-2">
+                  <CardTitle className="text-body-sm flex items-center gap-2">
                     <ShieldCheck className="w-4 h-4 text-blue-400" />
                     Audit Shield
                   </CardTitle>
@@ -525,11 +525,11 @@ export default function DenialDefense() {
                 <CardContent className="space-y-4">
                   <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
                     <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                    <div className="text-xs font-bold text-emerald-500">
+                    <div className="text-body-sm font-bold text-emerald-500">
                       Audit Readiness: 100%
                     </div>
                   </div>
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="text-caption-premium">
                     All recent high-value claims have been cross-referenced with
                     Payer-specific medical policy bulletins.
                   </p>
@@ -541,7 +541,9 @@ export default function DenialDefense() {
           <TabsContent value="settings">
             <Card className="bg-black/40 border-white/5 max-w-2xl">
               <CardHeader>
-                <CardTitle className="text-sm">Engine Configuration</CardTitle>
+                <CardTitle className="text-card-title">
+                  Engine Configuration
+                </CardTitle>
                 <CardDescription>
                   Calibrate the AI detection sensitivity and autonomy levels
                 </CardDescription>
@@ -550,10 +552,10 @@ export default function DenialDefense() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-sm font-bold">
+                      <div className="text-body-sm font-bold">
                         Aggressive Recoding
                       </div>
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-body-sm">
                         Maximize revenue lift by pushing CPT boundaries
                       </div>
                     </div>
@@ -561,10 +563,10 @@ export default function DenialDefense() {
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-sm font-bold">
+                      <div className="text-body-sm font-bold">
                         Auto-Appeal Threshold
                       </div>
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-body-sm">
                         Automatically appeal if recovery projection exceeds $500
                       </div>
                     </div>
