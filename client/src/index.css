@@ -90,9 +90,13 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Outfit', sans-serif;
+    font-family: var(--font-body);
     font-size: 15px;
     line-height: 1.6;
+    letter-spacing: -0.015em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   h1,
@@ -101,7 +105,10 @@
   h4,
   h5,
   h6 {
-    font-family: 'Syne', sans-serif;
+    font-family: var(--font-display);
+    @apply tracking-tighter;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
   }
 
   button:not(:disabled),
@@ -346,7 +353,48 @@
   animation: card-enter 0.4s ease-out forwards;
 }
 
+/* Premium Typography Utilities */
+.text-display-hero {
+  @apply text-5xl md:text-7xl font-bold tracking-tighter;
+  font-family: var(--font-display);
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+}
+
+.text-subheadline {
+  @apply text-lg md:text-xl font-medium tracking-tight text-muted-foreground;
+  line-height: 1.5;
+}
+
+.text-caption-premium {
+  @apply text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/80;
+}
+
+.text-gradient-premium {
+  background: linear-gradient(135deg, oklch(0.65 0.2 250), oklch(0.72 0.18 145), oklch(0.75 0.18 75));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+/* Glassmorphism Refinements */
+.glass-premium {
+  @apply bg-card/40 backdrop-blur-xl border-white/5 shadow-2xl;
+}
+
+.glass-premium-hover {
+  @apply transition-all duration-500 hover:bg-card/60 hover:border-white/10 hover:shadow-primary/5;
+}
+
 /* Noise texture overlay */
+.noise-overlay {
+  position: relative;
+}
+
 .noise-overlay::after {
   content: '';
   position: absolute;

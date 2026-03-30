@@ -410,13 +410,13 @@ export default function AlphaAI() {
               <Zap className="h-4 w-4" />
               Now available: Enterprise tier with custom SLAs
             </div>
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
+            <h1 className="text-display-hero mb-6 text-balance">
               Enterprise AI Solutions
-              <span className="block text-gradient bg-gradient-to-r from-blue-500 via-purple-500 to-emerald-500 bg-clip-text text-transparent">
+              <span className="block text-gradient-premium">
                 Built for Production
               </span>
             </h1>
-            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+            <p className="text-subheadline mb-8 max-w-2xl mx-auto text-balance">
               Deploy autonomous AI agents, ensure regulatory compliance, and
               protect against deepfake threats — all from one platform.
             </p>
@@ -464,9 +464,9 @@ export default function AlphaAI() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="text-4xl md:text-5xl font-bold mb-6 tracking-tight"
+              className="text-4xl md:text-5xl font-bold mb-6 tracking-tighter"
             >
-              Our <span className="gradient-text">Ventures</span>
+              Our <span className="text-gradient-premium">Ventures</span>
             </motion.h2>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -506,7 +506,7 @@ export default function AlphaAI() {
                     <CardTitle className="text-2xl font-bold group-hover:text-primary transition-colors">
                       {product.name}
                     </CardTitle>
-                    <p className="text-sm font-medium text-primary/80 uppercase tracking-wider mt-1">
+                    <p className="text-caption-premium text-primary/80 mt-1">
                       {product.tagline}
                     </p>
                   </CardHeader>
@@ -597,7 +597,7 @@ export default function AlphaAI() {
                       <CardTitle className="text-2xl font-bold">
                         {tool.name}
                       </CardTitle>
-                      <p className="text-sm font-medium text-indigo-400/80 uppercase tracking-wider mt-1">
+                      <p className="text-caption-premium text-indigo-400 mt-1">
                         {tool.tagline}
                       </p>
                     </CardHeader>

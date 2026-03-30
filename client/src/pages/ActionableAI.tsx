@@ -202,7 +202,7 @@ export default function ActionableAI() {
                   <Zap className="w-4 h-4 text-orange-500" />
                 </div>
               </div>
-              <h1 className="font-bold tracking-tighter text-2xl text-white">
+              <h1 className="text-display-hero text-2xl tracking-tighter text-white">
                 Actionable<span className="text-orange-500">AI</span>
               </h1>
             </div>
@@ -232,7 +232,7 @@ export default function ActionableAI() {
         <div className="grid gap-6 md:grid-cols-4 mb-8">
           <Card className="bg-black/40 border-white/5 backdrop-blur-sm">
             <CardContent className="pt-6">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1 uppercase tracking-widest font-bold">
+              <div className="flex items-center gap-2 text-[10px] text-muted-foreground mb-1 uppercase tracking-widest font-bold">
                 <Cpu className="w-3 h-3 text-orange-500" /> Compute Load
               </div>
               <div
@@ -253,7 +253,7 @@ export default function ActionableAI() {
           </Card>
           <Card className="bg-black/40 border-white/5 backdrop-blur-sm">
             <CardContent className="pt-6">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1 uppercase tracking-widest font-bold">
+              <div className="flex items-center gap-2 text-[10px] text-muted-foreground mb-1 uppercase tracking-widest font-bold">
                 <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Success
                 Rate
               </div>
@@ -267,7 +267,7 @@ export default function ActionableAI() {
           </Card>
           <Card className="bg-black/40 border-white/5 backdrop-blur-sm">
             <CardContent className="pt-6">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1 uppercase tracking-widest font-bold">
+              <div className="flex items-center gap-2 text-[10px] text-muted-foreground mb-1 uppercase tracking-widest font-bold">
                 <Layers className="w-3 h-3 text-blue-500" /> Missions Today
               </div>
               <div className="text-3xl font-bold text-white">
@@ -282,7 +282,7 @@ export default function ActionableAI() {
           </Card>
           <Card className="bg-black/40 border-white/5 backdrop-blur-sm">
             <CardContent className="pt-6">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1 uppercase tracking-widest font-bold">
+              <div className="flex items-center gap-2 text-[10px] text-muted-foreground mb-1 uppercase tracking-widest font-bold">
                 <Activity className="w-3 h-3 text-purple-500" /> Latency
               </div>
               <div

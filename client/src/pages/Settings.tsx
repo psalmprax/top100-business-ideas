@@ -276,15 +276,15 @@ export default function Settings() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white p-8">
+    <div className="min-h-screen bg-background text-foreground p-8">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Settings</h1>
-          <p className="text-slate-400">Manage your account and preferences</p>
+          <h1 className="text-display-hero text-4xl mb-2 font-display tracking-tighter text-white">Settings</h1>
+          <p className="text-subheadline text-base text-white/60 font-outfit tracking-tight">Manage your account and preferences</p>
         </div>
 
         <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="bg-slate-800">
+          <TabsList className="bg-muted/50 border border-border/50">
             <TabsTrigger value="profile" data-testid="tab-profile">
               Profile
             </TabsTrigger>
@@ -303,13 +303,13 @@ export default function Settings() {
           </TabsList>
 
           <TabsContent value="profile">
-            <Card className="bg-slate-800 border-slate-700">
+            <Card className="bg-card/50 backdrop-blur-sm border-border/50 glass-premium-hover">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <UserIcon className="w-5 h-5" />
+                <CardTitle className="flex items-center gap-2 font-display tracking-tight text-white">
+                  <UserIcon className="w-5 h-5 text-blue-400" />
                   Profile Information
                 </CardTitle>
-                <CardDescription className="text-slate-400">
+                <CardDescription className="text-slate-400 text-sm tracking-tight font-outfit">
                   Update your personal information
                 </CardDescription>
               </CardHeader>
@@ -323,7 +323,7 @@ export default function Settings() {
                       onChange={e =>
                         setProfile({ ...profile, name: e.target.value })
                       }
-                      className="bg-slate-700 border-slate-600"
+                      className="bg-muted border-border"
                       data-testid="input-profile-name"
                     />
                   </div>
@@ -336,7 +336,7 @@ export default function Settings() {
                       onChange={e =>
                         setProfile({ ...profile, email: e.target.value })
                       }
-                      className="bg-slate-700 border-slate-600"
+                      className="bg-muted border-border"
                       data-testid="input-profile-email"
                     />
                   </div>
@@ -348,7 +348,7 @@ export default function Settings() {
                       onChange={e =>
                         setProfile({ ...profile, company: e.target.value })
                       }
-                      className="bg-slate-700 border-slate-600"
+                      className="bg-muted border-border"
                       data-testid="input-profile-company"
                     />
                   </div>
@@ -360,7 +360,7 @@ export default function Settings() {
                       onChange={e =>
                         setProfile({ ...profile, role: e.target.value })
                       }
-                      className="bg-slate-700 border-slate-600"
+                      className="bg-muted border-border"
                       data-testid="input-profile-role"
                     />
                   </div>
@@ -373,7 +373,7 @@ export default function Settings() {
                       onChange={e =>
                         setProfile({ ...profile, email: e.target.value })
                       }
-                      className="bg-slate-700 border-slate-600"
+                      className="bg-muted border-border"
                     />
                   </div>
                   <div className="space-y-2">
@@ -384,7 +384,7 @@ export default function Settings() {
                       onChange={e =>
                         setProfile({ ...profile, company: e.target.value })
                       }
-                      className="bg-slate-700 border-slate-600"
+                      className="bg-muted border-border"
                     />
                   </div>
                   <div className="space-y-2">
@@ -395,7 +395,7 @@ export default function Settings() {
                       onChange={e =>
                         setProfile({ ...profile, role: e.target.value })
                       }
-                      className="bg-slate-700 border-slate-600"
+                      className="bg-muted border-border"
                     />
                   </div>
                 </div>
@@ -428,13 +428,13 @@ export default function Settings() {
 
           <TabsContent value="security">
             <div className="space-y-6">
-              <Card className="bg-slate-800 border-slate-700">
+              <Card className="bg-card/50 backdrop-blur-sm border-border/50 glass-premium-hover">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Lock className="w-5 h-5" />
+                  <CardTitle className="flex items-center gap-2 font-display tracking-tight text-white">
+                    <Lock className="w-5 h-5 text-amber-400" />
                     Change Password
                   </CardTitle>
-                  <CardDescription className="text-slate-400">
+                  <CardDescription className="text-slate-400 text-sm tracking-tight font-outfit">
                     Update your password regularly for security
                   </CardDescription>
                 </CardHeader>
@@ -444,7 +444,7 @@ export default function Settings() {
                     <Input
                       id="current"
                       type="password"
-                      className="bg-slate-700 border-slate-600"
+                      className="bg-muted border-border"
                     />
                   </div>
                   <div className="grid md:grid-cols-2 gap-4">
@@ -453,7 +453,7 @@ export default function Settings() {
                       <Input
                         id="new"
                         type="password"
-                        className="bg-slate-700 border-slate-600"
+                        className="bg-muted border-border"
                       />
                     </div>
                     <div className="space-y-2">
@@ -461,7 +461,7 @@ export default function Settings() {
                       <Input
                         id="confirm"
                         type="password"
-                        className="bg-slate-700 border-slate-600"
+                        className="bg-muted border-border"
                       />
                     </div>
                   </div>
@@ -501,13 +501,13 @@ export default function Settings() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-slate-800 border-slate-700">
+              <Card className="bg-card/50 backdrop-blur-sm border-border/50 glass-premium-hover">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Shield className="w-5 h-5" />
+                  <CardTitle className="flex items-center gap-2 font-display tracking-tight text-white">
+                    <Shield className="w-5 h-5 text-emerald-400" />
                     Two-Factor Authentication
                   </CardTitle>
-                  <CardDescription className="text-slate-400">
+                  <CardDescription className="text-slate-400 text-sm tracking-tight font-outfit">
                     Add an extra layer of security to your account
                   </CardDescription>
                 </CardHeader>
@@ -541,13 +541,13 @@ export default function Settings() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-slate-800 border-slate-700">
+              <Card className="bg-card/50 backdrop-blur-sm border-border/50 glass-premium-hover">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-red-400">
+                  <CardTitle className="flex items-center gap-2 text-red-400 font-display tracking-tight">
                     <LogOut className="w-5 h-5" />
                     Danger Zone
                   </CardTitle>
-                  <CardDescription className="text-slate-400">
+                  <CardDescription className="text-slate-400 text-sm tracking-tight font-outfit">
                     Irreversible actions
                   </CardDescription>
                 </CardHeader>
@@ -574,13 +574,13 @@ export default function Settings() {
           </TabsContent>
 
           <TabsContent value="notifications">
-            <Card className="bg-slate-800 border-slate-700">
+            <Card className="bg-card/50 backdrop-blur-sm border-border/50 glass-premium-hover">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Bell className="w-5 h-5" />
+                <CardTitle className="flex items-center gap-2 font-display tracking-tight text-white">
+                  <Bell className="w-5 h-5 text-purple-400" />
                   Notification Preferences
                 </CardTitle>
-                <CardDescription className="text-slate-400">
+                <CardDescription className="text-slate-400 text-sm tracking-tight font-outfit">
                   Choose how you want to be notified
                 </CardDescription>
               </CardHeader>
@@ -640,13 +640,13 @@ export default function Settings() {
           </TabsContent>
 
           <TabsContent value="preferences">
-            <Card className="bg-slate-800 border-slate-700">
+            <Card className="bg-card/50 backdrop-blur-sm border-border/50 glass-premium-hover">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Monitor className="w-5 h-5" />
+                <CardTitle className="flex items-center gap-2 font-display tracking-tight text-white">
+                  <Monitor className="w-5 h-5 text-indigo-400" />
                   User Preferences
                 </CardTitle>
-                <CardDescription className="text-slate-400">
+                <CardDescription className="text-slate-400 text-sm tracking-tight font-outfit">
                   Customize your experience
                 </CardDescription>
               </CardHeader>
@@ -732,13 +732,13 @@ export default function Settings() {
 
           <TabsContent value="api">
             <div className="space-y-6">
-              <Card className="bg-slate-800 border-slate-700">
+              <Card className="bg-card/50 backdrop-blur-sm border-border/50 glass-premium-hover">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Key className="w-5 h-5" />
+                  <CardTitle className="flex items-center gap-2 font-display tracking-tight text-white">
+                    <Key className="w-5 h-5 text-yellow-400" />
                     API Keys
                   </CardTitle>
-                  <CardDescription className="text-slate-400">
+                  <CardDescription className="text-slate-400 text-sm tracking-tight font-outfit">
                     Manage your API keys for programmatic access
                   </CardDescription>
                 </CardHeader>
@@ -809,7 +809,7 @@ export default function Settings() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-slate-800 border-slate-700">
+              <Card className="bg-card/50 backdrop-blur-sm border-border/50 glass-premium-hover">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Globe className="w-5 h-5" />

@@ -903,8 +903,8 @@ export default function AlphaDeepfakeDefense() {
                     <Eye className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-lg font-bold">Deepfake Defense</h1>
-                    <p className="text-xs text-muted-foreground">
+                    <h1 className="text-display-hero text-xl tracking-tighter">Deepfake Defense</h1>
+                    <p className="text-caption-premium text-[9px] text-muted-foreground/60 leading-none mt-0.5">
                       LivenessLink Protection
                     </p>
                   </div>
@@ -1004,21 +1004,21 @@ export default function AlphaDeepfakeDefense() {
                 }}
                 className={`flex flex-col items-start p-4 rounded-xl border transition-all text-left group ${
                   activeCategory === cat.id
-                    ? "bg-orange-600/10 border-orange-500 shadow-sm ring-1 ring-orange-500/20"
-                    : "bg-card hover:bg-muted/50 border-border/50"
+                    ? "bg-orange-500/10 border-orange-500 shadow-sm ring-1 ring-orange-500/20"
+                    : "bg-card hover:bg-muted/50 border-border/50 glass-premium-hover"
                 }`}
               >
                 <div
                   className={`p-2 rounded-lg mb-3 transition-colors ${
                     activeCategory === cat.id
-                      ? "bg-orange-600 text-white"
+                      ? "bg-orange-500 text-white"
                       : "bg-muted text-muted-foreground group-hover:text-foreground"
                   }`}
                 >
                   <cat.icon className="w-5 h-5" />
                 </div>
-                <div className="font-bold text-sm">{cat.label}</div>
-                <div className="text-[10px] text-muted-foreground line-clamp-1">
+                <div className="text-caption-premium text-[11px] mb-1">{cat.label}</div>
+                <div className="text-[10px] text-muted-foreground line-clamp-1 opacity-70">
                   {cat.description}
                 </div>
               </button>

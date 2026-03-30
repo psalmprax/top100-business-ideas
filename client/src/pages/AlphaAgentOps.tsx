@@ -426,31 +426,31 @@ function MetricCard({
   footer,
 }: MetricCardProps) {
   return (
-    <Card>
-      <CardContent className="p-4">
+    <Card className="glass-premium-hover border-border/40">
+      <CardContent className="p-5">
         <div className="flex items-center justify-between">
-          <div className={`p-2 rounded-lg ${color}`}>
+          <div className={`p-2.5 rounded-xl ${color} bg-opacity-10 backdrop-blur-sm border border-current border-opacity-10`}>
             <Icon className="w-5 h-5" />
           </div>
           {change !== undefined && (
             <div
-              className={`flex items-center text-sm ${change >= 0 ? "text-green-500" : "text-red-500"}`}
+              className={`flex items-center text-xs font-bold font-display tracking-tight ${change >= 0 ? "text-green-500" : "text-red-500"}`}
             >
               {change >= 0 ? (
-                <ArrowUpRight className="w-4 h-4" />
+                <ArrowUpRight className="w-3.5 h-3.5 mr-0.5" />
               ) : (
-                <ArrowDownRight className="w-4 h-4" />
+                <ArrowDownRight className="w-3.5 h-3.5 mr-0.5" />
               )}
               {Math.abs(change)}%
             </div>
           )}
         </div>
-        <div className="mt-3">
-          <div className="text-2xl font-bold">{value}</div>
-          <div className="text-sm text-muted-foreground">{title}</div>
+        <div className="mt-4">
+          <div className="text-3xl font-bold font-display tracking-tighter leading-none mb-1">{value}</div>
+          <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground/70">{title}</div>
         </div>
         {footer && (
-          <div className="mt-4 pt-4 border-t border-zinc-500/10 text-[10px] text-muted-foreground italic">
+          <div className="mt-4 pt-4 border-t border-border/30 text-[10px] text-muted-foreground italic leading-relaxed">
             {footer}
           </div>
         )}
@@ -2301,8 +2301,8 @@ export default function AlphaAgentOps() {
                     <Shield className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-lg font-bold">AgentOps Sentinel</h1>
-                    <p className="text-xs text-muted-foreground">
+                    <h1 className="text-display-hero text-xl tracking-tighter">AgentOps Sentinel</h1>
+                    <p className="text-caption-premium text-[9px] text-muted-foreground/60 leading-none mt-0.5">
                       Autonomous AI Governance
                     </p>
                   </div>
@@ -2366,10 +2366,12 @@ export default function AlphaAgentOps() {
                     key={cat.id}
                     value={cat.id}
                     data-testid={`${cat.id}-category-trigger`}
-                    className="flex items-center gap-2 px-4 data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm"
+                    className="flex items-center gap-2 px-4 transition-all duration-300 data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:border-primary/20 data-[state=active]:shadow-sm data-[state=active]:shadow-primary/5"
                   >
                     <cat.icon className="w-4 h-4" />
-                    {cat.label}
+                    <span className="text-caption-premium text-[11px] font-bold">
+                      {cat.label}
+                    </span>
                   </TabsTrigger>
                 ))}
               </TabsList>

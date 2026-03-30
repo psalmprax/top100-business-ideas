@@ -202,8 +202,8 @@ export default function Billing() {
     <div className="min-h-screen bg-slate-900 text-white p-8">
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Billing & Subscription</h1>
-          <p className="text-slate-400">
+          <h1 className="text-display-hero text-3xl tracking-tighter mb-2">Billing & Subscription</h1>
+          <p className="text-caption-premium text-[11px] text-slate-400/80 leading-none mt-1">
             Real-time subscription management via Stripe & PayPal
           </p>
         </div>
