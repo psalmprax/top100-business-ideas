@@ -914,10 +914,13 @@ export default function AlphaAgentOps() {
   });
 
   useEffect(() => {
+    let failures = 0;
+    const maxFailures = 3;
     const fetchMetrics = async () => {
       try {
         const metrics = await extendedApi.selfHealing.getStreamingMetrics();
         if (metrics) {
+          failures = 0;
           setLiveMetrics(prev => ({
             ...prev,
             ...metrics,
@@ -925,7 +928,13 @@ export default function AlphaAgentOps() {
           }));
         }
       } catch (e) {
-        setLiveMetrics(prev => ({ ...prev, status: "error" }));
+        failures++;
+        if (failures >= maxFailures) {
+          clearInterval(interval);
+          setLiveMetrics(prev => ({ ...prev, status: "offline" }));
+        } else {
+          setLiveMetrics(prev => ({ ...prev, status: "error" }));
+        }
       }
     };
 
