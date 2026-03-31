@@ -290,7 +290,7 @@ export default function AlphaAI() {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600">
                 <Zap className="h-5 w-5 text-white" />
               </div>
-              <span className="text-card-title text-white">AlphaAI</span>
+              <span className="text-product-title text-white text-lg">Alpha<span>AI</span></span>
             </div>
 
             {/* Desktop Nav */}

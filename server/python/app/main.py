@@ -16,7 +16,7 @@ for mod in ["numpy", "torch", "transformers", "cv2", "PIL"]:
     if mod not in sys.modules:
         sys.modules[mod] = MagicMock()
 
-from app.api import agents, compliance, deepfake, health, auth_verify, extended, enterprise, governance, venture, security
+from app.api import agents, compliance, deepfake, health, auth_verify, extended, enterprise, governance, venture, security, alerts
 from app.core.config import settings
 from app.services.billing_service import billing_service
 
@@ -85,6 +85,7 @@ app.include_router(extended.router, tags=["Extended API - Full Sync"])
 app.include_router(governance.router, prefix="/governance", tags=["Governance & Advanced Features"])
 app.include_router(venture.router, prefix="/venture", tags=["Venture"])
 app.include_router(security.router, prefix="/security", tags=["Security"])
+app.include_router(alerts.router, prefix="/agents", tags=["Alerts & Rules"])
 
 
 from app.core.database import init_db

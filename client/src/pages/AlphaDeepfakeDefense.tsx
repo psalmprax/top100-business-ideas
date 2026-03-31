@@ -246,7 +246,7 @@ function MetricCard({
           )}
         </div>
         <div className="mt-3">
-          <div className="text-stat text-white tabular-nums mb-1 tracking-tight">
+          <div className="text-stat text-white tabular-nums mb-1">
             {value}
           </div>
           <div className="text-stat-label mt-0.5">{title}</div>
@@ -274,7 +274,7 @@ function MediaTypeCard({
           <div className={`p-2 rounded-lg ${color}`}>
             <Icon className="w-5 h-5" />
           </div>
-          <span className="text-stat text-white tabular-nums tracking-tight">
+          <span className="text-stat text-white tabular-nums">
             {count}
           </span>
         </div>
@@ -868,45 +868,16 @@ export default function AlphaDeepfakeDefense() {
     <>
       <div className="min-h-screen bg-background">
         {/* Header */}
-        {isDemo && (
-          <div className="bg-blue-600/10 border-b border-blue-500/20 px-4 py-2">
-            <div className="container mx-auto flex items-center justify-between">
-              <div className="flex items-center gap-2 text-blue-400">
-                <AlertCircle className="h-4 w-4" />
-                <span className="text-feature">
-                  <strong>Demo Mode:</strong> You are viewing a live preview of
-                  Deepfake Defense. Persistence is disabled.
-                </span>
-              </div>
-              <Link href="/signup">
-                <Button
-                  variant="link"
-                  size="sm"
-                  className="p-0 h-auto text-blue-400 font-semibold hover:underline text-feature"
-                >
-                  Sign up for full access →
-                </Button>
-              </Link>
-            </div>
-          </div>
-        )}
         <header className="border-b bg-background/95 backdrop-blur">
           <div className="container mx-auto px-4">
             <div className="flex h-16 items-center justify-between">
               <div className="flex items-center gap-4">
-                {isDemo && (
-                  <Link href="/">
-                    <Button variant="ghost" size="sm">
-                      ← Back
-                    </Button>
-                  </Link>
-                )}
                 <div className="flex items-center gap-2">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-pink-600">
                     <Eye className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-card-title">Deepfake Defense</h1>
+                    <h1 className="text-product-title text-xl">Deepfake <span>Defense</span></h1>
                     <p className="text-caption-premium text-muted-foreground/60 leading-none mt-0.5">
                       LivenessLink Protection
                     </p>

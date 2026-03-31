@@ -7,16 +7,21 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/top100-business-ideas/api/internal/models"
+	"github.com/top100-business-ideas/api/internal/repository"
 	"github.com/top100-business-ideas/api/internal/services"
 )
 
 // WorkforceHandler handles digital workforce and Sovereign operations
 type WorkforceHandler struct {
 	proxy *services.ProxyService
+	repo  *repository.WorkforceRepository
 }
 
-func NewWorkforceHandler(proxy *services.ProxyService) *WorkforceHandler {
-	return &WorkforceHandler{proxy: proxy}
+func NewWorkforceHandler(proxy *services.ProxyService, repo *repository.WorkforceRepository) *WorkforceHandler {
+	return &WorkforceHandler{
+		proxy: proxy,
+		repo:  repo,
+	}
 }
 
 // GetStatus returns the current status of the digital workforce
@@ -30,6 +35,28 @@ func (h *WorkforceHandler) GetStatus(c *gin.Context) {
 	c.Data(http.StatusOK, "application/json", resp)
 }
 
+// ListDecisions returns historical governance decisions
+func (h *WorkforceHandler) ListDecisions(c *gin.Context) {
+	userID := c.GetString("user_id")
+	decisions, err := h.repo.ListGovernanceDecisions(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to list decisions"})
+		return
+	}
+	c.JSON(http.StatusOK, decisions)
+}
+
+// ListTraces returns behavioral forensic traces
+func (h *WorkforceHandler) ListTraces(c *gin.Context) {
+	userID := c.GetString("user_id")
+	traces, err := h.repo.ListForensicTraces(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to list traces"})
+		return
+	}
+	c.JSON(http.StatusOK, traces)
+}
+
 // RequestApproval initiates a Sovereign approval request
 // POST /api/v1/workforce/sovereign/request
 func (h *WorkforceHandler) RequestApproval(c *gin.Context) {
@@ -38,6 +65,16 @@ func (h *WorkforceHandler) RequestApproval(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request", Details: err.Error()})
 		return
 	}
+
+	userID := c.GetString("user_id")
+
+	// Real-First Hardening: Log the decision initiation
+	_ = h.repo.CreateGovernanceDecision(c.Request.Context(), &models.GovernanceDecision{
+		UserID:   userID,
+		Stage:    1, // Default to initiation stage
+		Decision: "INITIATED",
+		Status:   "pending",
+	})
 
 	// Proxy to Python SovereignService
 	resp, err := h.proxy.Forward("POST", "/workforce/sovereign/request", req)
@@ -68,6 +105,20 @@ func (h *WorkforceHandler) HandleCallback(c *gin.Context) {
 		return
 	}
 
+	userID := c.GetString("user_id")
+
+	// Real-First Hardening: Log the finalized decision
+	decisionStr := "DENIED"
+	if req.Approved {
+		decisionStr = "APPROVED"
+	}
+	_ = h.repo.CreateGovernanceDecision(c.Request.Context(), &models.GovernanceDecision{
+		UserID:   userID,
+		Stage:    2, // Callback stage
+		Decision: decisionStr,
+		Status:   "finalized",
+	})
+
 	// Forward to Python
 	resp, err := h.proxy.Forward("POST", "/workforce/sovereign/callback", req)
 	if err != nil {
@@ -88,6 +139,15 @@ func (h *WorkforceHandler) RecoverRevenue(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request", Details: err.Error()})
 		return
 	}
+
+	userID := c.GetString("user_id")
+
+	// Real-First Hardening: Log forensic trace
+	_ = h.repo.CreateForensicTrace(c.Request.Context(), &models.ForensicTrace{
+		UserID: userID,
+		Action: "REVENUE_RECOVERY_TRIGGERED",
+		Details: "Criteria: " + req.Criteria,
+	})
 
 	// Real-First logic: Detect and recover revenue
 	resp, err := h.proxy.Forward("POST", "/workforce/cashclaw/recover", req)
@@ -119,6 +179,16 @@ func (h *WorkforceHandler) RunCampaign(c *gin.Context) {
 		return
 	}
 
+	userID := c.GetString("user_id")
+
+	// Real-First Hardening: Record campaign initiation in DB
+	_ = h.repo.CreateCampaign(c.Request.Context(), &models.WorkforceCampaign{
+		UserID:         userID,
+		Name:           req.Topic,
+		TargetAudience: req.Audience,
+		Status:         "initiated",
+	})
+
 	resp, err := h.proxy.Forward("POST", "/workforce/campaigns/run", req)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
@@ -140,6 +210,15 @@ func (h *WorkforceHandler) SourceLeads(c *gin.Context) {
 	if criteria == "" {
 		criteria = "general"
 	}
+
+	userID := c.GetString("user_id")
+
+	// Real-First Hardening: Log forensic trace
+	_ = h.repo.CreateForensicTrace(c.Request.Context(), &models.ForensicTrace{
+		UserID: userID,
+		Action: "LEAD_SOURCING_RUN",
+		Details: "Criteria: " + criteria,
+	})
 
 	resp, err := h.proxy.Forward("GET", "/workforce/leads/source?criteria="+criteria, nil)
 	if err != nil {

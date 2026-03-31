@@ -204,8 +204,8 @@ export default function ActionableAI() {
                   <Zap className="w-4 h-4 text-orange-500" />
                 </div>
               </div>
-              <h1 className="text-card-title text-white">
-                Actionable<span className="text-orange-500">AI</span>
+              <h1 className="text-product-title text-white text-xl">
+                Actionable<span>AI</span>
               </h1>
             </div>
           </div>

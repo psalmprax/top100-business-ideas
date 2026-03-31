@@ -67,6 +67,7 @@ func main() {
 
 	// Initialize Repositories
 	userRepo := repository.NewUserRepository()
+	workforceRepo := repository.NewWorkforceRepository()
 
 	// Initialize Services
 	authService := services.NewAuthService(cfg.JWTSecret, userRepo)
@@ -102,13 +103,14 @@ func main() {
 	alertHandler := handlers.NewAlertHandler(proxyService)
 	multiCloudHandler := handlers.NewMultiCloudHandler(proxyService)
 	selfHealingHandler := handlers.NewSelfHealingHandler(proxyService)
-	trainingHandler := handlers.NewTrainingHandler()
-	shadowAIHandler := handlers.NewShadowAIHandler()
-	wearableHandler := handlers.NewWearableHandler()
-	cryptoHandler := handlers.NewCryptoHandler()
-	travelKioskHandler := handlers.NewTravelKioskHandler()
-	edgeHandler := handlers.NewEdgeHandler()
-	workforceHandler := handlers.NewWorkforceHandler(proxyService)
+	trainingHandler := handlers.NewTrainingHandler(proxyService)
+	shadowAIHandler := handlers.NewShadowAIHandler(proxyService)
+	wearableHandler := handlers.NewWearableHandler(proxyService)
+	cryptoHandler := handlers.NewCryptoHandler(proxyService)
+	travelKioskHandler := handlers.NewTravelKioskHandler(proxyService)
+	edgeHandler := handlers.NewEdgeHandler(proxyService)
+	vendorHandler := handlers.NewVendorHandler(proxyService)
+	workforceHandler := handlers.NewWorkforceHandler(proxyService, workforceRepo)
 	enterpriseHandler := handlers.NewEnterpriseHandler(proxyService)
 
 	// Setup Gin router
@@ -144,31 +146,7 @@ func main() {
 			auth.POST("/refresh", authHandler.RefreshToken)
 		}
 
-		// Demo routes - public for demo purposes (no auth)
-		// These return mock data for demonstration
-		demo := v1.Group("/demo")
-		{
-			demo.GET("/agents", agentOpsHandler.ListAgents)
-			demo.POST("/agents", agentOpsHandler.CreateAgent)
-			demo.GET("/rules", rulesHandler.ListRules)
-			demo.GET("/metrics/current", metricsHandler.GetCurrentMetrics)
-		}
-
-		// SSO (AI Compliance UC1) - Moved outside protected to allow Demo Mode access
-		sso := v1.Group("/sso")
-		{
-			sso.GET("/config/:id", agentOpsHandler.ProxyToPython)
-			sso.POST("/config/:id", agentOpsHandler.ProxyToPython)
-			sso.GET("/config/:id/liveness-link", agentOpsHandler.ProxyToPython)
-			sso.POST("/handshake", agentOpsHandler.ProxyToPython)
-			sso.POST("/connect/:provider", agentOpsHandler.ProxyToPython)
-			sso.GET("/providers/:id", func(c *gin.Context) {
-				id := c.Param("id")
-				c.Request.URL.Path = "/api/v1/sso/config/" + id
-				agentOpsHandler.ProxyToPython(c)
-			})
-			sso.GET("/callback/:provider", agentOpsHandler.ProxyToPython)
-		}
+		// Demo and SSO routes removed or moved to protected
 
 		// Protected routes
 		protected := v1.Group("")
@@ -177,6 +155,22 @@ func main() {
 			// User routes
 			protected.GET("/auth/me", authHandler.Me)
 			protected.POST("/auth/logout", authHandler.Logout)
+
+			// SSO (AI Compliance UC1) - Now protected in production
+			sso := protected.Group("/sso")
+			{
+				sso.GET("/config/:id", agentOpsHandler.ProxyToPython)
+				sso.POST("/config/:id", agentOpsHandler.ProxyToPython)
+				sso.GET("/config/:id/liveness-link", agentOpsHandler.ProxyToPython)
+				sso.POST("/handshake", agentOpsHandler.ProxyToPython)
+				sso.POST("/connect/:provider", agentOpsHandler.ProxyToPython)
+				sso.GET("/providers/:id", func(c *gin.Context) {
+					id := c.Param("id")
+					c.Request.URL.Path = "/api/v1/sso/config/" + id
+					agentOpsHandler.ProxyToPython(c)
+				})
+				sso.GET("/callback/:provider", agentOpsHandler.ProxyToPython)
+			}
 
 			// Agent Operations
 			agents := protected.Group("/agents")
@@ -250,7 +244,13 @@ func main() {
 				deepfake.POST("/verify", deepfakeHandler.VerifyAuthSignature)
 				deepfake.POST("/analyze/enterprise", deepfakeHandler.AnalyzeEnterprise)
 				deepfake.GET("/detectors", deepfakeHandler.ListDetectors)
+
+
 			}
+
+
+
+
 
 			// Enterprise
 			enterprise := protected.Group("/enterprise")
@@ -322,9 +322,15 @@ func main() {
 			{
 				agentOps.GET("/audit", agentOpsHandler.GetAuditLogs)
 				agentOps.POST("/alerts/:id/ignore", agentOpsHandler.ProxyToPython)
+				agentOps.GET("/vigilance/alerts", agentOpsHandler.ProxyToPython)
+				agentOps.GET("/governance/analytics/roi", agentOpsHandler.ProxyToPython)
+				agentOps.GET("/agents", agentOpsHandler.ProxyToPython)
 				agentOps.GET("/models/config", agentOpsHandler.ListLLMConfigs)
 				agentOps.GET("/rules/budget", rulesHandler.ListRules)
 				agentOps.GET("/webhooks", webhookHandler.ListWebhooks)
+				agentOps.POST("/webhooks", webhookHandler.CreateWebhook)
+				agentOps.PUT("/webhooks/:id", webhookHandler.UpdateWebhook)
+				agentOps.DELETE("/webhooks/:id", webhookHandler.DeleteWebhook)
 				agentOps.GET("/cloud/health", agentOpsHandler.ProxyToPython)
 				agentOps.POST("/cloud/failover", agentOpsHandler.ProxyToPython)
 				agentOps.POST("/compliance/hipaa", agentOpsHandler.ProxyToPython)
@@ -439,13 +445,12 @@ func main() {
 			vendors := protected.Group("/vendors")
 			vendors.Use(middleware.ProductAccess("compliance"))
 			{
-				vendors.GET("", agentOpsHandler.ProxyToPython)
-				vendors.POST("", agentOpsHandler.ProxyToPython)
-				vendors.DELETE("/:id", agentOpsHandler.ProxyToPython)
+				vendors.GET("", vendorHandler.ListVendors)
+				vendors.POST("", vendorHandler.AddVendor)
 			}
 
 			// Wearables (Deepfake UC14)
-			wearable := protected.Group("/wearable")
+			wearable := protected.Group("/wearables")
 			wearable.Use(middleware.ProductAccess("deepfake"))
 			{
 				wearable.GET("/devices", wearableHandler.ListDevices)
@@ -475,7 +480,6 @@ func main() {
 			{
 				travel.GET("/kiosks", travelKioskHandler.ListKiosks)
 				travel.POST("/kiosks/:id/verify", travelKioskHandler.VerifyTraveler)
-				travel.GET("/stats", agentOpsHandler.ProxyToPython)
 			}
 
 			// Workforce & Sovereign (Digital Workforce Gap)

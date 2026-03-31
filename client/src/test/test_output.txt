@@ -1,0 +1,816 @@
+
+Running 45 tests using 1 worker
+
+  ✘   1 sentinel-functional.spec.ts:16:5 › AgentOps Sentinel - Enterprise Functional Validation › should execute HIPAA Compliance Audit and verify results (644ms)
+  ✘   2 sentinel-functional.spec.ts:31:5 › AgentOps Sentinel - Enterprise Functional Validation › should execute SOX Financial Audit and verify results (538ms)
+  ✘   3 sentinel-functional.spec.ts:45:5 › AgentOps Sentinel - Enterprise Functional Validation › should trigger Regional Failover in Multi-Cloud Health (824ms)
+  ✘   4 sentinel-functional.spec.ts:63:5 › AgentOps Sentinel - Enterprise Functional Validation › should manage Webhooks (Register and Delete) (1.2s)
+  ✘   5 sentinel-functional.spec.ts:90:5 › AgentOps Sentinel - Enterprise Functional Validation › should toggle Dynamic Budget Rules (765ms)
+  ✘   6 sentinel-functional.spec.ts:103:5 › AgentOps Sentinel - Enterprise Functional Validation › should verify Self-Healing Uptime Assurance (894ms)
+  ✘   7 sentinel-functional.spec.ts:123:5 › AgentOps Sentinel - Enterprise Functional Validation › should create and configure new agent (673ms)
+  ✘   8 sentinel-functional.spec.ts:153:5 › AgentOps Sentinel - Enterprise Functional Validation › should perform bulk agent operations (1.6s)
+  ✘   9 sentinel-functional.spec.ts:181:5 › AgentOps Sentinel - Enterprise Functional Validation › should edit agent settings and verify changes (812ms)
+  ✘  10 sentinel-functional.spec.ts:206:5 › AgentOps Sentinel - Enterprise Functional Validation › should delete agent with confirmation (1.2s)
+  ✘  11 sentinel-functional.spec.ts:222:5 › AgentOps Sentinel - Enterprise Functional Validation › should create and manage budget rules (672ms)
+  ✘  12 sentinel-functional.spec.ts:249:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate usage forecasting accuracy (713ms)
+  ✘  13 sentinel-functional.spec.ts:264:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate ROI analytics calculations (507ms)
+  ✘  14 sentinel-functional.spec.ts:279:5 › AgentOps Sentinel - Enterprise Functional Validation › should monitor continuous multi-cloud health (534ms)
+  ✘  15 sentinel-functional.spec.ts:294:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate webhook event delivery (600ms)
+  ✘  16 sentinel-functional.spec.ts:314:5 › AgentOps Sentinel - Enterprise Functional Validation › should test self-healing recovery triggers (797ms)
+  ✘  17 sentinel-functional.spec.ts:333:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate mobile application integration (637ms)
+  ✘  18 sentinel-functional.spec.ts:349:5 › AgentOps Sentinel - Enterprise Functional Validation › should manage on-premise deployments (673ms)
+  ✘  19 sentinel-functional.spec.ts:368:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate semantic audit trail integrity (773ms)
+  ✘  20 sentinel-functional.spec.ts:388:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate SLA management and compliance (854ms)
+  ✘  21 sentinel-functional.spec.ts:405:5 › AgentOps Sentinel - Enterprise Functional Validation › should complete SSO authentication flow (604ms)
+  ✘  22 sentinel-functional.spec.ts:426:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate partner portal synchronization (794ms)
+  ✘  23 sentinel-functional.spec.ts:446:5 › AgentOps Sentinel - Enterprise Functional Validation › should deploy and validate localization packages (533ms)
+  ✘  24 sentinel-functional.spec.ts:466:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate model performance monitoring (627ms)
+  ✘  25 sentinel-functional.spec.ts:488:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate strategic insights generation (764ms)
+  ✘  26 sentinel-functional.spec.ts:505:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate real-time streaming metrics (870ms)
+  ✘  27 sentinel-functional.spec.ts:527:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate notification channel delivery (726ms)
+  ✘  28 sentinel-functional.spec.ts:549:5 › AgentOps Sentinel - Enterprise Functional Validation › should export enterprise agent data to CSV (738ms)
+  ✘  29 sentinel-functional.spec.ts:564:5 › AgentOps Sentinel - Enterprise Functional Validation › should toggle Persistent Memory when creating new agent (625ms)
+  ✘  30 sentinel-functional.spec.ts:589:5 › AgentOps Sentinel - Enterprise Functional Validation › should navigate to and configure global system settings (757ms)
+  ✘  31 sentinel-functional.spec.ts:624:5 › AgentOps Sentinel - Enterprise Functional Validation › should manage multi-cloud proxy routing configuration (734ms)
+  ✘  32 sentinel-functional.spec.ts:641:5 › AgentOps Sentinel - Enterprise Functional Validation › should view system snapshots and recovery dashboard (697ms)
+  ✘  33 sentinel-functional.spec.ts:661:5 › AgentOps Sentinel - Enterprise Functional Validation › should verify regulatory compliance assessment details (915ms)
+  ✘  34 sentinel-functional.spec.ts:674:5 › AgentOps Sentinel - Enterprise Functional Validation › should onboard new language model and verify registration (785ms)
+  ✘  35 sentinel-functional.spec.ts:694:5 › AgentOps Sentinel - Enterprise Functional Validation › should verify keyboard accessibility and focus management (863ms)
+  ✘  36 sentinel-functional.spec.ts:713:5 › AgentOps Sentinel - Enterprise Functional Validation › should handle complete dialog keyboard navigation (Escape, Tab, Enter) (668ms)
+  ✘  37 sentinel-functional.spec.ts:748:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate mobile responsive behavior and touch events (678ms)
+  ✘  38 sentinel-functional.spec.ts:776:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate advanced form field interactions and error states (761ms)
+  ✘  39 sentinel-functional.spec.ts:813:5 › AgentOps Sentinel - Enterprise Functional Validation › should handle error boundary scenarios and component failure recovery (580ms)
+  ✘  40 sentinel-functional.spec.ts:846:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate real-time feature performance and load times (824ms)
+  ✘  41 sentinel-functional.spec.ts:891:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate cross-browser form interactions and input handling (817ms)
+  ✘  42 sentinel-functional.spec.ts:917:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate agent cloning and configuration export/import (641ms)
+  ✘  43 sentinel-functional.spec.ts:947:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate agent tier filtering and bulk prioritization (941ms)
+  ✘  44 sentinel-functional.spec.ts:964:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate global governance settings and memory optimization (632ms)
+  ✘  45 sentinel-functional.spec.ts:982:5 › AgentOps Sentinel - Enterprise Functional Validation › should handle complex multi-step workflows and state persistence (559ms)
+
+
+  1) sentinel-functional.spec.ts:16:5 › AgentOps Sentinel - Enterprise Functional Validation › should execute HIPAA Compliance Audit and verify results 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  2) sentinel-functional.spec.ts:31:5 › AgentOps Sentinel - Enterprise Functional Validation › should execute SOX Financial Audit and verify results 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  3) sentinel-functional.spec.ts:45:5 › AgentOps Sentinel - Enterprise Functional Validation › should trigger Regional Failover in Multi-Cloud Health 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  4) sentinel-functional.spec.ts:63:5 › AgentOps Sentinel - Enterprise Functional Validation › should manage Webhooks (Register and Delete) 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  5) sentinel-functional.spec.ts:90:5 › AgentOps Sentinel - Enterprise Functional Validation › should toggle Dynamic Budget Rules 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  6) sentinel-functional.spec.ts:103:5 › AgentOps Sentinel - Enterprise Functional Validation › should verify Self-Healing Uptime Assurance 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  7) sentinel-functional.spec.ts:123:5 › AgentOps Sentinel - Enterprise Functional Validation › should create and configure new agent 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  8) sentinel-functional.spec.ts:153:5 › AgentOps Sentinel - Enterprise Functional Validation › should perform bulk agent operations 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  9) sentinel-functional.spec.ts:181:5 › AgentOps Sentinel - Enterprise Functional Validation › should edit agent settings and verify changes 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  10) sentinel-functional.spec.ts:206:5 › AgentOps Sentinel - Enterprise Functional Validation › should delete agent with confirmation 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  11) sentinel-functional.spec.ts:222:5 › AgentOps Sentinel - Enterprise Functional Validation › should create and manage budget rules 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  12) sentinel-functional.spec.ts:249:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate usage forecasting accuracy 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  13) sentinel-functional.spec.ts:264:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate ROI analytics calculations 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  14) sentinel-functional.spec.ts:279:5 › AgentOps Sentinel - Enterprise Functional Validation › should monitor continuous multi-cloud health 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  15) sentinel-functional.spec.ts:294:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate webhook event delivery 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  16) sentinel-functional.spec.ts:314:5 › AgentOps Sentinel - Enterprise Functional Validation › should test self-healing recovery triggers 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  17) sentinel-functional.spec.ts:333:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate mobile application integration 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  18) sentinel-functional.spec.ts:349:5 › AgentOps Sentinel - Enterprise Functional Validation › should manage on-premise deployments 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  19) sentinel-functional.spec.ts:368:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate semantic audit trail integrity 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  20) sentinel-functional.spec.ts:388:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate SLA management and compliance 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  21) sentinel-functional.spec.ts:405:5 › AgentOps Sentinel - Enterprise Functional Validation › should complete SSO authentication flow 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  22) sentinel-functional.spec.ts:426:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate partner portal synchronization 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  23) sentinel-functional.spec.ts:446:5 › AgentOps Sentinel - Enterprise Functional Validation › should deploy and validate localization packages 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  24) sentinel-functional.spec.ts:466:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate model performance monitoring 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  25) sentinel-functional.spec.ts:488:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate strategic insights generation 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  26) sentinel-functional.spec.ts:505:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate real-time streaming metrics 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  27) sentinel-functional.spec.ts:527:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate notification channel delivery 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  28) sentinel-functional.spec.ts:549:5 › AgentOps Sentinel - Enterprise Functional Validation › should export enterprise agent data to CSV 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  29) sentinel-functional.spec.ts:564:5 › AgentOps Sentinel - Enterprise Functional Validation › should toggle Persistent Memory when creating new agent 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  30) sentinel-functional.spec.ts:589:5 › AgentOps Sentinel - Enterprise Functional Validation › should navigate to and configure global system settings 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  31) sentinel-functional.spec.ts:624:5 › AgentOps Sentinel - Enterprise Functional Validation › should manage multi-cloud proxy routing configuration 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  32) sentinel-functional.spec.ts:641:5 › AgentOps Sentinel - Enterprise Functional Validation › should view system snapshots and recovery dashboard 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  33) sentinel-functional.spec.ts:661:5 › AgentOps Sentinel - Enterprise Functional Validation › should verify regulatory compliance assessment details 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  34) sentinel-functional.spec.ts:674:5 › AgentOps Sentinel - Enterprise Functional Validation › should onboard new language model and verify registration 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  35) sentinel-functional.spec.ts:694:5 › AgentOps Sentinel - Enterprise Functional Validation › should verify keyboard accessibility and focus management 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  36) sentinel-functional.spec.ts:713:5 › AgentOps Sentinel - Enterprise Functional Validation › should handle complete dialog keyboard navigation (Escape, Tab, Enter) 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  37) sentinel-functional.spec.ts:748:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate mobile responsive behavior and touch events 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  38) sentinel-functional.spec.ts:776:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate advanced form field interactions and error states 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  39) sentinel-functional.spec.ts:813:5 › AgentOps Sentinel - Enterprise Functional Validation › should handle error boundary scenarios and component failure recovery 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  40) sentinel-functional.spec.ts:846:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate real-time feature performance and load times 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  41) sentinel-functional.spec.ts:891:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate cross-browser form interactions and input handling 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  42) sentinel-functional.spec.ts:917:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate agent cloning and configuration export/import 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  43) sentinel-functional.spec.ts:947:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate agent tier filtering and bulk prioritization 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  44) sentinel-functional.spec.ts:964:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate global governance settings and memory optimization 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  45) sentinel-functional.spec.ts:982:5 › AgentOps Sentinel - Enterprise Functional Validation › should handle complex multi-step workflows and state persistence 
+
+    Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
+    Call log:
+    [2m  - navigating to "/products/agent-ops", waiting until "load"[22m
+
+
+       9 |         });
+      10 |         // Navigate to the AgentOps dashboard
+    > 11 |         await page.goto('/products/agent-ops');
+         |                    ^
+      12 |         // Wait for the dashboard to load
+      13 |         await expect(page.getByText('Total Agents')).toBeVisible({ timeout: 15000 });
+      14 |     });
+        at /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client/src/test/sentinel-functional.spec.ts:11:20
+
+  45 failed
+    sentinel-functional.spec.ts:16:5 › AgentOps Sentinel - Enterprise Functional Validation › should execute HIPAA Compliance Audit and verify results 
+    sentinel-functional.spec.ts:31:5 › AgentOps Sentinel - Enterprise Functional Validation › should execute SOX Financial Audit and verify results 
+    sentinel-functional.spec.ts:45:5 › AgentOps Sentinel - Enterprise Functional Validation › should trigger Regional Failover in Multi-Cloud Health 
+    sentinel-functional.spec.ts:63:5 › AgentOps Sentinel - Enterprise Functional Validation › should manage Webhooks (Register and Delete) 
+    sentinel-functional.spec.ts:90:5 › AgentOps Sentinel - Enterprise Functional Validation › should toggle Dynamic Budget Rules 
+    sentinel-functional.spec.ts:103:5 › AgentOps Sentinel - Enterprise Functional Validation › should verify Self-Healing Uptime Assurance 
+    sentinel-functional.spec.ts:123:5 › AgentOps Sentinel - Enterprise Functional Validation › should create and configure new agent 
+    sentinel-functional.spec.ts:153:5 › AgentOps Sentinel - Enterprise Functional Validation › should perform bulk agent operations 
+    sentinel-functional.spec.ts:181:5 › AgentOps Sentinel - Enterprise Functional Validation › should edit agent settings and verify changes 
+    sentinel-functional.spec.ts:206:5 › AgentOps Sentinel - Enterprise Functional Validation › should delete agent with confirmation 
+    sentinel-functional.spec.ts:222:5 › AgentOps Sentinel - Enterprise Functional Validation › should create and manage budget rules 
+    sentinel-functional.spec.ts:249:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate usage forecasting accuracy 
+    sentinel-functional.spec.ts:264:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate ROI analytics calculations 
+    sentinel-functional.spec.ts:279:5 › AgentOps Sentinel - Enterprise Functional Validation › should monitor continuous multi-cloud health 
+    sentinel-functional.spec.ts:294:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate webhook event delivery 
+    sentinel-functional.spec.ts:314:5 › AgentOps Sentinel - Enterprise Functional Validation › should test self-healing recovery triggers 
+    sentinel-functional.spec.ts:333:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate mobile application integration 
+    sentinel-functional.spec.ts:349:5 › AgentOps Sentinel - Enterprise Functional Validation › should manage on-premise deployments 
+    sentinel-functional.spec.ts:368:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate semantic audit trail integrity 
+    sentinel-functional.spec.ts:388:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate SLA management and compliance 
+    sentinel-functional.spec.ts:405:5 › AgentOps Sentinel - Enterprise Functional Validation › should complete SSO authentication flow 
+    sentinel-functional.spec.ts:426:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate partner portal synchronization 
+    sentinel-functional.spec.ts:446:5 › AgentOps Sentinel - Enterprise Functional Validation › should deploy and validate localization packages 
+    sentinel-functional.spec.ts:466:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate model performance monitoring 
+    sentinel-functional.spec.ts:488:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate strategic insights generation 
+    sentinel-functional.spec.ts:505:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate real-time streaming metrics 
+    sentinel-functional.spec.ts:527:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate notification channel delivery 
+    sentinel-functional.spec.ts:549:5 › AgentOps Sentinel - Enterprise Functional Validation › should export enterprise agent data to CSV 
+    sentinel-functional.spec.ts:564:5 › AgentOps Sentinel - Enterprise Functional Validation › should toggle Persistent Memory when creating new agent 
+    sentinel-functional.spec.ts:589:5 › AgentOps Sentinel - Enterprise Functional Validation › should navigate to and configure global system settings 
+    sentinel-functional.spec.ts:624:5 › AgentOps Sentinel - Enterprise Functional Validation › should manage multi-cloud proxy routing configuration 
+    sentinel-functional.spec.ts:641:5 › AgentOps Sentinel - Enterprise Functional Validation › should view system snapshots and recovery dashboard 
+    sentinel-functional.spec.ts:661:5 › AgentOps Sentinel - Enterprise Functional Validation › should verify regulatory compliance assessment details 
+    sentinel-functional.spec.ts:674:5 › AgentOps Sentinel - Enterprise Functional Validation › should onboard new language model and verify registration 
+    sentinel-functional.spec.ts:694:5 › AgentOps Sentinel - Enterprise Functional Validation › should verify keyboard accessibility and focus management 
+    sentinel-functional.spec.ts:713:5 › AgentOps Sentinel - Enterprise Functional Validation › should handle complete dialog keyboard navigation (Escape, Tab, Enter) 
+    sentinel-functional.spec.ts:748:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate mobile responsive behavior and touch events 
+    sentinel-functional.spec.ts:776:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate advanced form field interactions and error states 
+    sentinel-functional.spec.ts:813:5 › AgentOps Sentinel - Enterprise Functional Validation › should handle error boundary scenarios and component failure recovery 
+    sentinel-functional.spec.ts:846:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate real-time feature performance and load times 
+    sentinel-functional.spec.ts:891:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate cross-browser form interactions and input handling 
+    sentinel-functional.spec.ts:917:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate agent cloning and configuration export/import 
+    sentinel-functional.spec.ts:947:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate agent tier filtering and bulk prioritization 
+    sentinel-functional.spec.ts:964:5 › AgentOps Sentinel - Enterprise Functional Validation › should validate global governance settings and memory optimization 
+    sentinel-functional.spec.ts:982:5 › AgentOps Sentinel - Enterprise Functional Validation › should handle complex multi-step workflows and state persistence 

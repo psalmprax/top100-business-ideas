@@ -1,8 +1,8 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/top100-business-ideas/api/internal/services"
 
@@ -20,96 +20,67 @@ func NewRulesHandler(proxyService *services.ProxyService) *RulesHandler {
 }
 
 func (h *RulesHandler) ListRules(c *gin.Context) {
-	// Return mock rules for demo
-	rules := []gin.H{
-		{
-			"id":      "1",
-			"name":    "Loop Prevention",
-			"type":    "loop_prevention",
-			"enabled": true,
-			"config":  gin.H{"maxIterations": 10, "semanticCheck": true},
-		},
-		{
-			"id":      "2",
-			"name":    "Semantic Cost Cap",
-			"type":    "semantic_cost_cap",
-			"enabled": true,
-			"config":  gin.H{"maxSpend": 50, "preserveState": true},
-		},
-		{
-			"id":      "3",
-			"name":    "Memory Optimization",
-			"type":    "memory_optimization",
-			"enabled": true,
-			"config":  gin.H{"compressThreshold": 0.7},
-		},
+	response, err := h.proxyService.Forward("GET", "/agents/alerts", nil)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": "Failed to fetch rules", "details": err.Error()})
+		return
 	}
-	c.JSON(http.StatusOK, rules)
+	c.Data(http.StatusOK, "application/json", response)
 }
 
 func (h *RulesHandler) CreateRule(c *gin.Context) {
-	var req struct {
-		Name   string `json:"name"`
-		Type   string `json:"type"`
-		Config string `json:"config"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
+	var body interface{}
+	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
 	}
 
-	rule := gin.H{
-		"id":         "new-" + time.Now().Format("20060102150405"),
-		"name":       req.Name,
-		"type":       req.Type,
-		"enabled":    true,
-		"config":     req.Config,
-		"created_at": time.Now(),
+	response, err := h.proxyService.Forward("POST", "/agents/alerts", body)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": "Failed to create rule", "details": err.Error()})
+		return
 	}
-
-	c.JSON(http.StatusCreated, rule)
+	c.Data(http.StatusCreated, "application/json", response)
 }
 
 func (h *RulesHandler) UpdateRule(c *gin.Context) {
 	id := c.Param("id")
-	var req struct {
-		Name    string `json:"name"`
-		Type    string `json:"type"`
-		Config  string `json:"config"`
-		Enabled bool   `json:"enabled"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
+	var body interface{}
+	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
 	}
 
-	rule := gin.H{
-		"id":      id,
-		"name":    req.Name,
-		"type":    req.Type,
-		"enabled": req.Enabled,
-		"config":  req.Config,
+	response, err := h.proxyService.Forward("PUT", fmt.Sprintf("/agents/alerts/%s", id), body)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": "Failed to update rule", "details": err.Error()})
+		return
 	}
-
-	c.JSON(http.StatusOK, rule)
+	c.Data(http.StatusOK, "application/json", response)
 }
 
 func (h *RulesHandler) DeleteRule(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "Rule deleted"})
+	id := c.Param("id")
+	response, err := h.proxyService.Forward("DELETE", fmt.Sprintf("/agents/alerts/%s", id), nil)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": "Failed to delete rule", "details": err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
 }
 
 func (h *RulesHandler) ToggleRule(c *gin.Context) {
 	id := c.Param("id")
-	var req struct {
-		Enabled bool `json:"enabled"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
+	var body interface{}
+	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"id":      id,
-		"enabled": req.Enabled,
-	})
+	response, err := h.proxyService.Forward("PATCH", fmt.Sprintf("/agents/alerts/%s", id), body)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": "Failed to toggle rule", "details": err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
 }

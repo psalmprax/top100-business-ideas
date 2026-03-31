@@ -330,6 +330,94 @@ func RunMigrations(ctx context.Context) error {
 			is_active BOOLEAN DEFAULT true,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`,
+
+		// --- NEW TABLES FOR REAL-FIRST HARDENING ---
+
+		// Freelancer workflow - Tasks
+		`CREATE TABLE IF NOT EXISTS tasks (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+			title VARCHAR(255) NOT NULL,
+			status VARCHAR(50) DEFAULT 'todo',
+			priority VARCHAR(50) DEFAULT 'medium',
+			due_date TIMESTAMP,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`,
+
+		// Freelancer workflow - Clients
+		`CREATE TABLE IF NOT EXISTS clients (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+			name VARCHAR(255) NOT NULL,
+			email VARCHAR(255),
+			company VARCHAR(255),
+			status VARCHAR(50) DEFAULT 'active',
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`,
+
+		// Freelancer workflow - Calendar Events
+		`CREATE TABLE IF NOT EXISTS calendar_events (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+			title VARCHAR(255) NOT NULL,
+			start_time TIMESTAMP NOT NULL,
+			end_time TIMESTAMP NOT NULL,
+			description TEXT,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`,
+
+		// Freelancer workflow - Audit Notes
+		`CREATE TABLE IF NOT EXISTS audit_notes (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+			content TEXT NOT NULL,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`,
+
+		// Workforce - Governance Decisions
+		`CREATE TABLE IF NOT EXISTS governance_decisions (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+			stage INTEGER NOT NULL,
+			decision VARCHAR(50) NOT NULL,
+			status VARCHAR(50) DEFAULT 'recorded',
+			timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`,
+
+		// Workforce - Campaigns
+		`CREATE TABLE IF NOT EXISTS workforce_campaigns (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+			name VARCHAR(255) NOT NULL,
+			target_audience VARCHAR(255),
+			status VARCHAR(50) DEFAULT 'active',
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`,
+
+		// Workforce - Forensic Traces
+		`CREATE TABLE IF NOT EXISTS forensic_traces (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+			agent_id UUID REFERENCES agents(id) ON DELETE SET NULL,
+			action VARCHAR(255) NOT NULL,
+			details JSONB,
+			timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`,
+
+		// Denial Defense - Claims
+		`CREATE TABLE IF NOT EXISTS claims (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+			claim_id_string VARCHAR(100) NOT NULL,
+			payer VARCHAR(255) NOT NULL,
+			amount DECIMAL(12, 2) NOT NULL,
+			status VARCHAR(50) DEFAULT 'pending',
+			risk VARCHAR(50) DEFAULT 'unknown',
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`,
 	}
 
 	for _, migration := range migrations {

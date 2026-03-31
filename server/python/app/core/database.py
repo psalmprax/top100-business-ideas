@@ -14,15 +14,8 @@ from app.core.models import (
 # Database connection string
 DATABASE_URL = settings.DATABASE_URL
 
-# Fallback: use SQLite for development if no DATABASE_URL is provided or if it's the default placeholder
-if DATABASE_URL == "postgresql://localhost:5432/top100ideas" or not DATABASE_URL:
-    DATABASE_URL = "sqlite:///./app.db"
-
 # Create engine
-engine = create_engine(
-    DATABASE_URL, 
-    connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
-)
+engine = create_engine(DATABASE_URL)
 
 def init_db():
     """Initialize database and create tables with retry logic"""
@@ -34,15 +27,14 @@ def init_db():
         try:
             SQLModel.metadata.create_all(engine)
             
-            # Manual Migration: Add 'limit' column to alertconfig if it doesn't exist
+            # Manual Migration: Add columns if they don't exist
             # This is necessary because SQLModel.metadata.create_all doesn't handle migrations
-            if not DATABASE_URL.startswith("sqlite"):
-                from sqlalchemy import text
-                with engine.connect() as conn:
-                    conn.execute(text("ALTER TABLE alertconfig ADD COLUMN IF NOT EXISTS \"limit\" FLOAT DEFAULT 100.0;"))
-                    conn.execute(text("ALTER TABLE alertconfig ADD COLUMN IF NOT EXISTS \"action\" VARCHAR DEFAULT 'pause';"))
-                    conn.execute(text("ALTER TABLE alertconfig ADD COLUMN IF NOT EXISTS \"priority\" VARCHAR DEFAULT 'medium';"))
-                    conn.commit()
+            from sqlalchemy import text
+            with engine.connect() as conn:
+                conn.execute(text("ALTER TABLE alertconfig ADD COLUMN IF NOT EXISTS \"limit\" FLOAT DEFAULT 100.0;"))
+                conn.execute(text("ALTER TABLE alertconfig ADD COLUMN IF NOT EXISTS \"action\" VARCHAR DEFAULT 'pause';"))
+                conn.execute(text("ALTER TABLE alertconfig ADD COLUMN IF NOT EXISTS \"priority\" VARCHAR DEFAULT 'medium';"))
+                conn.commit()
             
             # Seed initial data
             seed_compliance_articles()

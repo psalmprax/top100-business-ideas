@@ -24,12 +24,12 @@ func NewProxyService(baseURL string) *ProxyService {
 	}
 }
 
-func (p *ProxyService) Forward(method, path string, body interface{}) ([]byte, error) {
+func (p *ProxyService) ForwardWithStatus(method, path string, body interface{}) (int, []byte, error) {
 	var reqBody io.Reader
 	if body != nil {
 		jsonBody, err := json.Marshal(body)
 		if err != nil {
-			return nil, fmt.Errorf("failed to marshal request body: %w", err)
+			return 0, nil, fmt.Errorf("failed to marshal request body: %w", err)
 		}
 		reqBody = bytes.NewBuffer(jsonBody)
 	}
@@ -37,27 +37,28 @@ func (p *ProxyService) Forward(method, path string, body interface{}) ([]byte, e
 	url := p.baseURL + path
 	req, err := http.NewRequest(method, url, reqBody)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return 0, nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := p.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to send request: %w", err)
+		return 0, nil, fmt.Errorf("failed to send request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
+		return resp.StatusCode, nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("backend returned status %d: %s", resp.StatusCode, string(responseBody))
-	}
+	return resp.StatusCode, responseBody, nil
+}
 
-	return responseBody, nil
+func (p *ProxyService) Forward(method, path string, body interface{}) ([]byte, error) {
+	_, response, err := p.ForwardWithStatus(method, path, body)
+	return response, err
 }
 
 // Agent Operations

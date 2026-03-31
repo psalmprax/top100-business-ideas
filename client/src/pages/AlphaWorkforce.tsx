@@ -580,7 +580,7 @@ const AlphaWorkforce = () => {
               <Building2 className="w-8 h-8 text-white" />
             </div>
             <div>
-              <h1 className="text-card-title text-white">Alpha Workforce</h1>
+              <h1 className="text-product-title text-xl">Alpha <span>Workforce</span></h1>
               <p className="text-feature flex items-center gap-1">
                 <Activity className="w-3 h-3 text-green-500" /> Autonomous
                 Corporate Management System

@@ -79,7 +79,7 @@ const PRODUCT_MAPPING: Record<
 };
 
 export default function Login() {
-  const { login, signUp, loginDemo } = useAuth();
+  const { login, signUp } = useAuth();
   const search = useSearch();
   const params = new URLSearchParams(search);
   const initialProduct = params.get("product") || "";
@@ -120,10 +120,6 @@ export default function Login() {
     }
   };
 
-  const handleDemoLogin = () => {
-    loginDemo();
-    window.location.href = "/products/agent-ops";
-  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -189,15 +185,6 @@ export default function Login() {
         <CardContent>
           {!requiresSelection ? (
             <>
-              <Button
-                onClick={handleDemoLogin}
-                variant="outline"
-                className="w-full mb-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0"
-                data-testid="btn-demo-mode"
-              >
-                <Rocket className="w-4 h-4 mr-2" />
-                Try Demo Mode (Client Preview)
-              </Button>
 
               <Tabs
                 value={activeTab}

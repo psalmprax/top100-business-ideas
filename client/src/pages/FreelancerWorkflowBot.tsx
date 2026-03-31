@@ -114,9 +114,7 @@ function MetricCard({
           )}
         </div>
         <div className="mt-3">
-          <div className="text-stat text-white tabular-nums mb-1 tracking-tight">
-            {value}
-          </div>
+          <div className="text-stat text-white tabular-nums mb-1">{value}</div>
           <div className="text-stat-label mt-0.5">{title}</div>
         </div>
       </CardContent>
@@ -136,177 +134,238 @@ export default function FreelancerWorkflowBot() {
 
   // Real data state
   const [agents, setAgents] = useState<Agent[]>([]);
-  const [tasks, setTasks] = useState<any[]>(storage.get("fwb_tasks", []));
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [metrics, setMetrics] = useState<any>(null);
-  const [clients, setClients] = useState<any[]>(
-    storage.get("fwb_clients", [
-      {
-        id: "1",
-        name: "Acme Corp",
-        email: "pm@acme.com",
-        status: "active",
-        projects: 3,
-        revenue: 12500,
-      },
-      {
-        id: "2",
-        name: "Hooli",
-        email: "ops@hooli.io",
-        status: "active",
-        projects: 1,
-        revenue: 8200,
-      },
-      {
-        id: "3",
-        name: "Pied Piper",
-        email: "richard@piedpiper.com",
-        status: "prospect",
-        projects: 0,
-        revenue: 0,
-      },
-    ])
-  );
-  const [integrations, setIntegrations] = useState<any[]>(
-    storage.get("fwb_integrations", [
-      { id: "stripe", name: "Stripe", connected: false, icon: "💳" },
-      { id: "slack", name: "Slack", connected: false, icon: "💬" },
-      { id: "github", name: "GitHub", connected: false, icon: "🐙" },
-      { id: "notion", name: "Notion", connected: false, icon: "📝" },
-      { id: "calendly", name: "Calendly", connected: false, icon: "📅" },
-      { id: "zapier", name: "Zapier", connected: false, icon: "⚡" },
-    ])
-  );
-  const [scheduleEvents, setScheduleEvents] = useState<any[]>(
-    storage.get("fwb_schedule", [])
-  );
-  const [botSettings, setBotSettings] = useState(
-    storage.get("fwb_settings", {
-      autoReply: true,
-      autoInvoice: false,
-      smartScheduling: true,
-      leadScoring: false,
-      nlpModel: "gpt-4",
-    })
-  );
-  const [earningsData, setEarningsData] = useState(
-    storage.get("fwb_earnings", {
-      totalRevenue: 20700,
-      monthlyRevenue: 4250,
-      pendingPayments: 1800,
-      avgProjectValue: 6900,
-      yoyGrowth: 24,
-    })
-  );
-  const [taxEstimate, setTaxEstimate] = useState(
-    storage.get("fwb_tax", {
-      estimatedTax: 5175,
-      q1Paid: 1200,
-      q2Paid: 1300,
-      q3Due: 1350,
-      q4Due: 1325,
-      deductible: 3200,
-    })
-  );
+  const [clients, setClients] = useState<Client[]>([]);
+  const [integrations, setIntegrations] = useState<Integration[]>([]);
+  const [scheduleEvents, setScheduleEvents] = useState<ScheduleEvent[]>([]);
+  const [botSettings, setBotSettings] = useState<any>({
+    autoReply: true,
+    autoInvoice: false,
+    smartScheduling: true,
+    leadScoring: false,
+    nlpModel: "gpt-4",
+  });
+  const [earningsData, setEarningsData] = useState<any>(null);
+  const [taxEstimate, setTaxEstimate] = useState<any>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [agentsData, metricsData] = await Promise.all([
-          agentsApi.list().catch(() => []),
-          metricsApi.current().catch(() => null),
+        // Fetch all data from real APIs
+        const [
+          agentsData,
+          metricsData,
+          tasksData,
+          clientsData,
+          integrationsData,
+          scheduleData,
+          botSettingsData,
+          insightsData,
+          taxDataResp,
+        ] = await Promise.all([
+          agentsApi.list(),
+          metricsApi.current(),
+          extendedApi.workforce.getTasks(),
+          extendedApi.workforce.getClients(),
+          extendedApi.workforce.getIntegrations(),
+          extendedApi.workforce.getScheduleEvents(),
+          extendedApi.workforce.getBotSettings("current_user"), // In real app, get from auth
+          extendedApi.workforce.getInsights(),
+          extendedApi.workforce.getTaxEstimate(),
         ]);
+
         setAgents(Array.isArray(agentsData) ? agentsData : []);
         if (metricsData) setMetrics(metricsData);
-      } catch {}
+        setTasks(Array.isArray(tasksData) ? tasksData : []);
+        setClients(Array.isArray(clientsData) ? clientsData : []);
+        setIntegrations(
+          Array.isArray(integrationsData) ? integrationsData : []
+        );
+        setScheduleEvents(Array.isArray(scheduleData) ? scheduleData : []);
+        // Convert BotSetting[] to object for the UI
+        if (Array.isArray(botSettingsData)) {
+          const settingsObj = { ...botSettings };
+          botSettingsData.forEach((s: any) => {
+            if (s.setting_key && s.setting_value !== undefined) {
+              settingsObj[s.setting_key] =
+                s.setting_type === "boolean"
+                  ? s.setting_value === "true" || s.setting_value === true
+                  : s.setting_value;
+            }
+          });
+          setBotSettings(settingsObj);
+        }
+        setEarningsData(insightsData || null);
+        setTaxEstimate(taxDataResp || null);
+      } catch (error) {
+        console.error("Failed to fetch workforce bot data:", error);
+        // In a real app, we might show an error state here
+      }
     };
     fetchData();
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  const handleCreateTask = () => {
+  const handleCreateTask = async () => {
     const title = window.prompt("Task title:");
     if (!title) return;
-    const newTask = {
-      id: `task-${Date.now()}`,
-      title,
-      status: "pending",
-      priority: "medium",
-      createdAt: new Date().toISOString(),
-      assignee: "WorkflowBot",
-    };
-    const updated = [...tasks, newTask];
-    setTasks(updated);
-    storage.set("fwb_tasks", updated);
-    toast.success(`Task created: ${title}`);
+
+    try {
+      const newTask = await extendedApi.workforce.createTask({
+        title,
+        status: "pending",
+        priority: "medium",
+        assignee: "WorkflowBot",
+        created_at: new Date().toISOString(),
+      });
+
+      setTasks(prev => [...prev, newTask]);
+      toast.success(`Task created: ${title}`);
+    } catch (error) {
+      console.error("Failed to create task:", error);
+      toast.error("Failed to create task. Please try again.");
+    }
   };
 
-  const handleCompleteTask = (taskId: string) => {
-    const updated = tasks.map(t =>
-      t.id === taskId
-        ? { ...t, status: "completed", completedAt: new Date().toISOString() }
-        : t
-    );
-    setTasks(updated);
-    storage.set("fwb_tasks", updated);
-    toast.success("Task completed");
+  const handleCompleteTask = async (taskId: string) => {
+    try {
+      const updatedTask = await extendedApi.workforce.updateTask(taskId, {
+        status: "completed",
+        completed_at: new Date().toISOString(),
+      });
+
+      setTasks(prev => prev.map(t => (t.id === taskId ? updatedTask : t)));
+      toast.success("Task completed");
+    } catch (error) {
+      console.error("Failed to complete task:", error);
+      toast.error("Failed to complete task. Please try again.");
+    }
   };
 
-  const handleDeleteTask = (taskId: string) => {
-    const updated = tasks.filter(t => t.id !== taskId);
-    setTasks(updated);
-    storage.set("fwb_tasks", updated);
-    toast.info("Task removed");
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      await extendedApi.workforce.deleteTask(taskId);
+
+      setTasks(prev => prev.filter(t => t.id !== taskId));
+      toast.info("Task removed");
+    } catch (error) {
+      console.error("Failed to delete task:", error);
+      toast.error("Failed to delete task. Please try again.");
+    }
   };
 
-  const handleToggleIntegration = (integrationId: string) => {
-    const updated = integrations.map(i =>
-      i.id === integrationId ? { ...i, connected: !i.connected } : i
-    );
-    setIntegrations(updated);
-    storage.set("fwb_integrations", updated);
-    const integration = updated.find(i => i.id === integrationId);
-    toast.success(
-      `${integration?.name} ${integration?.connected ? "connected" : "disconnected"}`
-    );
+  const handleToggleIntegration = async (integrationId: string) => {
+    try {
+      // First, get the current integration to toggle
+      const integration = integrations.find(i => i.id === integrationId);
+      if (!integration) return;
+
+      const updatedIntegration = await extendedApi.workforce.updateIntegration(
+        integrationId,
+        {
+          connected: !integration.connected,
+        }
+      );
+
+      setIntegrations(prev =>
+        prev.map(i => (i.id === integrationId ? updatedIntegration : i))
+      );
+      toast.success(
+        `${updatedIntegration.name} ${updatedIntegration.connected ? "connected" : "disconnected"}`
+      );
+    } catch (error) {
+      console.error("Failed to toggle integration:", error);
+      toast.error("Failed to toggle integration. Please try again.");
+    }
   };
 
-  const handleAddClient = () => {
+  const handleAddClient = async () => {
     const name = window.prompt("Client name:");
     if (!name) return;
     const email = window.prompt("Client email:") || "";
-    const newClient = {
-      id: `client-${Date.now()}`,
-      name,
-      email,
-      status: "prospect",
-      projects: 0,
-      revenue: 0,
-    };
-    const updated = [...clients, newClient];
-    setClients(updated);
-    storage.set("fwb_clients", updated);
-    toast.success(`Client added: ${name}`);
+
+    try {
+      const newClient = await extendedApi.workforce.createClient({
+        name,
+        email,
+        status: "prospect",
+        created_at: new Date().toISOString(),
+      });
+
+      setClients(prev => [...prev, newClient]);
+      toast.success(`Client added: ${name}`);
+    } catch (error) {
+      console.error("Failed to add client:", error);
+      toast.error("Failed to add client. Please try again.");
+    }
   };
 
-  const handleAddEvent = () => {
+  const handleAddEvent = async () => {
     const title = window.prompt("Event title:");
     if (!title) return;
-    const date =
-      window.prompt("Date (e.g., 2026-04-01 10:00):") ||
-      new Date().toISOString();
-    const newEvent = { id: `evt-${Date.now()}`, title, date, type: "meeting" };
-    const updated = [...scheduleEvents, newEvent];
-    setScheduleEvents(updated);
-    storage.set("fwb_schedule", updated);
-    toast.success(`Event scheduled: ${title}`);
+
+    const dateStr = window.prompt("Date (e.g., 2026-04-01 10:00):");
+    const date = dateStr ? new Date(dateStr) : new Date();
+
+    if (isNaN(date.getTime())) {
+      toast.error("Invalid date format");
+      return;
+    }
+
+    try {
+      const newEvent = await extendedApi.workforce.createScheduleEvent({
+        title,
+        description: "",
+        start_time: date.toISOString(),
+        end_time: new Date(date.getTime() + 60 * 60 * 1000).toISOString(), // 1 hour duration
+        event_type: "meeting",
+        location: "",
+        is_all_day: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+
+      setScheduleEvents(prev => [...prev, newEvent]);
+      toast.success(`Event scheduled: ${title}`);
+    } catch (error) {
+      console.error("Failed to add event:", error);
+      toast.error("Failed to add event. Please try again.");
+    }
   };
 
-  const handleSaveBotSettings = () => {
-    storage.set("fwb_settings", botSettings);
-    toast.success("Bot settings saved");
+  const handleSaveBotSettings = async () => {
+    try {
+      // Convert botSettings object to BotSetting array format for API
+      const settingsToSave = Object.entries(botSettings).map(
+        ([key, value]) => ({
+          setting_key: key,
+          setting_value: String(value),
+          setting_type: typeof value,
+          user_id: "current_user",
+          description: `${key} setting`,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+      );
+
+      // Save all bot settings
+      const savePromises = settingsToSave.map(setting =>
+        extendedApi.workforce.createBotSetting(setting).catch(() => {
+          // If create fails, setting might already exist
+          console.log(`Setting ${setting.setting_key} might already exist`);
+        })
+      );
+
+      await Promise.all(savePromises);
+      toast.success("Bot settings saved");
+    } catch (error) {
+      console.error("Failed to save bot settings:", error);
+      toast.error("Failed to save bot settings. Please try again.");
+    }
   };
 
   const handleAuthorizeAgent = async () => {
@@ -472,8 +531,8 @@ export default function FreelancerWorkflowBot() {
                   <Briefcase className="h-5 w-5 text-white" />
                 </div>
                 <div className="hidden sm:block">
-                  <h1 className="text-card-title text-white">
-                    WorkflowBot <span className="text-indigo-600">PRO</span>
+                  <h1 className="text-product-title text-white text-xl">
+                    WorkflowBot <span>PRO</span>
                   </h1>
                   <p className="text-feature text-muted-foreground">
                     Autonomous Freelance Engine

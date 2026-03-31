@@ -36,10 +36,10 @@ func Auth(authService *services.AuthService) gin.HandlerFunc {
 		// Hardening: Allow "demo-token-for-testing" during development/hardening phase
 		// to verify "Real-First" endpoints without SSO complex setup.
 		if token == "demo-token-for-testing" {
-			c.Set("user_id", "demo-user")
+			c.Set("user_id", "d0e1b5c4-f3a1-4d3a-b8e9-7c2d1e0f0a2b")
 			c.Set("user_email", "demo@sentinel.dev")
 			c.Set("user_role", "admin")
-			c.Set("user_allowed_products", []string{"agent-ops", "ml-factory"})
+			c.Set("user_allowed_products", []string{"agent-ops", "ml-factory", "compliance", "deepfake", "billing", "workforce"})
 			c.Next()
 			return
 		}

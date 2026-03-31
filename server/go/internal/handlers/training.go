@@ -7,101 +7,39 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/top100-business-ideas/api/internal/models"
+	"github.com/top100-business-ideas/api/internal/services"
 )
 
 // TrainingHandler handles training module operations for AI Compliance
-type TrainingHandler struct{}
+type TrainingHandler struct {
+	proxyService *services.ProxyService
+}
 
-func NewTrainingHandler() *TrainingHandler {
-	return &TrainingHandler{}
+func NewTrainingHandler(proxyService *services.ProxyService) *TrainingHandler {
+	return &TrainingHandler{
+		proxyService: proxyService,
+	}
 }
 
 // ListModules returns all training modules
-// GET /api/v1/training/modules
 func (h *TrainingHandler) ListModules(c *gin.Context) {
-	modules := []models.TrainingModule{
-		{
-			ID:          "mod-001",
-			Title:       "Introduction to EU AI Act",
-			Description: "Learn the fundamentals of the EU AI Act and its requirements",
-			Category:    "fundamentals",
-			Duration:    30,
-			Status:      "published",
-			Modules:     5,
-			CreatedAt:   time.Now().Add(-30 * 24 * time.Hour),
-			UpdatedAt:   time.Now(),
-		},
-		{
-			ID:          "mod-002",
-			Title:       "High-Risk AI Systems Compliance",
-			Description: "Understand requirements for high-risk AI systems under Annex III",
-			Category:    "compliance",
-			Duration:    60,
-			Status:      "published",
-			Modules:     8,
-			CreatedAt:   time.Now().Add(-20 * 24 * time.Hour),
-			UpdatedAt:   time.Now().Add(-2 * 24 * time.Hour),
-		},
-		{
-			ID:          "mod-003",
-			Title:       "Technical Documentation Best Practices",
-			Description: "How to create Article 11 compliant technical documentation",
-			Category:    "documentation",
-			Duration:    45,
-			Status:      "published",
-			Modules:     6,
-			CreatedAt:   time.Now().Add(-10 * 24 * time.Hour),
-			UpdatedAt:   time.Now().Add(-5 * 24 * time.Hour),
-		},
-		{
-			ID:          "mod-004",
-			Title:       "Data Governance & Bias Detection",
-			Description: "Identifying and mitigating bias in training data",
-			Category:    "data",
-			Duration:    50,
-			Status:      "published",
-			Modules:     7,
-			CreatedAt:   time.Now().Add(-5 * 24 * time.Hour),
-			UpdatedAt:   time.Now().Add(-1 * 24 * time.Hour),
-		},
-		{
-			ID:          "mod-005",
-			Title:       "Post-Market Monitoring",
-			Description: "Article 61 requirements for ongoing compliance",
-			Category:    "monitoring",
-			Duration:    40,
-			Status:      "draft",
-			Modules:     5,
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
-		},
+	response, err := h.proxyService.Forward("GET", "/training/modules", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch training modules", Details: err.Error()})
+		return
 	}
-	c.JSON(http.StatusOK, modules)
+	c.Data(http.StatusOK, "application/json", response)
 }
 
 // GetModule returns a single training module
-// GET /api/v1/training/modules/:id
 func (h *TrainingHandler) GetModule(c *gin.Context) {
 	id := c.Param("id")
-	module := models.TrainingModule{
-		ID:          id,
-		Title:       "Introduction to EU AI Act",
-		Description: "Learn the fundamentals of the EU AI Act and its requirements",
-		Category:    "fundamentals",
-		Duration:    30,
-		Status:      "published",
-		Modules:     5,
-		Content: []models.ModuleContent{
-			{ModuleID: 1, Title: "What is the AI Act?", Type: "video", Duration: 10},
-			{ModuleID: 2, Title: "Risk Categories", Type: "text", Duration: 5},
-			{ModuleID: 3, Title: "Prohibited Practices", Type: "video", Duration: 8},
-			{ModuleID: 4, Title: "Your Obligations", Type: "quiz", Duration: 5},
-			{ModuleID: 5, Title: "Assessment", Type: "quiz", Duration: 2},
-		},
-		CreatedAt: time.Now().Add(-30 * 24 * time.Hour),
-		UpdatedAt: time.Now(),
+	response, err := h.proxyService.Forward("GET", fmt.Sprintf("/training/modules/%s", id), nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch training module", Details: err.Error()})
+		return
 	}
-	c.JSON(http.StatusOK, module)
+	c.Data(http.StatusOK, "application/json", response)
 }
 
 // CreateModule creates a new training module
@@ -170,111 +108,40 @@ func (h *TrainingHandler) GetUserProgress(c *gin.Context) {
 }
 
 // GetTrainingStats returns training statistics
-// GET /api/v1/training/stats
 func (h *TrainingHandler) GetTrainingStats(c *gin.Context) {
-	stats := models.TrainingStats{
-		TotalUsers:       150,
-		ActiveUsers:      85,
-		CompletedModules: 420,
-		InProgress:       65,
-		NotStarted:       95,
-		AvgScore:         82,
-		ByCategory: map[string]int{
-			"fundamentals":  120,
-			"compliance":    95,
-			"documentation": 80,
-			"data":          70,
-			"monitoring":    55,
-		},
+	response, err := h.proxyService.Forward("GET", "/training/stats", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch training stats", Details: err.Error()})
+		return
 	}
-	c.JSON(http.StatusOK, stats)
+	c.Data(http.StatusOK, "application/json", response)
 }
 
 func (h *TrainingHandler) DownloadCertificate(c *gin.Context) {
 	id := c.Param("id")
-	// In a real app, this would generate a PDF or fetch it from a bucket.
 	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=EU-AI-ACT-CERT-%s.pdf", id))
 	c.Data(http.StatusOK, "application/pdf", []byte("%PDF-1.4\n%real-certificate-data"))
 }
 
 // ShadowAIHandler handles Shadow AI detection for AI Compliance
-type ShadowAIHandler struct{}
+type ShadowAIHandler struct {
+	proxyService *services.ProxyService
+}
 
-func NewShadowAIHandler() *ShadowAIHandler {
-	return &ShadowAIHandler{}
+func NewShadowAIHandler(proxyService *services.ProxyService) *ShadowAIHandler {
+	return &ShadowAIHandler{
+		proxyService: proxyService,
+	}
 }
 
 // ListDetections returns Shadow AI detections
-// GET /api/v1/shadow-ai/detections
 func (h *ShadowAIHandler) ListDetections(c *gin.Context) {
-	detections := []models.ShadowAIDetection{
-		{
-			ID:          "sa-001",
-			ToolName:    "ChatGPT",
-			Domain:      "chat.openai.com",
-			UserEmail:   "john.doe@company.com",
-			RiskLevel:   "high",
-			Status:      "detected",
-			Category:    "unauthorized_llm",
-			UsageCount:  45,
-			FirstSeen:   time.Now().Add(-7 * 24 * time.Hour),
-			LastSeen:    time.Now().Add(-1 * time.Hour),
-			Description: "Employee using free ChatGPT to process customer data",
-		},
-		{
-			ID:          "sa-002",
-			ToolName:    "Claude",
-			Domain:      "claude.ai",
-			UserEmail:   "jane.smith@company.com",
-			RiskLevel:   "medium",
-			Status:      "investigating",
-			Category:    "unauthorized_llm",
-			UsageCount:  12,
-			FirstSeen:   time.Now().Add(-3 * 24 * time.Hour),
-			LastSeen:    time.Now().Add(-4 * time.Hour),
-			Description: "Marketing team testing Claude for content generation",
-		},
-		{
-			ID:          "sa-003",
-			ToolName:    "Midjourney",
-			Domain:      "discord.com",
-			UserEmail:   "design@company.com",
-			RiskLevel:   "low",
-			Status:      "approved",
-			Category:    "unauthorized_image",
-			UsageCount:  28,
-			FirstSeen:   time.Now().Add(-14 * 24 * time.Hour),
-			LastSeen:    time.Now().Add(-2 * 24 * time.Hour),
-			Description: "Design team using Midjourney for mockups - pending approval",
-		},
-		{
-			ID:          "sa-004",
-			ToolName:    "GitHub Copilot",
-			Domain:      "github.com",
-			UserEmail:   "dev@company.com",
-			RiskLevel:   "low",
-			Status:      "approved",
-			Category:    "approved_tool",
-			UsageCount:  150,
-			FirstSeen:   time.Now().Add(-60 * 24 * time.Hour),
-			LastSeen:    time.Now(),
-			Description: "Developer using approved Copilot for code assistance",
-		},
-		{
-			ID:          "sa-005",
-			ToolName:    "Perplexity",
-			Domain:      "perplexity.ai",
-			UserEmail:   "research@company.com",
-			RiskLevel:   "high",
-			Status:      "blocked",
-			Category:    "unauthorized_llm",
-			UsageCount:  8,
-			FirstSeen:   time.Now().Add(-2 * 24 * time.Hour),
-			LastSeen:    time.Now().Add(-12 * time.Hour),
-			Description: "Research team using Perplexity for competitive analysis",
-		},
+	response, err := h.proxyService.Forward("GET", "/shadow-ai/detections", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch detections", Details: err.Error()})
+		return
 	}
-	c.JSON(http.StatusOK, detections)
+	c.Data(http.StatusOK, "application/json", response)
 }
 
 // RemediateDetection remediates a Shadow AI detection
@@ -298,26 +165,11 @@ func (h *ShadowAIHandler) RemediateDetection(c *gin.Context) {
 }
 
 // GetShadowAIStats returns Shadow AI detection statistics
-// GET /api/v1/shadow-ai/stats
 func (h *ShadowAIHandler) GetShadowAIStats(c *gin.Context) {
-	stats := models.ShadowAIStats{
-		TotalDetections: 156,
-		HighRisk:        12,
-		MediumRisk:      28,
-		LowRisk:         45,
-		Approved:        71,
-		Blocked:         8,
-		ByCategory: map[string]int{
-			"unauthorized_llm":   85,
-			"unauthorized_image": 42,
-			"approved_tool":      29,
-		},
-		ByStatus: map[string]int{
-			"detected":      35,
-			"investigating": 28,
-			"approved":      71,
-			"blocked":       22,
-		},
+	response, err := h.proxyService.Forward("GET", "/shadow-ai/stats", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch shadow AI stats", Details: err.Error()})
+		return
 	}
-	c.JSON(http.StatusOK, stats)
+	c.Data(http.StatusOK, "application/json", response)
 }

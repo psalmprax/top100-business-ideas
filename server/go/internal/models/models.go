@@ -467,3 +467,91 @@ type SovereignRequest struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
+
+// --- NEW MODELS FOR REAL-FIRST HARDENING ---
+
+// Task represents a freelancer task
+type Task struct {
+	ID        string    `json:"id" db:"id"`
+	UserID    string    `json:"user_id" db:"user_id"`
+	Title     string    `json:"title" db:"title"`
+	Status    string    `json:"status" db:"status"` // todo, in_progress, completed
+	Priority  string    `json:"priority" db:"priority"` // low, medium, high
+	DueDate   *time.Time `json:"due_date,omitempty" db:"due_date"`
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+}
+
+// Client represents a freelancer client
+type Client struct {
+	ID        string    `json:"id" db:"id"`
+	UserID    string    `json:"user_id" db:"user_id"`
+	Name      string    `json:"name" db:"name"`
+	Email     string    `json:"email" db:"email"`
+	Company   string    `json:"company" db:"company"`
+	Status    string    `json:"status" db:"status"` // active, inactive
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+}
+
+// CalendarEvent represents a freelancer calendar event
+type CalendarEvent struct {
+	ID          string    `json:"id" db:"id"`
+	UserID      string    `json:"user_id" db:"user_id"`
+	Title       string    `json:"title" db:"title"`
+	StartTime   time.Time `json:"start_time" db:"start_time"`
+	EndTime     time.Time `json:"end_time" db:"end_time"`
+	Description string    `json:"description" db:"description"`
+	CreatedAt   time.Time `json:"created_at" db:"created_at"`
+}
+
+// AuditNote represents a freelancer audit note
+type AuditNote struct {
+	ID        string    `json:"id" db:"id"`
+	UserID    string    `json:"user_id" db:"user_id"`
+	Content   string    `json:"content" db:"content"`
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
+}
+
+// GovernanceDecision represents a corporate governance decision
+type GovernanceDecision struct {
+	ID        string    `json:"id" db:"id"`
+	UserID    string    `json:"user_id" db:"user_id"`
+	Stage     int       `json:"stage" db:"stage"`
+	Decision  string    `json:"decision" db:"decision"` // APPROVED, DENIED
+	Status    string    `json:"status" db:"status"`
+	Timestamp time.Time `json:"timestamp" db:"timestamp"`
+}
+
+// WorkforceCampaign represents a marketing/sales campaign
+type WorkforceCampaign struct {
+	ID             string    `json:"id" db:"id"`
+	UserID         string    `json:"user_id" db:"user_id"`
+	Name           string    `json:"name" db:"name"`
+	TargetAudience string    `json:"target_audience" db:"target_audience"`
+	Status         string    `json:"status" db:"status"`
+	CreatedAt      time.Time `json:"created_at" db:"created_at"`
+}
+
+// ForensicTrace represents a behavioral audit trace
+type ForensicTrace struct {
+	ID        string    `json:"id" db:"id"`
+	UserID    string    `json:"user_id" db:"user_id"`
+	AgentID   *string   `json:"agent_id" db:"agent_id"`
+	Action    string    `json:"action" db:"action"`
+	Details   string    `json:"details" db:"details"` // JSON string
+	Timestamp time.Time `json:"timestamp" db:"timestamp"`
+}
+
+// Claim represents a denial defense medical claim
+type Claim struct {
+	ID            string    `json:"id" db:"id"`
+	UserID        string    `json:"user_id" db:"user_id"`
+	ClaimIDString string    `json:"claim_id" db:"claim_id_string"`
+	Payer         string    `json:"payer" db:"payer"`
+	Amount        float64   `json:"amount" db:"amount"`
+	Status        string    `json:"status" db:"status"` // pending, scrubbed, flagged
+	Risk          string    `json:"risk" db:"risk"`     // low, medium, high
+	CreatedAt     time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at" db:"updated_at"`
+}

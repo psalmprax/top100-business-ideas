@@ -18,7 +18,7 @@ class Settings:
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
     # Database
-    DATABASE_URL: str = "postgresql://localhost:5432/top100ideas"
+    DATABASE_URL: str = "postgresql://postgres:postgres@db:5432/alphaai"
     
     # Redis
     REDIS_URL: str = "redis://localhost:6379"

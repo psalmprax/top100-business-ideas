@@ -3,10 +3,9 @@ import { test, expect } from '@playwright/test';
 test.describe('AgentOps Sentinel - Enterprise Functional Validation', () => {
     test.beforeEach(async ({ page }) => {
         page.on('console', msg => console.log(`BROWSER_LOG: ${msg.text()}`));
-        // Enforce demo mode and mock token
+        // Auth token for functional E2E tests against hardened backend
         await page.addInitScript(() => {
-            localStorage.setItem('demo_mode', 'true');
-            localStorage.setItem('auth_token', 'demo-token-for-testing');
+            localStorage.setItem('auth_token', 'd0e1b5c4-f3a1-4d3a-b8e9-7c2d1e0f0a2b');
         });
         // Navigate to the AgentOps dashboard
         await page.goto('/products/agent-ops');
@@ -743,7 +742,7 @@ test.describe('AgentOps Sentinel - Enterprise Functional Validation', () => {
         await saveBtn.focus();
         await page.keyboard.press('Enter');
         // Should either save or show validation error
-        await expect(page.getByText(/settings.*updated|validation|error/i)).toBeVisible();
+        await expect(page.getByText(/settings.*updated|synchronized/i)).toBeVisible();
     });
 
     test('should validate mobile responsive behavior and touch events', async ({ page }) => {
@@ -819,7 +818,7 @@ test.describe('AgentOps Sentinel - Enterprise Functional Validation', () => {
         await page.getByTestId('forecast-tab').click();
 
         // Verify error boundaries work - should show fallback content or error states
-        // In demo mode, all API calls should succeed with mock data
+        // In production mode, all API calls should succeed or show meaningful errors
         await expect(page.getByText(/forecast|predicted|error|loading/i)).toBeVisible();
 
         // Test network-like failure simulation
@@ -883,7 +882,7 @@ test.describe('AgentOps Sentinel - Enterprise Functional Validation', () => {
         await page.getByTestId('agent-name-input').fill('Performance-Test-Agent');
         await page.getByRole('button', { name: /create agent/i }).click();
 
-        await expect(page.getByText('Demo Mode: Agent simulated locally.')).toBeVisible();
+        await expect(page.getByText(/agent.*created|agent.*deployed/i)).toBeVisible();
 
         const createTime = Date.now() - quickCreateStart;
         expect(createTime).toBeLessThan(3000); // Should complete within 3 seconds
@@ -912,7 +911,7 @@ test.describe('AgentOps Sentinel - Enterprise Functional Validation', () => {
 
         // Test form submission with valid data
         await page.getByRole('button', { name: /create agent/i }).click();
-        await expect(page.getByText('Demo Mode: Agent simulated locally.')).toBeVisible();
+        await expect(page.getByText(/agent.*created|agent.*deployed/i)).toBeVisible();
     });
 
     test('should validate agent cloning and configuration export/import', async ({ page }) => {
@@ -933,7 +932,7 @@ test.describe('AgentOps Sentinel - Enterprise Functional Validation', () => {
         await page.getByTestId('agent-control-webhook-input').fill('https://clone.api.com');
         
         await page.getByTestId('create-agent-submit-btn').click();
-        await expect(page.getByText(/Agent simulated locally/i)).toBeVisible();
+        await expect(page.getByText(/agent.*created|agent.*deployed/i)).toBeVisible();
 
         // 2. Test Export
         await agentRow.locator('button').filter({ has: page.locator('svg') }).last().click();
@@ -988,7 +987,7 @@ test.describe('AgentOps Sentinel - Enterprise Functional Validation', () => {
         await page.getByTestId('agent-name-input').fill('Workflow-Test-Agent');
         await page.getByTestId('agent-budget-input').fill('100');
         await page.getByRole('button', { name: /create agent/i }).click();
-        await expect(page.getByText('Demo Mode: Agent simulated locally.')).toBeVisible();
+        await expect(page.getByText(/agent.*created|agent.*deployed/i)).toBeVisible();
 
         // Step 2: Configure agent settings
         const settingsBtn = page.locator('button').filter({ has: page.locator('[data-lucide="settings"]') }).first();

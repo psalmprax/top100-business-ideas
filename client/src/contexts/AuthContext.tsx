@@ -27,34 +27,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const checkAuth = async () => {
         const token = localStorage.getItem('auth_token');
-        const isDemo = localStorage.getItem('demo_mode') === 'true';
 
         if (!token) {
             setIsLoading(false);
             return;
         }
 
-        if (isDemo) {
-            const demoUser: User = {
-                id: 'demo-user-123',
-                email: 'demo@alphaai.example.com',
-                name: 'Demo User',
-                role: 'client',
-                subscriptionTier: 'enterprise',
-                company: 'Demo Corporation',
-                allowedProducts: ['*'],
-            };
-            setUser(demoUser);
-            setIsLoading(false);
-            return;
-        }
-
+        // Hardening: Always perform a real /me check against the Go Gateway for \"Real-First\" architecture.
+        // This ensures the \"demo-token-for-testing\" is validated by the backend bypass.
         try {
             const userData = await authApi.me();
             setUser(userData);
+            
+            // Sync demo_mode flag if using the test token
+            if (token === 'demo-token-for-testing') {
+                localStorage.setItem('demo_mode', 'true');
+            }
         } catch (error) {
             console.error('Auth check failed:', error);
             localStorage.removeItem('auth_token');
+            localStorage.removeItem('demo_mode');
         } finally {
             setIsLoading(false);
         }
@@ -110,13 +102,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const loginDemo = () => {
         // Auto-login as demo user for testing all features
         const demoUser: User = {
-            id: 'demo-user-123',
-            email: 'demo@alphaai.example.com',
-            name: 'Demo User',
-            role: 'client',
-            subscriptionTier: 'pro',
-            company: 'Demo Corporation',
-            allowedProducts: ['agent-ops', 'ai-compliance'],
+            id: 'd0e1b5c4-f3a1-4d3a-b8e9-7c2d1e0f0a2b',
+            email: 'demo@sentinel.dev',
+            name: 'Functional Test Admin',
+            role: 'admin',
+            subscriptionTier: 'enterprise',
+            company: 'Sentinel Development',
+            allowedProducts: ['*'],
         };
         localStorage.setItem('auth_token', 'demo-token-for-testing');
         localStorage.setItem('demo_mode', 'true');

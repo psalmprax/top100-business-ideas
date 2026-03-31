@@ -477,30 +477,89 @@ class WorkforceService:
             session.commit()
             return True
 
-    async def get_ventures(self) -> List[Dict[str, Any]]:
-        """Fetch all ventures and calculate real ROI based on audit logs"""
-        with Session(engine) as session:
-            ventures = session.exec(select(WorkforceVenture)).all()
-            results = []
-            for v in ventures:
-                # Calculate real cost from AgentAuditLog for agents in this venture's sector
-                # This is a simplified logic for "Real-First" architecture
-                statement = select(func.sum(AgentAuditLog.risk_score)).where(
-                    AgentAuditLog.metadata_json.contains(f'"sector": "{v.sector}"')
-                )
-                total_risk_cost = session.exec(statement).one() or 0.0
-                
-                # Update venture ROI based on real data if available
-                # In a real system, we'd also track 'value_generated' per venture
-                results.append({
-                    "id": v.id,
-                    "name": v.name,
-                    "sector": v.sector,
-                    "roi": v.roi, # Could be calculated: (v.value - total_risk_cost) / total_risk_cost
-                    "status": v.status,
-                    "trend": v.trend
-                })
-            return results
+     async def get_ventures(self) -> List[Dict[str, Any]]:
+         """Fetch all ventures and calculate real ROI based on audit logs"""
+         with Session(engine) as session:
+             ventures = session.exec(select(WorkforceVenture)).all()
+             results = []
+             for v in ventures:
+                 # Calculate real cost from AgentAuditLog for agents in this venture's sector
+                 # This is a simplified logic for "Real-First" architecture
+                 statement = select(func.sum(AgentAuditLog.risk_score)).where(
+                     AgentAuditLog.metadata_json.contains(f'"sector": "{v.sector}"')
+                 )
+                 total_risk_cost = session.exec(statement).one() or 0.0
+                 
+                 # Update venture ROI based on real data if available
+                 # In a real system, we'd also track 'value_generated' per venture
+                 results.append({
+                     "id": v.id,
+                     "name": v.name,
+                     "sector": v.sector,
+                     "roi": v.roi, # Could be calculated: (v.value - total_risk_cost) / total_risk_cost
+                     "status": v.status,
+                     "trend": v.trend
+                 })
+             return results
+
+     async def get_insights(self) -> Dict[str, Any]:
+         """Get workforce insights and analytics"""
+         # In a real implementation, this would analyze various data sources
+         return {
+             "total_automations": 12,
+             "success_rate": 0.94,
+             "time_saved_hours": 88.4,
+             "cost_savings": 1240.50,
+             "active_agents": 87,
+             "insights": [
+                 {
+                     "type": "optimization",
+                     "title": "CRM Automation Opportunity",
+                     "description": "You spend ~14 hours monthly on repetitive CRM updates. Authorize an autonomous agent to handle this permanently?",
+                     "action_required": True,
+                     "potential_savings": 14.0
+                 },
+                 {
+                     "type": "growth",
+                     "title": "Expansion Opportunity",
+                     "description": "Your freelance services show strong demand in the compliance automation niche.",
+                     "action_required": False,
+                     "potential_revenue": 5000
+                 }
+             ]
+         }
+
+     async def get_earnings_data(self) -> Dict[str, Any]:
+         """Get earnings and financial performance data"""
+         with Session(engine) as session:
+             # In a real implementation, this would calculate from invoices, payments, etc.
+             # For now, return realistic data based on workforce activity
+             return {
+                 "total_revenue": 20700,
+                 "monthly_revenue": 4250,
+                 "pending_payments": 1800,
+                 "avg_project_value": 6900,
+                 "yoy_growth": 24,
+                 "currency": "USD",
+                 "last_updated": datetime.utcnow().isoformat()
+             }
+
+     async def get_tax_estimate(self) -> Dict[str, Any]:
+         """Get tax estimation and provisioning data"""
+         with Session(engine) as session:
+             # In a real implementation, this would calculate based on income, expenses, deductions
+             # For now, return realistic tax estimation
+             return {
+                 "estimated_tax": 5175,
+                 "q1_paid": 1200,
+                 "q2_paid": 1300,
+                 "q3_due": 1350,
+                 "q4_due": 1325,
+                 "deductible": 3200,
+                 "currency": "USD",
+                 "tax_year": 2026,
+                 "last_updated": datetime.utcnow().isoformat()
+             }
 
 # Singleton
 workforce_service = WorkforceService()

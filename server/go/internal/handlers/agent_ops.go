@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
+	"strings"
 
 
 	"github.com/top100-business-ideas/api/internal/models"
@@ -219,24 +219,24 @@ func (h *AgentOpsHandler) GetAuditLogs(c *gin.Context) {
 		path = fmt.Sprintf("%s&outcome=%s", path, outcome)
 	}
 
-	response, err := h.proxyService.Forward("GET", path, nil)
+	status, response, err := h.proxyService.ForwardWithStatus("GET", path, nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch audit logs", Details: err.Error()})
 		return
 	}
 
-	c.Data(http.StatusOK, "application/json", response)
+	c.Data(status, "application/json", response)
 }
 
 // ListLLMConfigs retrieves available LLM configurations
 func (h *AgentOpsHandler) ListLLMConfigs(c *gin.Context) {
-	response, err := h.proxyService.Forward("GET", "/ml/models", nil)
+	status, response, err := h.proxyService.ForwardWithStatus("GET", "/ml/models", nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch LLM configs", Details: err.Error()})
 		return
 	}
 
-	c.Data(http.StatusOK, "application/json", response)
+	c.Data(status, "application/json", response)
 }
 
 // GetForecast retrieves cost and usage forecast for an agent
@@ -244,13 +244,13 @@ func (h *AgentOpsHandler) GetForecast(c *gin.Context) {
 	id := c.Param("id")
 	path := fmt.Sprintf("/agents/%s/forecast", id)
 
-	response, err := h.proxyService.Forward("GET", path, nil)
+	status, response, err := h.proxyService.ForwardWithStatus("GET", path, nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch forecast", Details: err.Error()})
 		return
 	}
 
-	c.Data(http.StatusOK, "application/json", response)
+	c.Data(status, "application/json", response)
 }
 // CloneConfig handles agent configuration duplication
 // POST /api/v1/agents/:id/clone
@@ -258,13 +258,13 @@ func (h *AgentOpsHandler) CloneConfig(c *gin.Context) {
 	id := c.Param("id")
 	path := fmt.Sprintf("/agents/%s/clone", id)
 
-	response, err := h.proxyService.Forward("POST", path, nil)
+	status, response, err := h.proxyService.ForwardWithStatus("POST", path, nil)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to clone agent", Details: err.Error()})
 		return
 	}
 
-	c.Data(http.StatusOK, "application/json", response)
+	c.Data(status, "application/json", response)
 }
 
 // SyncLinguisticPackage handles linguistic package deployment
@@ -278,13 +278,13 @@ func (h *AgentOpsHandler) SyncLinguisticPackage(c *gin.Context) {
 		return
 	}
 
-	response, err := h.proxyService.Forward("POST", "/agent-ops/sync-locale", req)
+	status, response, err := h.proxyService.ForwardWithStatus("POST", "/agent-ops/sync-locale", req)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to sync linguistic package", Details: err.Error()})
 		return
 	}
 
-	c.Data(http.StatusOK, "application/json", response)
+	c.Data(status, "application/json", response)
 }
 
 // OptimizeMemory triggers agent memory pruning
@@ -293,13 +293,13 @@ func (h *AgentOpsHandler) OptimizeMemory(c *gin.Context) {
 	id := c.Param("id")
 	path := fmt.Sprintf("/agents/%s/optimize", id)
 
-	response, err := h.proxyService.Forward("POST", path, nil)
+	status, response, err := h.proxyService.ForwardWithStatus("POST", path, nil)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to optimize agent memory", Details: err.Error()})
 		return
 	}
 
-	c.Data(http.StatusOK, "application/json", response)
+	c.Data(status, "application/json", response)
 }
 
 // ProxyToPython forwards generic requests to the Python backend
@@ -311,36 +311,61 @@ func (h *AgentOpsHandler) ProxyToPython(c *gin.Context) {
 	}
 
 	// Remap specific /agent-ops paths to Python equivalents
-	if len(path) > 10 && path[:10] == "/agent-ops" {
-		if len(path) > 15 && path[10:16] == "/bulk/" {
-			path = "/agents/bulk/" + path[16:]
-		} else if len(path) > 11 && path[len(path)-9:] == "/optimize" {
-			path = "/agents" + path[10:]
-		} else if len(path) > 5 && path[len(path)-5:] == "/dump" {
-			path = "/agents" + path[10:]
-		} else if len(path) > 9 && path[len(path)-9:] == "/compress" {
-			path = "/agents" + path[10:]
-		} else if len(path) > 28 && path[10:29] == "/compliance/alerts/" {
-			path = "/compliance/incidents/" + path[29:]
+	if strings.HasPrefix(path, "/agent-ops") {
+		// subPath is everything after "/agent-ops"
+		subPath := strings.TrimPrefix(path, "/agent-ops")
+		
+		if subPath == "" || subPath == "/" {
+			path = "/"
+		} else if strings.HasPrefix(subPath, "/bulk/") {
+			path = "/agents" + subPath
+		} else if strings.HasPrefix(subPath, "/compliance/alerts/") {
+			path = "/compliance/incidents/" + strings.TrimPrefix(subPath, "/compliance/alerts/")
 		} else if path == "/agent-ops/compliance/sox" || path == "/agent-ops/compliance/audit/sox" {
 			path = "/compliance/audit/sox"
+		} else if path == "/agent-ops/compliance/hipaa" || path == "/agent-ops/compliance/audit/hipaa" {
+			path = "/compliance/audit/hipaa"
 		} else if path == "/agent-ops/governance/healing/configs" {
-			path = "/compliance/healing"
-		} else if len(path) > 28 && path[10:29] == "/governance/healing/" {
-			path = "/compliance/healing/" + path[29:]
+			path = "/governance/healing/configs"
+		} else if strings.HasPrefix(subPath, "/governance/healing/") {
+			// e.g. /agent-ops/governance/healing/configs -> /governance/healing/configs
+			path = subPath
 		} else if path == "/agent-ops/governance/healing/events" {
 			path = "/compliance/healing/events"
-		} else if path == "/agent-ops/security/rotate-key" {
-			path = "/security/rotate-key"
-		} else if len(path) > 21 && path[10:22] == "/governance/" {
-			// Strip /agent-ops for all other governance routes
-			path = path[10:]
-		} else if len(path) > 14 && path[10:23] == "/self-healing/" {
-			// Strip /agent-ops for all self-healing routes
-			path = path[10:]
-		} else if len(path) > 9 && path[10:18] == "/venture" {
-			// Strip /agent-ops for all venture routes
-			path = path[10:]
+		} else if strings.HasPrefix(subPath, "/alerts") {
+			path = "/agents" + subPath
+		} else if strings.HasPrefix(subPath, "/vigilance") {
+			// Map /agent-ops/vigilance/alerts -> /agents/vigilance
+			// Map /agent-ops/vigilance/alerts/{id}/resolve -> /agents/vigilance/{id}/resolve
+			if strings.HasPrefix(subPath, "/vigilance/alerts") {
+				path = "/agents/vigilance"
+			} else {
+				path = "/agents" + subPath
+			}
+		} else if strings.HasPrefix(subPath, "/governance/") {
+			if strings.Contains(subPath, "/roi") {
+				path = "/governance/analytics/roi"
+			} else {
+				path = subPath
+			}
+		} else if strings.HasPrefix(subPath, "/vigilance/alerts") {
+			path = "/agent-ops/vigilance/alerts"
+		} else if strings.HasPrefix(subPath, "/self-healing/") {
+			path = subPath
+		} else if strings.HasPrefix(subPath, "/venture") {
+			path = subPath
+		} else if strings.HasPrefix(subPath, "/compliance/hipaa") {
+			path = "/compliance/audit/hipaa"
+		} else if strings.HasPrefix(subPath, "/compliance/sox") {
+			path = "/compliance/audit/sox"
+		} else if strings.HasPrefix(subPath, "/cloud/health") {
+			path = "/self-healing/status"
+		} else if strings.HasPrefix(subPath, "/cloud/failover") {
+			path = "/cloud/failover"
+		} else if strings.HasPrefix(subPath, "/audit") {
+			path = "/compliance/dashboard"
+		} else {
+			path = subPath
 		}
 	}
 
@@ -351,13 +376,13 @@ func (h *AgentOpsHandler) ProxyToPython(c *gin.Context) {
 		}
 	}
 
-	response, err := h.proxyService.Forward(c.Request.Method, path, body)
+	status, response, err := h.proxyService.ForwardWithStatus(c.Request.Method, path, body)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Backend proxy error", Details: err.Error()})
 		return
 	}
 
-	c.Data(http.StatusOK, "application/json", response)
+	c.Data(status, "application/json", response)
 }
 func (h *AgentOpsHandler) RunForensics(c *gin.Context) {
 	agentID := c.Query("agent_id")
@@ -383,58 +408,15 @@ func (h *AgentOpsHandler) ProvisionClient(c *gin.Context) {
 	}
 	c.Data(http.StatusOK, "application/json", response)
 }
-// ListVentureInsights returns market intelligence data
-// GET /api/v1/agent-ops/venture/insights
 func (h *AgentOpsHandler) ListVentureInsights(c *gin.Context) {
-	response, err := h.proxyService.Forward("GET", "/venture/insights", nil)
-	if err != nil {
-		// Real-First: Return a structured discovery response if the ML engine is unreachable
-		c.JSON(http.StatusOK, []gin.H{
-			{
-				"id":                1,
-				"rank":              1,
-				"title":             "AI Compliance Sentinel",
-				"category":          "Enterprise SaaS",
-				"description":       "Autonomous regulatory monitoring for EU AI Act compliance.",
-				"earning_potential": 8500000,
-				"earning_label":     "Very High ($5M+)",
-				"rollout_speed":      9,
-				"rollout_label":     "Fast (1-3 months)",
-				"profit_margin":     82,
-				"market_size_bn":    12.4,
-				"startup_cost":      "Low ($15K–$30K)",
-				"trend":             "Explosive",
-				"markets":           []string{"Europe", "North America"},
-				"tags":              []string{"Compliance", "LegalTech", "RegTech"},
-				"gap":               "Current solutions are manual or reactive; this is proactive and autonomous.",
-			},
-			{
-				"id":                2,
-				"rank":              2,
-				"title":             "Deepfake Defense Gateway",
-				"category":          "Cybersecurity",
-				"description":       "Real-time synthetic media detection for corporate comms.",
-				"earning_potential": 12000000,
-				"earning_label":     "Very High ($10M+)",
-				"rollout_speed":      7,
-				"rollout_label":     "Medium (3-6 months)",
-				"profit_margin":     75,
-				"market_size_bn":    45.8,
-				"startup_cost":      "Medium ($50K–$150K)",
-				"trend":             "High Growth",
-				"markets":           []string{"Global"},
-				"tags":              []string{"Security", "AI", "Identity"},
-				"gap":               "Enterprise identity verification lacks real-time video/audio analysis.",
-			},
-		})
+	status1, response1, err1 := h.proxyService.ForwardWithStatus("GET", "/venture/insights", nil)
+	if err1 != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch venture insights", Details: err1.Error()})
 		return
 	}
-
-	c.Data(http.StatusOK, "application/json", response)
+	c.Data(status1, "application/json", response1)
 }
 
-// AnalyzeVentureScenario performs ML-driven scenario simulation
-// POST /api/v1/agent-ops/venture/scenario/analyze
 func (h *AgentOpsHandler) AnalyzeVentureScenario(c *gin.Context) {
 	var req map[string]interface{}
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -442,21 +424,10 @@ func (h *AgentOpsHandler) AnalyzeVentureScenario(c *gin.Context) {
 		return
 	}
 
-	response, err := h.proxyService.Forward("POST", "/venture/scenario/analyze", req)
-	if err != nil {
-		// Real-First Fallback: Return a structured simulation result
-		c.JSON(http.StatusOK, gin.H{
-			"status":                 "simulated",
-			"market_fit_score":       88.4,
-			"predicted_roi":         "4.2x (12 months)",
-			"burn_rate_estimate":    "$12,500/mo",
-			"competitive_advantage": "Autonomous first-mover advantage in niche sectors.",
-			"risk_factors":          []string{"Regulatory shifts", "Compute costs"},
-			"recommendation":        "Proceed with targeted Alpha rollout for high-conviction leads.",
-			"timestamp":             time.Now().Format(time.RFC3339),
-		})
+	status2, response2, err2 := h.proxyService.ForwardWithStatus("POST", "/venture/scenario/analyze", req)
+	if err2 != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to analyze scenario", Details: err2.Error()})
 		return
 	}
-
-	c.Data(http.StatusOK, "application/json", response)
+	c.Data(status2, "application/json", response2)
 }

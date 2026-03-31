@@ -2316,46 +2316,17 @@ export default function AlphaAgentOps() {
     <>
       <div className="min-h-screen bg-background">
         {/* Header */}
-        {isDemo && (
-          <div className="bg-blue-600/10 border-b border-blue-500/20 px-4 py-2">
-            <div className="container mx-auto flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2 text-blue-400">
-                <AlertCircle className="h-4 w-4" />
-                <span>
-                  <strong>Demo Mode:</strong> You are viewing a live preview.
-                  Data persistence is disabled.
-                </span>
-              </div>
-              <Link href="/signup">
-                <Button
-                  variant="link"
-                  size="sm"
-                  className="text-blue-400 font-semibold p-0 h-auto"
-                >
-                  Sign up for full access →
-                </Button>
-              </Link>
-            </div>
-          </div>
-        )}
         <header className="border-b bg-background/95 backdrop-blur">
           <div className="container mx-auto px-4">
             <div className="flex h-16 items-center justify-between">
               <div className="flex items-center gap-4">
-                {isDemo && (
-                  <Link href="/">
-                    <Button variant="ghost" size="sm">
-                      ← Back
-                    </Button>
-                  </Link>
-                )}
                 <div className="flex items-center gap-2">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600">
                     <Shield className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-display-hero text-xl tracking-tighter">
-                      AgentOps Sentinel
+                    <h1 className="text-product-title text-xl">
+                      AgentOps <span>Sentinel</span>
                     </h1>
                     <p className="text-caption-premium text-[9px] text-muted-foreground/60 leading-none mt-0.5">
                       Autonomous AI Governance

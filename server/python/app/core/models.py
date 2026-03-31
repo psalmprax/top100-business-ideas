@@ -8,6 +8,7 @@ import secrets
 
 class AgentStatus(str, Enum):
     """Agent status enum"""
+
     RUNNING = "RUNNING"
     STOPPED = "STOPPED"
     ERROR = "ERROR"
@@ -16,6 +17,7 @@ class AgentStatus(str, Enum):
 
 class AgentType(str, Enum):
     """Agent type enum"""
+
     data_processing = "data_processing"
     content_generation = "content_generation"
     analysis = "analysis"
@@ -31,6 +33,8 @@ class AgentType(str, Enum):
 
 class Agent(SQLModel, table=True):
     """Agent model with persistent storage"""
+
+    __tablename__ = "sentinel_agents"
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     name: str
     type: AgentType
@@ -39,14 +43,14 @@ class Agent(SQLModel, table=True):
     model: str = Field(default="gpt-4o")
     org_id: Optional[str] = None
     control_webhook: Optional[str] = None
-    tier: str = Field(default="industrial") # strategic, tactical, industrial
+    tier: str = Field(default="industrial")  # strategic, tactical, industrial
     api_secret: str = Field(default_factory=lambda: secrets.token_urlsafe(32))
     config: Optional[Dict[str, Any]] = Field(default={}, sa_column=Column(JSON))
     budget: float = Field(default=10.0)
     dailySpend: float = Field(default=0.0)
     metrics: Dict[str, Any] = Field(
         default={"costSaved": 0.0, "loopsPrevented": 0, "totalRequests": 0},
-        sa_column=Column(JSON)
+        sa_column=Column(JSON),
     )
     status: AgentStatus = Field(default=AgentStatus.STOPPED)
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -55,6 +59,7 @@ class Agent(SQLModel, table=True):
 
 class AgentCreate(SQLModel):
     """Agent creation model"""
+
     name: str
     type: AgentType
     environment: str = "production"
@@ -69,6 +74,7 @@ class AgentCreate(SQLModel):
 
 class AgentUpdate(SQLModel):
     """Agent update model"""
+
     name: Optional[str] = None
     type: Optional[AgentType] = None
     environment: Optional[str] = None
@@ -85,6 +91,7 @@ class AgentUpdate(SQLModel):
 # Connection & Integration Models
 class ConnectionType(str, Enum):
     """System connection types"""
+
     CI_CD = "ci_cd"
     MODEL_REGISTRY = "model_registry"
     DATA_STORE = "data_store"
@@ -103,6 +110,7 @@ class ConnectionType(str, Enum):
 
 class SystemConnection(SQLModel, table=True):
     """System connection model for compliance automation"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     article_id: str  # e.g., "Article 5"
     connection_type: ConnectionType
@@ -114,6 +122,7 @@ class SystemConnection(SQLModel, table=True):
 
 class ArticleScan(SQLModel, table=True):
     """Results of a compliance scan"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     article_id: str
     scan_type: str
@@ -125,6 +134,7 @@ class ArticleScan(SQLModel, table=True):
 # Compliance Models
 class ComplianceCheckType(str, Enum):
     """Compliance check type"""
+
     AI_ACT = "ai_act"
     PRIVACY = "privacy"
     SECURITY = "security"
@@ -132,6 +142,7 @@ class ComplianceCheckType(str, Enum):
 
 class ComplianceStatus(str, Enum):
     """Compliance status"""
+
     PASSED = "passed"
     FAILED = "failed"
     PENDING = "pending"
@@ -140,6 +151,7 @@ class ComplianceStatus(str, Enum):
 
 class ComplianceCheck(SQLModel, table=True):
     """Compliance check model with persistent storage"""
+
     id: str = Field(primary_key=True)
     type: ComplianceCheckType
     status: ComplianceStatus = Field(default=ComplianceStatus.PENDING)
@@ -149,9 +161,10 @@ class ComplianceCheck(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
-class ComplianceCategory(SQLModel):
-    """Compliance category model"""
-    id: str
+class ComplianceCategory(SQLModel, table=True):
+    """Compliance category model with persistent storage"""
+
+    id: str = Field(primary_key=True)
     name: str
     color: str
     description: str
@@ -159,6 +172,7 @@ class ComplianceCategory(SQLModel):
 
 class RunComplianceCheckRequest(SQLModel):
     """Run compliance check request"""
+
     type: ComplianceCheckType
     url: Optional[str] = None
 
@@ -166,6 +180,7 @@ class RunComplianceCheckRequest(SQLModel):
 # Deepfake Models
 class MediaType(str, Enum):
     """Media type"""
+
     IMAGE = "image"
     VIDEO = "video"
     AUDIO = "audio"
@@ -173,6 +188,7 @@ class MediaType(str, Enum):
 
 class AnalysisResult(str, Enum):
     """Analysis result"""
+
     REAL = "real"
     FAKE = "fake"
     UNCERTAIN = "uncertain"
@@ -180,6 +196,7 @@ class AnalysisResult(str, Enum):
 
 class DeepfakeAnalysis(SQLModel, table=True):
     """Deepfake analysis model with persistent storage"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     media_url: str
     media_type: MediaType
@@ -192,12 +209,14 @@ class DeepfakeAnalysis(SQLModel, table=True):
 
 class AnalyzeDeepfakeRequest(SQLModel):
     """Analyze deepfake request"""
+
     media_url: str
     media_type: MediaType
 
 
 class AuthenticationStatus(str, Enum):
     """Authentication session status"""
+
     PENDING = "pending"
     VERIFIED = "verified"
     FAILED = "failed"
@@ -206,6 +225,7 @@ class AuthenticationStatus(str, Enum):
 
 class HardwareChallenge(SQLModel, table=True):
     """FIDO2-style hardware challenge for active authentication"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     user_id: str
     challenge: str = Field(default_factory=lambda: secrets.token_urlsafe(32))
@@ -216,6 +236,7 @@ class HardwareChallenge(SQLModel, table=True):
 
 class BiometricSignature(SQLModel, table=True):
     """Cryptographically signed proof of presence"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     challenge_id: str = Field(foreign_key="hardwarechallenge.id")
     signature: str
@@ -227,29 +248,34 @@ class BiometricSignature(SQLModel, table=True):
 # Auth Models
 class Token(SQLModel):
     """Token model"""
+
     access_token: str
     token_type: str
 
 
 class TokenData(SQLModel):
     """Token data"""
+
     user_id: Optional[str] = None
 
 
 class UserBase(SQLModel):
     """Base user model"""
+
     email: str
     name: str
 
 
 class UserCreate(UserBase):
     """User creation model"""
+
     password: str
     company: Optional[str] = None
 
 
 class User(UserBase, table=True):
     """User model with persistent storage"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     password_hash: str = Field(alias="password_hash")
     company: Optional[str] = None
@@ -265,6 +291,7 @@ class User(UserBase, table=True):
 # Generic Response Models
 class PaginatedResponse(SQLModel):
     """Paginated response"""
+
     data: List[Any]
     total: int
     page: int
@@ -274,12 +301,14 @@ class PaginatedResponse(SQLModel):
 
 class SuccessResponse(SQLModel):
     """Success response"""
+
     message: str
     data: Optional[Dict[str, Any]] = None
 
 
 class ErrorResponse(SQLModel):
     """Error response"""
+
     error: str
     code: Optional[str] = None
     details: Optional[Any] = None
@@ -287,8 +316,10 @@ class ErrorResponse(SQLModel):
 
 # --- NEW AGENT OPS PERSISTENT MODELS ---
 
+
 class WebhookConfig(SQLModel, table=True):
     """Persistent Webhook Subscription"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     name: str
     url: str
@@ -303,6 +334,7 @@ class WebhookConfig(SQLModel, table=True):
 
 class WebhookExecution(SQLModel, table=True):
     """Execution history for webhooks"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     webhook_id: str = Field(index=True)
     event_type: str
@@ -316,13 +348,14 @@ class WebhookExecution(SQLModel, table=True):
 
 class AlertConfig(SQLModel, table=True):
     """Persistent AI Alert rules"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     name: str
     alert_type: str  # budget, failure, rate_limit, bias
     threshold: float
-    limit: float = Field(default=100.0) # Budget limit in USD
-    action: str = Field(default="pause") # notify, pause, terminate
-    priority: str = Field(default="medium") # low, medium, high
+    limit: float = Field(default=100.0)  # Budget limit in USD
+    action: str = Field(default="pause")  # notify, pause, terminate
+    priority: str = Field(default="medium")  # low, medium, high
     is_active: bool = Field(default=True)
     channels: List[str] = Field(sa_column=Column(JSON))  # slack, email, pagerduty
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -337,6 +370,7 @@ class SovereignStatus(str, Enum):
 
 class SovereignStage(str, Enum):
     """Sovereign Matrix stages"""
+
     FINANCE = "finance"
     LEGAL = "legal"
     CRISIS = "crisis"
@@ -346,8 +380,9 @@ class SovereignStage(str, Enum):
 
 class SovereignRequest(SQLModel, table=True):
     """Human-in-the-loop approval request"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    stage: str # finance, legal, crisis, etc.
+    stage: str  # finance, legal, crisis, etc.
     action: str
     reasoning: str
     context: Optional[str] = None
@@ -359,11 +394,13 @@ class SovereignRequest(SQLModel, table=True):
 
 class MultiCloudStatus(SQLModel):
     """Multi-cloud provider status"""
+
     last_sync: datetime = Field(default_factory=datetime.utcnow)
 
 
 class SelfHealingEvent(SQLModel, table=True):
     """Automated self-healing event log"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     agent_id: str
     event_type: str
@@ -380,7 +417,7 @@ class ArticleStatus(SQLModel, table=True):
     article: str
     title: str
     status: str
-    
+
     ai_model: Optional["AIModel"] = Relationship(back_populates="articles")
 
 
@@ -392,7 +429,7 @@ class BiasReport(SQLModel, table=True):
     statisticalSignificance: float
     status: str
     details: str
-    
+
     ai_model: Optional["AIModel"] = Relationship(back_populates="bias_reports")
 
 
@@ -407,18 +444,25 @@ class AIModel(SQLModel, table=True):
     provider: Optional[str] = None
     endpointUrl: Optional[str] = None
     apiKey: Optional[str] = None
-    
+
     # Ethical Guardrails Configuration
     activeBiasMitigation: bool = Field(default=False)
     toxicLanguageFilter: bool = Field(default=False)
     promptPrivacyGuard: bool = Field(default=False)
-    
-    articles: List["ArticleStatus"] = Relationship(back_populates="ai_model", sa_relationship_kwargs={"lazy": "selectin", "cascade": "all, delete-orphan"})
-    bias_reports: List["BiasReport"] = Relationship(back_populates="ai_model", sa_relationship_kwargs={"lazy": "selectin", "cascade": "all, delete-orphan"})
+
+    articles: List["ArticleStatus"] = Relationship(
+        back_populates="ai_model",
+        sa_relationship_kwargs={"lazy": "selectin", "cascade": "all, delete-orphan"},
+    )
+    bias_reports: List["BiasReport"] = Relationship(
+        back_populates="ai_model",
+        sa_relationship_kwargs={"lazy": "selectin", "cascade": "all, delete-orphan"},
+    )
 
 
 class AIModelCreate(SQLModel):
     """AI Model creation schema"""
+
     name: str
     riskCategory: str
     provider: str
@@ -426,19 +470,22 @@ class AIModelCreate(SQLModel):
     apiKey: Optional[str] = None
 
 
-class TrainingModule(SQLModel):
-    id: Optional[str] = None
+class TrainingModule(SQLModel, table=True):
+    """Educational training module for compliance and ethics"""
+
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     title: str
     description: str
     category: str  # ai-act, gdpr, security, ethics
     duration_minutes: int
     content: str  # Markdown content
     quiz_questions: List[Dict[str, Any]] = Field(default=[], sa_column=Column(JSON))
-    created_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class AgentAuditLog(SQLModel, table=True):
     """Comprehensive audit trail for agent actions"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     agent_id: str = Field(index=True)
     action: str
@@ -452,8 +499,10 @@ class AgentAuditLog(SQLModel, table=True):
 
 # --- NEW DEEPFAKE TRAINING & MODEL PERSISTENCE ---
 
+
 class TrainingStatus(str, Enum):
     """Status of a training job"""
+
     QUEUED = "queued"
     TRAINING = "training"
     COMPLETED = "completed"
@@ -462,6 +511,7 @@ class TrainingStatus(str, Enum):
 
 class TrainingJob(SQLModel, table=True):
     """Persistent Training Run"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     dataset_name: str
     dataset_file_path: str
@@ -472,9 +522,9 @@ class TrainingJob(SQLModel, table=True):
     completed_at: Optional[datetime] = None
 
 
-
 class CustomModel(SQLModel, table=True):
     """Persistent Custom Neural Model"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     name: str
     base_architecture: str
@@ -488,6 +538,7 @@ class CustomModel(SQLModel, table=True):
 
 class InteractionStatus(str, Enum):
     """Status of a workforce agent interaction"""
+
     PENDING = "pending"
     APPROVED = "approved"
     DISCARDED = "discarded"
@@ -496,6 +547,7 @@ class InteractionStatus(str, Enum):
 
 class WorkforceInteraction(SQLModel, table=True):
     """Persistent storage for Workforce Agent interactions for learning"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     agent_role: str
     task_description: str
@@ -509,6 +561,7 @@ class WorkforceInteraction(SQLModel, table=True):
 
 class DeepfakeThreat(SQLModel, table=True):
     """Deepfake threat model for alerting and tracking"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     type: str  # injection, bypass, spoofing, synthetic
     severity: str  # low, medium, high, critical
@@ -521,6 +574,7 @@ class DeepfakeThreat(SQLModel, table=True):
 
 class DuressConfig(SQLModel, table=True):
     """Persistent Duress/Silent Alarm configuration"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     user_id: str = Field(index=True, unique=True)
     panic_phrase: str
@@ -532,6 +586,7 @@ class DuressConfig(SQLModel, table=True):
 
 class BiometricTemplate(SQLModel, table=True):
     """Enrolled biometric templates for liveness comparison"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     user_id: str = Field(index=True)
     type: str  # face, voice, fingerprint
@@ -543,6 +598,7 @@ class BiometricTemplate(SQLModel, table=True):
 
 class WearableDevice(SQLModel, table=True):
     """Registered wearable devices for hardware-backed liveness"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     user_id: str = Field(index=True)
     name: str
@@ -554,6 +610,7 @@ class WearableDevice(SQLModel, table=True):
 
 class CryptoWallet(SQLModel, table=True):
     """Protected cryptocurrency wallets requiring biometric consent"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     user_id: str = Field(index=True)
     name: str
@@ -566,6 +623,7 @@ class CryptoWallet(SQLModel, table=True):
 
 class ComplianceAuditLog(SQLModel, table=True):
     """Persistent audit logs for HIPAA/SOX/GDPR compliance"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     user_id: str = Field(index=True)
     action: str
@@ -578,12 +636,15 @@ class ComplianceAuditLog(SQLModel, table=True):
 
 class ComplianceArticle(SQLModel, table=True):
     """EU AI Act compliance article definition"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     article: str  # e.g., "Article 5"
     title: str
     description: str
     risk: str  # unacceptable, high, limited, minimal
-    status: str = Field(default="pending")  # compliant, non_compliant, not_applicable, pending
+    status: str = Field(
+        default="pending"
+    )  # compliant, non_compliant, not_applicable, pending
     evidence: Optional[str] = None
     remediation: Optional[str] = None
     integration_type: Optional[str] = None  # Model Registry, Use Case Registry, etc.
@@ -594,6 +655,7 @@ class ComplianceArticle(SQLModel, table=True):
 
 class SLAAgreement(SQLModel, table=True):
     """Service Level Agreement configuration"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     name: str
     tier: str  # bronze, silver, gold, platinum
@@ -605,8 +667,19 @@ class SLAAgreement(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
+class TravelKiosk(SQLModel, table=True):
+    """Registered Travel Kiosks for hardware-backed compliance"""
+
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    location: str
+    status: str = Field(default="online")
+    last_ping: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 class SLAMetric(SQLModel, table=True):
     """SLA performance metrics"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     sla_id: str = Field(foreign_key="slaagreement.id")
     period_start: datetime
@@ -621,6 +694,7 @@ class SLAMetric(SQLModel, table=True):
 
 class PartnerIntegration(SQLModel, table=True):
     """External partner integrations"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     name: str
     partner_type: str  # api, webhook, oauth, sso
@@ -635,6 +709,7 @@ class PartnerIntegration(SQLModel, table=True):
 
 class UsageForecast(SQLModel, table=True):
     """AI usage forecasting data"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     agent_id: Optional[str] = None
     forecast_period: str  # daily, weekly, monthly
@@ -650,6 +725,7 @@ class UsageForecast(SQLModel, table=True):
 
 class ROIMetric(SQLModel, table=True):
     """Return on Investment calculations"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     period: str  # monthly, quarterly, yearly
     period_start: datetime
@@ -665,6 +741,7 @@ class ROIMetric(SQLModel, table=True):
 
 class LocalizationConfig(SQLModel, table=True):
     """Multi-language and regional configuration"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     language_code: str  # en, es, fr, de, etc.
     region_code: str  # US, EU, APAC, etc.
@@ -677,6 +754,7 @@ class LocalizationConfig(SQLModel, table=True):
 
 class HealingConfiguration(SQLModel, table=True):
     """Self-healing system configuration"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     healing_type: str  # node_restart, failover, rollback, etc.
     trigger_conditions: Dict[str, Any] = Field(default={}, sa_column=Column(JSON))
@@ -689,6 +767,7 @@ class HealingConfiguration(SQLModel, table=True):
 
 class StrategicInsight(SQLModel, table=True):
     """Business intelligence and strategic insights"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     insight_type: str  # market_trend, competitive_analysis, opportunity, risk
     title: str
@@ -702,6 +781,7 @@ class StrategicInsight(SQLModel, table=True):
 
 class SystemSetting(SQLModel, table=True):
     """Global system configuration settings"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     category: str  # security, performance, compliance, ui
     setting_key: str
@@ -715,6 +795,7 @@ class SystemSetting(SQLModel, table=True):
 
 class AgentVigilanceAlert(SQLModel, table=True):
     """Persistent security and budget alerts for AgentOps"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     agent_id: Optional[str] = Field(default=None, index=True)
     type: str  # budget_breach, loop_detected, unauthorized_access, tool_failure
@@ -727,6 +808,7 @@ class AgentVigilanceAlert(SQLModel, table=True):
 
 class AgentMemorySegment(SQLModel, table=True):
     """Persistent memory segments for agents"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     agent_id: str = Field(index=True)
     content: str
@@ -735,8 +817,82 @@ class AgentMemorySegment(SQLModel, table=True):
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 
+class Task(SQLModel, table=True):
+    """Task management for workflow bot"""
+
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    title: str
+    status: str  # pending, in_progress, completed, cancelled
+    priority: str  # low, medium, high
+    assignee: str
+    description: Optional[str] = None
+    due_date: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    completed_at: Optional[datetime] = None
+
+
+class Client(SQLModel, table=True):
+    """Client CRM for workflow bot"""
+
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    name: str
+    email: str
+    phone: Optional[str] = None
+    company: Optional[str] = None
+    status: str  # prospect, active, inactive, churned
+    industry: Optional[str] = None
+    notes: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    last_contact: Optional[datetime] = None
+
+
+class ScheduleEvent(SQLModel, table=True):
+    """Scheduled events and calendar for workflow bot"""
+
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    title: str
+    description: Optional[str] = None
+    start_time: datetime
+    end_time: datetime
+    event_type: str  # meeting, call, deadline, reminder
+    location: Optional[str] = None
+    is_all_day: bool = False
+    reminder_minutes: Optional[int] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class Integration(SQLModel, table=True):
+    """Third-party integrations for workflow bot"""
+
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    name: str
+    service: str  # stripe, slack, github, notion, calendly, zapier
+    status: str  # disconnected, connecting, connected, error
+    config: Dict[str, Any] = Field(default={}, sa_column=Column(JSON))
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    last_sync: Optional[datetime] = None
+
+
+class BotSetting(SQLModel, table=True):
+    """Workflow bot configuration settings"""
+
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    user_id: str
+    setting_key: str
+    setting_value: Any
+    setting_type: str  # boolean, string, number, json
+    description: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 class SecurityKey(SQLModel, table=True):
     """Persistent rotated API keys and security credentials"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     name: str  # "Main API Key", "Partner SDK", etc.
     key_hash: str
@@ -748,6 +904,7 @@ class SecurityKey(SQLModel, table=True):
 
 class OnPremDeployment(SQLModel, table=True):
     """On-premises deployment configuration"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     deployment_name: str
     kubernetes_version: str
@@ -755,17 +912,21 @@ class OnPremDeployment(SQLModel, table=True):
     storage_config: Dict[str, Any] = Field(default={}, sa_column=Column(JSON))
     network_config: Dict[str, Any] = Field(default={}, sa_column=Column(JSON))
     security_config: Dict[str, Any] = Field(default={}, sa_column=Column(JSON))
-    status: str = Field(default="provisioning")  # provisioning, active, maintenance, failed
+    status: str = Field(
+        default="provisioning"
+    )  # provisioning, active, maintenance, failed
     last_health_check: Optional[datetime] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+
 class Vendor(SQLModel, table=True):
     """Artificial Intelligence Vendor/Supply Chain model"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     name: str
     category: str  # software, hardware, consultancy, model_provider
-    risk_level: str # low, medium, high, critical
-    status: str = Field(default="vetted") # vetted, under_review, blocked
+    risk_level: str  # low, medium, high, critical
+    status: str = Field(default="vetted")  # vetted, under_review, blocked
     contact_email: Optional[str] = None
     website: Optional[str] = None
     last_audit_at: datetime = Field(default_factory=datetime.utcnow)
@@ -775,12 +936,13 @@ class Vendor(SQLModel, table=True):
 
 class ComplianceIncident(SQLModel, table=True):
     """Regulatory or technical compliance incident log"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     title: str
     description: str
-    severity: str # low, medium, high, critical
-    incident_type: str # security, privacy, bias, deepfake, ethics
-    status: str = Field(default="open") # open, investigating, resolved, closed
+    severity: str  # low, medium, high, critical
+    incident_type: str  # security, privacy, bias, deepfake, ethics
+    status: str = Field(default="open")  # open, investigating, resolved, closed
     reported_by: Optional[str] = None
     affected_systems: List[str] = Field(default=[], sa_column=Column(JSON))
     remediation_steps: Optional[str] = None
@@ -791,6 +953,7 @@ class ComplianceIncident(SQLModel, table=True):
 
 class FiscalRequest(SQLModel, table=True):
     """Persistent spending approval request"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     purpose: str
     amount: str
@@ -801,21 +964,23 @@ class FiscalRequest(SQLModel, table=True):
 
 class WorkforceGoal(SQLModel, table=True):
     """Persistent Board Directives and KPIs"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     name: str
     current_value: float
     target_value: float
     unit: str = Field(default="%")
-    category: str = Field(default="revenue") # revenue, burn_rate, roi, compliance
+    category: str = Field(default="revenue")  # revenue, burn_rate, roi, compliance
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class WorkforceVenture(SQLModel, table=True):
     """Persistent Business Unit / Venture performance tracking"""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     name: str
     sector: str
     roi: float = Field(default=0.0)
-    status: str = Field(default="BETA") # PROFITABLE, SCALING, R&D, BETA
-    trend: str = Field(default="up") # up, down
+    status: str = Field(default="BETA")  # PROFITABLE, SCALING, R&D, BETA
+    trend: str = Field(default="up")  # up, down
     created_at: datetime = Field(default_factory=datetime.utcnow)
