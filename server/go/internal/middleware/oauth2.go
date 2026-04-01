@@ -131,16 +131,10 @@ func OAuth2CallbackHandler(config *OAuth2Config) gin.HandlerFunc {
 		_ = tokenReq // Use in production
 
 		// In production, make actual HTTP request to tokenURL
-		// For demo, return success
 		delete(oauthStates, state)
 
-		c.JSON(http.StatusOK, gin.H{
-			"message":       "OAuth2 login successful",
-			"access_token":  "demo_access_token",
-			"token_type":    "Bearer",
-			"expires_in":    3600,
-			"refresh_token": "demo_refresh_token",
-			"id_token":      "demo_id_token",
+		c.JSON(http.StatusNotImplemented, gin.H{
+			"error": "Real OIDC token exchange requires configured upstream provider",
 		})
 	}
 }
@@ -164,12 +158,21 @@ func ValidateOIDCToken(config *OAuth2Config) gin.HandlerFunc {
 			return
 		}
 
-		// Parse token without validation for demo
-		// In production, validate against JWKS
-		token, _, err := new(jwt.Parser).ParseUnverified(tokenString, jwt.MapClaims{})
+		// Production Hardening: Tokens MUST be verified against JWKS
+		// In a real environment, use a JWKS keyfunc here
+		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			// Real-First: Retrieve keys from config.JWKSURL
+			// For now, ensure we don't just 'accept everything'
+			if config.JWKSURL == "" {
+				return nil, fmt.Errorf("JWKS_URL not configured, cannot verify token")
+			}
+			return nil, fmt.Errorf("JWKS verification pending - configure external IDP")
+		})
+
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error": "Invalid token",
+				"error": "Token validation failed",
+				"details": err.Error(),
 			})
 			return
 		}
@@ -240,13 +243,9 @@ func RefreshTokenHandler(config *OAuth2Config) gin.HandlerFunc {
 			return
 		}
 
-		// In production, exchange refresh token for new tokens
-		// For demo, return new tokens
-		c.JSON(http.StatusOK, gin.H{
-			"access_token":  "new_access_token",
-			"token_type":    "Bearer",
-			"expires_in":    3600,
-			"refresh_token": "new_refresh_token",
+		// Production Hardening: Real refresh logic required
+		c.JSON(http.StatusNotImplemented, gin.H{
+			"error": "Token refresh requires configured OIDC provider",
 		})
 	}
 }
@@ -293,19 +292,10 @@ func generateCodeChallenge(verifier string) string {
 	return verifier[:32]
 }
 
-// MockJWKS returns mock JWKS for testing
-func MockJWKS() map[string]interface{} {
+// JWKSDecodingPlaceholder replaces MockJWKS
+func JWKSDecodingPlaceholder() map[string]interface{} {
 	return map[string]interface{}{
-		"keys": []map[string]interface{}{
-			{
-				"kty": "RSA",
-				"use": "sig",
-				"kid": "test-key-1",
-				"alg": "RS256",
-				"n":   "test-modulus",
-				"e":   "AQAB",
-			},
-		},
+		"keys": []map[string]interface{}{},
 	}
 }
 
@@ -364,7 +354,7 @@ func SetupOAuth2Routes(r *gin.Engine, config *OAuth2Config) {
 		oauth2.POST("/revoke", RevokeTokenHandler(config))
 		oauth2.GET("/.well-known/openid-configuration", OIDCWellKnownHandler(config))
 		oauth2.GET("/.well-known/jwks.json", func(c *gin.Context) {
-			c.JSON(http.StatusOK, MockJWKS())
+			c.JSON(http.StatusOK, JWKSDecodingPlaceholder())
 		})
 		oauth2.POST("/introspect", IntrospectTokenHandler(config))
 	}

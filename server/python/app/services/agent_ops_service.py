@@ -6,21 +6,30 @@ from typing import List, Dict, Any, Optional
 from sqlmodel import Session, select
 from app.core.database import engine
 from app.core.models import (
-    Agent, AgentVigilanceAlert, AgentMemorySegment, 
-    SecurityKey, SystemSetting, ComplianceAuditLog
+    Agent,
+    AgentVigilanceAlert,
+    AgentMemorySegment,
+    SecurityKey,
+    SystemSetting,
+    ComplianceAuditLog,
 )
 
 logger = logging.getLogger(__name__)
 
+
 class AgentOpsService:
     @staticmethod
-    def get_vigilance_alerts(agent_id: Optional[str] = None) -> List[AgentVigilanceAlert]:
+    def get_vigilance_alerts(
+        agent_id: Optional[str] = None,
+    ) -> List[AgentVigilanceAlert]:
         """Fetch persistent vigilance alerts from the database"""
         with Session(engine) as session:
             statement = select(AgentVigilanceAlert)
             if agent_id:
                 statement = statement.where(AgentVigilanceAlert.agent_id == agent_id)
-            return session.exec(statement.order_by(AgentVigilanceAlert.created_at.desc())).all()
+            return session.exec(
+                statement.order_by(AgentVigilanceAlert.created_at.desc())
+            ).all()
 
     @staticmethod
     def resolve_alert(alert_id: str) -> bool:
@@ -38,25 +47,37 @@ class AgentOpsService:
     def get_memory(agent_id: str) -> List[AgentMemorySegment]:
         """Retrieve real memory segments for a specific agent"""
         with Session(engine) as session:
-            statement = select(AgentMemorySegment).where(AgentMemorySegment.agent_id == agent_id)
-            return session.exec(statement.order_by(AgentMemorySegment.timestamp.desc())).all()
+            statement = select(AgentMemorySegment).where(
+                AgentMemorySegment.agent_id == agent_id
+            )
+            return session.exec(
+                statement.order_by(AgentMemorySegment.timestamp.desc())
+            ).all()
 
     @staticmethod
     def optimize_memory(agent_id: str) -> Dict[str, Any]:
         """Perform real memory compression/optimization logic"""
         with Session(engine) as session:
-            segments = session.exec(select(AgentMemorySegment).where(AgentMemorySegment.agent_id == agent_id)).all()
+            segments = session.exec(
+                select(AgentMemorySegment).where(
+                    AgentMemorySegment.agent_id == agent_id
+                )
+            ).all()
             if not segments:
                 # Create a baseline segment if none exist
                 baseline = AgentMemorySegment(
                     agent_id=agent_id,
                     content="Optimized core behavioral baseline",
                     importance=1.0,
-                    context_type="long_term"
+                    context_type="long_term",
                 )
                 session.add(baseline)
                 session.commit()
-                return {"status": "initialized", "segments_count": 1, "compression_ratio": "1.0x"}
+                return {
+                    "status": "initialized",
+                    "segments_count": 1,
+                    "compression_ratio": "1.0x",
+                }
 
             # Simulated optimization logic
             original_size = len(segments)
@@ -65,13 +86,15 @@ class AgentOpsService:
                 if seg.importance < 0.5:
                     seg.context_type = "archived"
                     session.add(seg)
-            
+
             session.commit()
             return {
-                "status": "optimized", 
-                "original_segments": original_size, 
-                "active_segments": len([s for s in segments if s.context_type != "archived"]),
-                "compression_ratio": f"{round(original_size / max(1, original_size - 1), 2)}x"
+                "status": "optimized",
+                "original_segments": original_size,
+                "active_segments": len(
+                    [s for s in segments if s.context_type != "archived"]
+                ),
+                "compression_ratio": f"{round(original_size / max(1, original_size - 1), 2)}x",
             }
 
     @staticmethod
@@ -81,16 +104,20 @@ class AgentOpsService:
         new_key = SecurityKey(
             name=name,
             prefix=new_prefix,
-            key_hash=uuid.uuid4().hex, # In prod, this would be a real hash
-            status="active"
+            key_hash=uuid.uuid4().hex,  # In prod, this would be a real hash
+            status="active",
         )
         with Session(engine) as session:
             # Revoke old keys with the same name
-            old_keys = session.exec(select(SecurityKey).where(SecurityKey.name == name, SecurityKey.status == "active")).all()
+            old_keys = session.exec(
+                select(SecurityKey).where(
+                    SecurityKey.name == name, SecurityKey.status == "active"
+                )
+            ).all()
             for ok in old_keys:
                 ok.status = "rotated"
                 session.add(ok)
-            
+
             session.add(new_key)
             session.commit()
             session.refresh(new_key)
@@ -107,9 +134,13 @@ class AgentOpsService:
     def update_system_setting(key: str, value: str) -> bool:
         """Persist a change to a global system setting"""
         with Session(engine) as session:
-            setting = session.exec(select(SystemSetting).where(SystemSetting.setting_key == key)).first()
+            setting = session.exec(
+                select(SystemSetting).where(SystemSetting.setting_key == key)
+            ).first()
             if setting:
-                setting.setting_value = str(value).lower() if isinstance(value, bool) else str(value)
+                setting.setting_value = (
+                    str(value).lower() if isinstance(value, bool) else str(value)
+                )
                 setting.updated_at = datetime.utcnow()
                 session.add(setting)
                 session.commit()
@@ -121,17 +152,47 @@ class AgentOpsService:
         """Calculate real-time ROI based on agent efficiency and historical multipliers"""
         with Session(engine) as session:
             agents = session.exec(select(Agent)).all()
-            multiplier_setting = session.exec(select(SystemSetting).where(SystemSetting.setting_key == "roi_forecast_multiplier")).first()
-            multiplier = float(multiplier_setting.setting_value) if multiplier_setting else 8.4
-            
+            multiplier_setting = session.exec(
+                select(SystemSetting).where(
+                    SystemSetting.setting_key == "roi_forecast_multiplier"
+                )
+            ).first()
+            multiplier = (
+                float(multiplier_setting.setting_value) if multiplier_setting else 8.4
+            )
+
             total_cost = sum(a.metrics.get("totalCost", 0) for a in agents if a.metrics)
-            total_saved = sum(a.metrics.get("costSaved", 0) for a in agents if a.metrics)
-            
+            total_saved = sum(
+                a.metrics.get("costSaved", 0) for a in agents if a.metrics
+            )
+
+            # Calculate dynamic efficiency gain
+            efficiency_gain = (
+                (total_saved / (total_cost + total_saved) * 100)
+                if (total_cost + total_saved) > 0
+                else 0.0
+            )
+
+            # Time-based projection: calculate daily rate and project to annual
+            from datetime import timedelta
+
+            thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+            recent_logs = session.exec(
+                select(AgentAuditLog).where(AgentAuditLog.timestamp >= thirty_days_ago)
+            ).all()
+            daily_actions = len(recent_logs) / 30.0 if recent_logs else 0
+            daily_savings = total_saved / 30.0 if total_saved > 0 else 0
+            forecasted_annual = (
+                daily_savings * 365 if daily_savings > 0 else total_saved * multiplier
+            )
+
             return {
-                "total_realized_savings": total_saved,
+                "total_realized_savings": round(total_saved, 2),
                 "current_roi_multiplier": multiplier,
-                "average_efficiency_gain": "42%",
-                "forecasted_annual_savings": total_saved * 1.5 # Simulated projection
+                "average_efficiency_gain": f"{round(efficiency_gain, 1)}%",
+                "forecasted_annual_savings": round(forecasted_annual, 2),
+                "total_agent_cost": round(total_cost, 2),
             }
+
 
 agent_ops_service = AgentOpsService()

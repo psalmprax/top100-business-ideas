@@ -107,3 +107,33 @@ func (r *WorkforceRepository) CreateForensicTrace(ctx context.Context, t *models
 	
 	return database.Pool.QueryRow(ctx, query, t.UserID, t.AgentID, t.Action, t.Details).Scan(&t.ID, &t.Timestamp)
 }
+
+// Revenue Recovery
+func (r *WorkforceRepository) GetLatestRevenueRecovery(ctx context.Context, userID string) (*models.RevenueRecovery, error) {
+	if database.Pool == nil {
+		return nil, fmt.Errorf("database pool not initialized")
+	}
+
+	query := `SELECT id, user_id, status, recovered_amount, actions_taken, confidence_score, interaction_id, timestamp 
+	          FROM revenue_recoveries WHERE user_id = $1 ORDER BY timestamp DESC LIMIT 1`
+	
+	var rr models.RevenueRecovery
+	err := database.Pool.QueryRow(ctx, query, userID).Scan(
+		&rr.ID, &rr.UserID, &rr.Status, &rr.RecoveredAmount, &rr.ActionsTaken, &rr.ConfidenceScore, &rr.InteractionID, &rr.Timestamp,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &rr, nil
+}
+
+func (r *WorkforceRepository) CreateRevenueRecovery(ctx context.Context, rr *models.RevenueRecovery) error {
+	if database.Pool == nil {
+		return fmt.Errorf("database pool not initialized")
+	}
+
+	query := `INSERT INTO revenue_recoveries (user_id, status, recovered_amount, actions_taken, confidence_score, interaction_id) 
+	          VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, timestamp`
+	
+	return database.Pool.QueryRow(ctx, query, rr.UserID, rr.Status, rr.RecoveredAmount, rr.ActionsTaken, rr.ConfidenceScore, rr.InteractionID).Scan(&rr.ID, &rr.Timestamp)
+}

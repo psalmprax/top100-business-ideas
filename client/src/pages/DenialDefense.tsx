@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import {
   Stethoscope,
@@ -17,6 +17,7 @@ import {
   Filter,
   Download,
   Settings,
+  Plus,
 } from "lucide-react";
 import {
   Card,
@@ -41,107 +42,114 @@ import {
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import { storage } from "@/lib/storage";
-import { mlApi, billingApi } from "@/lib/api";
+import { mlApi, billingApi, denialDefenseApi, type Claim } from "@/lib/api";
 
 export default function DenialDefense() {
-  const [activeClaims, setActiveClaims] = useState(
-    storage.get("dd_claims", [
-      {
-        id: "CLM-9021",
-        payer: "BlueShield",
-        amount: 1250,
-        status: "Pending",
-        risk: "High",
-      },
-      {
-        id: "CLM-8812",
-        payer: "Medicare",
-        amount: 4500,
-        status: "Scrubbed",
-        risk: "Low",
-      },
-      {
-        id: "CLM-7723",
-        payer: "Aetna",
-        amount: 890,
-        status: "Flagged",
-        risk: "Medium",
-      },
-    ])
-  );
+  const [activeClaims, setActiveClaims] = useState<Claim[]>([]);
   const [newClaim, setNewClaim] = useState({ id: "", payer: "", amount: "" });
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [isSavingConfig, setIsSavingConfig] = useState(false);
   const [recoveryRate, setRecoveryRate] = useState(94.2);
   const [revenueRecovered, setRevenueRecovered] = useState(2.4);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchClaims = async () => {
+    setIsLoading(true);
+    try {
+      const claims = await denialDefenseApi.listClaims();
+      setActiveClaims(claims);
+    } catch (err) {
+      console.error("Failed to fetch claims", err);
+      // Fallback only for visual structure if DB is truly unreachable, 
+      // but real-first means we should show a warning
+      toast.error("Could not sync with production records. View only mode.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchClaims();
+  }, []);
 
   const handleAddClaim = async () => {
     if (!newClaim.id || !newClaim.payer) {
       toast.error("Please fill in Claim ID and Payer");
       return;
     }
-    const claimData = {
-      ...newClaim,
-      amount: parseFloat(newClaim.amount) || 0,
-      status: "New",
-      risk: "Calculating...",
-    };
-    const updated = [claimData, ...activeClaims];
-    setActiveClaims(updated);
-    storage.set("dd_claims", updated);
-    setNewClaim({ id: "", payer: "", amount: "" });
-
+    
     try {
+      const createdClaim = await denialDefenseApi.createClaim({
+        claim_id_string: newClaim.id,
+        payer: newClaim.payer,
+        amount: parseFloat(newClaim.amount) || 0,
+        status: "New",
+        risk: "Calculating...",
+      });
+      
+      setActiveClaims([createdClaim, ...activeClaims]);
+      setNewClaim({ id: "", payer: "", amount: "" });
+      toast.success("Claim record materialized in ledger.");
+
+      // AI Analysis
       const result = await mlApi.classifyAgentOperation(
         `Classify claim risk for ${newClaim.payer} amount ${newClaim.amount}`,
         "denial-defense"
       );
+      
       const riskLevel =
         result?.confidence && result.confidence > 0.8
           ? "Low"
           : result?.confidence && result.confidence > 0.5
             ? "Medium"
             : "High";
-      const finalUpdated = updated.map(c =>
-        c.id === newClaim.id ? { ...c, risk: riskLevel } : c
+
+      // Update in DB
+      const updatedClaim = await denialDefenseApi.updateClaim({
+        id: createdClaim.id,
+        status: createdClaim.status,
+        risk: riskLevel,
+      });
+
+      setActiveClaims(prev => 
+        prev.map(c => c.id === createdClaim.id ? updatedClaim : c)
       );
-      setActiveClaims(finalUpdated);
-      storage.set("dd_claims", finalUpdated);
-      toast.success(`Claim submitted to Engine. Risk: ${riskLevel}`);
-    } catch {
-      toast.success("Claim submitted to Engine (risk calculation pending)");
+      toast.success(`Risk analysis complete. Risk Level: ${riskLevel}`);
+    } catch (e) {
+      toast.error("Communication failure. Claim record not persistent.");
     }
   };
 
-  const runScrubber = (id: string) => {
+  const runScrubber = (id: string, claimStr: string) => {
     setIsScrubbing(true);
     toast.promise(
       mlApi.classifyAgentOperation(
-        `Scrub claim ${id} for CCI edits and coding compliance`,
+        `Scrub claim ${claimStr} for CCI edits and coding compliance`,
         "denial-defense"
       ),
       {
-        loading: `AI Agent 'Scrubber-1' analyzing claim ${id}...`,
-        success: (data: any) => {
-          const updated = activeClaims.map(c =>
-            c.id === id
-              ? {
-                  ...c,
-                  status: "Scrubbed",
-                  risk: data?.confidence > 0.8 ? "Low" : "Medium",
-                }
-              : c
-          );
-          setActiveClaims(updated);
-          storage.set("dd_claims", updated);
-          setIsScrubbing(false);
-          setRecoveryRate(prev => Math.min(99.9, prev + 0.1));
-          return `Scrubbing complete: ${data?.classification || "No CCI edits found."}`;
+        loading: `AI Agent 'Scrubber-1' analyzing claim ${claimStr}...`,
+        success: async (data: any) => {
+          const riskLevel = data?.confidence > 0.8 ? "Low" : "Medium";
+          try {
+            const updated = await denialDefenseApi.updateClaim({
+              id,
+              status: "Scrubbed",
+              risk: riskLevel,
+            });
+            setActiveClaims(prev => prev.map(c => c.id === id ? updated : c));
+            setIsScrubbing(false);
+            setRecoveryRate(prev => Math.min(99.9, prev + 0.1));
+            return `Scrubbing complete: ${data?.classification || "No CCI edits found."}`;
+          } catch (e) {
+            setIsScrubbing(false);
+            return "Failed to persist scrub state in ledger.";
+          }
         },
         error: () => {
           setIsScrubbing(false);
-          return "Scrubbing failed. Service unavailable.";
+          return "Scrubbing engine unavailable.";
         },
       }
     );
@@ -421,55 +429,70 @@ export default function DenialDefense() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {activeClaims.map((claim: any) => (
-                        <TableRow
-                          key={claim.id}
-                          className="border-white/5 hover:bg-white/[0.02]"
-                        >
-                          <TableCell className="text-body-sm font-mono">
-                            {claim.id}
-                          </TableCell>
-                          <TableCell className="text-body-sm">
-                            {claim.payer}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant="outline"
-                              className="text-[10px] border-cyan-500/30 text-cyan-400"
-                            >
-                              {claim.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <span
-                              className={`text-[10px] font-bold ${
-                                claim.risk === "High"
-                                  ? "text-red-400"
-                                  : claim.risk === "Low"
-                                    ? "text-emerald-400"
-                                    : "text-orange-400"
-                              }`}
-                            >
-                              {claim.risk}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-7 text-[10px] text-cyan-500 hover:bg-cyan-500/10"
-                              disabled={
-                                isScrubbing || claim.status === "Scrubbed"
-                              }
-                              onClick={() => runScrubber(claim.id)}
-                            >
-                              {claim.status === "Scrubbed"
-                                ? "VERIFIED"
-                                : "RUN SCRUBBER"}
-                            </Button>
+                      {isLoading ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                            Synchronizing with production ledger...
                           </TableCell>
                         </TableRow>
-                      ))}
+                      ) : activeClaims.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                            No active claims in queue.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        activeClaims.map((claim: Claim) => (
+                          <TableRow
+                            key={claim.id}
+                            className="border-white/5 hover:bg-white/[0.02]"
+                          >
+                            <TableCell className="text-body-sm font-mono">
+                              {claim.claim_id_string || claim.id.substring(0, 8)}
+                            </TableCell>
+                            <TableCell className="text-body-sm">
+                              {claim.payer}
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] border-cyan-500/30 text-cyan-400"
+                              >
+                                {claim.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant="outline"
+                                className={`text-[10px] border-none ${
+                                  claim.risk === "Low"
+                                    ? "bg-green-500/10 text-green-500"
+                                    : claim.risk === "Medium"
+                                      ? "bg-yellow-500/10 text-yellow-500"
+                                      : "bg-red-500/10 text-red-500"
+                                }`}
+                              >
+                                {claim.risk}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={isScrubbing || claim.status === "Scrubbed"}
+                                className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10"
+                                onClick={() => runScrubber(claim.id, claim.claim_id_string)}
+                              >
+                                {claim.status === "Scrubbed" ? (
+                                  <CheckCircle2 className="w-4 h-4" />
+                                ) : (
+                                  <Plus className="w-4 h-4" />
+                                )}
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
                     </TableBody>
                   </Table>
                 </CardContent>

@@ -219,7 +219,7 @@ func (h *AgentOpsHandler) GetAuditLogs(c *gin.Context) {
 		path = fmt.Sprintf("%s&outcome=%s", path, outcome)
 	}
 
-	status, response, err := h.proxyService.ForwardWithStatus("GET", path, nil)
+	status, response, err := h.proxyService.ForwardWithStatus("GET", path, nil, nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch audit logs", Details: err.Error()})
 		return
@@ -230,7 +230,7 @@ func (h *AgentOpsHandler) GetAuditLogs(c *gin.Context) {
 
 // ListLLMConfigs retrieves available LLM configurations
 func (h *AgentOpsHandler) ListLLMConfigs(c *gin.Context) {
-	status, response, err := h.proxyService.ForwardWithStatus("GET", "/ml/models", nil)
+	status, response, err := h.proxyService.ForwardWithStatus("GET", "/ml/models", nil, nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch LLM configs", Details: err.Error()})
 		return
@@ -244,7 +244,7 @@ func (h *AgentOpsHandler) GetForecast(c *gin.Context) {
 	id := c.Param("id")
 	path := fmt.Sprintf("/agents/%s/forecast", id)
 
-	status, response, err := h.proxyService.ForwardWithStatus("GET", path, nil)
+	status, response, err := h.proxyService.ForwardWithStatus("GET", path, nil, nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch forecast", Details: err.Error()})
 		return
@@ -258,7 +258,7 @@ func (h *AgentOpsHandler) CloneConfig(c *gin.Context) {
 	id := c.Param("id")
 	path := fmt.Sprintf("/agents/%s/clone", id)
 
-	status, response, err := h.proxyService.ForwardWithStatus("POST", path, nil)
+	status, response, err := h.proxyService.ForwardWithStatus("POST", path, nil, nil)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to clone agent", Details: err.Error()})
 		return
@@ -278,7 +278,7 @@ func (h *AgentOpsHandler) SyncLinguisticPackage(c *gin.Context) {
 		return
 	}
 
-	status, response, err := h.proxyService.ForwardWithStatus("POST", "/agent-ops/sync-locale", req)
+	status, response, err := h.proxyService.ForwardWithStatus("POST", "/agent-ops/sync-locale", req, nil)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to sync linguistic package", Details: err.Error()})
 		return
@@ -293,7 +293,7 @@ func (h *AgentOpsHandler) OptimizeMemory(c *gin.Context) {
 	id := c.Param("id")
 	path := fmt.Sprintf("/agents/%s/optimize", id)
 
-	status, response, err := h.proxyService.ForwardWithStatus("POST", path, nil)
+	status, response, err := h.proxyService.ForwardWithStatus("POST", path, nil, nil)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to optimize agent memory", Details: err.Error()})
 		return
@@ -364,6 +364,8 @@ func (h *AgentOpsHandler) ProxyToPython(c *gin.Context) {
 			path = "/cloud/failover"
 		} else if strings.HasPrefix(subPath, "/audit") {
 			path = "/compliance/dashboard"
+		} else if strings.HasPrefix(subPath, "/intelligence/") {
+			path = subPath
 		} else {
 			path = subPath
 		}
@@ -376,7 +378,10 @@ func (h *AgentOpsHandler) ProxyToPython(c *gin.Context) {
 		}
 	}
 
-	status, response, err := h.proxyService.ForwardWithStatus(c.Request.Method, path, body)
+	headers := map[string]string{
+		"X-User-ID": c.GetString("user_id"),
+	}
+	status, response, err := h.proxyService.ForwardWithStatus(c.Request.Method, path, body, headers)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Backend proxy error", Details: err.Error()})
 		return
@@ -409,7 +414,7 @@ func (h *AgentOpsHandler) ProvisionClient(c *gin.Context) {
 	c.Data(http.StatusOK, "application/json", response)
 }
 func (h *AgentOpsHandler) ListVentureInsights(c *gin.Context) {
-	status1, response1, err1 := h.proxyService.ForwardWithStatus("GET", "/venture/insights", nil)
+	status1, response1, err1 := h.proxyService.ForwardWithStatus("GET", "/venture/insights", nil, nil)
 	if err1 != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch venture insights", Details: err1.Error()})
 		return
@@ -424,7 +429,7 @@ func (h *AgentOpsHandler) AnalyzeVentureScenario(c *gin.Context) {
 		return
 	}
 
-	status2, response2, err2 := h.proxyService.ForwardWithStatus("POST", "/venture/scenario/analyze", req)
+	status2, response2, err2 := h.proxyService.ForwardWithStatus("POST", "/venture/scenario/analyze", req, nil)
 	if err2 != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to analyze scenario", Details: err2.Error()})
 		return

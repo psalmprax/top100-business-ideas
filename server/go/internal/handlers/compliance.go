@@ -110,6 +110,15 @@ func (h *ComplianceHandler) ExportReport(c *gin.Context) {
 	c.Data(http.StatusOK, "application/json", response)
 }
 
+func (h *ComplianceHandler) ListArticles(c *gin.Context) {
+	response, err := h.proxyService.Forward("GET", "/compliance/articles", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch articles", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
+}
+
 func (h *ComplianceHandler) ListArtifacts(c *gin.Context) {
 	response, err := h.proxyService.Forward("GET", "/compliance/artifacts", nil)
 	if err != nil {

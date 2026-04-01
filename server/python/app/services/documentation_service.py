@@ -9,6 +9,7 @@ from app.services.audit_service import audit_service
 
 logger = logging.getLogger(__name__)
 
+
 class DocumentationService:
     """
     Article 11 Technical Documentation Service.
@@ -30,18 +31,22 @@ class DocumentationService:
                         "id": model_id,
                         "name": "Legacy-Credit-Model",
                         "riskCategory": "high",
-                        "status": "active"
+                        "status": "active",
                     }
                 else:
                     model_data = model.dict()
 
                 # 2. Fetch Article Scans (Validation Evidence)
-                scan_statement = select(ArticleScan).where(ArticleScan.article_id == model_id)
+                scan_statement = select(ArticleScan).where(
+                    ArticleScan.article_id == model_id
+                )
                 scans = session.exec(scan_statement).all()
                 scan_history = [s.dict() for s in scans]
 
                 # 3. Fetch System Connections (Infrastructure Evidence)
-                conn_statement = select(SystemConnection).where(SystemConnection.article_id == model_id)
+                conn_statement = select(SystemConnection).where(
+                    SystemConnection.article_id == model_id
+                )
                 connections = session.exec(conn_statement).all()
                 connection_evidence = [c.dict() for c in connections]
 
@@ -54,23 +59,25 @@ class DocumentationService:
                         "name": model_data.get("name"),
                         "version": "1.0.0",
                         "risk_level": model_data.get("riskCategory"),
-                        "intended_purpose": "General purpose AI with specialized regulatory oversight."
+                        "intended_purpose": "General purpose AI with specialized regulatory oversight.",
                     },
                     "technical_specifications": {
                         "architecture": "Transformer-based Neural Network",
                         "hardware_requirements": "8x NVIDIA H100 GPU Cluster",
-                        "data_lineage": "Verified via ReguLens Data Store Connector"
+                        "data_lineage": "Verified via ReguLens Data Store Connector",
                     },
                     "validation_evidence": {
                         "total_scans_performed": len(scan_history),
-                        "latest_scan_status": scan_history[0]["status"] if scan_history else "pending",
-                        "scans": scan_history
+                        "latest_scan_status": scan_history[0]["status"]
+                        if scan_history
+                        else "pending",
+                        "scans": scan_history,
                     },
                     "operational_controls": {
                         "active_connections": len(connection_evidence),
-                        "connections": connection_evidence
+                        "connections": connection_evidence,
                     },
-                    "status": "ready"
+                    "status": "ready",
                 }
 
                 # Log to persistent audit trail
@@ -79,7 +86,10 @@ class DocumentationService:
                     action="generate_article_11",
                     intent=f"Regulatory package compilation for {model_id}",
                     outcome="success",
-                    metadata={"document_id": package["document_id"], "model_id": model_id}
+                    metadata={
+                        "document_id": package["document_id"],
+                        "model_id": model_id,
+                    },
                 )
 
                 logger.info(f"Generated Article 11 package for model {model_id}")
@@ -89,9 +99,9 @@ class DocumentationService:
             logger.error(f"Failed to generate documentation package: {e}")
             return {
                 "status": "error",
-                "message": str(e),
-                "fallback": "simulation_mode_active"
+                "message": f"Documentation generation failed: {str(e)}",
             }
+
 
 # Singleton
 documentation_service = DocumentationService()

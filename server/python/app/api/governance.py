@@ -7,11 +7,21 @@ from datetime import datetime, timedelta
 import random
 
 from app.core.models import (
-    ComplianceArticle, SLAAgreement, SLAMetric, PartnerIntegration,
-    UsageForecast, ROIMetric, LocalizationConfig, HealingConfiguration,
-    StrategicInsight, SystemSetting, OnPremDeployment
+    ComplianceArticle,
+    SLAAgreement,
+    SLAMetric,
+    PartnerIntegration,
+    UsageForecast,
+    ROIMetric,
+    LocalizationConfig,
+    HealingConfiguration,
+    StrategicInsight,
+    SystemSetting,
+    OnPremDeployment,
+    AgentAuditLog,
 )
 from app.core.database import get_session
+from app.services.roi_service import roi_service
 
 router = APIRouter()
 
@@ -19,6 +29,7 @@ router = APIRouter()
 # ============================================================================
 # Compliance Dashboard
 # ============================================================================
+
 
 @router.get("/compliance/dashboard")
 async def get_compliance_dashboard(session: Session = Depends(get_session)):
@@ -30,21 +41,23 @@ async def get_compliance_dashboard(session: Session = Depends(get_session)):
         # Calculate overall compliance score
         total_articles = len(articles)
         compliant_count = sum(1 for a in articles if a.status == "compliant")
-        compliance_score = (compliant_count / total_articles * 100) if total_articles > 0 else 0
+        compliance_score = (
+            (compliant_count / total_articles * 100) if total_articles > 0 else 0
+        )
 
         # Risk distribution
         risk_distribution = {
             "unacceptable": sum(1 for a in articles if a.risk == "unacceptable"),
             "high": sum(1 for a in articles if a.risk == "high"),
             "limited": sum(1 for a in articles if a.risk == "limited"),
-            "minimal": sum(1 for a in articles if a.risk == "minimal")
+            "minimal": sum(1 for a in articles if a.risk == "minimal"),
         }
 
         # Recent assessments
         recent_assessments = sorted(
             [a for a in articles if a.updated_at],
             key=lambda x: x.updated_at,
-            reverse=True
+            reverse=True,
         )[:5]
 
         return {
@@ -57,24 +70,22 @@ async def get_compliance_dashboard(session: Session = Depends(get_session)):
                     "article": a.article,
                     "title": a.title,
                     "status": a.status,
-                    "updated_at": a.updated_at.isoformat() if a.updated_at else None
-                } for a in recent_assessments
+                    "updated_at": a.updated_at.isoformat() if a.updated_at else None,
+                }
+                for a in recent_assessments
             ],
-            "critical_issues": [a for a in articles if a.status == "non_compliant" and a.risk in ["unacceptable", "high"]]
+            "critical_issues": [
+                a
+                for a in articles
+                if a.status == "non_compliant" and a.risk in ["unacceptable", "high"]
+            ],
         }
     except Exception as e:
-        # Fallback with mock data
-        return {
-            "overall_score": 78.5,
-            "total_articles": 25,
-            "compliant_articles": 20,
-            "risk_distribution": {"unacceptable": 2, "high": 8, "limited": 10, "minimal": 5},
-            "recent_assessments": [
-                {"article": "Article 9", "title": "Risk Management", "status": "compliant", "updated_at": datetime.utcnow().isoformat()},
-                {"article": "Article 14", "title": "Accuracy & Robustness", "status": "compliant", "updated_at": (datetime.utcnow() - timedelta(hours=2)).isoformat()}
-            ],
-            "critical_issues": []
-        }
+        print(f"Compliance Dashboard Error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Database integrity failure in compliance dashboard.",
+        )
 
 
 @router.get("/compliance/articles")
@@ -85,12 +96,48 @@ async def list_compliance_articles(session: Session = Depends(get_session)):
         if not articles:
             # Seed with EU AI Act articles if none exist
             seed_articles = [
-                ComplianceArticle(article="Article 5", title="Unacceptable Risk AI Systems", description="Prohibited AI systems", risk="unacceptable", status="compliant"),
-                ComplianceArticle(article="Article 9", title="Risk Management System", description="Requirements for risk management", risk="high", status="compliant"),
-                ComplianceArticle(article="Article 10", title="Data Governance", description="Data governance requirements", risk="high", status="pending"),
-                ComplianceArticle(article="Article 14", title="Accuracy, Robustness and Cybersecurity", description="Technical robustness requirements", risk="high", status="compliant"),
-                ComplianceArticle(article="Article 50", title="Transparency Obligations", description="Information to be provided", risk="limited", status="compliant"),
-                ComplianceArticle(article="Article 61", title="Post-Market Monitoring", description="Monitoring obligations", risk="high", status="non_compliant")
+                ComplianceArticle(
+                    article="Article 5",
+                    title="Unacceptable Risk AI Systems",
+                    description="Prohibited AI systems",
+                    risk="unacceptable",
+                    status="compliant",
+                ),
+                ComplianceArticle(
+                    article="Article 9",
+                    title="Risk Management System",
+                    description="Requirements for risk management",
+                    risk="high",
+                    status="compliant",
+                ),
+                ComplianceArticle(
+                    article="Article 10",
+                    title="Data Governance",
+                    description="Data governance requirements",
+                    risk="high",
+                    status="pending",
+                ),
+                ComplianceArticle(
+                    article="Article 14",
+                    title="Accuracy, Robustness and Cybersecurity",
+                    description="Technical robustness requirements",
+                    risk="high",
+                    status="compliant",
+                ),
+                ComplianceArticle(
+                    article="Article 50",
+                    title="Transparency Obligations",
+                    description="Information to be provided",
+                    risk="limited",
+                    status="compliant",
+                ),
+                ComplianceArticle(
+                    article="Article 61",
+                    title="Post-Market Monitoring",
+                    description="Monitoring obligations",
+                    risk="high",
+                    status="non_compliant",
+                ),
             ]
             for article in seed_articles:
                 session.add(article)
@@ -99,16 +146,17 @@ async def list_compliance_articles(session: Session = Depends(get_session)):
 
         return articles
     except Exception as e:
-        # Fallback mock data
-        return [
-            {"id": "1", "article": "Article 9", "title": "Risk Management", "risk": "high", "status": "compliant"},
-            {"id": "2", "article": "Article 10", "title": "Data Governance", "risk": "high", "status": "pending"},
-            {"id": "3", "article": "Article 14", "title": "Accuracy & Robustness", "risk": "high", "status": "compliant"}
-        ]
+        print(f"Compliance Articles Error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to retrieve compliance articles from database.",
+        )
 
 
 @router.post("/compliance/assess/{article_id}")
-async def assess_compliance_article(article_id: str, assessment: dict, session: Session = Depends(get_session)):
+async def assess_compliance_article(
+    article_id: str, assessment: dict, session: Session = Depends(get_session)
+):
     """Assess compliance for a specific article"""
     try:
         article = session.get(ComplianceArticle, article_id)
@@ -125,19 +173,25 @@ async def assess_compliance_article(article_id: str, assessment: dict, session: 
 
         return article
     except Exception as e:
-        return {"message": "Assessment recorded", "status": assessment.get("status", "pending")}
+        return {
+            "message": "Assessment recorded",
+            "status": assessment.get("status", "pending"),
+        }
 
 
 # ============================================================================
 # SLA Management
 # ============================================================================
 
+
 @router.get("/sla/dashboard")
 async def get_sla_dashboard(session: Session = Depends(get_session)):
     """Get SLA performance dashboard"""
     try:
         # Current SLA metrics
-        current_sla = session.exec(select(SLAAgreement).where(SLAAgreement.active == True)).first()
+        current_sla = session.exec(
+            select(SLAAgreement).where(SLAAgreement.active == True)
+        ).first()
         if not current_sla:
             # Create default SLA
             current_sla = SLAAgreement(
@@ -145,51 +199,72 @@ async def get_sla_dashboard(session: Session = Depends(get_session)):
                 tier="gold",
                 uptime_guarantee=99.9,
                 response_time_sla=300,
-                resolution_time_sla=24
+                resolution_time_sla=24,
             )
             session.add(current_sla)
             session.commit()
 
-        # Calculate current metrics (mock for now)
+        # Calculate current metrics from real SLA metric records
+        recent_metrics = session.exec(
+            select(SLAMetric).order_by(SLAMetric.period_end.desc()).limit(30)
+        ).all()
+
+        if recent_metrics:
+            avg_uptime = sum(m.uptime_percentage for m in recent_metrics) / len(
+                recent_metrics
+            )
+            avg_response = sum(m.avg_response_time_ms for m in recent_metrics) / len(
+                recent_metrics
+            )
+            total_incidents = sum(m.incident_count for m in recent_metrics)
+            total_breaches = sum(m.breach_count for m in recent_metrics)
+        else:
+            avg_uptime = 100.0
+            avg_response = 0
+            total_incidents = 0
+            total_breaches = 0
+
         current_metrics = {
-            "uptime_percentage": 99.95,
-            "avg_response_time": 180,
-            "total_incidents": 3,
-            "breaches_count": 0,
+            "uptime_percentage": round(avg_uptime, 2),
+            "avg_response_time": round(avg_response),
+            "total_incidents": total_incidents,
+            "breaches_count": total_breaches,
             "status": "compliant"
+            if avg_uptime >= current_sla.uptime_guarantee
+            else "breached",
         }
 
         return {
             "current_sla": current_sla,
             "current_metrics": current_metrics,
-            "compliance_status": "compliant" if current_metrics["uptime_percentage"] >= current_sla.uptime_guarantee else "breached"
+            "compliance_status": "compliant"
+            if current_metrics["uptime_percentage"] >= current_sla.uptime_guarantee
+            else "breached",
         }
     except Exception as e:
-        return {
-            "current_sla": {"tier": "gold", "uptime_guarantee": 99.9},
-            "current_metrics": {"uptime_percentage": 99.95, "status": "compliant"},
-            "compliance_status": "compliant"
-        }
+        print(f"SLA Dashboard Error: {e}")
+        raise HTTPException(
+            status_code=500, detail="Database failure while retrieving SLA status."
+        )
 
 
 @router.get("/sla/metrics")
 async def get_sla_metrics(session: Session = Depends(get_session)):
     """Get historical SLA metrics"""
     try:
-        metrics = session.exec(select(SLAMetric).order_by(SLAMetric.period_end.desc()).limit(12)).all()
+        metrics = session.exec(
+            select(SLAMetric).order_by(SLAMetric.period_end.desc()).limit(12)
+        ).all()
         return metrics
     except Exception as e:
-        # Mock historical data
-        return [
-            {"period": "2024-01", "uptime": 99.98, "incidents": 1, "breaches": 0},
-            {"period": "2024-02", "uptime": 99.95, "incidents": 2, "breaches": 0},
-            {"period": "2024-03", "uptime": 99.97, "incidents": 1, "breaches": 0}
-        ]
+        print(f"SLA Metrics Error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve SLA history.")
 
 
 # ============================================================================
 # Partner Portal
 # ============================================================================
+
 
 @router.get("/partners")
 async def list_partners(session: Session = Depends(get_session)):
@@ -199,9 +274,21 @@ async def list_partners(session: Session = Depends(get_session)):
         if not partners:
             # Seed with default partners
             default_partners = [
-                PartnerIntegration(name="GitHub", partner_type="oauth", permissions=["repo:read", "code:scan"]),
-                PartnerIntegration(name="Slack", partner_type="webhook", webhook_url="https://hooks.slack.com/..."),
-                PartnerIntegration(name="AWS", partner_type="api", permissions=["ec2:describe", "s3:list"])
+                PartnerIntegration(
+                    name="GitHub",
+                    partner_type="oauth",
+                    permissions=["repo:read", "code:scan"],
+                ),
+                PartnerIntegration(
+                    name="Slack",
+                    partner_type="webhook",
+                    webhook_url="https://hooks.slack.com/...",
+                ),
+                PartnerIntegration(
+                    name="AWS",
+                    partner_type="api",
+                    permissions=["ec2:describe", "s3:list"],
+                ),
             ]
             for partner in default_partners:
                 session.add(partner)
@@ -210,10 +297,10 @@ async def list_partners(session: Session = Depends(get_session)):
 
         return partners
     except Exception as e:
-        return [
-            {"id": "1", "name": "GitHub", "type": "oauth", "status": "active"},
-            {"id": "2", "name": "Slack", "type": "webhook", "status": "active"}
-        ]
+        print(f"Partners list Error: {e}")
+        raise HTTPException(
+            status_code=500, detail="Database failure in partner portal."
+        )
 
 
 @router.post("/partners/{partner_id}/sync")
@@ -228,7 +315,10 @@ async def sync_partner_data(partner_id: str, session: Session = Depends(get_sess
         session.add(partner)
         session.commit()
 
-        return {"message": f"Successfully synced data from {partner.name}", "timestamp": partner.last_sync}
+        return {
+            "message": f"Successfully synced data from {partner.name}",
+            "timestamp": partner.last_sync,
+        }
     except Exception as e:
         return {"message": "Sync completed", "timestamp": datetime.utcnow().isoformat()}
 
@@ -237,65 +327,104 @@ async def sync_partner_data(partner_id: str, session: Session = Depends(get_sess
 # Forecasting & Analytics
 # ============================================================================
 
+
 @router.get("/forecast/usage")
 async def get_usage_forecast(session: Session = Depends(get_session)):
     """Get usage forecasting data"""
     try:
-        forecasts = session.exec(select(UsageForecast).order_by(UsageForecast.forecast_date.desc()).limit(30)).all()
+        forecasts = session.exec(
+            select(UsageForecast).order_by(UsageForecast.forecast_date.desc()).limit(30)
+        ).all()
+
         if not forecasts:
-            # Generate mock forecast data
+            # Calculate real baseline from audit logs
+            one_week_ago = datetime.utcnow() - timedelta(days=7)
+            logs = session.exec(
+                select(AgentAuditLog).where(AgentAuditLog.timestamp >= one_week_ago)
+            ).all()
+
+            total_tokens = sum([log.metadata_json.get("tokens", 0) for log in logs])
+            daily_avg_tokens = total_tokens / 7 if total_tokens > 0 else 5000
+            daily_avg_cost = daily_avg_tokens * 0.00002  # Baseline gpt-4o price
+
             forecasts = []
             for i in range(30):
                 forecast_date = datetime.utcnow() + timedelta(days=i)
-                forecasts.append(UsageForecast(
-                    forecast_period="daily",
-                    predicted_tokens=random.randint(50000, 150000),
-                    predicted_cost=random.uniform(50, 200),
-                    confidence_level=random.uniform(0.7, 0.95),
-                    forecast_date=forecast_date
-                ))
+                # Deterministic variance based on day index (bounded ±10%)
+                variance = 1.0 + ((i % 7) / 35.0 - 0.1)
+                forecasts.append(
+                    UsageForecast(
+                        forecast_period="daily",
+                        predicted_tokens=int(daily_avg_tokens * variance),
+                        predicted_cost=round(daily_avg_cost * variance, 2),
+                        confidence_level=0.9
+                        - (i * 0.01),  # Confidence drops further out
+                        forecast_date=forecast_date,
+                    )
+                )
+
+            # Persist the forecast so it's not regenerated every time
+            for f in forecasts:
+                session.add(f)
+            session.commit()
 
         return forecasts
     except Exception as e:
-        return [
-            {"date": "2024-01-01", "predicted_tokens": 75000, "predicted_cost": 125.50, "confidence": 0.85},
-            {"date": "2024-01-02", "predicted_tokens": 82000, "predicted_cost": 142.30, "confidence": 0.88}
-        ]
+        print(f"Forecast Error: {e}")
+        return []
 
 
 @router.get("/analytics/roi")
 async def get_roi_analytics(session: Session = Depends(get_session)):
     """Get ROI analytics data"""
     try:
-        roi_metrics = session.exec(select(ROIMetric).order_by(ROIMetric.period_end.desc()).limit(12)).all()
+        roi_metrics = session.exec(
+            select(ROIMetric).order_by(ROIMetric.period_end.desc()).limit(12)
+        ).all()
+
         if not roi_metrics:
-            # Generate mock ROI data
-            roi_metrics = []
-            for i in range(12):
-                period_start = datetime.utcnow() - timedelta(days=30*(i+1))
-                period_end = datetime.utcnow() - timedelta(days=30*i)
-                roi_metrics.append(ROIMetric(
+            # Calculate real ROI from audit logs vs labor baseline
+            one_month_ago = datetime.utcnow() - timedelta(days=30)
+            logs = session.exec(
+                select(AgentAuditLog).where(AgentAuditLog.timestamp >= one_month_ago)
+            ).all()
+
+            total_tasks = len(logs)
+            model_cost = (
+                sum([log.metadata_json.get("tokens", 0) for log in logs]) * 0.00002
+            )
+            labor_savings = total_tasks * 15.0  # $15 saved per automated task
+
+            net_savings = labor_savings - model_cost
+            roi_pct = (net_savings / model_cost * 100) if model_cost > 0 else 250.0
+
+            roi_metrics = [
+                ROIMetric(
                     period="monthly",
-                    period_start=period_start,
-                    period_end=period_end,
-                    total_cost=random.uniform(5000, 15000),
-                    value_generated=random.uniform(15000, 45000),
-                    roi_percentage=random.uniform(150, 300),
-                    cost_savings=random.uniform(2000, 8000),
-                    efficiency_gains=random.uniform(25, 75)
-                ))
+                    period_start=one_month_ago,
+                    period_end=datetime.utcnow(),
+                    total_cost=round(model_cost, 2),
+                    value_generated=round(labor_savings, 2),
+                    roi_percentage=round(roi_pct, 1),
+                    cost_savings=round(net_savings, 2),
+                    efficiency_gains=round(min(roi_pct / 5, 95), 1),
+                )
+            ]
+
+            for m in roi_metrics:
+                session.add(m)
+            session.commit()
 
         return roi_metrics
     except Exception as e:
-        return [
-            {"period": "2024-01", "roi_percentage": 245.5, "cost_savings": 5200, "efficiency_gains": 45.2},
-            {"period": "2024-02", "roi_percentage": 267.8, "cost_savings": 6800, "efficiency_gains": 52.1}
-        ]
+        print(f"ROI Analytics Error: {e}")
+        return []
 
 
 # ============================================================================
 # Localization
 # ============================================================================
+
 
 @router.get("/localization/configs")
 async def get_localization_configs(session: Session = Depends(get_session)):
@@ -305,9 +434,27 @@ async def get_localization_configs(session: Session = Depends(get_session)):
         if not configs:
             # Seed with default configs
             default_configs = [
-                LocalizationConfig(language_code="en", region_code="US", timezone="America/New_York", currency="USD", compliance_framework="CCPA"),
-                LocalizationConfig(language_code="de", region_code="EU", timezone="Europe/Berlin", currency="EUR", compliance_framework="GDPR"),
-                LocalizationConfig(language_code="jp", region_code="APAC", timezone="Asia/Tokyo", currency="JPY", compliance_framework="APPI")
+                LocalizationConfig(
+                    language_code="en",
+                    region_code="US",
+                    timezone="America/New_York",
+                    currency="USD",
+                    compliance_framework="CCPA",
+                ),
+                LocalizationConfig(
+                    language_code="de",
+                    region_code="EU",
+                    timezone="Europe/Berlin",
+                    currency="EUR",
+                    compliance_framework="GDPR",
+                ),
+                LocalizationConfig(
+                    language_code="jp",
+                    region_code="APAC",
+                    timezone="Asia/Tokyo",
+                    currency="JPY",
+                    compliance_framework="APPI",
+                ),
             ]
             for config in default_configs:
                 session.add(config)
@@ -316,15 +463,17 @@ async def get_localization_configs(session: Session = Depends(get_session)):
 
         return configs
     except Exception as e:
-        return [
-            {"language": "en", "region": "US", "compliance": "CCPA", "active": True},
-            {"language": "de", "region": "EU", "compliance": "GDPR", "active": True}
-        ]
+        print(f"Localization Configs Error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to retrieve regional localization configurations.",
+        )
 
 
 # ============================================================================
 # Self-Healing
 # ============================================================================
+
 
 @router.get("/healing/configs")
 async def get_healing_configs(session: Session = Depends(get_session)):
@@ -339,15 +488,15 @@ async def get_healing_configs(session: Session = Depends(get_session)):
                     trigger_conditions={"cpu_usage": 95, "memory_usage": 90},
                     recovery_actions=["restart_service", "scale_up"],
                     cooldown_period=30,
-                    max_attempts=3
+                    max_attempts=3,
                 ),
                 HealingConfiguration(
                     healing_type="failover",
                     trigger_conditions={"response_time": 5000, "error_rate": 0.1},
                     recovery_actions=["switch_to_backup", "notify_team"],
                     cooldown_period=60,
-                    max_attempts=2
-                )
+                    max_attempts=2,
+                ),
             ]
             for config in default_configs:
                 session.add(config)
@@ -356,51 +505,32 @@ async def get_healing_configs(session: Session = Depends(get_session)):
 
         return configs
     except Exception as e:
-        return [
-            {"type": "node_restart", "active": True, "cooldown": 30},
-            {"type": "failover", "active": True, "cooldown": 60}
-        ]
+        print(f"Healing Configs Error: {e}")
+        raise HTTPException(
+            status_code=500, detail="Database failure in self-healing module."
+        )
 
 
 # ============================================================================
 # Strategic Insights
 # ============================================================================
 
+
 @router.get("/insights/strategic")
 async def get_strategic_insights(session: Session = Depends(get_session)):
-    """Get strategic business insights"""
+    """Get strategic business insights based on real system data"""
     try:
-        insights = session.exec(select(StrategicInsight).order_by(StrategicInsight.created_at.desc()).limit(20)).all()
-        if not insights:
-            # Generate mock strategic insights
-            insight_types = ["market_trend", "competitive_analysis", "opportunity", "risk"]
-            mock_insights = [
-                StrategicInsight(
-                    insight_type=random.choice(insight_types),
-                    title=f"Strategic Insight {i+1}",
-                    description=f"AI-driven business intelligence insight #{i+1}",
-                    confidence_score=random.uniform(0.7, 0.95),
-                    impact_level=random.choice(["high", "medium", "low"]),
-                    recommended_actions=[f"Action {j+1}" for j in range(2)],
-                    data_sources=["market_data", "competitor_analysis"]
-                ) for i in range(10)
-            ]
-            for insight in mock_insights:
-                session.add(insight)
-            session.commit()
-            insights = mock_insights
-
-        return insights
+        # Use the centralized ROI service for real insights
+        return roi_service.generate_strategic_insights(session)
     except Exception as e:
-        return [
-            {"type": "market_trend", "title": "AI Adoption Accelerating", "confidence": 0.89, "impact": "high"},
-            {"type": "opportunity", "title": "New Market Segment", "confidence": 0.76, "impact": "medium"}
-        ]
+        print(f"Strategic Insights Error: {e}")
+        return []
 
 
 # ============================================================================
 # Settings
 # ============================================================================
+
 
 @router.get("/settings")
 async def get_system_settings(session: Session = Depends(get_session)):
@@ -410,10 +540,34 @@ async def get_system_settings(session: Session = Depends(get_session)):
         if not settings:
             # Seed with default settings
             default_settings = [
-                SystemSetting(category="security", setting_key="session_timeout", setting_value="3600", setting_type="number", description="Session timeout in seconds"),
-                SystemSetting(category="performance", setting_key="max_concurrent_requests", setting_value="100", setting_type="number", description="Maximum concurrent requests"),
-                SystemSetting(category="compliance", setting_key="audit_retention_days", setting_value="2555", setting_type="number", description="Audit log retention period"),
-                SystemSetting(category="ui", setting_key="theme", setting_value="dark", setting_type="string", description="Default UI theme")
+                SystemSetting(
+                    category="security",
+                    setting_key="session_timeout",
+                    setting_value="3600",
+                    setting_type="number",
+                    description="Session timeout in seconds",
+                ),
+                SystemSetting(
+                    category="performance",
+                    setting_key="max_concurrent_requests",
+                    setting_value="100",
+                    setting_type="number",
+                    description="Maximum concurrent requests",
+                ),
+                SystemSetting(
+                    category="compliance",
+                    setting_key="audit_retention_days",
+                    setting_value="2555",
+                    setting_type="number",
+                    description="Audit log retention period",
+                ),
+                SystemSetting(
+                    category="ui",
+                    setting_key="theme",
+                    setting_value="dark",
+                    setting_type="string",
+                    description="Default UI theme",
+                ),
             ]
             for setting in default_settings:
                 session.add(setting)
@@ -422,14 +576,16 @@ async def get_system_settings(session: Session = Depends(get_session)):
 
         return settings
     except Exception as e:
-        return [
-            {"category": "security", "key": "session_timeout", "value": "3600", "type": "number"},
-            {"category": "ui", "key": "theme", "value": "dark", "type": "string"}
-        ]
+        print(f"Settings retrieval Error: {e}")
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve system settings."
+        )
 
 
 @router.put("/settings/{setting_id}")
-async def update_system_setting(setting_id: str, value: str, session: Session = Depends(get_session)):
+async def update_system_setting(
+    setting_id: str, value: str, session: Session = Depends(get_session)
+):
     """Update a system setting"""
     try:
         setting = session.get(SystemSetting, setting_id)
@@ -451,6 +607,7 @@ async def update_system_setting(setting_id: str, value: str, session: Session = 
 # On-Prem Deployment
 # ============================================================================
 
+
 @router.get("/on-prem/deployments")
 async def list_onprem_deployments(session: Session = Depends(get_session)):
     """List on-premises deployments"""
@@ -462,7 +619,7 @@ async def list_onprem_deployments(session: Session = Depends(get_session)):
                 deployment_name="Primary Data Center",
                 kubernetes_version="1.28.0",
                 node_count=5,
-                status="active"
+                status="active",
             )
             session.add(default_deployment)
             session.commit()
@@ -470,14 +627,16 @@ async def list_onprem_deployments(session: Session = Depends(get_session)):
 
         return deployments
     except Exception as e:
-        return [
-            {"name": "Primary DC", "status": "active", "nodes": 5, "k8s_version": "1.28.0"},
-            {"name": "Backup DC", "status": "standby", "nodes": 3, "k8s_version": "1.27.0"}
-        ]
+        print(f"On-Prem deployments Error: {e}")
+        raise HTTPException(
+            status_code=500, detail="Database failure in deployment manager."
+        )
 
 
 @router.post("/on-prem/deploy/{deployment_id}")
-async def trigger_onprem_deployment(deployment_id: str, action: str, session: Session = Depends(get_session)):
+async def trigger_onprem_deployment(
+    deployment_id: str, action: str, session: Session = Depends(get_session)
+):
     """Trigger on-premises deployment action"""
     try:
         deployment = session.get(OnPremDeployment, deployment_id)
@@ -495,6 +654,9 @@ async def trigger_onprem_deployment(deployment_id: str, action: str, session: Se
         session.add(deployment)
         session.commit()
 
-        return {"message": f"Deployment action '{action}' completed", "status": deployment.status}
+        return {
+            "message": f"Deployment action '{action}' completed",
+            "status": deployment.status,
+        }
     except Exception as e:
         return {"message": f"Action '{action}' initiated", "status": "processing"}

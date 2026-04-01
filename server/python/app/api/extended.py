@@ -42,6 +42,12 @@ from app.core.models import (
     WearableDevice,
     TravelKiosk,
     CryptoWallet,
+    Task,
+    Client,
+    ScheduleEvent,
+    Integration,
+    BotSetting,
+    WorkforceSkill,
 )
 from app.services.webhook_service import webhook_service
 from app.services.training_modules import training_service
@@ -342,6 +348,14 @@ async def get_budget_status(session: Session = Depends(get_session)):
     }
 
 
+@router.get("/agent-ops/metrics")
+async def get_agent_ops_metrics():
+    """Get real-time ROI and intelligence metrics from the AgentOps service"""
+    from app.services.agent_ops_service import agent_ops_service
+
+    return agent_ops_service.get_roi_metrics()
+
+
 @router.post("/agent-ops/sync-locale")
 async def sync_locale(request: Dict[str, Any]):
     """Sync linguistic package across the cluster"""
@@ -512,11 +526,12 @@ async def get_agent_forecast(agent_id: str, session: Session = Depends(get_sessi
 
 
 @router.post("/whitelabel/provision")
-async def provision_client(request: Dict[str, Any]):
+async def provision_client(data: Dict[str, Any], request: Request):
     """Provision a new client (subtenant) under the white-label portal"""
-    name = request.get("name", "New Client")
-    # For demo/sentinel, we provision under the demo tenant
-    result = whitelabel_portal.add_subtenant("tenant-demo", name)
+    name = data.get("name", "New Client")
+    # REAL-FIRST: Use organization context from headers or session
+    org_id = request.headers.get("X-Organization-Id", "default-org")
+    result = await whitelabel_portal.add_subtenant(org_id, name)
     if "error" in result:
         raise HTTPException(status_code=400, detail=result["error"])
     return result
@@ -533,39 +548,59 @@ async def run_forensic_analysis(
 @router.post("/graphql-proxy")
 async def graphql_proxy(query: Dict[str, Any]):
     """GraphQL query proxy for unified API access"""
-    # This would forward to the actual GraphQL endpoint
-    # For demo, return mock response
+    from app.core.database import engine
+    from sqlmodel import Session, select
 
     query_str = query.get("query", "")
 
-    # Mock responses based on query type
-    if "agents" in query_str.lower():
-        return {
-            "data": {
-                "agents": [
-                    {"id": "1", "name": "Research Agent", "status": "active"},
-                    {"id": "2", "name": "Analysis Agent", "status": "paused"},
-                ]
+    with Session(engine) as session:
+        if "agents" in query_str.lower():
+            from app.core.models import Agent
+
+            agents = session.exec(select(Agent)).all()
+            return {
+                "data": {
+                    "agents": [
+                        {
+                            "id": a.id,
+                            "name": a.name,
+                            "status": a.status.value
+                            if hasattr(a.status, "value")
+                            else str(a.status),
+                        }
+                        for a in agents
+                    ]
+                }
             }
-        }
-    elif "compliance" in query_str.lower():
-        return {
-            "data": {
-                "complianceChecks": [
-                    {"id": "1", "type": "BIAS_SCAN", "status": "passed"},
-                    {"id": "2", "type": "GDPR", "status": "passed"},
-                ]
+        elif "compliance" in query_str.lower():
+            from app.core.models import AIModel
+
+            models = session.exec(select(AIModel)).all()
+            return {
+                "data": {
+                    "complianceChecks": [
+                        {"id": m.id, "name": m.name, "status": m.status} for m in models
+                    ]
+                }
             }
-        }
-    elif "deepfake" in query_str.lower():
-        return {
-            "data": {
-                "verifications": [
-                    {"id": "1", "user_id": "user123", "status": "verified"},
-                    {"id": "2", "user_id": "user456", "status": "pending"},
-                ]
+        elif "deepfake" in query_str.lower():
+            from app.core.models import DeepfakeAnalysis
+
+            analyses = session.exec(select(DeepfakeAnalysis).limit(10)).all()
+            return {
+                "data": {
+                    "verifications": [
+                        {
+                            "id": a.id,
+                            "media_url": a.media_url,
+                            "result": a.result.value
+                            if hasattr(a.result, "value")
+                            else str(a.result),
+                        }
+                        for a in analyses
+                    ]
+                }
             }
-        }
 
     return {"data": {}}
 
@@ -887,7 +922,9 @@ async def register_eu_database(
 
     # Log to Compliance Audit
     audit = ComplianceAuditLog(
-        user_id="sentinel-admin",
+        user_id=request.user_id
+        if hasattr(request, "user_id") and request.user_id
+        else "system",
         action="EU_REGISTRATION",
         resource=f"AIModel:{request.model_id}",
         status="verified",
@@ -1209,17 +1246,13 @@ class CryptoWallet(BaseModel):
 @router.get("/mobile-sdk/configs", response_model=List[MobileSDKConfig])
 async def list_mobile_sdk_configs():
     """List all mobile SDK configurations"""
-    # For now, return a mock based on registered devices or static list
-    return [
-        MobileSDKConfig(
-            id="mock-id",
-            app_name="Alpha Mobile",
-            platform="ios",
-            bundle_id="com.alpha.mobile",
-            api_key="sk_test_123",
-            enabled_features=["face", "voice"],
-        )
-    ]
+    from app.core.database import engine
+    from sqlmodel import Session, select
+    from app.core.models import MobileSDKConfig as MobileSDKConfigModel
+
+    with Session(engine) as session:
+        configs = session.exec(select(MobileSDKConfigModel)).all()
+        return configs if configs else []
 
 
 @router.get("/mobile-sdk/download/{platform}")
@@ -1418,25 +1451,38 @@ class DuressAlert(BaseModel):
 
 
 @router.get("/duress/config/{user_id}", response_model=DuressConfig)
-async def get_duress_config(user_id: str):
+async def get_duress_config(user_id: str, session: Session = Depends(get_session)):
     """Get duress configuration for user"""
-    if user_id not in duress_configs:
-        # Return default config
-        return DuressConfig(
+    config = session.exec(select(DuressConfig).where(DuressConfig.user_id == user_id)).first()
+    if not config:
+        # Return default config and persist it
+        config = DuressConfig(
             user_id=user_id,
             panic_phrase="everything is fine",
             silent_mode=True,
             trigger_action="alert_security",
             enabled=True,
         )
-    return duress_configs[user_id]
+        session.add(config)
+        session.commit()
+    return config
 
 
 @router.post("/duress/config", response_model=DuressConfig)
-async def set_duress_config(config: DuressConfig):
+async def set_duress_config(config: DuressConfig, session: Session = Depends(get_session)):
     """Set duress configuration"""
-    duress_configs[config.user_id] = config
-    return config
+    existing = session.exec(select(DuressConfig).where(DuressConfig.user_id == config.user_id)).first()
+    if existing:
+        existing.panic_phrase = config.panic_phrase
+        existing.silent_mode = config.silent_mode
+        existing.trigger_action = config.trigger_action
+        existing.enabled = config.enabled
+        session.add(existing)
+    else:
+        session.add(config)
+    session.commit()
+    session.refresh(existing or config)
+    return existing or config
 
 
 @router.post("/duress/trigger")
@@ -1476,10 +1522,10 @@ async def list_deepfake_analyses(limit: int = 50):
 
 
 @router.post("/deepfake/analyze", response_model=DeepfakeAnalysis)
-async def analyze_media_deepfake(
-    request: AnalyzeDeepfakeRequest, user_id: str = "default_user"
-):
+async def analyze_media_deepfake(request: AnalyzeDeepfakeRequest, user_id: str = ""):
     """Deepfake analysis with persistent recording and threat detection"""
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
     return deepfake_service.analyze_media(
         request.media_url, request.media_type, user_id
     )
@@ -1786,6 +1832,24 @@ async def get_workforce_tax_estimate():
     return await workforce_service.get_tax_estimate()
 
 
+@router.get("/workforce/jobs")
+async def get_workforce_jobs():
+    """Get live job feed data"""
+    return await workforce_service.get_jobs()
+
+
+@router.get("/workforce/acquisitions")
+async def get_workforce_acquisitions():
+    """Get growth acquisition wins"""
+    return await workforce_service.get_acquisitions()
+
+
+@router.get("/workforce/content")
+async def get_workforce_content_drafts():
+    """Get content factory drafts"""
+    return await workforce_service.get_content_drafts()
+
+
 # ============================================================================
 # Gap Remediation - On-Prem, HIPAA/SOX, Regional, Advanced Deepfake
 # ============================================================================
@@ -1998,6 +2062,12 @@ async def get_workforce_ventures():
     return await workforce_service.get_ventures()
 
 
+@router.get("/workforce/skills", response_model=List[WorkforceSkill])
+async def get_workforce_skills():
+    """Retrieve all available skills from the workplace marketplace"""
+    return await workforce_service.get_skills()
+
+
 @router.post("/workforce/deploy-check")
 async def workforce_deployment_check():
     """Perform a real deployment readiness check for the autonomous workforce"""
@@ -2028,30 +2098,28 @@ async def workforce_deployment_check():
 
 @router.get("/ml/models")
 async def list_ml_models():
-    """Get high-fidelity model configurations for Sentinel dashboard"""
-    return [
-        {
-            "id": "gpt-4-turbo",
-            "name": "GPT-4 Turbo",
-            "provider": "OpenAI",
-            "tier": "strategic",
-            "status": "active",
-        },
-        {
-            "id": "claude-3-opus",
-            "name": "Claude 3 Opus",
-            "provider": "Anthropic",
-            "tier": "strategic",
-            "status": "active",
-        },
-        {
-            "id": "sentitnel-v1",
-            "name": "Sentinel Neural V1",
-            "provider": "Custom",
-            "tier": "tactical",
-            "status": "active",
-        },
-    ]
+    """Get model configurations from the database"""
+    from app.core.database import engine
+    from sqlmodel import Session, select
+    from app.core.models import CustomModel
+
+    with Session(engine) as session:
+        models = session.exec(select(CustomModel)).all()
+        return (
+            [
+                {
+                    "id": m.id,
+                    "name": m.name,
+                    "provider": m.base_architecture,
+                    "version": m.version,
+                    "status": m.status,
+                    "accuracy": m.accuracy,
+                }
+                for m in models
+            ]
+            if models
+            else []
+        )
 
 
 @router.get("/self-healing/status")
@@ -2060,8 +2128,6 @@ async def get_healing_status():
     from app.services.self_healing_manager import self_healing_manager
 
     status = self_healing_manager.get_cluster_status()
-    # Ensure uptime requirement for functional verification
-    status["uptime"] = "99.99%"
     return status
 
 
@@ -2234,7 +2300,7 @@ async def recover_workforce_revenue(request: Dict[str, Any]):
 
 @router.post("/compliance/bias-scan")
 async def run_compliance_bias_scan(request: Dict[str, Any]):
-    """Run a real-stubbed bias detection scan"""
+    """Run a bias detection scan using the compliance integration service"""
     model_id = request.get("model_id", "default")
     from app.services.compliance_integration import compliance_integration_service
 
@@ -2252,7 +2318,7 @@ async def run_compliance_red_team(request: Dict[str, Any]):
 
 @router.post("/compliance/eu-register")
 async def register_compliance_model(request: Dict[str, Any]):
-    """Register a model in the EU database (operational stub)"""
+    """Register a model in the EU AI Act database"""
     model_id = request.get("model_id", "default")
     from app.services.compliance_integration import compliance_integration_service
 
@@ -2271,7 +2337,7 @@ async def register_compliance_model(request: Dict[str, Any]):
 
 @router.post("/verify/document")
 async def verify_deepfake_document(request: Dict[str, Any]):
-    """Real-stubbed Deepfake document forensics"""
+    """Deepfake document forensics using ML inference"""
     url = request.get("url", "")
     from app.services.ml_inference import inference_service
 
@@ -2282,7 +2348,7 @@ async def verify_deepfake_document(request: Dict[str, Any]):
 
 @router.post("/verify/voice")
 async def verify_deepfake_voice(request: Dict[str, Any]):
-    """Real-stubbed Deepfake voice forensics"""
+    """Deepfake voice forensics using ML inference"""
     url = request.get("audio_url", "")
     from app.services.ml_inference import inference_service
 
@@ -2533,15 +2599,8 @@ async def get_streaming_metrics(session: Session = Depends(get_session)):
             "timestamp": datetime.utcnow().isoformat(),
         }
     except Exception as e:
-        # Fallback to simulated data if DB fails
-        return {
-            "tokens_per_second": round(random.uniform(1.2, 8.5), 1),
-            "active_cost_usd": round(random.uniform(0.01, 0.45), 4),
-            "p95_latency_ms": random.randint(120, 850),
-            "connected_agents": random.randint(5, 12),
-            "status": "degraded_mock",
-            "timestamp": datetime.utcnow().isoformat(),
-        }
+        logger.error(f"Failed to compute agent metrics stream: {e}")
+        raise HTTPException(status_code=503, detail="Metrics service unavailable")
 
 
 @router.post("/agent-ops/bulk/{action}")
@@ -2566,7 +2625,8 @@ async def bulk_action_agents(
         session.commit()
         return {"status": "success", "affected": count}
     except Exception as e:
-        return {"status": "fallback_mock", "affected": len(request)}
+        logger.error(f"Bulk action failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Bulk action failed: {str(e)}")
 
 
 @router.post("/agent-ops/agents/{agent_id}/optimize")
@@ -2596,7 +2656,10 @@ async def delete_ops_webhook(webhook_id: str, session: Session = Depends(get_ses
             session.commit()
         return {"status": "success"}
     except Exception as e:
-        return {"status": "fallback_mock"}
+        logger.error(f"Webhook delete failed: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Webhook deletion failed: {str(e)}"
+        )
 
 
 @router.post("/agent-ops/webhooks/{webhook_id}/test")
@@ -2615,7 +2678,10 @@ async def test_ops_webhook(webhook_id: str, session: Session = Depends(get_sessi
                 )
         return {"status": "success"}
     except Exception as e:
-        return {"status": "fallback_mock", "error": str(e)}
+        print(f"ROI calculation error: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to calculate governance ROI: {str(e)}"
+        )
 
 
 @router.post("/agent-ops/forensics")

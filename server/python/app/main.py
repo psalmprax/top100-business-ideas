@@ -10,13 +10,20 @@ import logging
 import sys
 from unittest.mock import MagicMock
 
-# Mock heavy/missing ML dependencies to unblock functional verification
-# This allows the Sentinel dashboard to load even if ML packages are installing
+# Real-First Hardening: Dependency Inventory
+# Instead of masking missing libraries with MagicMock, we inventory them for the Vigilance dashboard.
+DEPENDENCY_STATUS = {}
 for mod in ["numpy", "torch", "transformers", "cv2", "PIL"]:
-    if mod not in sys.modules:
-        sys.modules[mod] = MagicMock()
+    try:
+        __import__(mod)
+        DEPENDENCY_STATUS[mod] = "INSTALLED"
+    except ImportError:
+        DEPENDENCY_STATUS[mod] = "MISSING"
+        # We only mock if strictly necessary for the server to BOOT, 
+        # but we log the technical debt.
+        logger.warning(f"Technical Debt Detected: AI/ML library '{mod}' is MISSION CRITICAL but MISSING.")
 
-from app.api import agents, compliance, deepfake, health, auth_verify, extended, enterprise, governance, venture, security, alerts
+from app.api import agents, compliance, deepfake, health, auth_verify, extended, enterprise, governance, venture, security, alerts, intelligence
 from app.core.config import settings
 from app.services.billing_service import billing_service
 
@@ -86,6 +93,7 @@ app.include_router(governance.router, prefix="/governance", tags=["Governance & 
 app.include_router(venture.router, prefix="/venture", tags=["Venture"])
 app.include_router(security.router, prefix="/security", tags=["Security"])
 app.include_router(alerts.router, prefix="/agents", tags=["Alerts & Rules"])
+app.include_router(intelligence.router, prefix="/intelligence", tags=["Intelligence"])
 
 
 from app.core.database import init_db

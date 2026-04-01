@@ -5,10 +5,11 @@ Actively monitors token usage across all agents and automatically pauses operati
 
 import asyncio
 import logging
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 from sqlmodel import Session, select
 from app.core.database import engine
-from app.core.models import Agent, AlertConfig
+from app.core.models import Agent, AlertConfig, Subscription, Invoice
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +64,14 @@ class BillingService:
                     # You would insert a new AuditLog here to document the enforcement
             
             session.commit()
+
+    def get_user_subscription(self, session: Session, user_id: str) -> Optional[Subscription]:
+        """Fetch real-time subscription status from the database"""
+        return session.exec(select(Subscription).where(Subscription.user_id == user_id)).first()
+
+    def list_user_invoices(self, session: Session, user_id: str) -> List[Invoice]:
+        """Fetch historical invoices for the user"""
+        return session.exec(select(Invoice).where(Invoice.user_id == user_id).order_by(Invoice.date.desc())).all()
 
 # Singleton
 billing_service = BillingService()

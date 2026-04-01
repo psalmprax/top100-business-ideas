@@ -555,3 +555,15 @@ type Claim struct {
 	CreatedAt     time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at" db:"updated_at"`
 }
+
+// RevenueRecovery represents a recovered amount from the workforce engine
+type RevenueRecovery struct {
+	ID              string    `json:"id" db:"id"`
+	UserID          string    `json:"user_id" db:"user_id"`
+	Status          string    `json:"status" db:"status"` // discovered, processed, recovered
+	RecoveredAmount string    `json:"recovered_amount" db:"recovered_amount"`
+	ActionsTaken    []string  `json:"actions_taken" db:"actions_taken"`
+	ConfidenceScore float64   `json:"confidence_score" db:"confidence_score"`
+	InteractionID   string    `json:"interaction_id" db:"interaction_id"`
+	Timestamp       time.Time `json:"timestamp" db:"timestamp"`
+}

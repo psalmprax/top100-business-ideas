@@ -16,10 +16,8 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
-import { UserMenu } from "@/components/UserMenu";
 import {
   extendedApi,
-  deepfakeApi,
   type MobileSDKStatus,
   type WearableDevice,
   type TravelKioskStatus,
@@ -246,9 +244,7 @@ function MetricCard({
           )}
         </div>
         <div className="mt-3">
-          <div className="text-stat text-white tabular-nums mb-1">
-            {value}
-          </div>
+          <div className="text-stat text-white tabular-nums mb-1">{value}</div>
           <div className="text-stat-label mt-0.5">{title}</div>
         </div>
       </CardContent>
@@ -274,9 +270,7 @@ function MediaTypeCard({
           <div className={`p-2 rounded-lg ${color}`}>
             <Icon className="w-5 h-5" />
           </div>
-          <span className="text-stat text-white tabular-nums">
-            {count}
-          </span>
+          <span className="text-stat text-white tabular-nums">{count}</span>
         </div>
         <p className="text-feature mt-2 capitalize">{type}s analyzed</p>
       </CardContent>
@@ -432,7 +426,7 @@ export default function AlphaDeepfakeDefense() {
             extendedApi.deepfake.listAnalyses(),
             extendedApi.deepfake.listThreats(),
             extendedApi.deepfake.listModels(),
-            extendedApi.deepfake.getDuressConfig(user?.id || "default_user"),
+            extendedApi.deepfake.getDuressConfig(user?.id || ""),
           ]);
         setStats(statsRes);
         if (analysesRes)
@@ -570,7 +564,7 @@ export default function AlphaDeepfakeDefense() {
     const persistDuress = async () => {
       try {
         await extendedApi.deepfake.updateDuressConfig({
-          user_id: user?.id || "default_user",
+          user_id: user?.id || "",
           panic_phrase: "alaska",
           silent_mode: true,
           trigger_action: "alert_security",
@@ -783,11 +777,7 @@ export default function AlphaDeepfakeDefense() {
       setIsUploading(true);
       setUploadProgress(0);
 
-      const formData = new FormData();
-      formData.append("dataset_name", `Dataset_${Date.now()}`);
-      // In a real app: formData.append('file', fileInput.files[0]);
-
-      const response = await deepfakeApi.train("Custom_Dataset");
+      const response = await extendedApi.deepfake.train("Custom_Dataset");
 
       if (!response.ok) throw new Error("Upload failed");
 
@@ -822,7 +812,7 @@ export default function AlphaDeepfakeDefense() {
   const handleRequestChallenge = async () => {
     try {
       setAuthStatus("challenging");
-      const challenge = await deepfakeApi.challenge(user?.id || "demo_user");
+      const challenge = await extendedApi.deepfake.challenge(user?.id || "demo_user");
       setCurrentChallenge(challenge);
       toast.info(
         "Hardware challenge received. Please sign with your biometric key."
@@ -841,7 +831,7 @@ export default function AlphaDeepfakeDefense() {
       const hardwareId = currentChallenge.id
         ? `HW_${currentChallenge.id.replace(/[^a-zA-Z0-9]/g, "").substring(0, 16)}`
         : `HW_${crypto.randomUUID?.() || Date.now().toString(36)}`;
-      const result = await deepfakeApi.verify(
+      const result = await extendedApi.deepfake.verify(
         currentChallenge.id,
         signature,
         hardwareId
@@ -877,7 +867,9 @@ export default function AlphaDeepfakeDefense() {
                     <Eye className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-product-title text-xl">Deepfake <span>Defense</span></h1>
+                    <h1 className="text-product-title text-xl">
+                      Deepfake <span>Defense</span>
+                    </h1>
                     <p className="text-caption-premium text-muted-foreground/60 leading-none mt-0.5">
                       LivenessLink Protection
                     </p>
@@ -4368,7 +4360,7 @@ export default function AlphaDeepfakeDefense() {
                       <div>
                         <CardTitle className="flex items-center gap-2">
                           <Smartphone className="w-6 h-6 text-blue-500" />
-                          Mobile SDK Functional Simulator
+                          Mobile SDK Deployment Status
                         </CardTitle>
                         <CardDescription>
                           Test mobile document capture and deepfake liveness
@@ -4509,9 +4501,11 @@ export default function AlphaDeepfakeDefense() {
                       name: "Face-Swap Detector v3",
                       type: "image",
                     });
-                    toast.success("Detector added!");
+                    toast.success("Detector successfully deployed to cluster.");
                   } catch (e) {
-                    toast.success("Detector added (Simulated)!");
+                    toast.error(
+                      "Failed to deploy detector. Check system logs."
+                    );
                   }
                   setShowAddDetectorDialog(false);
                 }}
@@ -4555,9 +4549,9 @@ export default function AlphaDeepfakeDefense() {
                     await extendedApi.advancedDeepfake.runTest({
                       type: "adversarial",
                     });
-                    toast.success("Detector test initiated...");
+                    toast.success("Adversarial test suite initiated.");
                   } catch (e) {
-                    toast.success("Detector test initiated (Simulated)...");
+                    toast.error("Test engine unavailable.");
                   }
                   setShowTestDetectorDialog(false);
                 }}
@@ -4618,9 +4612,9 @@ export default function AlphaDeepfakeDefense() {
                     await extendedApi.agentOps.saveRetentionPolicy({
                       livenessConfig: "high",
                     });
-                    toast.success("Liveness configuration saved!");
+                    toast.success("Liveness parameters synchronized.");
                   } catch (e) {
-                    toast.success("Liveness configuration saved (Simulated)!");
+                    toast.error("Failed to sync liveness configuration.");
                   }
                   setShowConfigureLivenessDialog(false);
                 }}

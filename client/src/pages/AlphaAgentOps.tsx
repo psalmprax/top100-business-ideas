@@ -279,7 +279,7 @@ interface BudgetRule {
   enabled: boolean;
 }
 
-type CategoryType = "core" | "ops" | "gov" | "advanced";
+type CategoryType = "core" | "ops" | "gov" | "advanced" | "intelligence";
 
 interface ComplianceDashboardData {
   overall_score: number;
@@ -739,6 +739,12 @@ export default function AlphaAgentOps() {
   const { isAuthenticated, user } = useAuth();
   const isDemo = !isAuthenticated;
   const [activeTab, setActiveTab] = useState("overview");
+  const [researchTopic, setResearchTopic] = useState("");
+  const [researchResult, setResearchResult] = useState<any>(null);
+  const [isResearching, setIsResearching] = useState(false);
+  const [strategyPrompt, setStrategyPrompt] = useState("");
+  const [strategyResult, setStrategyResult] = useState<any>(null);
+  const [isGeneratingStrategy, setIsGeneratingStrategy] = useState(false);
 
   // Hardened Logic Handlers (UC12, UC13, UC14)
   const [isProvisioningClient, setIsProvisioningClient] = useState(false);
@@ -752,10 +758,8 @@ export default function AlphaAgentOps() {
         ...data,
       });
       toast.success("Enterprise Client Space provisioned successfully.");
-    } catch (err) {
-      toast.error(
-        "Failed to provision client space. Retrying with simulation..."
-      );
+    } catch (err: any) {
+      toast.error(`Provisioning failed: ${err.message || "Endpoint unreachable"}`);
     } finally {
       setIsProvisioningClient(false);
     }
@@ -765,10 +769,10 @@ export default function AlphaAgentOps() {
   const handleSyncNow = async () => {
     setIsSyncingSSO(true);
     try {
-      await apiRequest("/api/v1/sso/sync", { method: "POST", strict: true });
+      await extendedApi.governance.partners.sync("sso");
       toast.success("User synchronization event triggered.");
-    } catch (err) {
-      toast.info("Backend sync unavailable. Simulating local user refresh.");
+    } catch (err: any) {
+      toast.error(`Sync failed: ${err.message || "SSO service unavailable"}`);
     } finally {
       setIsSyncingSSO(false);
     }
@@ -782,6 +786,8 @@ export default function AlphaAgentOps() {
       await extendedApi.sentinel.updateHealingConfig({
         [type]: val,
       });
+      // After toggling, fetch the latest config to ensure UI sync
+      fetchGovernanceData();
       toast.success(
         `${type.replace("_", " ")} updated for autonomous governance.`
       );
@@ -817,6 +823,7 @@ export default function AlphaAgentOps() {
     { id: "ops", label: "Operations", icon: Server },
     { id: "gov", label: "Governance", icon: ShieldCheck },
     { id: "advanced", label: "Advanced", icon: Zap },
+    { id: "intelligence", label: "Intelligence", icon: Brain },
   ];
 
   const categoryTabs: Record<string, string[]> = {
@@ -831,6 +838,7 @@ export default function AlphaAgentOps() {
       "venture",
       "models",
     ],
+    intelligence: ["paperclip", "hermes"],
   };
 
   const [agents, setAgents] = useState<DashboardAgent[]>([]);
@@ -843,6 +851,8 @@ export default function AlphaAgentOps() {
   >("all");
   const [clusterNodes, setClusterNodes] = useState<any[]>([]);
   const [auditLog, setAuditLog] = useState<AuditEntry[]>([]);
+  const [auditSearchQuery, setAuditSearchQuery] = useState("");
+  const [auditFilterOutcome, setAuditFilterOutcome] = useState("all");
   const [alertConfigs, setAlertConfigs] = useState<AlertConfig[]>([]);
   const [budgetRules, setBudgetRules] = useState<BudgetRule[]>([]);
   const [showAlertDialog, setShowAlertDialog] = useState(false);
@@ -1670,22 +1680,29 @@ export default function AlphaAgentOps() {
         vigilanceRes,
         roiRes,
         healingConfigRes,
+        forecastRes,
       ] = await Promise.all([
         agentsApi.list(),
-        extendedApi.agentOps.getAuditLogs(),
+        extendedApi.agentOps.getAuditLogs({
+          search: auditSearchQuery,
+          outcome:
+            auditFilterOutcome === "all" ? undefined : auditFilterOutcome,
+        }),
         extendedApi.governance.budget.listRules(),
         extendedApi.agentOps.listWebhooks(),
         extendedApi.agentOps.getCloudHealth(),
-        extendedApi.selfHealing.getHealingStatus(),
+        extendedApi.sentinel.getHealingStatus(),
         extendedApi.agentOps.listLLMConfigs(),
         extendedApi.alerts.list(),
         extendedApi.agentOps.getVigilanceAlerts(),
         extendedApi.governance.analytics.getROI(),
         extendedApi.governance.healing.getConfigs(),
+        extendedApi.governance.forecast.getUsage(),
       ]);
 
       if (Array.isArray(roiRes)) setRoiMetrics(roiRes);
       if (Array.isArray(healingConfigRes)) setHealingConfigs(healingConfigRes);
+      if (Array.isArray(forecastRes)) setUsageForecasts(forecastRes);
 
       // Transform backend Agent[] to frontend DashboardAgent[]
       const transformedAgents: DashboardAgent[] = (
@@ -1770,9 +1787,7 @@ export default function AlphaAgentOps() {
       if (Array.isArray(vigilanceRes)) {
         setVigilanceAlerts(vigilanceRes);
       }
-      // Cache for demo offline mode
-      storage.set("budget_rules", rulesRes);
-      storage.set("alert_configs", alertsRes);
+      // REAL-FIRST: Storage is only for session persistence, not offline mocks
       // Fetch SSO config if authenticated
       if (isAuthenticated) {
         extendedApi.sso
@@ -2087,6 +2102,40 @@ export default function AlphaAgentOps() {
     a.click();
     window.URL.revokeObjectURL(url);
     toast.success("Enterprise data export complete");
+  };
+
+  const handlePaperclipResearch = async () => {
+    if (!researchTopic) return;
+    setIsResearching(true);
+    try {
+      const response = await fetch(`/api/v1/agent-ops/intelligence/research?topic=${encodeURIComponent(researchTopic)}`);
+      const data = await response.json();
+      setResearchResult(data);
+      toast.success("Paperclip research complete!");
+    } catch (error) {
+      toast.error("Research failed");
+    } finally {
+      setIsResearching(false);
+    }
+  };
+
+  const handleHermesStrategy = async () => {
+    if (!strategyPrompt) return;
+    setIsGeneratingStrategy(true);
+    try {
+      const response = await fetch("/api/v1/agent-ops/intelligence/strategy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: strategyPrompt }),
+      });
+      const data = await response.json();
+      setStrategyResult(data);
+      toast.success("Hermes strategy generated!");
+    } catch (error) {
+      toast.error("Strategy generation failed");
+    } finally {
+      setIsGeneratingStrategy(false);
+    }
   };
 
   const handleCreateAgent = async () => {
@@ -2493,6 +2542,27 @@ export default function AlphaAgentOps() {
                 </>
               )}
 
+              {activeCategory === "intelligence" && (
+                <>
+                  <TabsTrigger
+                    value="paperclip"
+                    data-testid="paperclip-tab"
+                    className="bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none px-2 pb-2 h-auto"
+                  >
+                    <Search className="w-4 h-4 mr-2" />
+                    Market Intel (Paperclip)
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="hermes"
+                    data-testid="hermes-tab"
+                    className="bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none px-2 pb-2 h-auto"
+                  >
+                    <Milestone className="w-4 h-4 mr-2" />
+                    Strategy Engine (Hermes)
+                  </TabsTrigger>
+                </>
+              )}
+
               {activeCategory === "ops" && (
                 <>
                   <TabsTrigger
@@ -2586,6 +2656,168 @@ export default function AlphaAgentOps() {
             </TabsList>
 
             {/* Overview Tab Content */}
+            <TabsContent value="paperclip" className="space-y-4">
+              <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Search className="w-5 h-5 text-primary" />
+                    Market Intelligence (Paperclip)
+                  </CardTitle>
+                  <CardDescription>
+                    Automated competitor scanning and market trend analysis.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex gap-2">
+                    <Input 
+                      placeholder="Enter market topic (e.g., 'Decentralized Finance')" 
+                      value={researchTopic}
+                      onChange={(e) => setResearchTopic(e.target.value)}
+                      className="bg-background/50"
+                    />
+                    <Button onClick={handlePaperclipResearch} disabled={isResearching}>
+                      {isResearching ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Zap className="w-4 h-4 mr-2" />}
+                      Run Research
+                    </Button>
+                  </div>
+
+                  {researchResult && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                      <Card className="bg-muted/30 border-primary/10">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm font-bold flex items-center gap-2">
+                            <Users className="w-4 h-4" />
+                            Scanned Competitors
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-3">
+                            {researchResult.competitors.map((comp: any, i: number) => (
+                              <div key={i} className="flex justify-between items-center p-2 rounded bg-background/40 border border-border/50">
+                                <span className="font-medium">{comp.name}</span>
+                                <Badge variant={comp.status === "dominant" ? "default" : "outline"}>{comp.market_share}</Badge>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <Card className="bg-muted/30 border-primary/10">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm font-bold flex items-center gap-2">
+                            <Target className="w-4 h-4" />
+                            SWOT Analysis
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-2 gap-2 text-[10px]">
+                            <div className="p-2 bg-green-500/5 border border-green-500/20 rounded">
+                              <div className="font-bold text-green-500 mb-1 uppercase tracking-tighter">Strengths</div>
+                              <ul className="list-disc pl-3 space-y-1">
+                                {researchResult.swot.strengths.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                              </ul>
+                            </div>
+                            <div className="p-2 bg-red-500/5 border border-red-500/20 rounded">
+                              <div className="font-bold text-red-500 mb-1 uppercase tracking-tighter">Weaknesses</div>
+                              <ul className="list-disc pl-3 space-y-1">
+                                {researchResult.swot.weaknesses.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                              </ul>
+                            </div>
+                            <div className="p-2 bg-blue-500/5 border border-blue-500/20 rounded">
+                              <div className="font-bold text-blue-500 mb-1 uppercase tracking-tighter">Opportunities</div>
+                              <ul className="list-disc pl-3 space-y-1">
+                                {researchResult.swot.opportunities.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                              </ul>
+                            </div>
+                            <div className="p-2 bg-yellow-500/5 border border-yellow-500/20 rounded">
+                              <div className="font-bold text-yellow-500 mb-1 uppercase tracking-tighter">Threats</div>
+                              <ul className="list-disc pl-3 space-y-1">
+                                {researchResult.swot.threats.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                              </ul>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="hermes" className="space-y-4">
+              <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Milestone className="w-5 h-5 text-primary" />
+                    Strategy Engine (Hermes)
+                  </CardTitle>
+                  <CardDescription>
+                    Translating research assets into roadmaps and UI blueprints.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex gap-2">
+                    <Input 
+                      placeholder="Enter project name or idea" 
+                      value={strategyPrompt}
+                      onChange={(e) => setStrategyPrompt(e.target.value)}
+                      className="bg-background/50"
+                    />
+                    <Button onClick={handleHermesStrategy} disabled={isGeneratingStrategy}>
+                      {isGeneratingStrategy ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Brain className="w-4 h-4 mr-2" />}
+                      Generate Strategy
+                    </Button>
+                  </div>
+
+                  {strategyResult && (
+                    <div className="space-y-6 mt-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {strategyResult.roadmap.map((phase: any, i: number) => (
+                          <div key={i} className="p-4 rounded-lg bg-muted/40 border border-border/50 relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 p-2 text-[8px] font-black opacity-20 group-hover:opacity-100 transition-opacity">PHASE {i+1}</div>
+                            <div className="text-xs font-bold text-primary mb-1 uppercase tracking-wider">{phase.phase}</div>
+                            <div className="text-lg font-black mb-1">{phase.goal}</div>
+                            <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+                              <Clock className="w-3 h-3" /> {phase.duration}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <Card className="bg-primary/5 border-primary/20">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm font-bold flex items-center gap-2">
+                            <Code className="w-4 h-4" />
+                            UX Blueprint Recommendation
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-2 gap-6">
+                            <div>
+                              <div className="text-[10px] font-bold uppercase text-muted-foreground mb-2">Core Components</div>
+                              <div className="flex flex-wrap gap-2">
+                                {strategyResult.ux_blueprint.core_components.map((c: string, i: number) => (
+                                  <Badge key={i} variant="secondary">{c}</Badge>
+                                ))}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-[10px] font-bold uppercase text-muted-foreground mb-2">Aesthetic Identity</div>
+                              <div className="text-sm italic">{strategyResult.ux_blueprint.aesthetic}</div>
+                            </div>
+                          </div>
+                          <Separator className="my-4 opacity-30" />
+                          <div className="text-sm font-medium text-primary bg-primary/10 p-3 rounded border border-primary/20">
+                            {strategyResult.recommendation}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
             <TabsContent value="overview">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <MetricCard
@@ -2617,8 +2849,8 @@ export default function AlphaAgentOps() {
                 />
                 <MetricCard
                   title="ROI Forecast (Net)"
-                  value={`${roiMetrics?.[0]?.value || "8.4"}x`}
-                  change={roiMetrics?.[0]?.trend_percentage || 15}
+                  value={`${roiMetrics?.[0]?.value || 0}x`}
+                  change={roiMetrics?.[0]?.trend_percentage || 0}
                   icon={LineChart}
                   color="bg-indigo-500/10 text-indigo-400"
                   footer="Projected annual savings vs compute"
@@ -2740,7 +2972,7 @@ export default function AlphaAgentOps() {
                             </p>
                           </div>
                           <Switch
-                            defaultChecked
+                            checked={healingConfig.auto_healing_enabled}
                             onCheckedChange={(checked: boolean) =>
                               handleSelfHealingToggle("auto_refine", checked)
                             }
@@ -2754,7 +2986,7 @@ export default function AlphaAgentOps() {
                             </p>
                           </div>
                           <Switch
-                            defaultChecked
+                            checked={healingConfig.active}
                             onCheckedChange={(checked: boolean) =>
                               handleSelfHealingToggle(
                                 "safety_rollback",
@@ -2772,7 +3004,13 @@ export default function AlphaAgentOps() {
                         <div className="space-y-4">
                           <div className="flex justify-between items-center text-xs">
                             <span>Last Refinement</span>
-                            <span className="font-bold">2.4s ago</span>
+                            <span className="font-bold">
+                              {healingConfig.updated_at
+                                ? new Date(
+                                    healingConfig.updated_at
+                                  ).toLocaleTimeString()
+                                : "Active"}
+                            </span>
                           </div>
                           <div className="flex justify-between items-center text-xs">
                             <span>Prevention Rate</span>
@@ -3136,6 +3374,45 @@ export default function AlphaAgentOps() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
+                    <div className="flex flex-col md:flex-row gap-4 mb-4">
+                      <div className="flex-1">
+                        <div className="relative">
+                          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder="Search audit trail..."
+                            value={auditSearchQuery}
+                            onChange={e => setAuditSearchQuery(e.target.value)}
+                            className="pl-9 h-9"
+                            data-testid="audit-search-input"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Select
+                          value={auditFilterOutcome}
+                          onValueChange={setAuditFilterOutcome}
+                        >
+                          <SelectTrigger className="w-[140px] h-9">
+                            <SelectValue placeholder="Outcome" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Outcomes</SelectItem>
+                            <SelectItem value="approved">Approved</SelectItem>
+                            <SelectItem value="denied">Denied</SelectItem>
+                            <SelectItem value="modified">Modified</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="h-9 px-4"
+                          onClick={() => refreshData()}
+                        >
+                          Refresh
+                        </Button>
+                      </div>
+                    </div>
+
                     {(Array.isArray(auditLog) ? auditLog : []).map(entry => (
                       <div key={entry.id} className="p-4 rounded-lg border">
                         <div className="flex items-start justify-between mb-2">
@@ -3248,26 +3525,43 @@ export default function AlphaAgentOps() {
                     <div className="space-y-4">
                       <div className="p-3 rounded-lg bg-blue-500/10">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="font-medium">This Week</span>
-                          <span className="text-blue-500">$342.50</span>
+                          <span className="font-medium">This Week (Projected)</span>
+                          <span className="text-blue-500">
+                            $
+                            {(
+                              usageForecasts?.slice(0, 7).reduce((sum, f) => sum + (f.predicted_cost || 0), 0) || 0
+                            ).toFixed(2)}
+                          </span>
                         </div>
-                        <Progress value={68} className="h-2" />
+                        <Progress value={65} className="h-2" />
                       </div>
                       <div className="p-3 rounded-lg bg-purple-500/10">
                         <div className="flex items-center justify-between mb-2">
                           <span className="font-medium">
                             Next Week (Predicted)
                           </span>
-                          <span className="text-purple-500">$385.00</span>
+                          <span className="text-purple-500">
+                            $
+                            {(
+                              usageForecasts?.slice(7, 14).reduce((sum, f) => sum + (f.predicted_cost || 0), 0) || 0
+                            ).toFixed(2)}
+                          </span>
                         </div>
-                        <Progress value={77} className="h-2" />
+                        <Progress value={75} className="h-2" />
                       </div>
                       <div className="p-3 rounded-lg bg-green-500/10">
                         <div className="flex items-center justify-between mb-2">
                           <span className="font-medium">
                             Cost Savings from Sentinel
                           </span>
-                          <span className="text-green-500">$2,717.60</span>
+                          <span className="text-green-500">
+                            $
+                            {(
+                              roiMetrics.find(
+                                m => m.metric_name === "Cost Savings"
+                              )?.value ?? 2717.60
+                            ).toLocaleString()}
+                          </span>
                         </div>
                         <div className="text-sm text-muted-foreground">
                           Through loop prevention and semantic caching
@@ -6351,7 +6645,8 @@ export default function AlphaAgentOps() {
 
         {showForensicTraceDialog && (
           <ForensicTraceDialog
-            entry={selectedAuditEntry}
+            traceId={selectedAuditEntry?.id || activeForensicId || ""}
+            isOpen={showForensicTraceDialog}
             onOpenChange={setShowForensicTraceDialog}
           />
         )}
@@ -6755,12 +7050,6 @@ export default function AlphaAgentOps() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-        <ForensicTraceDialog
-          traceId={activeForensicId}
-          isOpen={showForensicDialog}
-          onOpenChange={setShowForensicDialog}
-        />
-
         <input
           type="file"
           ref={fileInputRef}

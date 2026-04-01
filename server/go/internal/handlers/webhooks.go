@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"crypto/rand"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -272,7 +274,12 @@ func (h *SelfHealingHandler) GetStats(c *gin.Context) {
 	c.Data(http.StatusOK, "application/json", resp)
 }
 
-// generateID generates a simple ID
+// generateID generates a cryptographically random hex ID
 func generateID() string {
-	return "xxx"
+	b := make([]byte, 16)
+	_, err := rand.Read(b)
+	if err != nil {
+		panic(fmt.Sprintf("failed to generate random ID: %v", err))
+	}
+	return fmt.Sprintf("%x", b)
 }

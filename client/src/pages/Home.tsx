@@ -9,14 +9,14 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  businessIdeas as mockIdeas,
+  ventureApi,
+  type BusinessIdea,
   CATEGORY_COLORS,
   TREND_COLORS,
   ALL_CATEGORIES,
   ALL_MARKETS,
   ALL_TRENDS,
-} from "@/lib/businessData";
-import { ventureApi, type BusinessIdea } from "@/lib/api";
+} from "@/lib/api";
 import {
   BarChart,
   Bar,
@@ -926,9 +926,8 @@ export default function Home() {
     retry: 1,
   });
 
-  // Fallback to static research data only if backend is unreachable or empty
-  const businessIdeas =
-    remoteIdeas && remoteIdeas.length > 0 ? remoteIdeas : mockIdeas;
+  // REAL-FIRST: No fallback to mock data
+  const businessIdeas = remoteIdeas || [];
   const {
     shortlist,
     isLoaded,

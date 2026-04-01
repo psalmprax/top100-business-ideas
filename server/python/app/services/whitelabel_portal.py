@@ -8,6 +8,7 @@ from datetime import datetime
 from enum import Enum
 import uuid
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ class PortalStatus(str, Enum):
 
 class Tenant:
     """Represents a white-label tenant (partner/reseller)."""
-    
+
     def __init__(
         self,
         tenant_id: str,
@@ -42,7 +43,7 @@ class Tenant:
         self.created_at = datetime.utcnow()
         self.subtenants: List[str] = []
         self.api_usage = 0
-    
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "tenant_id": self.tenant_id,
@@ -61,17 +62,17 @@ class WhiteLabelPortal:
     White-label portal service for partners and resellers.
     Supports custom branding, multi-tenant management, and aggregated analytics.
     """
-    
+
     def __init__(self):
         self.tenants: Dict[str, Tenant] = {}
         self.brand_templates = self._init_brand_templates()
-        
+
         # Initialize demo tenant
         self._init_demo_tenant()
-    
+
     def _init_brand_templates(self) -> Dict[str, Dict[str, Any]]:
         """Initialize brand customization templates."""
-        
+
         return {
             "default": {
                 "primary_color": "#0066FF",
@@ -80,7 +81,7 @@ class WhiteLabelPortal:
                 "logo_url": None,
                 "favicon_url": None,
                 "company_name": "My Company",
-                "support_email": "support@example.com",
+                "support_email": os.getenv("SUPPORT_EMAIL", ""),
                 "custom_css": None,
             },
             "dark": {
@@ -100,10 +101,10 @@ class WhiteLabelPortal:
                 "theme": "light",
             },
         }
-    
+
     def _init_demo_tenant(self):
         """Initialize a demo tenant."""
-        
+
         demo_tenant = Tenant(
             tenant_id="tenant-demo",
             name="CyberShield Partners",
@@ -111,9 +112,9 @@ class WhiteLabelPortal:
             branding=self.brand_templates["default"],
         )
         demo_tenant.status = PortalStatus.ACTIVE
-        
+
         self.tenants[demo_tenant.tenant_id] = demo_tenant
-    
+
     def create_tenant(
         self,
         name: str,
@@ -121,62 +122,64 @@ class WhiteLabelPortal:
         branding: Optional[Dict[str, Any]] = None,
     ) -> Tenant:
         """Create a new white-label tenant."""
-        
+
         tenant_id = str(uuid.uuid4())[:8]
-        
+
         # Use default branding if not provided
         if branding is None:
             branding = self.brand_templates["default"].copy()
-        
+
         tenant = Tenant(tenant_id, name, tier, branding)
-        
+
         self.tenants[tenant_id] = tenant
-        
+
         logger.info(f"Created white-label tenant: {tenant_id}")
-        
+
         return tenant
-    
+
     def update_tenant_branding(
         self,
         tenant_id: str,
         branding: Dict[str, Any],
     ) -> Optional[Dict[str, Any]]:
         """Update tenant branding settings."""
-        
+
         tenant = self.tenants.get(tenant_id)
         if not tenant:
             return {"error": "Tenant not found"}
-        
+
         tenant.branding.update(branding)
-        
+
         return tenant.to_dict()
-    
+
     def add_subtenant(
         self,
         tenant_id: str,
         subtenant_name: str,
     ) -> Optional[Dict[str, Any]]:
         """Add a subtenant (client) under a partner."""
-        
+
         parent = self.tenants.get(tenant_id)
         if not parent:
             return {"error": "Tenant not found"}
-        
+
         # Check tier limits
         subtenant_limits = {
             PortalTier.STARTER: 5,
             PortalTier.GROWTH: 25,
             PortalTier.ENTERPRISE: -1,  # Unlimited
         }
-        
+
         limit = subtenant_limits.get(parent.tier, 5)
-        
+
         if limit > 0 and len(parent.subtenants) >= limit:
-            return {"error": f"Subtenant limit ({limit}) reached for {parent.tier.value} tier"}
-        
+            return {
+                "error": f"Subtenant limit ({limit}) reached for {parent.tier.value} tier"
+            }
+
         subtenant_id = str(uuid.uuid4())[:8]
         parent.subtenants.append(subtenant_id)
-        
+
         # Create subtenant
         subtenant = Tenant(
             tenant_id=subtenant_id,
@@ -185,35 +188,37 @@ class WhiteLabelPortal:
             branding=parent.branding.copy(),
         )
         subtenant.status = PortalStatus.ACTIVE
-        
+
         self.tenants[subtenant_id] = subtenant
-        
+
         return {
             "subtenant_id": subtenant_id,
             "parent_tenant": tenant_id,
             "name": subtenant_name,
             "created": True,
         }
-    
+
     def get_tenant_dashboard(
         self,
         tenant_id: str,
     ) -> Optional[Dict[str, Any]]:
         """Get aggregated dashboard data for a tenant."""
-        
+
         tenant = self.tenants.get(tenant_id)
         if not tenant:
             return None
-        
+
         # Calculate aggregated stats
         all_tenants = [tenant] + [
             self.tenants.get(st, Tenant("x", "x", PortalTier.STARTER, {}))
             for st in tenant.subtenants
         ]
-        
+
         total_usage = sum(t.api_usage for t in all_tenants)
-        active_subtenants = sum(1 for t in all_tenants if t.status == PortalStatus.ACTIVE)
-        
+        active_subtenants = sum(
+            1 for t in all_tenants if t.status == PortalStatus.ACTIVE
+        )
+
         return {
             "tenant_id": tenant_id,
             "name": tenant.name,
@@ -229,38 +234,39 @@ class WhiteLabelPortal:
                 "renewal_date": "2026-04-01",
             },
         }
-    
+
     def get_tenant_portal_url(self, tenant_id: str) -> Optional[str]:
         """Get the white-label portal URL for a tenant."""
-        
+
         tenant = self.tenants.get(tenant_id)
         if not tenant:
             return None
-        
+
         # Generate white-label URL
         # In production, would map to custom domain
-        return f"https://{tenant.name.lower().replace(' ', '-')}.alphaai.example.com"
-    
+        domain = os.getenv("PORTAL_DOMAIN", "app.alphaai.com")
+        return f"https://{tenant.name.lower().replace(' ', '-')}.{domain}"
+
     def record_api_usage(self, tenant_id: str, calls: int = 1):
         """Record API usage for a tenant."""
-        
+
         tenant = self.tenants.get(tenant_id)
         if tenant:
             tenant.api_usage += calls
-    
+
     def list_tenants(self, tier: Optional[PortalTier] = None) -> List[Dict[str, Any]]:
         """List all tenants, optionally filtered by tier."""
-        
+
         tenants = list(self.tenants.values())
-        
+
         if tier:
             tenants = [t for t in tenants if t.tier == tier]
-        
+
         return [t.to_dict() for t in tenants]
-    
+
     def get_portal_tiers(self) -> List[Dict[str, Any]]:
         """Get available portal tiers and their features."""
-        
+
         return [
             {
                 "tier": PortalTier.STARTER.value,

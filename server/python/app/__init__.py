@@ -1,8 +1,17 @@
 import sys
+import logging
 from unittest.mock import MagicMock
 
-# Global Mocking of heavy/missing ML dependencies to unblock functional verification
-# This allows the Sentinel dashboard to load even if ML packages are installing
+logger = logging.getLogger(__name__)
+
+# Fallback mocking of heavy/missing ML dependencies to allow the server to boot.
+# ML features will be non-functional when these mocks are active.
 for mod in ["numpy", "torch", "transformers", "cv2", "PIL", "sklearn"]:
     if mod not in sys.modules:
-        sys.modules[mod] = MagicMock()
+        try:
+            __import__(mod)
+        except ImportError:
+            sys.modules[mod] = MagicMock()
+            logger.warning(
+                f"ML dependency '{mod}' not found. Using mock. Install with: pip install {mod}"
+            )

@@ -18,9 +18,10 @@ func NewFreelancerHandler(repo *repository.FreelancerRepository) *FreelancerHand
 
 // Tasks
 func (h *FreelancerHandler) ListTasks(c *gin.Context) {
-	userID := c.GetString("user_id") // Derived from Auth middleware
+	userID := c.GetString("user_id")
 	if userID == "" {
-		userID = "00000000-0000-0000-0000-000000000000" // Fallback for demo
+		c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "Authentication required"})
+		return
 	}
 
 	tasks, err := h.repo.ListTasks(c.Request.Context(), userID)
@@ -40,7 +41,8 @@ func (h *FreelancerHandler) CreateTask(c *gin.Context) {
 
 	task.UserID = c.GetString("user_id")
 	if task.UserID == "" {
-		task.UserID = "00000000-0000-0000-0000-000000000000"
+		c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "Authentication required"})
+		return
 	}
 
 	if err := h.repo.CreateTask(c.Request.Context(), &task); err != nil {
@@ -54,7 +56,8 @@ func (h *FreelancerHandler) CreateTask(c *gin.Context) {
 func (h *FreelancerHandler) ListClients(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
-		userID = "00000000-0000-0000-0000-000000000000"
+		c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "Authentication required"})
+		return
 	}
 
 	clients, err := h.repo.ListClients(c.Request.Context(), userID)
@@ -73,7 +76,8 @@ func (h *FreelancerHandler) CreateClient(c *gin.Context) {
 	}
 	client.UserID = c.GetString("user_id")
 	if client.UserID == "" {
-		client.UserID = "00000000-0000-0000-0000-000000000000"
+		c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "Authentication required"})
+		return
 	}
 
 	if err := h.repo.CreateClient(c.Request.Context(), &client); err != nil {

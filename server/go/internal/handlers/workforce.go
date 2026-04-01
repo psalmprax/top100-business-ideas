@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/top100-business-ideas/api/internal/models"
@@ -129,8 +128,7 @@ func (h *WorkforceHandler) HandleCallback(c *gin.Context) {
 	c.Data(http.StatusOK, "application/json", resp)
 }
 
-// RecoverRevenue (CashClaw UC5) handles uncollected revenue detection
-// POST /api/v1/workforce/cashclaw/recover
+// RecoverRevenue handles uncollected revenue detection
 func (h *WorkforceHandler) RecoverRevenue(c *gin.Context) {
 	var req struct {
 		Criteria string `json:"criteria"`
@@ -140,35 +138,16 @@ func (h *WorkforceHandler) RecoverRevenue(c *gin.Context) {
 		return
 	}
 
-	userID := c.GetString("user_id")
-
-	// Real-First Hardening: Log forensic trace
-	_ = h.repo.CreateForensicTrace(c.Request.Context(), &models.ForensicTrace{
-		UserID: userID,
-		Action: "REVENUE_RECOVERY_TRIGGERED",
-		Details: "Criteria: " + req.Criteria,
-	})
-
-	// Real-First logic: Detect and recover revenue
 	resp, err := h.proxy.Forward("POST", "/workforce/cashclaw/recover", req)
 	if err != nil {
-		// Production fallback: Return a structured discovery if engine is down
-		c.JSON(http.StatusOK, gin.H{
-			"status":            "discovered",
-			"recovered_amount":  "$12,480.00",
-			"actions_taken":     []string{"Payment Link Sent", "Terms Renegotiated"},
-			"timestamp":         time.Now().Format(time.RFC3339),
-			"confidence_score":  0.94,
-			"interaction_id":    "RECOVER-" + time.Now().Format("20060102150405"),
-		})
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to recover revenue", Details: err.Error()})
 		return
 	}
 
 	c.Data(http.StatusOK, "application/json", resp)
 }
 
-// RunCampaign (UC6) triggers a marketing trend research and deployment
-// POST /api/v1/workforce/campaigns/run
+// RunCampaign triggers a marketing trend research and deployment
 func (h *WorkforceHandler) RunCampaign(c *gin.Context) {
 	var req struct {
 		Topic    string `json:"topic"`
@@ -179,63 +158,32 @@ func (h *WorkforceHandler) RunCampaign(c *gin.Context) {
 		return
 	}
 
-	userID := c.GetString("user_id")
-
-	// Real-First Hardening: Record campaign initiation in DB
-	_ = h.repo.CreateCampaign(c.Request.Context(), &models.WorkforceCampaign{
-		UserID:         userID,
-		Name:           req.Topic,
-		TargetAudience: req.Audience,
-		Status:         "initiated",
-	})
-
 	resp, err := h.proxy.Forward("POST", "/workforce/campaigns/run", req)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"status":    "success",
-			"message":   "Marketing Campaign Complete!",
-			"details":   "SEO Strategy and LinkedIn drafts generated via Shadow AI integration.",
-			"timestamp": time.Now().Format(time.RFC3339),
-		})
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to run campaign", Details: err.Error()})
 		return
 	}
 
 	c.Data(http.StatusOK, "application/json", resp)
 }
 
-// SourceLeads (UC7) handles lead generation scraping
-// GET /api/v1/workforce/leads/source
+// SourceLeads handles lead generation scraping
 func (h *WorkforceHandler) SourceLeads(c *gin.Context) {
 	criteria := c.Query("criteria")
 	if criteria == "" {
 		criteria = "general"
 	}
 
-	userID := c.GetString("user_id")
-
-	// Real-First Hardening: Log forensic trace
-	_ = h.repo.CreateForensicTrace(c.Request.Context(), &models.ForensicTrace{
-		UserID: userID,
-		Action: "LEAD_SOURCING_RUN",
-		Details: "Criteria: " + criteria,
-	})
-
 	resp, err := h.proxy.Forward("GET", "/workforce/leads/source?criteria="+criteria, nil)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"leads":          []string{"lead-1", "lead-2", "lead-3"},
-			"count":          124,
-			"accuracy_score": 0.88,
-			"timestamp":      time.Now().Format(time.RFC3339),
-		})
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to source leads", Details: err.Error()})
 		return
 	}
 
 	c.Data(http.StatusOK, "application/json", resp)
 }
 
-// AnalyzeInsights (UC10) correlates feedback patterns
-// POST /api/v1/workforce/insights/analyze
+// AnalyzeInsights correlates feedback patterns
 func (h *WorkforceHandler) AnalyzeInsights(c *gin.Context) {
 	var req struct {
 		Feedback string `json:"feedback"`
@@ -247,20 +195,14 @@ func (h *WorkforceHandler) AnalyzeInsights(c *gin.Context) {
 
 	resp, err := h.proxy.Forward("POST", "/workforce/insights/analyze", req)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"churn_risk":     "Low",
-			"sentiment":      "Positive",
-			"interaction_id": "INSIGHT-" + time.Now().Format("20060102150405"),
-			"timestamp":      time.Now().Format(time.RFC3339),
-		})
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to analyze insights", Details: err.Error()})
 		return
 	}
 
 	c.Data(http.StatusOK, "application/json", resp)
 }
 
-// HandleInbound (Receptionist UC3) drafts high-quality responses
-// POST /api/v1/workforce/inbound/handle
+// HandleInbound drafts high-quality responses
 func (h *WorkforceHandler) HandleInbound(c *gin.Context) {
 	var req struct {
 		Query string `json:"query"`
@@ -272,11 +214,7 @@ func (h *WorkforceHandler) HandleInbound(c *gin.Context) {
 
 	resp, err := h.proxy.Forward("POST", "/workforce/inbound/handle", req)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"response":       "Drafted response for " + req.Query,
-			"interaction_id": "INBOUND-" + time.Now().Format("20060102150405"),
-			"timestamp":      time.Now().Format(time.RFC3339),
-		})
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to handle inbound", Details: err.Error()})
 		return
 	}
 
@@ -284,7 +222,6 @@ func (h *WorkforceHandler) HandleInbound(c *gin.Context) {
 }
 
 // ProvideFeedback logs agent performance feedback
-// POST /api/v1/workforce/feedback
 func (h *WorkforceHandler) ProvideFeedback(c *gin.Context) {
 	var req struct {
 		InteractionID string `json:"interaction_id"`
@@ -298,14 +235,50 @@ func (h *WorkforceHandler) ProvideFeedback(c *gin.Context) {
 
 	resp, err := h.proxy.Forward("POST", "/workforce/feedback", req)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"status":    "success",
-			"message":   "Feedback synchronized with Sentinel audit trail.",
-			"timestamp": time.Now().Format(time.RFC3339),
-		})
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to provide feedback", Details: err.Error()})
 		return
 	}
 
+	c.Data(http.StatusOK, "application/json", resp)
+}
+
+// GetSkills returns available skills from the marketplace
+func (h *WorkforceHandler) GetSkills(c *gin.Context) {
+	resp, err := h.proxy.Forward("GET", "/workforce/skills", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch skills", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", resp)
+}
+
+// GetJobs returns live job feed from persistence
+func (h *WorkforceHandler) GetJobs(c *gin.Context) {
+	resp, err := h.proxy.Forward("GET", "/workforce/jobs", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch jobs", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", resp)
+}
+
+// GetAcquisitions returns growth acquisition wins
+func (h *WorkforceHandler) GetAcquisitions(c *gin.Context) {
+	resp, err := h.proxy.Forward("GET", "/workforce/acquisitions", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch acquisitions", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", resp)
+}
+
+// GetContentDrafts returns content factory drafts
+func (h *WorkforceHandler) GetContentDrafts(c *gin.Context) {
+	resp, err := h.proxy.Forward("GET", "/workforce/content", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch content drafts", Details: err.Error()})
+		return
+	}
 	c.Data(http.StatusOK, "application/json", resp)
 }
 

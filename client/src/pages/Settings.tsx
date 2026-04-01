@@ -48,75 +48,56 @@ export default function Settings() {
   const [saved, setSaved] = useState(false);
 
   // Form states
-  const [profile, setProfile] = useState(
-    storage.get("settings_profile", {
-      name: "John Doe",
-      email: "john@company.com",
-      company: "Acme Inc.",
-      role: "CTO",
-    })
-  );
+  const [profile, setProfile] = useState({
+    name: "",
+    email: "",
+    company: "",
+    role: "",
+  });
 
-  const [notifications, setNotifications] = useState(
-    storage.get("settings_notifications", {
-      emailAlerts: true,
-      slackIntegration: false,
-      weeklyDigest: true,
-      securityAlerts: true,
-      productUpdates: false,
-    })
-  );
+  const [notifications, setNotifications] = useState({
+    emailAlerts: true,
+    slackIntegration: false,
+    weeklyDigest: true,
+    securityAlerts: true,
+    productUpdates: false,
+  });
 
-  const [preferences, setPreferences] = useState(
-    storage.get("settings_preferences", {
-      theme: "dark",
-      language: "en",
-      timezone: "America/New_York",
-      defaultModel: "gpt-4",
-      autoSave: true,
-    })
-  );
+  const [preferences, setPreferences] = useState({
+    theme: "dark",
+    language: "en",
+    timezone: "America/New_York",
+    defaultModel: "gpt-4",
+    autoSave: true,
+  });
 
-  const [apiKeys, setApiKeys] = useState(
-    storage.get("settings_apikeys", [
-      {
-        id: "prod",
-        name: "Production Key",
-        key: "sk_live_51P8p8p8p8p8p8p8p8p8p8p8p",
-        status: "Active",
-        created: "Jan 15, 2024",
-        hidden: true,
-      },
-      {
-        id: "test",
-        name: "Development Key",
-        key: "sk_test_42q42q42q42q42q42q42q42q",
-        status: "Test Mode",
-        created: "Jan 10, 2024",
-        hidden: true,
-      },
-    ])
-  );
-
-  const [webhooks, setWebhooks] = useState<any[]>(
-    storage.get("settings_webhooks", [])
-  );
+  const [apiKeys, setApiKeys] = useState<any[]>([]);
+  const [webhooks, setWebhooks] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const [userData, keysData] = await Promise.all([
+        const [userData, keysData, webhookData] = await Promise.all([
           authApi.me(),
           userApi.apiKeys(),
+          extendedApi.webhooks.list(),
         ]);
 
         if (userData) {
           setProfile({
-            name: (userData as any).name || profile.name,
-            email: (userData as any).email || profile.email,
-            company: (userData as any).company || profile.company,
-            role: (userData as any).role || profile.role,
+            name: (userData as any).name || "",
+            email: (userData as any).email || "",
+            company: (userData as any).company || "",
+            role: (userData as any).role || "",
           });
+
+          if (userData.notifications) {
+            setNotifications(prev => ({ ...prev, ...userData.notifications }));
+          }
+
+          if (userData.preferences) {
+            setPreferences(prev => ({ ...prev, ...userData.preferences }));
+          }
         }
 
         if (Array.isArray(keysData)) {
@@ -131,8 +112,18 @@ export default function Settings() {
             }))
           );
         }
+
+        if (Array.isArray(webhookData)) {
+          setWebhooks(webhookData.map((w: any) => ({
+            id: w.id,
+            url: w.url,
+            name: w.name,
+            status: w.is_active ? "Active" : "Inactive",
+          })));
+        }
       } catch (err) {
         console.error("Failed to sync settings with backend:", err);
+        // toast.error("Settings out of sync with production records.");
       }
     };
     fetchSettings();
@@ -591,7 +582,6 @@ export default function Settings() {
                             [item.key]: checked,
                           };
                           setNotifications(updated);
-                          storage.set("settings_notifications", updated);
                           try {
                             await userApi.update({
                               notifications: updated,
@@ -600,9 +590,7 @@ export default function Settings() {
                               `${item.label} ${checked ? "enabled" : "disabled"}`
                             );
                           } catch {
-                            toast.info(
-                              `${item.label} saved locally (service unavailable)`
-                            );
+                            toast.error("Failed to persist notification settings.");
                           }
                         }}
                       />
@@ -639,13 +627,14 @@ export default function Settings() {
                           onClick={async () => {
                             const updated = { ...preferences, theme };
                             setPreferences(updated);
-                            storage.set("settings_preferences", updated);
                             try {
                               await userApi.update({
                                 preferences: updated,
                               } as any);
-                            } catch {}
-                            toast.success(`Theme set to ${theme}`);
+                              toast.success(`Theme set to ${theme}`);
+                            } catch {
+                              toast.error("Failed to persist theme preference.");
+                            }
                           }}
                           className="capitalize"
                         >
@@ -669,15 +658,16 @@ export default function Settings() {
                           onClick={async () => {
                             const updated = { ...preferences, language: lang };
                             setPreferences(updated);
-                            storage.set("settings_preferences", updated);
                             try {
                               await userApi.update({
                                 preferences: updated,
                               } as any);
-                            } catch {}
-                            toast.success(
-                              `Language set to ${lang.toUpperCase()}`
-                            );
+                              toast.success(
+                                `Language set to ${lang.toUpperCase()}`
+                              );
+                            } catch {
+                              toast.error("Failed to persist language preference.");
+                            }
                           }}
                         >
                           {lang.toUpperCase()}
@@ -696,11 +686,12 @@ export default function Settings() {
                           defaultModel: e.target.value,
                         };
                         setPreferences(updated);
-                        storage.set("settings_preferences", updated);
                         try {
                           await userApi.update({ preferences: updated } as any);
-                        } catch {}
-                        toast.success(`Default model set to ${e.target.value}`);
+                          toast.success(`Default model set to ${e.target.value}`);
+                        } catch {
+                          toast.error("Failed to persist model preference.");
+                        }
                       }}
                     >
                       <option value="gpt-4">GPT-4</option>
@@ -717,15 +708,16 @@ export default function Settings() {
                         onCheckedChange={async checked => {
                           const updated = { ...preferences, autoSave: checked };
                           setPreferences(updated);
-                          storage.set("settings_preferences", updated);
                           try {
                             await userApi.update({
                               preferences: updated,
                             } as any);
-                          } catch {}
-                          toast.success(
-                            `Auto-save ${checked ? "enabled" : "disabled"}`
-                          );
+                            toast.success(
+                              `Auto-save ${checked ? "enabled" : "disabled"}`
+                            );
+                          } catch {
+                            toast.error("Failed to persist auto-save setting.");
+                          }
                         }}
                       />
                       <span className="text-body-sm">

@@ -4,7 +4,7 @@
  * Design: Dark theme with color-coded metrics for easy scanning
  */
 
-import { BusinessIdea, CATEGORY_COLORS, TREND_COLORS } from "@/lib/businessData";
+import { type BusinessIdea, CATEGORY_COLORS, TREND_COLORS } from "@/lib/api";
 import { X, TrendingUp, DollarSign, Clock, Zap, BarChart2, Target } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 

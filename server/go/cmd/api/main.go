@@ -90,12 +90,12 @@ func main() {
 	deepfakeHandler := handlers.NewDeepfakeHandler(proxyService)
 	wsHandler := handlers.NewWebSocketHandler(wsHub)
 	rulesHandler := handlers.NewRulesHandler(proxyService)
-	metricsHandler := handlers.NewMetricsHandler()
+	metricsHandler := handlers.NewMetricsHandler(proxyService)
 	billingService, err := services.NewBillingService(cfg)
 	if err != nil {
 		logger.Error().Err(err).Msg("Failed to initialize BillingService, falling back to restricted mode")
 	}
-	billingHandler := handlers.NewBillingHandler(billingService)
+	billingHandler := handlers.NewBillingHandler(billingService, proxyService)
 	mlHandler := handlers.NewMLHandler(cfg.PythonBackendURL)
 
 	// New handlers for gap closure
@@ -112,6 +112,8 @@ func main() {
 	vendorHandler := handlers.NewVendorHandler(proxyService)
 	workforceHandler := handlers.NewWorkforceHandler(proxyService, workforceRepo)
 	enterpriseHandler := handlers.NewEnterpriseHandler(proxyService)
+	denialDefenseRepo := repository.NewDenialDefenseRepository()
+	denialDefenseHandler := handlers.NewDenialDefenseHandler(denialDefenseRepo)
 
 	// Setup Gin router
 	if cfg.Environment == "production" {
@@ -215,8 +217,8 @@ func main() {
 				compliance.POST("/bias-scan", complianceHandler.TriggerBiasScan)
 				compliance.POST("/eu-register", complianceHandler.EURegister)
 				compliance.POST("/documentation/:id", complianceHandler.GenerateDocumentation)
-				compliance.GET("/incidents", agentOpsHandler.ProxyToPython)
-				compliance.POST("/incidents", agentOpsHandler.ProxyToPython)
+				compliance.GET("/incidents", complianceHandler.ListAuditLogs)
+				compliance.PATCH("/incidents/:id", complianceHandler.UpdateIncidentStatus)
 				compliance.POST("/upload", complianceHandler.UploadArtifact)
 				compliance.GET("/artifacts", complianceHandler.ListArtifacts)
 				compliance.GET("/roi", complianceHandler.GetROIMetrics)
@@ -229,7 +231,19 @@ func main() {
 				compliance.GET("/regional-reports", complianceHandler.GetRegionalReports)
 				compliance.GET("/financial-metrics", complianceHandler.GetFinancialMetrics)
 				compliance.GET("/audit", complianceHandler.ListAuditLogs)
-				compliance.PATCH("/incidents/:id", complianceHandler.UpdateIncidentStatus)
+				compliance.GET("/checks", complianceHandler.ListChecks)
+				compliance.GET("/checks/:id", complianceHandler.GetCheck)
+				compliance.POST("/checks/run", complianceHandler.RunCheck)
+				compliance.GET("/models", complianceHandler.ListModels)
+				compliance.POST("/models", complianceHandler.RegisterModel)
+				compliance.GET("/bias-reports/:id", complianceHandler.GetBiasReports)
+				compliance.POST("/bias-scan", complianceHandler.TriggerBiasScan)
+				compliance.POST("/eu-register", complianceHandler.EURegister)
+				compliance.GET("/articles", complianceHandler.ListArticles)
+				compliance.GET("/summary", complianceHandler.GetCategories)
+				compliance.GET("/reports/export", complianceHandler.ExportReport)
+				compliance.GET("/live-metrics", agentOpsHandler.ProxyToPython)
+				compliance.POST("/remediate", agentOpsHandler.ProxyToPython)
 			}
 
 			// Deepfake Defense
@@ -244,13 +258,18 @@ func main() {
 				deepfake.POST("/verify", deepfakeHandler.VerifyAuthSignature)
 				deepfake.POST("/analyze/enterprise", deepfakeHandler.AnalyzeEnterprise)
 				deepfake.GET("/detectors", deepfakeHandler.ListDetectors)
-
-
+				deepfake.GET("/threats", agentOpsHandler.ProxyToPython)
+				deepfake.GET("/duress", deepfakeHandler.GetDuressConfig)
+				deepfake.POST("/duress", deepfakeHandler.UpdateDuressConfig)
 			}
 
-
-
-
+			// Denial Defense
+			denialDefense := protected.Group("/denial-defense")
+			{
+				denialDefense.GET("/claims", denialDefenseHandler.ListClaims)
+				denialDefense.POST("/claims", denialDefenseHandler.CreateClaim)
+				denialDefense.PUT("/claims", denialDefenseHandler.UpdateClaim)
+			}
 
 			// Enterprise
 			enterprise := protected.Group("/enterprise")
@@ -433,12 +452,12 @@ func main() {
 			}
 
 			// Edge AI (AI Compliance UC14)
-			edge := protected.Group("/edge")
-			edge.Use(middleware.ProductAccess("compliance"))
+			edgeGroup := protected.Group("/edge")
+			edgeGroup.Use(middleware.ProductAccess("compliance"))
 			{
-				edge.GET("/deployments", edgeHandler.ListDeployments)
-				edge.GET("/deployments/:id/logs", edgeHandler.GetEdgeLogs)
-				edge.POST("/deployments/:id/sync", edgeHandler.SyncWeights)
+				edgeGroup.GET("/deployments", edgeHandler.ListDeployments)
+				edgeGroup.GET("/deployments/:id/logs", edgeHandler.GetEdgeLogs)
+				edgeGroup.POST("/deployments/:id/sync", edgeHandler.SyncWeights)
 			}
 
 			// Vendors (AI Compliance UC7)
@@ -497,6 +516,12 @@ func main() {
 				workforce.POST("/insights/analyze", workforceHandler.AnalyzeInsights)
 				workforce.POST("/inbound/handle", workforceHandler.HandleInbound)
 				workforce.POST("/feedback", workforceHandler.ProvideFeedback)
+				workforce.GET("/skills", workforceHandler.GetSkills)
+				workforce.GET("/jobs", workforceHandler.GetJobs)
+				workforce.GET("/acquisitions", workforceHandler.GetAcquisitions)
+				workforce.GET("/content", workforceHandler.GetContentDrafts)
+				workforce.GET("/decisions", workforceHandler.ListDecisions)
+				workforce.GET("/traces", workforceHandler.ListTraces)
 			}
 
 			// On-Premise (Agent Ops UC18)

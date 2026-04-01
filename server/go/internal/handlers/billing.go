@@ -3,7 +3,6 @@ package handlers
 import (
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/top100-business-ideas/api/internal/services"
@@ -11,38 +10,34 @@ import (
 
 type BillingHandler struct {
 	service *services.BillingService
+	proxy   *services.ProxyService
 }
 
-func NewBillingHandler(s *services.BillingService) *BillingHandler {
+func NewBillingHandler(s *services.BillingService, p *services.ProxyService) *BillingHandler {
 	return &BillingHandler{
 		service: s,
+		proxy:   p,
 	}
 }
 
 func (h *BillingHandler) GetSubscription(c *gin.Context) {
-	// In production, fetch from Stripe or your DB
-	subscription := gin.H{
-		"id":                   "sub_123456",
-		"plan":                 "professional",
-		"status":               "active",
-		"current_period_end":   time.Now().Add(30 * 24 * time.Hour).Format(time.RFC3339),
-		"cancel_at_period_end": false,
+	// Real-First logic: Proxy to Python Enterprise API
+	resp, err := h.proxy.Forward("GET", "/enterprise/subscription", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch subscription", "details": err.Error()})
+		return
 	}
-	c.JSON(http.StatusOK, subscription)
+	c.Data(http.StatusOK, "application/json", resp)
 }
 
 func (h *BillingHandler) GetInvoices(c *gin.Context) {
-	// In production, fetch from Stripe
-	invoices := []gin.H{
-		{
-			"id":      "INV-2024-004",
-			"amount":  1499.00,
-			"status":  "paid",
-			"date":    time.Now().Add(-7 * 24 * time.Hour).Format("2006-01-02"),
-			"pdf_url": "#",
-		},
+	// Real-First logic: Proxy to Python Enterprise API
+	resp, err := h.proxy.Forward("GET", "/enterprise/invoices", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch invoices", "details": err.Error()})
+		return
 	}
-	c.JSON(http.StatusOK, invoices)
+	c.Data(http.StatusOK, "application/json", resp)
 }
 
 func (h *BillingHandler) CreateCheckout(c *gin.Context) {

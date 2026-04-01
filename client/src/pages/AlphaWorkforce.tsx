@@ -187,41 +187,25 @@ const AlphaWorkforce = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   // Dynamic revenue data from API
-  const [revenueData, setRevenueData] = useState(
-    storage.get("workforce_revenue", {
-      agentOps: { revenue: 42500, growth: 18, roi: 5.2 },
-      compliance: { revenue: 28200, growth: 12, roi: 3.8 },
-      deepfake: { revenue: 15800, growth: 24, roi: 7.1 },
-      totalCapital: 12482000,
-      burnRate: 240,
-      avgRoi: 248,
-    })
-  );
-  const [cashclawData, setCashclawData] = useState(
-    storage.get("workforce_cashclaw", {
-      balance: 1247,
-      activeJobs: 12,
-      skillsActive: 6,
-      leakedRevenue: 1420,
-    })
-  );
-  const [skillsMarketplace, setSkillsMarketplace] = useState(
-    storage.get("workforce_skills", [
-      { name: "SEO Audit", price: "$9.00", jobs: 47, status: "active" },
-      { name: "Content Writing", price: "$15.00", jobs: 123, status: "active" },
-      { name: "Lead Generation", price: "$25.00", jobs: 31, status: "active" },
-      {
-        name: "Social Media Mgmt",
-        price: "$49.00",
-        jobs: 18,
-        status: "active",
-      },
-      { name: "WhatsApp Support", price: "$5.00", jobs: 256, status: "active" },
-    ])
-  );
-  const [executionHistory, setExecutionHistory] = useState<any[]>(
-    storage.get("workforce_exec_history", [])
-  );
+  const [revenueData, setRevenueData] = useState<any>({
+    agentOps: { revenue: 0, growth: 0, roi: 0 },
+    compliance: { revenue: 0, growth: 0, roi: 0 },
+    deepfake: { revenue: 0, growth: 0, roi: 0 },
+    totalCapital: 0,
+    burnRate: 0,
+    avgRoi: 0,
+  });
+  const [cashclawData, setCashclawData] = useState<any>({
+    balance: 0,
+    activeJobs: 0,
+    skillsActive: 0,
+    leakedRevenue: 0,
+  });
+  const [skillsMarketplace, setSkillsMarketplace] = useState<any[]>([]);
+  const [acquisitions, setAcquisitions] = useState<any[]>([]);
+  const [contentDrafts, setContentDrafts] = useState<any[]>([]);
+  const [jobFeed, setJobFeed] = useState<any[]>([]);
+  const [executionHistory, setExecutionHistory] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchAllData = async () => {
@@ -232,19 +216,26 @@ const AlphaWorkforce = () => {
           boardGoals,
           businessVentures,
           currentAgents,
+          skills,
+          earnings,
+          jobs,
+          winList,
+          drafts,
         ] = await Promise.all([
           workforceSync(),
           extendedApi.workforce.getFiscalRequests(),
           extendedApi.workforce.getGoals(),
           extendedApi.workforce.getVentures(),
           extendedApi.agents.list(),
+          extendedApi.workforce.getSkills(),
+          extendedApi.workforce.getEarnings(),
+          extendedApi.workforce.getJobs(),
         ]);
 
-        // Merge with local strategy refinements if any
-        const localRefinements = storage.get("strategy_refinements", null);
-        if (localRefinements && syncData) {
-          syncData.strategyRefinements = localRefinements;
-        }
+        const acquisitionsData = await extendedApi.workforce.getAcquisitions();
+        const contentData = await extendedApi.workforce.getContentDrafts();
+        const decisionsData = await extendedApi.workforce.getGovernanceDecisions();
+        const historyData = await extendedApi.workforce.getExecutionHistory();
 
         setWorkforceData(syncData);
         setFiscalRequests(fiscalReqs);
@@ -252,6 +243,34 @@ const AlphaWorkforce = () => {
         setVentures(businessVentures);
         setAgentRoster(currentAgents);
         setActiveEmployees(currentAgents.length);
+        setSkillsMarketplace(skills);
+        setJobFeed(jobs);
+        setAcquisitions(winList);
+        setContentDrafts(drafts);
+
+        // Map earnings to revenueData
+        if (earnings) {
+          setRevenueData({
+            agentOps: {
+              revenue: Math.round(earnings.total_revenue * 0.4),
+              growth: 18,
+              roi: 5.2,
+            },
+            compliance: {
+              revenue: Math.round(earnings.total_revenue * 0.3),
+              growth: 12,
+              roi: 3.8,
+            },
+            deepfake: {
+              revenue: Math.round(earnings.total_revenue * 0.3),
+              growth: 24,
+              roi: 7.1,
+            },
+            totalCapital: 12482000 + earnings.total_revenue,
+            burnRate: 240,
+            avgRoi: 248,
+          });
+        }
       } catch (error) {
         console.error("Failed to fetch workforce data:", error);
       } finally {
@@ -1165,24 +1184,20 @@ const AlphaWorkforce = () => {
                         Recent Acquisition Wins
                       </h4>
                       <div className="space-y-2">
-                        <AcquisitionWin
-                          client="Omni-Retail Group"
-                          value="$45,000"
-                          source="Compliance Blitz"
-                          time="5 hrs ago"
-                        />
-                        <AcquisitionWin
-                          client="Secure-Gov Systems"
-                          value="$12,500"
-                          source="High-Alpha Moat"
-                          time="1 day ago"
-                        />
-                        <AcquisitionWin
-                          client="FinTech Global"
-                          value="$22,000"
-                          source="Regulatory Buzz"
-                          time="2 days ago"
-                        />
+                        {acquisitions.map((win: any, idx: number) => (
+                          <AcquisitionWin
+                            key={idx}
+                            client={win.client}
+                            value={win.value}
+                            source={win.source}
+                            time={win.time}
+                          />
+                        ))}
+                        {acquisitions.length === 0 && (
+                          <div className="text-xs text-muted-foreground italic p-2">
+                            No recent acquisition wins recorded.
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="space-y-3">
@@ -1328,24 +1343,20 @@ const AlphaWorkforce = () => {
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <ContentDraftItem
-                        title="The EU AI Act Survival Guide"
-                        type="Blog"
-                        status="Published"
-                        roi="450 views"
-                      />
-                      <ContentDraftItem
-                        title="How Sentinel Saved $50k"
-                        type="Case Study"
-                        status="In Progress"
-                        roi="N/A"
-                      />
-                      <ContentDraftItem
-                        title="Why Manual Compliance is Dying"
-                        type="LinkedIn"
-                        status="Ready"
-                        roi="Simulated: 2k reach"
-                      />
+                      {contentDrafts.map((draft: any, idx: number) => (
+                        <ContentDraftItem
+                          key={idx}
+                          title={draft.title}
+                          type={draft.type}
+                          status={draft.status}
+                          roi={draft.roi}
+                        />
+                      ))}
+                      {contentDrafts.length === 0 && (
+                        <div className="text-xs text-muted-foreground italic p-2">
+                          No content drafts currently in the factory.
+                        </div>
+                      )}
                       <Button
                         className="w-full mt-2"
                         variant="outline"
@@ -2332,36 +2343,7 @@ const AlphaWorkforce = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {[
-                      {
-                        job: "SEO Audit for techstartup.io",
-                        client: "New Client",
-                        price: "$9.00",
-                        status: "Auto-Accepted",
-                        time: "Just now",
-                      },
-                      {
-                        job: "Blog Post - AI Trends",
-                        client: "Acme Corp",
-                        price: "$15.00",
-                        status: "In Progress",
-                        time: "2m ago",
-                      },
-                      {
-                        job: "Lead List - SaaS",
-                        client: "StartupXYZ",
-                        price: "$25.00",
-                        status: "Delivered",
-                        time: "15m ago",
-                      },
-                      {
-                        job: "WhatsApp Support",
-                        client: "GlobalTech",
-                        price: "$5.00",
-                        status: "Completed",
-                        time: "1h ago",
-                      },
-                    ].map((item, idx) => (
+                    {jobFeed.map((item, idx) => (
                       <TableRow key={idx}>
                         <TableCell className="font-medium">
                           {item.job}

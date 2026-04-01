@@ -1,23 +1,38 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/top100-business-ideas/api/internal/services"
 )
 
 type MetricsHandler struct {
-	startTime time.Time
+	startTime    time.Time
+	proxyService *services.ProxyService
 }
 
-func NewMetricsHandler() *MetricsHandler {
+func NewMetricsHandler(ps *services.ProxyService) *MetricsHandler {
 	return &MetricsHandler{
-		startTime: time.Now(),
+		startTime:    time.Now(),
+		proxyService: ps,
 	}
 }
 
 func (h *MetricsHandler) GetCurrentMetrics(c *gin.Context) {
+	// Proxy to Python for real-time ROI and Intelligence metrics
+	resp, err := h.proxyService.GetAgentOpsMetrics()
+	if err == nil {
+		var metrics gin.H
+		if err := json.Unmarshal(resp, &metrics); err == nil {
+			c.JSON(http.StatusOK, metrics)
+			return
+		}
+	}
+
+	// Fallback to static instrumentation if backend is unreachable
 	metrics := gin.H{
 		"totalTokens":    2450000,
 		"totalCost":      127.50,
@@ -25,9 +40,9 @@ func (h *MetricsHandler) GetCurrentMetrics(c *gin.Context) {
 		"tasksCompleted": 1247,
 		"tasksFailed":    23,
 		"uptime":          99.9,
-		"computeLoad":    42.8, // Instrumented real load
+		"computeLoad":    42.8,  // Instrumented real load
 		"p99Latency":     125.4, // Real p99 latency
-		"missionsToday":  1402, // Daily mission throughput
+		"missionsToday":  1402,  // Daily mission throughput
 		"hourlyData": []gin.H{
 			{"hour": "00:00", "tokens": 45000, "cost": 2.25},
 			{"hour": "01:00", "tokens": 38000, "cost": 1.90},

@@ -1,4 +1,4 @@
-import { BusinessIdea, CATEGORY_COLORS, TREND_COLORS } from "@/lib/businessData";
+import { type BusinessIdea, CATEGORY_COLORS, TREND_COLORS } from "@/lib/api";
 import { 
   Dialog, 
   DialogContent, 

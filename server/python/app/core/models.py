@@ -43,6 +43,7 @@ class Agent(SQLModel, table=True):
     model: str = Field(default="gpt-4o")
     org_id: Optional[str] = None
     control_webhook: Optional[str] = None
+    persistent_memory: bool = Field(default=True)
     tier: str = Field(default="industrial")  # strategic, tactical, industrial
     api_secret: str = Field(default_factory=lambda: secrets.token_urlsafe(32))
     config: Optional[Dict[str, Any]] = Field(default={}, sa_column=Column(JSON))
@@ -67,6 +68,7 @@ class AgentCreate(SQLModel):
     model: str = "gpt-4o"
     org_id: Optional[str] = None
     control_webhook: Optional[str] = None
+    persistent_memory: bool = True
     tier: str = "industrial"
     config: Optional[Dict[str, Any]] = {}
     budget: float = 10.0
@@ -82,6 +84,7 @@ class AgentUpdate(SQLModel):
     model: Optional[str] = None
     org_id: Optional[str] = None
     control_webhook: Optional[str] = None
+    persistent_memory: Optional[bool] = None
     tier: Optional[str] = None
     config: Optional[Dict[str, Any]] = None
     status: Optional[AgentStatus] = None
@@ -621,6 +624,51 @@ class CryptoWallet(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
+class WorkforceSkill(SQLModel, table=True):
+    """Persistent storage for the Workforce Skills Marketplace"""
+
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    name: str
+    price: str
+    jobs_completed: int = Field(default=0)
+    status: str = Field(default="active")
+    category: str = Field(default="general")
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class WorkforceJob(SQLModel, table=True):
+    """Persistent storage for the Live Job Feed"""
+
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    title: str
+    client: str
+    price: str
+    status: str = Field(default="Auto-Accepted")
+    completed_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class WorkforceAcquisition(SQLModel, table=True):
+    """Persistent storage for Growth Acquisition Wins"""
+
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    client: str
+    value: str
+    source: str
+    won_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class WorkforceContent(SQLModel, table=True):
+    """Persistent storage for Content Factory drafts"""
+
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    title: str
+    type: str  # Blog, Case Study, LinkedIn
+    status: str = Field(default="Ready")
+    roi_metric: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 class ComplianceAuditLog(SQLModel, table=True):
     """Persistent audit logs for HIPAA/SOX/GDPR compliance"""
 
@@ -631,6 +679,30 @@ class ComplianceAuditLog(SQLModel, table=True):
     status: str = Field(default="verified")
     compliance_type: str  # HIPAA, SOX, Art. 14, GDPR
     metadata_json: Dict[str, Any] = Field(default={}, sa_column=Column(JSON))
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+
+class ForensicTrace(SQLModel, table=True):
+    """Execution traces from the digital workforce"""
+
+    __tablename__ = "forensic_traces"
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    user_id: str = Field(index=True)
+    agent_id: str
+    action: str
+    details: str
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+
+class GovernanceDecision(SQLModel, table=True):
+    """Sovereign governance decisions / sign-offs"""
+
+    __tablename__ = "governance_decisions"
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    user_id: str = Field(index=True)
+    stage: int
+    decision: str  # e.g., "Human override", "Autonomous"
+    status: str = Field(default="REVIEW_REQUIRED")
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -883,7 +955,7 @@ class BotSetting(SQLModel, table=True):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     user_id: str
     setting_key: str
-    setting_value: Any
+    setting_value: Any = Field(sa_column=Column(JSON))
     setting_type: str  # boolean, string, number, json
     description: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -983,4 +1055,69 @@ class WorkforceVenture(SQLModel, table=True):
     roi: float = Field(default=0.0)
     status: str = Field(default="BETA")  # PROFITABLE, SCALING, R&D, BETA
     trend: str = Field(default="up")  # up, down
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class MarketResearch(SQLModel, table=True):
+    """Persistent Market Research from Paperclip Agent"""
+
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    topic: str = Field(index=True)
+    confidence_score: int = Field(default=0)
+    market_temperature: str = Field(default="Stable")
+    competitors: List[Dict[str, Any]] = Field(default=[], sa_column=Column(JSON))
+    swot: Dict[str, Any] = Field(default={}, sa_column=Column(JSON))
+    summary: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class ProductStrategy(SQLModel, table=True):
+    """Persistent Product Strategy from Hermes Agent"""
+
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    project: str = Field(index=True)
+    strategy_score: int = Field(default=0)
+    roadmap: List[Dict[str, Any]] = Field(default=[], sa_column=Column(JSON))
+    ux_blueprint: Dict[str, Any] = Field(default={}, sa_column=Column(JSON))
+    recommendation: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class Subscription(SQLModel, table=True):
+    """Persistent user subscription from Billing Engine"""
+
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    user_id: str = Field(index=True)
+    plan: str  # professional, enterprise, starter
+    status: str = Field(default="active")  # active, canceled, past_due
+    current_period_end: datetime
+    cancel_at_period_end: bool = Field(default=False)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class Invoice(SQLModel, table=True):
+    """Persistent billing invoice from Stripe/Engine"""
+
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    user_id: str = Field(index=True)
+    invoice_number: str = Field(index=True)
+    amount: float
+    status: str = Field(default="paid")  # paid, open, void
+    date: datetime = Field(default_factory=datetime.utcnow)
+    pdf_url: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class BusinessIdea(SQLModel, table=True):
+    """Persistent Business Idea for the Top 100 Report"""
+
+    id: int = Field(default=None, primary_key=True)
+    title: str
+    category: str
+    market: str
+    description: str
+    earning_potential: str
+    rollout_speed: str
+    trend: str  # Explosive, High Growth, Steady
+    rank: int
     created_at: datetime = Field(default_factory=datetime.utcnow)

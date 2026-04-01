@@ -24,7 +24,7 @@ func NewProxyService(baseURL string) *ProxyService {
 	}
 }
 
-func (p *ProxyService) ForwardWithStatus(method, path string, body interface{}) (int, []byte, error) {
+func (p *ProxyService) ForwardWithStatus(method, path string, body interface{}, headers map[string]string) (int, []byte, error) {
 	var reqBody io.Reader
 	if body != nil {
 		jsonBody, err := json.Marshal(body)
@@ -41,6 +41,9 @@ func (p *ProxyService) ForwardWithStatus(method, path string, body interface{}) 
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+	for k, v := range headers {
+		req.Header.Set(k, v)
+	}
 
 	resp, err := p.client.Do(req)
 	if err != nil {
@@ -57,7 +60,7 @@ func (p *ProxyService) ForwardWithStatus(method, path string, body interface{}) 
 }
 
 func (p *ProxyService) Forward(method, path string, body interface{}) ([]byte, error) {
-	_, response, err := p.ForwardWithStatus(method, path, body)
+	_, response, err := p.ForwardWithStatus(method, path, body, nil)
 	return response, err
 }
 
@@ -192,4 +195,8 @@ func (p *ProxyService) RunForensics(agentID string) ([]byte, error) {
 
 func (p *ProxyService) ProvisionClient(data interface{}) ([]byte, error) {
 	return p.Forward("POST", "/whitelabel/provision", data)
+}
+
+func (p *ProxyService) GetAgentOpsMetrics() ([]byte, error) {
+	return p.Forward("GET", "/agent-ops/metrics", nil)
 }

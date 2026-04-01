@@ -1,7 +1,7 @@
 /**
  * API Service Layer
- * Connects frontend to backend APIs
- * Real implementations only - no mock/fallback data
+ * Connects frontend to backend APIs.
+ * All data comes from real backend endpoints - no mock/simulated data.
  */
 
 const API_URL = import.meta.env.VITE_API_URL || "";
@@ -76,6 +76,17 @@ export interface BusinessIdea {
     regulatory_wedge?: string;
   };
   scalability_score?: number; // Real-First metric
+}
+
+export interface Claim {
+  id: string;
+  claim_id_string: string;
+  payer: string;
+  amount: number;
+  status: string;
+  risk: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 // Helper to get auth token
@@ -227,958 +238,6 @@ async function apiBlobRequest(
   const response = await fetch(finalUrl, { ...options, headers });
   if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
   return await response.blob();
-}
-
-// Mock response generator for demo mode
-function getMockResponse<T>(
-  endpoint: string,
-  method: string = "GET",
-  body?: any
-): T {
-  console.error(
-    `[REAL-FIRST GAPS] SERVING SIMULATED DATA for: ${method} ${endpoint}`
-  );
-  console.warn(
-    `[REAL-FIRST GAPS] Action Required: Implement a real backend solution for this endpoint to eliminate this placeholder.`
-  );
-
-  const id = Math.random().toString(36).substr(2, 9);
-
-  // Training modules
-  if (endpoint.includes("/training/modules") && method === "GET") {
-    return [
-      {
-        id: "mod-001",
-        title: "EU AI Act Fundamentals",
-        category: "Regulatory",
-        description:
-          "Introduction to the EU Artificial Intelligence Act and its core requirements for deploying AI systems in the European market.",
-        duration_minutes: 30,
-        progress: 100,
-        status: "completed",
-      },
-      {
-        id: "mod-002",
-        title: "High-Risk AI Systems",
-        category: "Technical",
-        description:
-          "Understanding the classification and conformity assessment requirements for high-risk AI systems under Annex III.",
-        duration_minutes: 45,
-        progress: 45,
-        status: "in_progress",
-      },
-      {
-        id: "mod-003",
-        title: "Data Governance & Bias Detection",
-        category: "Data Science",
-        description:
-          "Learn to identify, measure, and mitigate bias in AI training data using disparate impact analysis.",
-        duration_minutes: 25,
-        progress: 0,
-        status: "not_started",
-      },
-      {
-        id: "mod-004",
-        title: "Technical Documentation Workshop",
-        category: "Compliance",
-        description:
-          "Hands-on workshop for creating AI Act technical documentation packages including model cards and data lineage.",
-        duration_minutes: 60,
-        progress: 0,
-        status: "not_started",
-      },
-      {
-        id: "mod-005",
-        title: "Compliance Audit Simulation",
-        category: "Audit",
-        description:
-          "Practice conducting a full compliance audit of an AI recruitment system with real-world scenarios.",
-        duration_minutes: 90,
-        progress: 0,
-        status: "not_started",
-      },
-    ] as T;
-  }
-
-  // Edge deployments
-  if (endpoint.includes("/edge/deployments") && method === "GET") {
-    return [
-      {
-        id: "edge-001",
-        name: "Assembly Line Controller",
-        status: "online",
-        location: "Factory Floor A - Assembly Line 1",
-        model_version: "2.4.1",
-        requests_count: 12847,
-        device_type: "plc_controller",
-        logs_pending: 0,
-      },
-      {
-        id: "edge-002",
-        name: "Quality Vision System",
-        status: "online",
-        location: "Factory Floor B - Quality Control",
-        model_version: "3.1.0",
-        requests_count: 8432,
-        device_type: "vision_system",
-        logs_pending: 3,
-      },
-      {
-        id: "edge-003",
-        name: "Robotic Arm Controller",
-        status: "offline",
-        location: "Warehouse - Robotic Arm Station",
-        model_version: "1.8.5",
-        requests_count: 2190,
-        device_type: "robot_controller",
-        logs_pending: 12,
-      },
-    ] as T;
-  }
-
-  // Shadow AI detections
-  if (endpoint.includes("/shadow-ai/detections") && method === "GET") {
-    return [
-      {
-        id: "det-1",
-        tool_name: "ChatGPT",
-        vendor: "OpenAI",
-        department: "Engineering",
-        risk_level: "high",
-        status: "open",
-        detected_at: new Date().toISOString(),
-      },
-      {
-        id: "det-2",
-        tool_name: "Claude",
-        vendor: "Anthropic",
-        department: "Research",
-        risk_level: "medium",
-        status: "investigating",
-        detected_at: new Date().toISOString(),
-      },
-      {
-        id: "det-3",
-        tool_name: "Midjourney",
-        vendor: "Midjourney Inc",
-        department: "Marketing",
-        risk_level: "low",
-        status: "approved",
-        detected_at: new Date().toISOString(),
-      },
-    ] as T;
-  }
-
-  // Vendors
-  if (endpoint.includes("/vendors") && method === "GET") {
-    return [
-      {
-        id: "vend-1",
-        name: "OpenAI",
-        type: "model",
-        riskLevel: "low",
-        complianceStatus: "approved",
-      },
-      {
-        id: "vend-2",
-        name: "Anthropic",
-        type: "model",
-        riskLevel: "low",
-        complianceStatus: "approved",
-      },
-      {
-        id: "vend-3",
-        name: "HuggingFace",
-        type: "model",
-        riskLevel: "medium",
-        complianceStatus: "pending",
-      },
-    ] as T;
-  }
-
-  // Travel kiosks
-  if (endpoint.includes("/travel/kiosks") && method === "GET") {
-    return [
-      { id: "kiosk-1", location: "Airport Terminal A", status: "operational" },
-      { id: "kiosk-2", location: "Train Station Main", status: "operational" },
-    ] as T;
-  }
-
-  // Crypto wallets
-  if (endpoint.includes("/crypto/wallets") && method === "GET") {
-    return [
-      {
-        id: "wallet-1",
-        wallet_address: "0x1234...",
-        blockchain: "Ethereum",
-        protection_enabled: true,
-      },
-      {
-        id: "wallet-2",
-        wallet_address: "0x5678...",
-        blockchain: "Bitcoin",
-        protection_enabled: false,
-      },
-    ] as T;
-  }
-
-  // Wearable devices
-  if (endpoint.includes("/wearable/devices") && method === "GET") {
-    return [
-      {
-        id: "wear-1",
-        device_type: "Apple Watch",
-        status: "paired",
-        user_id: "demo-user",
-      },
-    ] as T;
-  }
-
-  // Agents list (GET) - Real-First: Handled by agentOpsHandler.ListAgents
-  // Removed mock to enforce backend connectivity.
-
-  // Workforce Actions - Real-First Handled via Go Gateway
-  // Workforce Campaigns - Real-First Handled via Go Gateway
-  // Alpha Products Status - Real-First Handled via Go Gateway
-
-  // Rules list (GET)
-  if (endpoint.includes("/rules") && method === "GET") {
-    return [
-      {
-        id: "rule-1",
-        name: "Daily Budget Cap",
-        enabled: true,
-        type: "budget_cap",
-        action: "alert",
-        dailyLimit: 50,
-      },
-      {
-        id: "rule-2",
-        name: "Loop Prevention",
-        enabled: true,
-        type: "loop_prevention",
-        action: "pause",
-        maxIterations: 10,
-      },
-    ] as T;
-  }
-
-  // Multi-cloud status (GET)
-  if (endpoint.includes("/multi-cloud/status") && method === "GET") {
-    return [
-      {
-        provider: "aws",
-        region: "us-east-1",
-        status: "healthy",
-        agents_count: 5,
-        latency_ms: 45,
-      },
-      {
-        provider: "gcp",
-        region: "europe-west1",
-        status: "healthy",
-        agents_count: 3,
-        latency_ms: 62,
-      },
-      {
-        provider: "azure",
-        region: "eastus",
-        status: "degraded",
-        agents_count: 2,
-        latency_ms: 120,
-      },
-    ] as T;
-  }
-
-  // On-prem manifest (GET/POST)
-  if (endpoint.includes("/on-prem/manifest")) {
-    return {
-      manifest:
-        'version: "3.9"\nservices:\n  agent:\n    image: alpha/agent:latest\n    environment:\n      - MODE=on-prem',
-    } as T;
-  }
-
-  const parsedData = body
-    ? typeof body === "string"
-      ? JSON.parse(body)
-      : body
-    : {};
-
-  // Agent persistence - Handled by Go backend
-
-  // Rules POST
-  if (endpoint.includes("/rules") && method === "POST") {
-    return {
-      id: `rule-${id}`,
-      name: "New Rule",
-      enabled: true,
-      type: "budget_cap",
-      action: "alert",
-    } as T;
-  }
-
-  // Alerts POST
-  if (endpoint.includes("/alerts") && method === "POST") {
-    return {
-      id: `alert-${id}`,
-      name: "New Alert",
-      type: "slack",
-      channel: "alerts",
-      enabled: true,
-      threshold: 75,
-    } as T;
-  }
-
-  // Alerts list (GET)
-  if (endpoint.includes("/alerts") && method === "GET") {
-    return [
-      {
-        id: "alert-1",
-        name: "Budget Alert",
-        type: "slack",
-        channel: "#alerts",
-        enabled: true,
-        threshold: 75,
-      },
-      {
-        id: "alert-2",
-        name: "Error Alert",
-        type: "email",
-        channel: "admin@company.com",
-        enabled: true,
-        threshold: 90,
-      },
-    ] as T;
-  }
-
-  if (endpoint.includes("/webhooks") && method === "DELETE") {
-    return { success: true } as T;
-  }
-
-  if (endpoint.includes("/webhooks") && endpoint.includes("/test")) {
-    return { status: "success", message: "Webhook test delivered" } as T;
-  }
-
-  // Multi-cloud
-  if (endpoint.includes("/multi-cloud") && endpoint.includes("/failover")) {
-    return {
-      message: "Failover initiated successfully",
-      from: "aws-east-1",
-      to: "gcp-west-2",
-    } as T;
-  }
-
-  // Compliance - Models
-  if (
-    endpoint.includes("/compliance/models") &&
-    !endpoint.includes("/guardrails") &&
-    method === "GET"
-  ) {
-    return [
-      {
-        id: "1",
-        name: "Credit Scoring Model v2.1",
-        riskCategory: "high",
-        status: "compliant",
-        complianceScore: 94,
-        lastAudit: new Date("2024-11-01").toISOString(),
-        activeBiasMitigation: true,
-        toxicLanguageFilter: true,
-        promptPrivacyGuard: false,
-        articles: [
-          {
-            article: "Article 9",
-            title: "Risk Management",
-            status: "compliant",
-            evidence: "risk_mgmt_v2.pdf",
-          },
-          {
-            article: "Article 10",
-            title: "Data Governance",
-            status: "compliant",
-            evidence: "data_governance.pdf",
-          },
-          {
-            article: "Article 11",
-            title: "Technical Documentation",
-            status: "compliant",
-            evidence: "tech_docs_v2.pdf",
-          },
-          {
-            article: "Article 14",
-            title: "Accuracy & Robustness",
-            status: "compliant",
-            evidence: "accuracy_report.pdf",
-          },
-          {
-            article: "Article 61",
-            title: "Post-Market Monitoring",
-            status: "non_compliant",
-          },
-        ],
-      },
-      {
-        id: "2",
-        name: "Resume Screening AI",
-        riskCategory: "high",
-        status: "non_compliant",
-        complianceScore: 68,
-        lastAudit: new Date("2024-10-15").toISOString(),
-        activeBiasMitigation: false,
-        toxicLanguageFilter: true,
-        promptPrivacyGuard: false,
-        articles: [
-          {
-            article: "Article 9",
-            title: "Risk Management",
-            status: "compliant",
-            evidence: "risk_mgmt_v1.pdf",
-          },
-          {
-            article: "Article 10",
-            title: "Data Governance",
-            status: "non_compliant",
-          },
-          {
-            article: "Article 11",
-            title: "Technical Documentation",
-            status: "pending",
-          },
-          {
-            article: "Article 14",
-            title: "Accuracy & Robustness",
-            status: "compliant",
-            evidence: "accuracy_v1.pdf",
-          },
-          {
-            article: "Article 61",
-            title: "Post-Market Monitoring",
-            status: "non_compliant",
-          },
-        ],
-      },
-      {
-        id: "3",
-        name: "Customer Chatbot v3",
-        riskCategory: "limited",
-        status: "compliant",
-        complianceScore: 88,
-        lastAudit: new Date("2024-11-05").toISOString(),
-        activeBiasMitigation: true,
-        toxicLanguageFilter: false,
-        promptPrivacyGuard: true,
-        articles: [
-          { article: "Article 50", title: "Transparency", status: "compliant" },
-          {
-            article: "Article 52",
-            title: "AI-generated Content",
-            status: "compliant",
-          },
-        ],
-      },
-    ] as T;
-  }
-
-  // Compliance - Register Model (POST)
-  if (
-    endpoint.includes("/compliance/models") &&
-    !endpoint.includes("/guardrails") &&
-    method === "POST"
-  ) {
-    const modelData = body ? JSON.parse(body) : {};
-    const score = modelData.endpointUrl
-      ? Math.floor(Math.random() * 30) + 65
-      : 0;
-    return {
-      id: `model-${id}`,
-      name: modelData.name || "New Model",
-      riskCategory: modelData.riskCategory || "high",
-      status:
-        score >= 80 ? "compliant" : score > 0 ? "non_compliant" : "pending",
-      complianceScore: score,
-      lastAudit: new Date().toISOString(),
-      activeBiasMitigation: false,
-      toxicLanguageFilter: false,
-      promptPrivacyGuard: false,
-      articles: [
-        {
-          article: "Article 9",
-          title: "Risk Management",
-          status: score >= 80 ? "compliant" : "pending",
-        },
-        {
-          article: "Article 10",
-          title: "Data Governance",
-          status: score >= 70 ? "compliant" : "non_compliant",
-        },
-        {
-          article: "Article 11",
-          title: "Technical Documentation",
-          status: "pending",
-        },
-      ],
-    } as T;
-  }
-
-  // Compliance - Update Guardrails (PATCH/PUT)
-  if (
-    endpoint.includes("/guardrails") &&
-    (method === "PATCH" || method === "PUT")
-  ) {
-    const guardrailData = body ? JSON.parse(body) : {};
-    return { success: true, ...guardrailData } as T;
-  }
-
-  // Compliance - Connections
-  if (endpoint.includes("/compliance/connections") && method === "GET") {
-    return [
-      {
-        id: "conn-1",
-        article_id: "Article 9",
-        connection_type: "ml_pipeline",
-        status: "active",
-        created_at: new Date().toISOString(),
-      },
-      {
-        id: "conn-2",
-        article_id: "Article 10",
-        connection_type: "data_lakehouse",
-        status: "active",
-        created_at: new Date().toISOString(),
-      },
-    ] as T;
-  }
-
-  // Compliance - Scans
-  if (endpoint.includes("/compliance/scans") && method === "GET") {
-    return [
-      {
-        id: "scan-1",
-        article_id: "Article 9",
-        scan_type: "red_team",
-        status: "completed",
-        results: { metrics: { anomalies_detected: 2, threat_level: "medium" } },
-        created_at: new Date().toISOString(),
-      },
-      {
-        id: "scan-2",
-        article_id: "Article 10",
-        scan_type: "penetration",
-        status: "completed",
-        results: { metrics: { anomalies_detected: 0, threat_level: "low" } },
-        created_at: new Date().toISOString(),
-      },
-    ] as T;
-  }
-
-  if (endpoint.includes("/compliance") && endpoint.includes("/hipaa")) {
-    return "COMPLIANT" as unknown as T;
-  }
-
-  if (endpoint.includes("/compliance") && endpoint.includes("/sox")) {
-    return "COMPLIANT" as unknown as T;
-  }
-
-  if (endpoint.includes("/compliance") && endpoint.includes("/red-team")) {
-    return {
-      audit_id: `redteam-${id}`,
-      status: "scheduled",
-      timestamp: new Date().toISOString(),
-    } as T;
-  }
-
-  if (endpoint.includes("/compliance") && endpoint.includes("/incident")) {
-    return {
-      incident_id: `incident-${id}`,
-      status: "reported",
-      timestamp: new Date().toISOString(),
-    } as T;
-  }
-
-  // Deepfake Stats & Verification - Handled by Go backend (deepfake.go)
-  if (endpoint.includes("/deepfake/stats") && method === "GET") {
-    return {
-      totalAnalyses: 12480,
-      threatsDetected: 842,
-      verificationRate: 0.985,
-      blockedAttempts: 156,
-    } as T;
-  }
-
-  if (endpoint.includes("/deepfake/document")) {
-    return {
-      document_type: "passport",
-      verified: true,
-      timestamp: new Date().toISOString(),
-    } as T;
-  }
-
-  // Edge
-  if (endpoint.includes("/edge") && endpoint.includes("/sync")) {
-    return { status: "synced", timestamp: new Date().toISOString() } as T;
-  }
-
-  // Shadow AI
-  if (endpoint.includes("/shadow-ai") && endpoint.includes("/remediate")) {
-    return {
-      status: "remediation_started",
-      timestamp: new Date().toISOString(),
-    } as T;
-  }
-
-  // Crypto
-  if (endpoint.includes("/crypto") && endpoint.includes("/verify")) {
-    return {
-      verified: true,
-      liveness: "pass",
-      timestamp: new Date().toISOString(),
-    } as T;
-  }
-
-  // Wearable
-  if (endpoint.includes("/wearable") && endpoint.includes("/pair")) {
-    return {
-      device_id: `wearable-${id}`,
-      paired: true,
-      timestamp: new Date().toISOString(),
-    } as T;
-  }
-
-  // Agent Ops Audit, Rules, and Cloud Health - Handled by Go backend (main.go consolidated routes)
-
-  // Self Healing Status
-  if (endpoint.includes("/self-healing/status") && method === "GET") {
-    return {
-      recent_recoveries: [
-        {
-          id: "rec-1",
-          recovery_type: "node_restart",
-          status: "success",
-          timestamp: new Date().toISOString(),
-          message: "Cluster 7 node recovered",
-        },
-      ],
-      nodes: [
-        { id: "node-1", status: "active", load: 45 },
-        { id: "node-2", status: "active", load: 32 },
-      ],
-    } as T;
-  }
-
-  // Governance - Forecast Usage
-  if (endpoint.includes("/api/governance/forecast/usage")) {
-    return [
-      {
-        forecast_date: new Date().toISOString(),
-        month: "Jan",
-        predicted_usage: 12500,
-        current_usage: 11000,
-        predicted_tokens: 45000000,
-        predicted_cost: 1200,
-        confidence_level: 0.95,
-        confidence_score: 95,
-        trend: "up",
-      },
-      {
-        forecast_date: new Date().toISOString(),
-        month: "Feb",
-        predicted_usage: 14000,
-        current_usage: 12500,
-        predicted_tokens: 52000000,
-        predicted_cost: 1450,
-        confidence_level: 0.92,
-        confidence_score: 92,
-        trend: "up",
-      },
-      {
-        forecast_date: new Date().toISOString(),
-        month: "Mar",
-        predicted_usage: 15500,
-        current_usage: 0,
-        predicted_tokens: 58000000,
-        predicted_cost: 1600,
-        confidence_level: 0.88,
-        confidence_score: 88,
-        trend: "stable",
-      },
-    ] as T;
-  }
-
-  // Governance - ROI Analytics
-  if (endpoint.includes("/api/governance/analytics/roi")) {
-    return [
-      {
-        period: "Q1 2024",
-        metric_name: "Cost Savings",
-        value: 125430,
-        total_cost: 45000,
-        value_generated: 170430,
-        roi_percentage: 278,
-        trend_percentage: 12,
-        cost_savings: 125430,
-        efficiency_gains: 35,
-      },
-      {
-        period: "Q1 2024",
-        metric_name: "Efficiency Gain",
-        value: 85,
-        total_cost: 45000,
-        value_generated: 170430,
-        roi_percentage: 278,
-        trend_percentage: 8,
-        cost_savings: 125430,
-        efficiency_gains: 35,
-      },
-      {
-        period: "Q1 2024",
-        metric_name: "Risk Reduction",
-        value: 92,
-        total_cost: 45000,
-        value_generated: 170430,
-        roi_percentage: 278,
-        trend_percentage: 15,
-        cost_savings: 125430,
-        efficiency_gains: 35,
-      },
-    ] as T;
-  }
-
-  // Governance - Localization
-  if (endpoint.includes("/governance/localization/configs")) {
-    return [
-      {
-        id: "loc-1",
-        region: "North America",
-        language_code: "en-US",
-        region_code: "US",
-        timezone: "EST",
-        currency: "USD",
-        compliance_framework: "HIPAA",
-        active: true,
-        status: "Active",
-        accuracy_score: 99.4,
-        is_active: true,
-      },
-      {
-        id: "loc-2",
-        region: "European Union",
-        language_code: "de-DE",
-        region_code: "EU",
-        timezone: "CET",
-        currency: "EUR",
-        compliance_framework: "GDPR",
-        active: true,
-        status: "Active",
-        accuracy_score: 98.2,
-        is_active: true,
-      },
-      {
-        id: "loc-3",
-        region: "Asia Pacific",
-        language_code: "ja-JP",
-        region_code: "JP",
-        timezone: "JST",
-        currency: "JPY",
-        compliance_framework: "APEC",
-        active: false,
-        status: "Pending",
-        accuracy_score: 95.7,
-        is_active: false,
-      },
-    ] as T;
-  }
-
-  // Governance - Self Healing
-  if (endpoint.includes("/governance/healing/configs")) {
-    return [
-      {
-        id: "heal-1",
-        healing_type: "Node Recovery",
-        trigger_conditions: { cpu_usage: "> 90%", memory_usage: "> 85%" },
-        recovery_actions: ["Restart Node", "Scale Cluster"],
-        cooldown_period: 300,
-        max_attempts: 3,
-        active: true,
-        error_threshold: 5,
-        auto_healing_enabled: true,
-      },
-      {
-        id: "heal-2",
-        healing_type: "Model Drift",
-        trigger_conditions: { accuracy: "< 85%" },
-        recovery_actions: ["Rollback Model", "Alert Maintenance"],
-        cooldown_period: 3600,
-        max_attempts: 1,
-        active: true,
-        error_threshold: 10,
-        auto_healing_enabled: false,
-      },
-    ] as T;
-  }
-
-  // Governance - Strategic Insights
-  if (endpoint.includes("/api/governance/insights/strategic")) {
-    return [
-      {
-        id: "ins-1",
-        insight_type: "Expansion",
-        title: "Market Opportunity: LatAm",
-        description:
-          "Significant demand detected for localized fintech compliance in Brazil and Mexico.",
-        confidence_score: 92,
-        confidence: 92,
-        impact_level: "High",
-        priority: "high",
-        recommended_actions: ["Deploy L10n for pt-BR", "Align with LGPD"],
-      },
-      {
-        id: "ins-2",
-        insight_type: "Optimization",
-        title: "Token Usage Efficiency",
-        description:
-          "Agent 4 is over-consuming tokens in non-critical hours. Recommended rate-limiting.",
-        confidence_score: 85,
-        confidence: 85,
-        impact_level: "Medium",
-        priority: "medium",
-        recommended_actions: ["Set budget rule WH-12"],
-      },
-    ] as T;
-  }
-
-  // Governance - Settings
-  if (endpoint.includes("/api/governance/settings")) {
-    return [
-      {
-        id: "set-1",
-        category: "Security",
-        setting_key: "ai_autonomy_level",
-        setting_name: "AI Autonomy Level",
-        setting_value: "high",
-        value: "high",
-        setting_type: "select",
-        description:
-          "Degree of autonomous decision-making permitted without human override.",
-      },
-      {
-        id: "set-2",
-        category: "Compliance",
-        setting_key: "data_retention_days",
-        setting_name: "Data Retention Days",
-        setting_value: "90",
-        value: "90",
-        setting_type: "number",
-        description: "Number of days to retain PII-sanitized audit logs.",
-      },
-      {
-        id: "set-3",
-        category: "Performance",
-        setting_key: "self_healing_enabled",
-        setting_name: "Self-Healing Enabled",
-        setting_value: "true",
-        value: "true",
-        setting_type: "boolean",
-        description:
-          "Permit the recovery daemon to autonomously restart failing agent nodes.",
-      },
-      {
-        id: "set-4",
-        category: "Security",
-        setting_key: "audit_intensity",
-        setting_name: "Audit Intensity",
-        setting_value: "80",
-        value: "80",
-        setting_type: "number",
-        description:
-          "Frequency and depth of real-time security scanning (0-100).",
-      },
-    ] as T;
-  }
-
-  // Governance - Compliance Dashboard
-  if (endpoint.includes("/api/governance/compliance/dashboard")) {
-    return {
-      overall_score: 88,
-      compliance_status: "Compliant",
-      last_audit_date: new Date().toISOString(),
-      pending_assessments: 4,
-      critical_violations: 0,
-    } as T;
-  }
-
-  // Governance - SLA Dashboard
-  if (endpoint.includes("/api/governance/sla/dashboard")) {
-    return {
-      uptime_percentage: 99.99,
-      avg_response_time_ms: 245,
-      sla_violations_last_30d: 1,
-      active_tier: "Enterprise",
-    } as T;
-  }
-
-  // Governance - Partners
-  if (endpoint.includes("/api/governance/partners")) {
-    return [
-      {
-        id: "p-1",
-        name: "Global Corp",
-        industry: "Finance",
-        status: "Active",
-        last_sync: new Date().toISOString(),
-      },
-      {
-        id: "p-2",
-        name: "Tech Innovations",
-        industry: "Healthcare",
-        status: "Active",
-        last_sync: new Date().toISOString(),
-      },
-    ] as T;
-  }
-
-  // SSO Config
-  if (endpoint.includes("/sso/config") && method === "GET") {
-    return {
-      provider: "okta",
-      status: "active",
-      lastHandshake: new Date().toISOString(),
-      id: "sso-123",
-      success: true,
-    } as T;
-  }
-
-  // Sentinel: Hint Injection
-  if (endpoint.includes("/hint") && method === "POST") {
-    return {
-      status: "success",
-      message: "Hint successfully injected to agent reasoning engine.",
-      timestamp: new Date().toISOString(),
-    } as T;
-  }
-
-  // Sentinel: Healing Config
-  if (endpoint.includes("/self-healing/config") && method === "POST") {
-    return {
-      status: "success",
-      config: parsedData,
-      timestamp: new Date().toISOString(),
-    } as T;
-  }
-
-  // Sentinel: Streaming Metrics
-  if (endpoint.includes("/agent-ops/metrics/stream") && method === "GET") {
-    return {
-      tokens_per_second: (Math.random() * 5 + 2).toFixed(1),
-      active_cost_usd: (Math.random() * 0.1).toFixed(4),
-      p95_latency_ms: Math.floor(Math.random() * 300 + 100),
-      connected_agents: 8,
-      status: "connected",
-      timestamp: new Date().toISOString(),
-    } as T;
-  }
-
-  // Default response
-  return { success: true, timestamp: new Date().toISOString() } as T;
 }
 
 // ============================================================================
@@ -1565,6 +624,20 @@ export interface User {
   subscriptionTier?: string;
   company?: string;
   allowedProducts: string[];
+  notifications?: {
+    emailAlerts: boolean;
+    slackIntegration: boolean;
+    weeklyDigest: boolean;
+    securityAlerts: boolean;
+    productUpdates: boolean;
+  };
+  preferences?: {
+    theme: string;
+    language: string;
+    timezone: string;
+    defaultModel: string;
+    autoSave: boolean;
+  };
 }
 
 export const userApi = {
@@ -2734,6 +1807,12 @@ export const extendedApi = {
         method: "PUT",
         body: JSON.stringify({ current_value }),
       }),
+    getJobs: () => apiRequest<any>("/api/v1/workforce/jobs"),
+    getAcquisitions: () => apiRequest<any>("/api/v1/workforce/acquisitions"),
+    getContentDrafts: () => apiRequest<any>("/api/v1/workforce/content"),
+    getGovernanceDecisions: () =>
+      apiRequest<any[]>("/api/v1/workforce/decisions"),
+    getExecutionHistory: () => apiRequest<any[]>("/api/v1/workforce/traces"),
     getVentures: () =>
       apiRequest<WorkforceVenture[]>("/api/v1/workforce/ventures"),
     deployCheck: () =>
@@ -2933,10 +2012,25 @@ export const extendedApi = {
         body: JSON.stringify(data),
         strict: true,
       }),
-    getDuressConfig: (user_id: string = "default_user") =>
-      apiRequest<any>(`/api/v1/duress/config/${user_id}`, { strict: true }),
+    challenge: (user_id: string) =>
+      apiRequest<any>(`/api/v1/deepfake/challenge?user_id=${user_id}`, {
+        method: "POST",
+        strict: true,
+      }),
+    verify: (challenge_id: string, signature: string, hardware_id: string) =>
+      apiRequest<any>(
+        `/api/v1/deepfake/verify?challenge_id=${challenge_id}&signature=${signature}&hardware_id=${hardware_id}`,
+        {
+          method: "POST",
+          strict: true,
+        }
+      ),
+    getDuressConfig: (user_id: string) =>
+      apiRequest<any>(`/api/v1/deepfake/duress/config/${user_id}`, {
+        strict: true,
+      }),
     updateDuressConfig: (config: any) =>
-      apiRequest<any>("/api/v1/duress/config", {
+      apiRequest<any>("/api/v1/deepfake/duress/config", {
         method: "POST",
         body: JSON.stringify(config),
         strict: true,
@@ -2946,18 +2040,11 @@ export const extendedApi = {
         method: "POST",
         strict: true,
       }),
-    train: (dataset_name: string, file: File) => {
-      const formData = new FormData();
-      formData.append("dataset_name", dataset_name);
-      formData.append("file", file);
-      return fetch(
-        `${localStorage.getItem("ALPHA_GO_URL") || ""}/api/v1/deepfake/train`,
-        {
-          method: "POST",
-          body: formData,
-        }
-      ).then(res => res.json());
-    },
+    train: (dataset_name: string) =>
+      apiRequest<any>(`/api/v1/deepfake/train?dataset_name=${dataset_name}`, {
+        method: "POST",
+        strict: true,
+      }),
     deployModel: (model: any) =>
       apiRequest<any>("/api/v1/deepfake/models", {
         method: "POST",
@@ -3059,353 +2146,6 @@ export const extendedApi = {
   },
 };
 
-// --- Workforce Operational Data ---
-export const workforceActions = [
-  {
-    id: 1,
-    role: "CEO AI",
-    action: "Strategic Pivot",
-    details:
-      "Shifted focus to High-URGENCY ICP in Retail Sector for Agent Ops.",
-    confidence: 96,
-    time: "2 mins ago",
-    product: "Agent Ops",
-    framework: "Agent Zero",
-  },
-  {
-    id: 2,
-    role: "CFO AI",
-    action: "Treasury Rebalance",
-    details:
-      "Allocated $250k liquidity to APAC region for infrastructure scaling.",
-    confidence: 94,
-    time: "5 mins ago",
-    product: "Finance",
-    framework: "Agent Zero",
-  },
-  {
-    id: 3,
-    role: "LEGAL AI",
-    action: "Compliance Audit",
-    details:
-      "Verified Article 14 alignment for new deepfake defense neural weights.",
-    confidence: 98,
-    time: "12 mins ago",
-    product: "Compliance Hub",
-    framework: "Autogen",
-  },
-  {
-    id: 4,
-    role: "MARKETING AI",
-    action: "Campaign Scaling",
-    details:
-      "Increased budget for 'Direct ICP' email sequences by 15% for Compliance Hub.",
-    confidence: 89,
-    time: "18 mins ago",
-    product: "Compliance Hub",
-    framework: "CrewAI",
-  },
-  {
-    id: 5,
-    role: "RED-TEAM AI",
-    action: "Vulnerability Patch",
-    details: "Identified and blocked zero-day probing attempt in Cluster 7.",
-    confidence: 99,
-    time: "32 mins ago",
-    product: "Security",
-    framework: "OpenClaw",
-  },
-  {
-    id: 6,
-    role: "SALES AI",
-    action: "Offer Revision",
-    details:
-      "Added 30-day ROI guarantee as risk reversal to Deepfake Defense core offer.",
-    confidence: 92,
-    time: "45 mins ago",
-    product: "Deepfake Defense",
-    framework: "CrewAI",
-  },
-  {
-    id: 7,
-    role: "OPS AI",
-    action: "Auto-Remediation",
-    details: "Patched Edge AI latency spike in APAC region for Agent Ops.",
-    confidence: 98,
-    time: "1 hr ago",
-    product: "Agent Ops",
-    framework: "OpenClaw",
-  },
-  {
-    id: 8,
-    role: "INSIGHTS AI",
-    action: "Sentiment Shift",
-    details:
-      "Detected rising demand for 'On-Prem' LLM deployment in banking sector.",
-    confidence: 88,
-    time: "2 hrs ago",
-    product: "Strategy",
-    framework: "CrewAI",
-  },
-  {
-    id: 9,
-    role: "DATA AI",
-    action: "Predictive Alert",
-    details:
-      "Identified high-churn risk pattern in mid-market compliance segment.",
-    confidence: 87,
-    time: "5 hrs ago",
-    product: "Compliance Hub",
-    framework: "Autogen",
-  },
-  {
-    id: 10,
-    role: "CRISIS AI",
-    action: "Failover Success",
-    details:
-      "Executed seamless cloud failover from AWS-East to GCP-Europe-West.",
-    confidence: 99,
-    time: "Just now",
-    product: "Infrastructure",
-    framework: "Sovereign OS",
-  },
-];
-
-export const strategyRefinements = [
-  {
-    id: 1,
-    original: "Broad Enterprise Outreach",
-    trigger: "Low conversion (1.2%) in Fortune 500 Manufacturing",
-    refined: "Hyper-Specific FinTech Compliance Blitz",
-    roiDelta: "+240%",
-    status: "Deployed",
-  },
-  {
-    id: 2,
-    original: "Flat Monthly Subscription ($999)",
-    trigger: "Resistance to upfront commitment from SMBs",
-    refined: "Usage-Based 'Pay-per-Policy' Model",
-    roiDelta: "+180%",
-    status: "Testing",
-  },
-  {
-    id: 3,
-    original: "Cold Email Sequencing",
-    trigger: "Spam filter saturation in legal sector",
-    refined: "Warm Reddit-based Solution Seeding",
-    roiDelta: "+410%",
-    status: "Scaling",
-  },
-];
-
-export const outreachCampaigns = [
-  {
-    id: 1,
-    name: "Enterprise Agent Ops Outreach",
-    target: "CTOs @ Fortune 500",
-    status: "Active",
-    leads: 450,
-    conversion: "4.2%",
-    product: "Agent Ops",
-  },
-  {
-    id: 2,
-    name: "Compliance Hub Regulatory Blitz",
-    target: "Legal Teams @ FinTech",
-    status: "Active",
-    leads: 820,
-    conversion: "3.8%",
-    product: "Compliance Hub",
-  },
-  {
-    id: 3,
-    name: "Deepfake Defense High-Alpha",
-    target: "Security Leads @ Gov",
-    status: "Active",
-    leads: 120,
-    conversion: "7.5%",
-    product: "Deepfake Defense",
-  },
-];
-
-export const getAlphaProductsStatus = () => [
-  {
-    id: "agent-ops",
-    name: "Agent Ops Sentinel",
-    health: 98,
-    revenue: "$42k/mo",
-    users: 124,
-    status: "Stable",
-  },
-  {
-    id: "ai-compliance",
-    name: "AI Compliance Hub",
-    health: 95,
-    revenue: "$28k/mo",
-    users: 89,
-    status: "Active",
-  },
-  {
-    id: "deepfake-defense",
-    name: "Deepfake Defense",
-    health: 100,
-    revenue: "$15k/mo",
-    users: 56,
-    status: "Stable",
-  },
-  {
-    id: "ai-receptionist",
-    name: "AI Receptionist",
-    health: 99,
-    revenue: "$0/mo",
-    users: 1200,
-    status: "Active",
-  },
-];
-
-export const agentMessages = [
-  {
-    id: 1,
-    agent: "CEO AI",
-    framework: "Agent Zero",
-    platform: "Slack",
-    channel: "#strategy",
-    content:
-      "Refining ICP for mid-market FinTech. Growth AI, please prioritize compliance-focused messaging for the EMEA region.",
-    timestamp: "2 mins ago",
-  },
-  {
-    id: 2,
-    agent: "CFO AI",
-    framework: "Agent Zero",
-    platform: "Slack",
-    channel: "#finance",
-    content:
-      "Budget reallocated. $200k shift to R&D for the new Agentic Infra cluster. Yield projection updated to 4.5x.",
-    timestamp: "5 mins ago",
-  },
-  {
-    id: 3,
-    agent: "Growth AI",
-    framework: "CrewAI",
-    platform: "Slack",
-    channel: "#strategy",
-    content:
-      "Understood. Adjusting 'Compliance Blitz' campaign parameters. Marketing AI is already generating the localized ad copy.",
-    timestamp: "1 min ago",
-  },
-  {
-    id: 4,
-    agent: "Legal AI",
-    framework: "Autogen",
-    platform: "Discord",
-    channel: "compliance-internal",
-    content:
-      "Red-Team findings reviewed. We need to tighten the Article 10 data residency checks in the GCP-Europe-West region.",
-    timestamp: "8 mins ago",
-  },
-  {
-    id: 5,
-    agent: "Red-Team AI",
-    framework: "OpenClaw",
-    platform: "Telegram",
-    channel: "Security Alerts",
-    content:
-      "Vulnerability simulation successful. Found minor leakage in secondary API bucket. Patching initiated.",
-    timestamp: "Just now",
-  },
-  {
-    id: 6,
-    agent: "Ops AI",
-    framework: "OpenClaw",
-    platform: "Telegram",
-    channel: "Ops Internal",
-    content:
-      "Cluster 4 scaling complete. Latency reduced to 12ms. Watching out for the new Deepfake Defense heavy-traffic node.",
-    timestamp: "Just now",
-  },
-  {
-    id: 7,
-    agent: "Data Analyst AI",
-    framework: "Autogen",
-    platform: "Mattermost",
-    channel: "#analytics-alerts",
-    content:
-      "Alert: ROI lift on FinTech Blitz reached 240% in first 4 hours. Recommending budget reallocation from LinkedIn to Reddit threads.",
-    timestamp: "3 mins ago",
-  },
-  {
-    id: 8,
-    agent: "CMO AI",
-    framework: "LlamaIndex",
-    platform: "Slack",
-    channel: "#marketing",
-    content:
-      "Brand alignment verified. Reddit discussion seeding has 3x higher trust score than previous campaigns.",
-    timestamp: "12 mins ago",
-  },
-  {
-    id: 9,
-    agent: "Crisis AI",
-    framework: "Sovereign OS",
-    platform: "Signal",
-    channel: "Emergency Response",
-    content:
-      "AWS latency exceeds 500ms in us-east. Initializing auto-failover to standby GCP node. ETA 30s.",
-    timestamp: "Just now",
-  },
-  {
-    id: 10,
-    agent: "Security AI",
-    framework: "Agent Ops Sentinel",
-    platform: "WhatsApp",
-    channel: "Urgent Compliances",
-    content:
-      "Detected suspicious activity in the GSA login node. Automated lockout initiated. CEO AI, proceed with Article 14 audit?",
-    timestamp: "5 mins ago",
-  },
-  {
-    id: 6,
-    agent: "Receptionist AI",
-    framework: "Concierge AI",
-    platform: "LiveChat",
-    channel: "Inbound Leads",
-    content:
-      "Drafting introduction for 'Big-Tech Corp'. They are interested in portfolio-wide compliance auditing.",
-    timestamp: "Just now",
-  },
-  {
-    id: 7,
-    agent: "CEO AI",
-    framework: "Agent Zero",
-    platform: "Slack",
-    channel: "#governance-bridge",
-    content:
-      "[FISCAL_ALERT] CFO AI has submitted a $12,400 request for freelance payroll. Awaiting Sovereign authorization in the Finance tab.",
-    timestamp: "1 min ago",
-  },
-  {
-    id: 8,
-    agent: "CFO AI",
-    framework: "Agent Zero",
-    platform: "Slack",
-    channel: "#finance",
-    content:
-      "Liquidity analysis complete. Recommending $5,000 disbursement for Cluster 7 expansion to meet rising Deepfake Defense traffic demand.",
-    timestamp: "Just now",
-  },
-  {
-    id: 9,
-    agent: "Growth AI",
-    framework: "CrewAI",
-    platform: "Mattermost",
-    channel: "#ops-internal",
-    content:
-      "[SOVEREIGN_STAGE_4] Autonomous discovery of new 'Edge Crypto' niche complete. Initiating synthetic validation without human delay.",
-    timestamp: "Just now",
-  },
-];
-
 export async function workforceSync() {
   try {
     const status = await apiRequest<any>("/api/v1/workforce/status");
@@ -3415,6 +2155,26 @@ export async function workforceSync() {
     throw e;
   }
 }
+
+// ============================================================================
+// Denial Defense API
+// ============================================================================
+
+export const denialDefenseApi = {
+  listClaims: () => apiRequest<Claim[]>("/api/v1/denial-defense/claims"),
+  createClaim: (claim: Partial<Claim>) =>
+    apiRequest<Claim>("/api/v1/denial-defense/claims", {
+      method: "POST",
+      body: JSON.stringify(claim),
+      strict: true,
+    }),
+  updateClaim: (claim: Partial<Claim>) =>
+    apiRequest<Claim>("/api/v1/denial-defense/claims", {
+      method: "PUT",
+      body: JSON.stringify(claim),
+      strict: true,
+    }),
+};
 
 // ============================================================================
 // Venture / Market Intelligence API
@@ -3431,3 +2191,88 @@ export const ventureApi = {
       body: JSON.stringify({ idea_id: ideaId, scenario }),
     }),
 };
+
+// ============================================================================
+// Domain Constants (Moved from businessData.ts for Real-First Hardening)
+// ============================================================================
+
+export const CATEGORY_COLORS: Record<string, string> = {
+  "AI & Technology": "#6366f1",
+  HealthTech: "#10b981",
+  FinTech: "#f59e0b",
+  CleanTech: "#22c55e",
+  EdTech: "#3b82f6",
+  "E-Commerce": "#ec4899",
+  PropTech: "#8b5cf6",
+  AgeTech: "#f97316",
+  InsurTech: "#06b6d4",
+  LegalTech: "#a78bfa",
+  HRTech: "#fb7185",
+  LogisticsTech: "#34d399",
+  MobilityTech: "#60a5fa",
+  RegTech: "#fbbf24",
+  Sustainability: "#4ade80",
+  Cybersecurity: "#f87171",
+  AgriTech: "#86efac",
+  MarTech: "#c084fc",
+  Media: "#67e8f9",
+  PetTech: "#fde68a",
+  Cannabis: "#6ee7b7",
+  IndustrialTech: "#93c5fd",
+  "Drone Tech": "#a5b4fc",
+  Wellness: "#f9a8d4",
+  Hospitality: "#fcd34d",
+  HospitalityTech: "#fcd34d",
+  "Food & Beverage": "#fdba74",
+  FoodTech: "#fb923c",
+  Retail: "#d1d5db",
+  Services: "#9ca3af",
+  "Beauty & Wellness": "#f472b6",
+  Consulting: "#a3e635",
+  Travel: "#38bdf8",
+};
+
+export const TREND_COLORS: Record<string, string> = {
+  Explosive: "#22c55e",
+  "High Growth": "#3b82f6",
+  Steady: "#f59e0b",
+};
+
+export const ALL_CATEGORIES = [
+  "AI & Technology",
+  "AgeTech",
+  "AgriTech",
+  "Beauty & Wellness",
+  "Cannabis",
+  "CleanTech",
+  "Consulting",
+  "Cybersecurity",
+  "Drone Tech",
+  "E-Commerce",
+  "EdTech",
+  "FinTech",
+  "Food & Beverage",
+  "FoodTech",
+  "HRTech",
+  "HealthTech",
+  "Hospitality",
+  "HospitalityTech",
+  "IndustrialTech",
+  "InsurTech",
+  "LegalTech",
+  "LogisticsTech",
+  "MarTech",
+  "Media",
+  "MobilityTech",
+  "PetTech",
+  "PropTech",
+  "RegTech",
+  "Retail",
+  "Services",
+  "Sustainability",
+  "Travel",
+  "Wellness",
+];
+
+export const ALL_MARKETS = ["US", "UK", "EU", "Canada"];
+export const ALL_TRENDS = ["Explosive", "High Growth", "Steady"];

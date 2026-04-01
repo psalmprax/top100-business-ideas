@@ -178,3 +178,35 @@ func (h *DeepfakeHandler) ListDetectors(c *gin.Context) {
 
 	c.JSON(http.StatusOK, result)
 }
+
+func (h *DeepfakeHandler) GetDuressConfig(c *gin.Context) {
+	userID := c.Query("user_id")
+	if userID == "" {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "user_id is required"})
+		return
+	}
+
+	response, err := h.proxyService.Forward("GET", "/deepfake/duress/config/"+userID, nil)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch duress config", Details: err.Error()})
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+func (h *DeepfakeHandler) UpdateDuressConfig(c *gin.Context) {
+	var req interface{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request"})
+		return
+	}
+
+	response, err := h.proxyService.Forward("POST", "/deepfake/duress/config", req)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to update duress config", Details: err.Error()})
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json", response)
+}

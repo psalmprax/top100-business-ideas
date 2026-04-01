@@ -1,6 +1,8 @@
+import os
 from typing import List, Dict, Optional
 import json
 import yaml
+
 
 class OnPremService:
     """
@@ -18,19 +20,19 @@ class OnPremService:
                     "ports": ["8080:8080"],
                     "environment": {
                         "DB_URL": config.get("db_url", "sqlite:///./agent_ops.db"),
-                        "ENCRYPTION_KEY": config.get("encryption_key", "REPLACE_ME"),
-                        "LOG_LEVEL": "info"
+                        "ENCRYPTION_KEY": config.get(
+                            "encryption_key", os.getenv("ON_PREM_ENCRYPTION_KEY", "")
+                        ),
+                        "LOG_LEVEL": "info",
                     },
-                    "restart": "always"
+                    "restart": "always",
                 },
                 "agent-ops-worker": {
                     "image": "antigravity/agent-ops-worker:latest",
                     "depends_on": ["agent-ops-proxy"],
-                    "environment": {
-                        "PROXY_URL": "http://agent-ops-proxy:8080"
-                    }
-                }
-            }
+                    "environment": {"PROXY_URL": "http://agent-ops-proxy:8080"},
+                },
+            },
         }
         return yaml.dump(compose, default_flow_style=False)
 
@@ -40,20 +42,17 @@ class OnPremService:
             "replicaCount": 3,
             "image": {
                 "repository": "antigravity/agent-ops-enterprise",
-                "tag": "v1.0.0"
+                "tag": "v1.0.0",
             },
-            "service": {
-                "type": "LoadBalancer",
-                "port": 443
-            },
+            "service": {"type": "LoadBalancer", "port": 443},
             "ingress": {
                 "enabled": True,
-                "hosts": [{"host": f"{cluster_name}.internal", "paths": ["/"]}]
+                "hosts": [{"host": f"{cluster_name}.internal", "paths": ["/"]}],
             },
             "resources": {
                 "limits": {"cpu": "2000m", "memory": "4Gi"},
-                "requests": {"cpu": "500m", "memory": "1Gi"}
-            }
+                "requests": {"cpu": "500m", "memory": "1Gi"},
+            },
         }
         return yaml.dump(values, default_flow_style=False)
 
@@ -64,7 +63,8 @@ class OnPremService:
             "Internal DNS records configured",
             "Persistent Storage Classes defined (PV/PVC)",
             "TLS Certificates for internal domains",
-            "Node-to-node connectivity for worker clusters"
+            "Node-to-node connectivity for worker clusters",
         ]
+
 
 on_prem_service = OnPremService()

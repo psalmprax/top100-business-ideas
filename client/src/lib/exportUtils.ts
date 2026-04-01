@@ -1,4 +1,4 @@
-import { BusinessIdea } from "./businessData";
+import { type BusinessIdea } from "./api";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 

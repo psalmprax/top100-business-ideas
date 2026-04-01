@@ -19,7 +19,8 @@ func NewDenialDefenseHandler(repo *repository.DenialDefenseRepository) *DenialDe
 func (h *DenialDefenseHandler) ListClaims(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
-		userID = "00000000-0000-0000-0000-000000000000"
+		c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "Authentication required"})
+		return
 	}
 
 	claims, err := h.repo.ListClaims(c.Request.Context(), userID)
@@ -39,7 +40,8 @@ func (h *DenialDefenseHandler) CreateClaim(c *gin.Context) {
 
 	claim.UserID = c.GetString("user_id")
 	if claim.UserID == "" {
-		claim.UserID = "00000000-0000-0000-0000-000000000000"
+		c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "Authentication required"})
+		return
 	}
 
 	if err := h.repo.CreateClaim(c.Request.Context(), &claim); err != nil {
@@ -57,7 +59,8 @@ func (h *DenialDefenseHandler) UpdateClaim(c *gin.Context) {
 	}
 	claim.UserID = c.GetString("user_id")
 	if claim.UserID == "" {
-		claim.UserID = "00000000-0000-0000-0000-000000000000"
+		c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "Authentication required"})
+		return
 	}
 
 	if err := h.repo.UpdateClaim(c.Request.Context(), &claim); err != nil {
