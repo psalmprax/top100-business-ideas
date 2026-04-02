@@ -335,7 +335,6 @@ func main() {
 			{
 				agentOps.GET("/audit", agentOpsHandler.GetAuditLogs)
 				agentOps.POST("/alerts/:id/ignore", agentOpsHandler.ProxyToPython)
-				agentOps.GET("/governance/analytics/roi", agentOpsHandler.ProxyToPython)
 				agentOps.GET("/agents", agentOpsHandler.ProxyToPython)
 				agentOps.GET("/models/config", agentOpsHandler.ListLLMConfigs)
 				agentOps.GET("/rules/budget", rulesHandler.ListRules)
