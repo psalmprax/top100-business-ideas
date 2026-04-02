@@ -148,7 +148,12 @@ func main() {
 			auth.POST("/refresh", authHandler.RefreshToken)
 		}
 
-		// Demo and SSO routes removed or moved to protected
+		// Public SSO routes for login
+		ssoPublic := v1.Group("/sso")
+		{
+			ssoPublic.POST("/connect/:provider", agentOpsHandler.ProxyToPython)
+			ssoPublic.GET("/callback/:provider", agentOpsHandler.ProxyToPython)
+		}
 
 		// Protected routes
 		protected := v1.Group("")
@@ -158,20 +163,18 @@ func main() {
 			protected.GET("/auth/me", authHandler.Me)
 			protected.POST("/auth/logout", authHandler.Logout)
 
-			// SSO (AI Compliance UC1) - Now protected in production
-			sso := protected.Group("/sso")
+			// Protected SSO configuration
+			ssoProtected := protected.Group("/sso")
 			{
-				sso.GET("/config/:id", agentOpsHandler.ProxyToPython)
-				sso.POST("/config/:id", agentOpsHandler.ProxyToPython)
-				sso.GET("/config/:id/liveness-link", agentOpsHandler.ProxyToPython)
-				sso.POST("/handshake", agentOpsHandler.ProxyToPython)
-				sso.POST("/connect/:provider", agentOpsHandler.ProxyToPython)
-				sso.GET("/providers/:id", func(c *gin.Context) {
+				ssoProtected.GET("/config/:id", agentOpsHandler.ProxyToPython)
+				ssoProtected.POST("/config/:id", agentOpsHandler.ProxyToPython)
+				ssoProtected.GET("/config/:id/liveness-link", agentOpsHandler.ProxyToPython)
+				ssoProtected.POST("/handshake", agentOpsHandler.ProxyToPython)
+				ssoProtected.GET("/providers/:id", func(c *gin.Context) {
 					id := c.Param("id")
 					c.Request.URL.Path = "/api/v1/sso/config/" + id
 					agentOpsHandler.ProxyToPython(c)
 				})
-				sso.GET("/callback/:provider", agentOpsHandler.ProxyToPython)
 			}
 
 			// Agent Operations
@@ -332,7 +335,6 @@ func main() {
 			{
 				agentOps.GET("/audit", agentOpsHandler.GetAuditLogs)
 				agentOps.POST("/alerts/:id/ignore", agentOpsHandler.ProxyToPython)
-				agentOps.GET("/vigilance/alerts", agentOpsHandler.ProxyToPython)
 				agentOps.GET("/governance/analytics/roi", agentOpsHandler.ProxyToPython)
 				agentOps.GET("/agents", agentOpsHandler.ProxyToPython)
 				agentOps.GET("/models/config", agentOpsHandler.ListLLMConfigs)
