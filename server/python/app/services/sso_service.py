@@ -60,6 +60,14 @@ class SSOService:
             client_secret=os.getenv("OIDC_AUTH0_CLIENT_SECRET"),
             server_metadata_url=os.getenv("OIDC_AUTH0_METADATA_URL"),
         )
+        
+        # Apple
+        self.oauth.register(
+            name="apple",
+            client_id=os.getenv("OIDC_APPLE_CLIENT_ID"),
+            client_secret=os.getenv("OIDC_APPLE_CLIENT_SECRET"),
+            server_metadata_url="https://appleid.apple.com/.well-known/openid-configuration",
+        )
 
         # 2. Additional Enterprise/Technical Providers
         providers = ["onelogin", "ping", "github", "gitlab", "salesforce"]

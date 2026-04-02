@@ -8,6 +8,7 @@ import json
 import asyncio
 import random
 import os
+import logging
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks, Request
 from starlette.responses import RedirectResponse
 from sqlmodel import Session, select
@@ -73,6 +74,7 @@ from app.services.self_healing_manager import self_healing_manager
 from app.services.audit_service import audit_service
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 # ============================================================================
