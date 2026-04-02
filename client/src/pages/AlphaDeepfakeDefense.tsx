@@ -132,6 +132,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { UserMenu } from "@/components/UserMenu";
 
 // ============================================================================
 // Types

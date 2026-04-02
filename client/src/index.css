@@ -446,11 +446,11 @@
 
 /* Stat number: large metric display — high impact AgentOps aesthetic */
 .text-stat {
-  @apply font-black tracking-tighter tabular-nums;
+  @apply font-bold tracking-tighter tabular-nums;
   font-family: var(--font-display);
-  font-size: clamp(2.25rem, 4.5vw + 0.5rem, 4rem);
-  line-height: 1;
-  letter-spacing: -0.06em;
+  font-size: clamp(1.5rem, 3vw + 0.5rem, 2.5rem);
+  line-height: 1.1;
+  letter-spacing: -0.04em;
 }
 
 /* Stat label: text under stat numbers — refined uppercase spacing */
@@ -478,9 +478,9 @@
 
 /* Product title headline: split weight for premium branding */
 .text-product-title {
-  @apply font-black tracking-tighter;
+  @apply font-bold tracking-tight;
   font-family: var(--font-display);
-  letter-spacing: -0.05em;
+  letter-spacing: -0.02em;
 }
 
 .text-product-title span {
