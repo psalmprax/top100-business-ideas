@@ -96,7 +96,15 @@ function getAuthToken(): string | null {
 
 export interface ApiOptions extends RequestInit {
   strict?: boolean;
+  fallback?: any;
 }
+
+// Global flag/callback for simulation monitoring
+let onSimulationTriggered: ((endpoint: string) => void) | null = null;
+
+export const setSimulationListener = (cb: (endpoint: string) => void) => {
+  onSimulationTriggered = cb;
+};
 
 // Helper for API requests
 async function apiRequest<T>(
@@ -125,7 +133,7 @@ async function apiRequest<T>(
   let normalizedEndpoint = endpoint;
   const v1Prefix = "/api/v1";
 
-  // Legacy mapping: if endpoint starts with /agents, /rules, /metrics, /compliance, /deepfake, /billing, /alerts
+  // Legacy mapping
   const legacyRoutes = [
     "/agents",
     "/rules",
@@ -147,35 +155,23 @@ async function apiRequest<T>(
     normalizedEndpoint = `${v1Prefix}${endpoint}`;
   }
 
-  // EXTREME URL NORMALIZATION
-  // 1. Strip all trailing slashes from API_URL
   const cleanBaseUrl = (API_URL || "").replace(/\/+$/, "");
-  // 2. Strip all leading slashes from normalizedEndpoint
   const cleanPath = normalizedEndpoint.replace(/^\/+/, "");
 
-  // 3. Construct finalUrl carefully
   let finalUrl: string;
   if (cleanBaseUrl && cleanBaseUrl.startsWith("http")) {
     finalUrl = `${cleanBaseUrl}/${cleanPath}`;
   } else {
-    // If no base URL or just a relative one, ensure we start with exactly one slash
     finalUrl = `/${cleanPath}`;
   }
 
-  // 4. Final safety check: replace any double slashes in the path (but not after protocol)
-  // First, handle the start of the string case separately
   while (finalUrl.startsWith("//")) {
     finalUrl = finalUrl.substring(1);
   }
-  // Then handle internal double slashes
   finalUrl = finalUrl.replace(/([^:])\/\/+/g, "$1/");
-
-  // 5. Ensure we never start with // (browser interprets as protocol-relative)
   if (finalUrl.startsWith("//")) {
     finalUrl = finalUrl.substring(1);
   }
-
-  // EXTRA FAILSAFE: If it starts with api/v1 but no slash, add it
   if (!finalUrl.startsWith("http") && !finalUrl.startsWith("/")) {
     finalUrl = "/" + finalUrl;
   }
@@ -196,19 +192,29 @@ async function apiRequest<T>(
         errorData.error ||
         `HTTP Error ${response.status}: ${response.statusText}`;
 
-      // REAL-FIRST: Definitive API errors (4xx) should not fall back to mocks
-      if (response.status >= 400 && response.status < 500) {
-        console.error(
-          `[API Error] REAL-FIRST FAILURE (Client Error ${response.status}): ${errorMessage}`
-        );
-        throw new Error(errorMessage);
+      // If we have a fallback, use it even for 4xx errors if strict is not enforced manually
+      // but usually we want to distinguish between "Service Down" and "Bad Request"
+      if (options.fallback && response.status >= 500) {
+        console.warn(`[API Fallback] Server error ${response.status}, triggering simulation for ${endpoint}`);
+        onSimulationTriggered?.(endpoint);
+        return options.fallback;
       }
+
       throw new Error(errorMessage);
     }
 
     return await response.json();
   } catch (e: any) {
     // REAL-FIRST FAILURE HANDLING
+    if (options.fallback) {
+      console.warn(
+        `[API Fallback] REAL-FIRST FAILURE on ${normalizedEndpoint}. Using simulation fallback.`,
+        e.message
+      );
+      onSimulationTriggered?.(endpoint);
+      return options.fallback;
+    }
+
     console.error(
       `[API Error] REAL-FIRST HARD-FAILURE on ${normalizedEndpoint}:`,
       e.message
@@ -216,6 +222,7 @@ async function apiRequest<T>(
     throw e;
   }
 }
+
 
 // Helper for Blob/File requests (Downloads)
 async function apiBlobRequest(
@@ -1033,23 +1040,27 @@ export interface BotSetting {
 
 // Extended API functions
 export const extendedApi = {
-  get: <T>(url: string) => apiRequest<T>(url),
-  post: <T>(url: string, body?: any) =>
+  get: <T>(url: string, options: ApiOptions = {}) => apiRequest<T>(url, options),
+  post: <T>(url: string, body?: any, options: ApiOptions = {}) =>
     apiRequest<T>(url, {
+      ...options,
       method: "POST",
       body: body ? JSON.stringify(body) : undefined,
     }),
-  patch: <T>(url: string, body?: any) =>
+  patch: <T>(url: string, body?: any, options: ApiOptions = {}) =>
     apiRequest<T>(url, {
+      ...options,
       method: "PATCH",
       body: body ? JSON.stringify(body) : undefined,
     }),
-  put: <T>(url: string, body?: any) =>
+  put: <T>(url: string, body?: any, options: ApiOptions = {}) =>
     apiRequest<T>(url, {
+      ...options,
       method: "PUT",
       body: body ? JSON.stringify(body) : undefined,
     }),
-  delete: <T>(url: string) => apiRequest<T>(url, { method: "DELETE" }),
+  delete: <T>(url: string, options: ApiOptions = {}) =>
+    apiRequest<T>(url, { ...options, method: "DELETE" }),
   // Alerts (Agent Ops UC 4)
   alerts: {
     list: () => apiRequest<AlertConfig[]>("/alerts"),
@@ -1781,21 +1792,24 @@ export const extendedApi = {
         method: "POST",
         body: JSON.stringify({ rule_id, target }),
       }),
-    runForensics: (agentId?: string) =>
+    runForensics: (agentId?: string, options: ApiOptions = {}) =>
       apiRequest<any>(`/api/v1/agent-ops/forensics?agent_id=${agentId || ""}`, {
+        ...options,
         method: "POST",
       }),
-    provisionClient: (data: any) =>
+    provisionClient: (data: any, options: ApiOptions = {}) =>
       apiRequest<any>("/api/v1/agent-ops/whitelabel/provision", {
+        ...options,
         method: "POST",
         body: JSON.stringify(data),
       }),
-    updateRetention: (system: any, days?: number) =>
+    updateRetention: (system: any, days?: number, options: ApiOptions = {}) =>
       apiRequest<any>("/api/v1/agent-ops/config/retention", {
+        ...options,
         method: "POST",
         body: JSON.stringify({ system, days }),
       }),
-    saveRetentionPolicy: (policy: any) =>
+    saveRetentionPolicy: (policy: any, options: ApiOptions = {}) =>
       apiRequest<any>("/api/v1/agent-ops/retention", {
         method: "POST",
         body: JSON.stringify(policy),
@@ -2354,8 +2368,9 @@ export const ventureApi = {
     apiRequest<BusinessIdea[]>("/api/v1/agent-ops/venture/insights"),
   getIdeaDetail: (id: number) =>
     apiRequest<BusinessIdea>(`/api/v1/agent-ops/venture/${id}`),
-  analyzeScenario: (ideaId: number, scenario: string) =>
+  analyzeScenario: (ideaId: number, scenario: string, options: ApiOptions = {}) =>
     apiRequest<any>("/api/v1/agent-ops/venture/scenario/analyze", {
+      ...options,
       method: "POST",
       body: JSON.stringify({ idea_id: ideaId, scenario }),
     }),

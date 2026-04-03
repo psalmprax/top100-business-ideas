@@ -17,7 +17,7 @@ import Home from "./pages/Home";
 import LoginPage from "./pages/Login";
 import BillingPage from "./pages/Billing";
 import SettingsPage from "./pages/Settings";
-import VentureDetailPage from "./pages/VentureDetail";
+import VentureDetailPage from "./pages/VentureUniversalTemplate";
 
 
 import { useAuth } from "./contexts/AuthContext";
