@@ -752,14 +752,21 @@ export default function AlphaAgentOps() {
     setIsProvisioningClient(true);
     toast.info("Provisioning enterprise client space...");
     try {
-      await extendedApi.agentOps.provisionClient({
-        name: data.name || "New Client Space",
-        region: data.region || "US-EAST-1",
-        tier: data.tier || "enterprise",
-        ...data,
-      }, {
-        fallback: { status: "success", id: `PROV-${Math.random().toString(36).substr(2, 9)}`, message: "Provisioning successful (Simulated)" }
-      });
+      await extendedApi.agentOps.provisionClient(
+        {
+          name: data.name || "New Client Space",
+          region: data.region || "US-EAST-1",
+          tier: data.tier || "enterprise",
+          ...data,
+        },
+        {
+          fallback: {
+            status: "success",
+            id: `PROV-${Math.random().toString(36).substr(2, 9)}`,
+            message: "Provisioning successful (Simulated)",
+          },
+        }
+      );
       toast.success("Enterprise Client Space provisioned successfully.");
     } catch (err: any) {
       toast.error(
@@ -940,11 +947,15 @@ export default function AlphaAgentOps() {
 
   useEffect(() => {
     // Set up global simulation listener for this page
-    setSimulationListener((endpoint) => {
-      toast.warning(`RECOVERY-FIRST: Real endpoint "${endpoint}" unreachable. Triggered local simulation for demo continuity.`, {
-        description: "Enterprise Sentinel detected connection drop. Auto-recovering via local-first cache.",
-        duration: 8000,
-      });
+    setSimulationListener(endpoint => {
+      toast.warning(
+        `RECOVERY-FIRST: Real endpoint "${endpoint}" unreachable. Triggered local simulation for demo continuity.`,
+        {
+          description:
+            "Enterprise Sentinel detected connection drop. Auto-recovering via local-first cache.",
+          duration: 8000,
+        }
+      );
     });
 
     let failures = 0;
@@ -1353,7 +1364,11 @@ export default function AlphaAgentOps() {
     toast.info("Running deep behavioral forensic analysis...");
     try {
       const result = await extendedApi.agentOps.runForensics("default", {
-        fallback: { analysis_summary: "Analysis complete (Simulated): No anomalies detected in current behavioral patterns.", status: "success" }
+        fallback: {
+          analysis_summary:
+            "Analysis complete (Simulated): No anomalies detected in current behavioral patterns.",
+          status: "success",
+        },
       });
       toast.success(
         result.analysis_summary || "Analysis complete: No anomalies detected."
@@ -1387,7 +1402,11 @@ export default function AlphaAgentOps() {
     toast.info("Optimizing memory...");
     try {
       await extendedApi.agentOps.optimizeMemory(agentId, {
-        fallback: { status: "success", optimized_bytes: 1024 * 1024 * 5, message: "Memory optimized (Simulated)" }
+        fallback: {
+          status: "success",
+          optimized_bytes: 1024 * 1024 * 5,
+          message: "Memory optimized (Simulated)",
+        },
       });
       toast.success("Memory optimized.");
       refreshData();
@@ -1418,11 +1437,11 @@ export default function AlphaAgentOps() {
     }
   };
 
-  const handleSyncNow = async () => {
+  const handleClusterSync = async () => {
     toast.info("Resyncing cluster state...");
     try {
       await extendedApi.agentOps.syncNow("default", {
-        fallback: { status: "success", message: "Cluster synced (Simulated)" }
+        fallback: { status: "success", message: "Cluster synced (Simulated)" },
       });
       toast.success("Cluster state synchronized.");
       refreshData();
@@ -5604,14 +5623,8 @@ export default function AlphaAgentOps() {
                     <div className="mt-4 flex gap-2">
                       <Button
                         variant="outline"
-                        onClick={() => handleSyncNow()}
-                        disabled={isSyncingSSO}
+                        onClick={() => handleClusterSync()}
                       >
-                        {isSyncingSSO ? (
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        ) : (
-                          <RefreshCw className="w-4 h-4 mr-2" />
-                        )}
                         Sync Now
                       </Button>
                       <Button
