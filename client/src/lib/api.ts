@@ -94,6 +94,10 @@ function getAuthToken(): string | null {
   return localStorage.getItem("auth_token");
 }
 
+export interface ApiOptions extends RequestInit {
+  strict?: boolean;
+}
+
 // Helper for API requests
 async function apiRequest<T>(
   endpoint: string,
@@ -496,16 +500,35 @@ export interface DeepfakeResult {
 }
 
 export const deepfakeApi = {
+  upload: (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return apiRequest<{ url: string }>("/api/v1/deepfake/upload", {
+      method: "POST",
+      body: formData,
+      headers: {
+        // Fetch will set the correct boundary for FormData
+        "Content-Type": "multipart/form-data",
+      } as any,
+    });
+  },
+
   detect: (mediaUrl: string, mediaType: string) =>
     apiRequest<DeepfakeResult>("/ml/deepfake/detect", {
       method: "POST",
       body: JSON.stringify({ media_url: mediaUrl, media_type: mediaType }),
     }),
 
-  analyze: (mediaUrl: string) =>
+  analyze: (mediaUrl: string, mediaType: string = "image") =>
     apiRequest<DeepfakeResult>("/api/v1/deepfake/analyze", {
       method: "POST",
-      body: JSON.stringify({ media_url: mediaUrl }),
+      body: JSON.stringify({ media_url: mediaUrl, media_type: mediaType }),
+    }),
+
+  updateConfig: (config: any) =>
+    apiRequest<any>("/api/v1/deepfake/config", {
+      method: "POST",
+      body: JSON.stringify(config),
     }),
 
   history: () => apiRequest<DeepfakeResult[]>("/api/v1/deepfake/history"),
@@ -795,15 +818,36 @@ export interface MobileSDKConfig {
   created_at?: string;
 }
 
-// Wearable types
+// Mobile SDK types
 export interface MobileSDKStatus {
   total_apps: number;
+  total_installs: number;
+  avg_session_duration: number;
   by_platform: Record<string, number>;
   verifications_today: number;
   avg_verification_time_ms: number;
   version?: string;
   registered_apps?: number;
   api_health?: string;
+}
+
+// Workforce Chat types
+export interface WorkforceMessage {
+  id: string;
+  sender: string;
+  recipient: string;
+  content: string;
+  created_at: string;
+  is_group_chat: boolean;
+  reasoning_path?: string;
+}
+
+export interface WorkforceInteraction {
+  id: string;
+  agent_role: string;
+  status: string;
+  notes?: string;
+  created_at: string;
 }
 
 export interface TravelKioskStatus {
@@ -911,6 +955,80 @@ export interface WorkforceVenture {
   roi: number;
   status: "PROFITABLE" | "SCALING" | "R&D" | "BETA";
   trend: "up" | "down";
+}
+
+export interface WorkforceOutreach {
+  id: string;
+  recipient_name: string;
+  recipient_company: string;
+  recipient_role?: string;
+  subject: string;
+  body: string;
+  status: "PENDING_APPROVAL" | "APPROVED" | "SENT" | "DISCARDED";
+  niche: string;
+  profile: string;
+  score: number;
+  is_auto_trigger: boolean;
+  created_at: string;
+}
+
+export interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  status: "pending" | "in_progress" | "completed";
+  priority?: "low" | "medium" | "high";
+  due_date?: string;
+  assigned_to?: string;
+  created_at?: string;
+  updated_at?: string;
+  completed_at?: string;
+}
+
+export interface Client {
+  id: string;
+  name: string;
+  email: string;
+  company?: string;
+  status: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ScheduleEvent {
+  id: string;
+  title: string;
+  start_time: string;
+  end_time: string;
+  description?: string;
+  event_type?: string;
+  location?: string;
+  is_all_day?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Integration {
+  id: string;
+  name: string;
+  type: string;
+  icon?: string;
+  config: Record<string, any>;
+  status: string;
+  connected?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface BotSetting {
+  id: string;
+  user_id: string;
+  setting_key: string;
+  setting_value: string;
+  setting_type: string;
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 // Extended API functions
@@ -1190,6 +1308,11 @@ export const extendedApi = {
     deleteVendor: (id: string) =>
       apiRequest<any>(`/api/v1/vendors/${id}`, {
         method: "DELETE",
+      }),
+    updatePolicy: (policy: any) =>
+      apiRequest<any>("/api/v1/compliance/policy", {
+        method: "PATCH",
+        body: JSON.stringify(policy),
       }),
   },
   training: {
@@ -1556,6 +1679,10 @@ export const extendedApi = {
         method: "POST",
         body: JSON.stringify({ model_id }),
       }),
+    exportAuditTrail: (format: string = "csv") =>
+      apiRequest<any>(`/api/v1/compliance/audit/export?format=${format}`, {
+        method: "GET",
+      }),
   },
 
   regionalCompliance: {
@@ -1827,6 +1954,17 @@ export const extendedApi = {
       apiRequest<any>(
         `/api/v1/workforce/leads/source?criteria=${encodeURIComponent(criteria)}`
       ),
+    runAutosearch: (niche: string, profile: string = "enterprise") =>
+      apiRequest<any>("/api/v1/workforce/autosearch/run", {
+        method: "POST",
+        body: JSON.stringify({ niche, profile }),
+      }),
+    getOutreachDrafts: () =>
+      apiRequest<WorkforceOutreach[]>("/api/v1/workforce/outreach/drafts"),
+    approveOutreach: (id: string) =>
+      apiRequest<any>(`/api/v1/workforce/outreach/${id}/approve`, {
+        method: "POST",
+      }),
     analyzeInsights: (feedback: string) =>
       apiRequest<any>("/api/v1/workforce/insights/analyze", {
         method: "POST",
@@ -1854,14 +1992,24 @@ export const extendedApi = {
         }),
     },
 
+    // Chat / Console Methods
+    sendMessage: (message: string, recipient: string = "all") =>
+      apiRequest<WorkforceMessage>("/api/v1/workforce/chat", {
+        method: "POST",
+        body: JSON.stringify({ message, recipient }),
+      }),
+    getChatHistory: () =>
+      apiRequest<WorkforceMessage[]>("/api/v1/workforce/chat/history"),
+    getAgents: () => apiRequest<any[]>("/api/v1/workforce/agents"),
+
     // Task Management
     getTasks: () => apiRequest<Task[]>("/api/v1/workforce/tasks"),
-    createTask: (task: Task) =>
+    createTask: (task: Partial<Task>) =>
       apiRequest<Task>("/api/v1/workforce/tasks", {
         method: "POST",
         body: JSON.stringify(task),
       }),
-    updateTask: (taskId: string, task: Task) =>
+    updateTask: (taskId: string, task: Partial<Task>) =>
       apiRequest<Task>(`/api/v1/workforce/tasks/${taskId}`, {
         method: "PUT",
         body: JSON.stringify(task),
@@ -1877,12 +2025,12 @@ export const extendedApi = {
 
     // Client CRM
     getClients: () => apiRequest<Client[]>("/api/v1/workforce/clients"),
-    createClient: (client: Client) =>
+    createClient: (client: Partial<Client>) =>
       apiRequest<Client>("/api/v1/workforce/clients", {
         method: "POST",
         body: JSON.stringify(client),
       }),
-    updateClient: (clientId: string, client: Client) =>
+    updateClient: (clientId: string, client: Partial<Client>) =>
       apiRequest<Client>(`/api/v1/workforce/clients/${clientId}`, {
         method: "PUT",
         body: JSON.stringify(client),
@@ -1895,12 +2043,12 @@ export const extendedApi = {
     // Schedule/Events
     getScheduleEvents: () =>
       apiRequest<ScheduleEvent[]>("/api/v1/workforce/schedule"),
-    createScheduleEvent: (event: ScheduleEvent) =>
+    createScheduleEvent: (event: Partial<ScheduleEvent>) =>
       apiRequest<ScheduleEvent>("/api/v1/workforce/schedule", {
         method: "POST",
         body: JSON.stringify(event),
       }),
-    updateScheduleEvent: (eventId: string, event: ScheduleEvent) =>
+    updateScheduleEvent: (eventId: string, event: Partial<ScheduleEvent>) =>
       apiRequest<ScheduleEvent>(`/api/v1/workforce/schedule/${eventId}`, {
         method: "PUT",
         body: JSON.stringify(event),
@@ -1913,12 +2061,15 @@ export const extendedApi = {
     // Integrations
     getIntegrations: () =>
       apiRequest<Integration[]>("/api/v1/workforce/integrations"),
-    createIntegration: (integration: Integration) =>
+    createIntegration: (integration: Partial<Integration>) =>
       apiRequest<Integration>("/api/v1/workforce/integrations", {
         method: "POST",
         body: JSON.stringify(integration),
       }),
-    updateIntegration: (integrationId: string, integration: Integration) =>
+    updateIntegration: (
+      integrationId: string,
+      integration: Partial<Integration>
+    ) =>
       apiRequest<Integration>(
         `/api/v1/workforce/integrations/${integrationId}`,
         {
@@ -1934,12 +2085,12 @@ export const extendedApi = {
     // Bot Settings
     getBotSettings: (userId: string) =>
       apiRequest<BotSetting[]>("/api/v1/workforce/bot-settings/" + userId),
-    createBotSetting: (setting: BotSetting) =>
+    createBotSetting: (setting: Partial<BotSetting>) =>
       apiRequest<BotSetting>("/api/v1/workforce/bot-settings", {
         method: "POST",
         body: JSON.stringify(setting),
       }),
-    updateBotSetting: (settingId: string, setting: BotSetting) =>
+    updateBotSetting: (settingId: string, setting: Partial<BotSetting>) =>
       apiRequest<BotSetting>(`/api/v1/workforce/bot-settings/${settingId}`, {
         method: "PUT",
         body: JSON.stringify(setting),
@@ -1953,6 +2104,19 @@ export const extendedApi = {
     getInsights: () => apiRequest<any>("/api/v1/workforce/insights"),
     getEarningsData: () => apiRequest<any>("/api/v1/workforce/earnings"),
     getTaxEstimate: () => apiRequest<any>("/api/v1/workforce/tax-estimate"),
+
+    // Referral Program
+    activateReferral: (referralCode?: string) =>
+      apiRequest<any>("/api/v1/workforce/referral/activate", {
+        method: "POST",
+        body: JSON.stringify({ referral_code: referralCode }),
+      }),
+    getReferralStats: () => apiRequest<any>("/api/v1/workforce/referral/stats"),
+    getInvoices: () => apiRequest<any[]>("/api/v1/workforce/invoices"),
+    exportData: (format: string = "csv") =>
+      apiRequest<any>(`/api/v1/workforce/export?format=${format}`, {
+        method: "GET",
+      }),
   },
 
   sentinel: {
@@ -2025,6 +2189,12 @@ export const extendedApi = {
           strict: true,
         }
       ),
+    updateConfig: (config: any) =>
+      apiRequest<any>("/api/v1/deepfake/config", {
+        method: "POST",
+        body: JSON.stringify(config),
+        strict: true,
+      }),
     getDuressConfig: (user_id: string) =>
       apiRequest<any>(`/api/v1/deepfake/duress/config/${user_id}`, {
         strict: true,
@@ -2124,13 +2294,11 @@ export const extendedApi = {
     },
     settings: {
       list: () => apiRequest<any[]>("/agent-ops/governance/settings"),
-      update: (settingId: string, value: string) =>
-        apiRequest<any>(
-          `/agent-ops/governance/settings/${settingId}?value=${encodeURIComponent(value)}`,
-          {
-            method: "PUT",
-          }
-        ),
+      update: (settings: Record<string, any>) =>
+        apiRequest<any>("/agent-ops/governance/settings", {
+          method: "POST",
+          body: JSON.stringify(settings),
+        }),
     },
     onPrem: {
       listDeployments: () =>

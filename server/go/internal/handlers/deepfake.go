@@ -12,13 +12,33 @@ import (
 )
 
 type DeepfakeHandler struct {
-	proxyService *services.ProxyService
+	proxyService  *services.ProxyService
+	uploadHandler *services.FileUploadHandler
 }
 
-func NewDeepfakeHandler(proxyService *services.ProxyService) *DeepfakeHandler {
+func NewDeepfakeHandler(proxyService *services.ProxyService, uploadHandler *services.FileUploadHandler) *DeepfakeHandler {
 	return &DeepfakeHandler{
-		proxyService: proxyService,
+		proxyService:  proxyService,
+		uploadHandler: uploadHandler,
 	}
+}
+
+func (h *DeepfakeHandler) Upload(c *gin.Context) {
+	file, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "No file uploaded"})
+		return
+	}
+
+	result, err := h.uploadHandler.UploadFile(file)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to save file", Details: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"url": "/api/v1" + result.URL,
+	})
 }
 
 func (h *DeepfakeHandler) Analyze(c *gin.Context) {

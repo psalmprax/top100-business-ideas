@@ -75,6 +75,11 @@ import {
   agentsApi,
   metricsApi,
   type Agent,
+  type Task,
+  type Client,
+  type Integration,
+  type ScheduleEvent,
+  type BotSetting,
 } from "@/lib/api";
 
 // ============================================================================
@@ -128,9 +133,7 @@ export default function FreelancerWorkflowBot() {
   const [activeCategory, setActiveCategory] = useState<CategoryType>("ops");
   const [isAuthorizing, setIsAuthorizing] = useState(false);
   const [isStripeConnecting, setIsStripeConnecting] = useState(false);
-  const [timeSaved, setTimeSaved] = useState(
-    storage.get("fwb_time_saved", 88.4)
-  );
+  const [timeSaved, setTimeSaved] = useState(0);
 
   // Real data state
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -165,6 +168,7 @@ export default function FreelancerWorkflowBot() {
           botSettingsData,
           insightsData,
           taxDataResp,
+          invoicesData,
         ] = await Promise.all([
           agentsApi.list(),
           metricsApi.current(),
@@ -172,9 +176,10 @@ export default function FreelancerWorkflowBot() {
           extendedApi.workforce.getClients(),
           extendedApi.workforce.getIntegrations(),
           extendedApi.workforce.getScheduleEvents(),
-          extendedApi.workforce.getBotSettings("current_user"), // In real app, get from auth
+          extendedApi.workforce.getBotSettings("current_user"), 
           extendedApi.workforce.getInsights(),
           extendedApi.workforce.getTaxEstimate(),
+          extendedApi.workforce.getInvoices(),
         ]);
 
         setAgents(Array.isArray(agentsData) ? agentsData : []);
@@ -200,6 +205,7 @@ export default function FreelancerWorkflowBot() {
         }
         setEarningsData(insightsData || null);
         setTaxEstimate(taxDataResp || null);
+        if (Array.isArray(invoicesData)) setInvoices(invoicesData);
       } catch (error) {
         console.error("Failed to fetch workforce bot data:", error);
         // In a real app, we might show an error state here
@@ -219,7 +225,7 @@ export default function FreelancerWorkflowBot() {
         title,
         status: "pending",
         priority: "medium",
-        assignee: "WorkflowBot",
+        assigned_to: "WorkflowBot",
         created_at: new Date().toISOString(),
       });
 
@@ -652,10 +658,10 @@ export default function FreelancerWorkflowBot() {
                   />
                   <MetricCard
                     title="Time Saved"
-                    value={`${timeSaved.toFixed(1)}h`}
+                    value={`${(metrics?.time_saved || timeSaved).toFixed(1)}h`}
                     icon={Clock}
                     color="bg-indigo-500/10 text-indigo-500"
-                    change={22}
+                    change={metrics?.time_saved_change || 22}
                   />
                   <MetricCard
                     title="Queue Pressure"
@@ -681,61 +687,42 @@ export default function FreelancerWorkflowBot() {
                     </div>
                   </CardHeader>
                   <CardContent className="p-0">
-                    {[
-                      {
-                        task: "Drafting Weekly Status Report",
-                        client: "Acme Corp",
-                        type: "Docs",
-                        time: "2m ago",
-                        status: "Done",
-                      },
-                      {
-                        task: "Resolving Stripe Dispute #4921",
-                        client: "Self",
-                        type: "Billing",
-                        time: "14m ago",
-                        status: "Working",
-                      },
-                      {
-                        task: "Booking Travel (SFO to NYC)",
-                        client: "Personal",
-                        type: "Admin",
-                        time: "45m ago",
-                        status: "Done",
-                      },
-                    ].map((item, idx) => (
+                    {(tasks || []).slice(0, 5).map((item: any, idx: number) => (
                       <div
                         key={idx}
                         className="flex items-center justify-between p-6 border-b border-border/30 last:border-0 hover:bg-muted/20 transition-colors"
                       >
                         <div className="flex gap-4 items-center">
                           <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 flex items-center justify-center border border-indigo-100 dark:border-indigo-900/50">
-                            {item.type === "Docs" && (
+                            {item.type === "Docs" || !item.type ? (
                               <FileText className="w-5 h-5 text-indigo-600" />
-                            )}
-                            {item.type === "Billing" && (
+                            ) : item.type === "Billing" ? (
                               <CreditCard className="w-5 h-5 text-indigo-600" />
-                            )}
-                            {item.type === "Admin" && (
+                            ) : (
                               <Calendar className="w-5 h-5 text-indigo-600" />
                             )}
                           </div>
                           <div>
-                            <div className="text-card-title">{item.task}</div>
+                            <div className="text-card-title">{item.title}</div>
                             <div className="text-caption-premium mt-0.5">
-                              {item.client} &middot; {item.time}
+                              {item.assigned_to || "WorkflowBot"} &middot; {new Date(item.created_at || item.createdAt).toLocaleTimeString()}
                             </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
                           <Badge
-                            className={`${item.status === "Done" ? "bg-emerald-500" : "bg-indigo-500 animate-pulse"} text-white border-none text-caption-premium h-4 rounded-sm font-black uppercase tracking-tighter px-1.5`}
+                            className={`${item.status === "completed" || item.status === "Done" ? "bg-emerald-500" : "bg-indigo-500 animate-pulse"} text-white border-none text-caption-premium h-4 rounded-sm font-black uppercase tracking-tighter px-1.5`}
                           >
                             {item.status}
                           </Badge>
                         </div>
                       </div>
                     ))}
+                    {(!tasks || tasks.length === 0) && (
+                      <div className="p-8 text-center text-muted-foreground text-sm italic">
+                        No active execution cycles in current buffer.
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
@@ -842,10 +829,10 @@ export default function FreelancerWorkflowBot() {
               <div className="space-y-6">
                 <MetricCard
                   title="Outstanding Invoices"
-                  value="$4,250"
+                  value={`$${(earningsData?.pendingPayments || 0).toLocaleString()}`}
                   icon={FileCheck}
                   color="bg-orange-500/10 text-orange-500"
-                  change={-12}
+                  change={metrics?.outstanding_change || -12}
                 />
                 <Card>
                   <CardHeader className="pb-3 border-b border-border/50">
@@ -854,9 +841,9 @@ export default function FreelancerWorkflowBot() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-0">
-                    {[1, 2, 3].map(i => (
+                    {(invoices || []).slice(0, 5).map((inv: any) => (
                       <div
-                        key={i}
+                        key={inv.id}
                         className="p-4 border-b border-border/30 last:border-0 flex items-center justify-between"
                       >
                         <div className="flex items-center gap-3">
@@ -865,21 +852,26 @@ export default function FreelancerWorkflowBot() {
                           </div>
                           <div>
                             <div className="text-body-sm font-bold">
-                              INV-029{i}
+                              {inv.invoice_number || `INV-${inv.id.substring(0, 4)}`}
                             </div>
                             <div className="text-caption-premium">
-                              Hooli Corp &middot; Dec 2024
+                              {inv.client_name || "Enterprise Client"} &middot; {new Date(inv.created_at).toLocaleDateString()}
                             </div>
                           </div>
                         </div>
                         <Badge
-                          variant="outline"
-                          className="text-caption-premium uppercase"
+                          variant={inv.status === "paid" ? "default" : "outline"}
+                          className={`text-caption-premium uppercase ${inv.status === "paid" ? "bg-emerald-500" : ""}`}
                         >
-                          Paid
+                          {inv.status}
                         </Badge>
                       </div>
                     ))}
+                    {(!invoices || invoices.length === 0) && (
+                      <div className="p-8 text-center text-muted-foreground text-sm italic">
+                        No invoices generated in current cycle.
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
@@ -1521,7 +1513,19 @@ export default function FreelancerWorkflowBot() {
                   <Button
                     variant="outline"
                     className="w-full justify-start"
-                    onClick={() => toast.info("Referral program: Coming soon")}
+                    onClick={async () => {
+                      try {
+                        const result =
+                          await extendedApi.workforce.activateReferral();
+                        toast.success(
+                          "Referral program activated! Your unique referral code has been generated."
+                        );
+                      } catch (err: any) {
+                        toast.error(
+                          err.message || "Failed to activate referral program"
+                        );
+                      }
+                    }}
                   >
                     <Users className="w-4 h-4 mr-2" /> Activate Referral Program
                   </Button>

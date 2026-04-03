@@ -1370,6 +1370,9 @@ export default function AlphaAIActCompliance() {
   const [euDatabaseRegistered, setEuDatabaseRegistered] = useState(false);
   const [registrationId, setRegistrationId] = useState<string | null>(null);
   const [ssoMetadata, setSsoMetadata] = useState("");
+  const [mfaEnforced, setMfaEnforced] = useState(true);
+  const [roiEnabled, setRoiEnabled] = useState(true);
+  const [policyEnforced, setPolicyEnforced] = useState(true);
   const [complianceBudget, setComplianceBudget] = useState(5000);
   const [proxyEndpoint, setProxyEndpoint] = useState(
     "https://proxy.regu-lens.com/api"
@@ -1544,7 +1547,11 @@ export default function AlphaAIActCompliance() {
 
     const fetchAuditLogs = async (search?: string, filter?: string) => {
       try {
-        const logs = await extendedApi.compliance.getAuditLogs(undefined, search, filter === "all" ? undefined : filter);
+        const logs = await extendedApi.compliance.getAuditLogs(
+          undefined,
+          search,
+          filter === "all" ? undefined : filter
+        );
         setAuditLogs(logs || []);
       } catch (error) {
         console.error("Failed to fetch audit logs:", error);
@@ -1590,6 +1597,7 @@ export default function AlphaAIActCompliance() {
   const [isLoading, setIsLoading] = useState(true);
   const [showVendorDialog, setShowVendorDialog] = useState(false);
   const [showIncidentDialog, setShowIncidentDialog] = useState(false);
+  const [isArticle72, setIsArticle72] = useState(true);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [showScanConfigDialog, setShowScanConfigDialog] = useState(false);
   const [selectedArticleForScan, setSelectedArticleForScan] =
@@ -2280,7 +2288,11 @@ export default function AlphaAIActCompliance() {
     setAuditSearch(query);
     // Debounced server-side search would go here, but for now direct fetch
     try {
-      const logs = await extendedApi.compliance.getAuditLogs(undefined, query, auditFilterType === "all" ? undefined : auditFilterType);
+      const logs = await extendedApi.compliance.getAuditLogs(
+        undefined,
+        query,
+        auditFilterType === "all" ? undefined : auditFilterType
+      );
       setAuditLogs(logs || []);
     } catch (e) {
       console.error("Audit search failed", e);
@@ -2288,40 +2300,42 @@ export default function AlphaAIActCompliance() {
   };
 
   const filteredAuditLogs = useMemo(() => {
-    // With server-side search, we don't need useMemo for search anymore, 
+    // With server-side search, we don't need useMemo for search anymore,
     // but we'll keep it for any small client-side adjustments or just return auditLogs
     return auditLogs;
   }, [auditLogs]);
 
   const handleAuditExport = async () => {
-    toast.info("Preparing immutable audit export...");
+    toast.info("Preparing immutable audit export from production ledger...");
     try {
-      const logs = await extendedApi.compliance.getAuditLogs(
-        undefined,
-        auditSearch,
-        auditFilterType === "all" ? undefined : auditFilterType
-      );
-      if (logs && logs.length > 0) {
-        const csv = [
-          ["Timestamp", "Actor", "Action", "Outcome", "ID"],
-          ...logs.map((l: any) => [
-            l.timestamp,
-            l.actor,
-            l.action,
-            l.outcome || l.status,
-            l.id,
-          ]),
-        ]
-          .map(row => row.join(","))
-          .join("\n");
-        handleDownload("Alpha_Compliance_Audit_Trail.csv", csv);
+      const response =
+        await extendedApi.complianceAudit.exportAuditTrail("csv");
+      if (response && response.blob) {
+        // Handle direct blob if returned, otherwise handle content if returned as string
+        const blob =
+          response.blob instanceof Blob
+            ? response.blob
+            : new Blob([response.content || ""], { type: "text/csv" });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `Alpha_Compliance_Audit_Trail_${new Date().toISOString().split("T")[0]}.csv`;
+        a.click();
         toast.success("Full immutable audit trail exported (CSV).");
+      } else if (typeof response === "string" || response.content) {
+        handleDownload(
+          `Alpha_Compliance_Audit_Trail_${new Date().toISOString().split("T")[0]}.csv`,
+          response.content || response
+        );
+        toast.success("Full immutable audit trail exported (CSV) from ledger.");
       } else {
-        toast.info("No audit logs available to export.");
+        toast.info("Audit export generated. Check your downloads.");
       }
     } catch (err) {
       console.error("Audit export failed:", err);
-      toast.error("Audit export failed.");
+      toast.error(
+        "Audit export failed. Production ledger service is currently unavailable."
+      );
     }
   };
 
@@ -3788,7 +3802,21 @@ bsContent>
                       Sync policies across all model endpoints
                     </p>
                   </div>
-                  <Switch defaultChecked />
+                  <Switch
+                    defaultChecked
+                    onCheckedChange={async checked => {
+                      try {
+                        await extendedApi.compliance.updatePolicy({
+                          global_sync: checked,
+                        });
+                        toast.success(
+                          `Global Policy Sync ${checked ? "enabled" : "disabled"}`
+                        );
+                      } catch (err) {
+                        toast.error("Failed to update global policy sync");
+                      }
+                    }}
+                  />
                 </div>
 
                 <div className="space-y-2">
@@ -4096,7 +4124,23 @@ bsContent>
                   </div>
                   <div className="flex items-center justify-between">
                     <Label>Enforce MFA for Auditors</Label>
-                    <Switch defaultChecked />
+                    <Switch
+                      checked={mfaEnforced}
+                      onCheckedChange={async checked => {
+                        setMfaEnforced(checked);
+                        try {
+                          await extendedApi.sso.saveConfig("alpha-hub", {
+                            metadata: ssoMetadata,
+                            mfa: checked,
+                          });
+                          toast.success(
+                            `MFA for Auditors ${checked ? "enabled" : "disabled"}`
+                          );
+                        } catch (err) {
+                          toast.error("Failed to update MFA setting");
+                        }
+                      }}
+                    />
                   </div>
                   <Button
                     className="w-full"
@@ -4143,7 +4187,22 @@ bsContent>
                   </div>
                   <div className="flex items-center justify-between">
                     <Label>Enable ROI Calculation</Label>
-                    <Switch defaultChecked />
+                    <Switch
+                      checked={roiEnabled}
+                      onCheckedChange={async checked => {
+                        setRoiEnabled(checked);
+                        try {
+                          await extendedApi.compliance.updatePolicy({
+                            roi_calculation: checked,
+                          });
+                          toast.success(
+                            `ROI Calculation ${checked ? "enabled" : "disabled"}`
+                          );
+                        } catch (err) {
+                          toast.error("Failed to update ROI setting");
+                        }
+                      }}
+                    />
                   </div>
                   <Button
                     className="w-full"
@@ -4176,7 +4235,22 @@ bsContent>
                   </div>
                   <div className="flex items-center justify-between">
                     <Label>Enforce Policy on Proxy</Label>
-                    <Switch defaultChecked />
+                    <Switch
+                      checked={policyEnforced}
+                      onCheckedChange={async checked => {
+                        setPolicyEnforced(checked);
+                        try {
+                          await extendedApi.compliance.updatePolicy({
+                            policy_enforced: checked,
+                          });
+                          toast.success(
+                            `Policy on Proxy ${checked ? "enforced" : "disabled"}`
+                          );
+                        } catch (err) {
+                          toast.error("Failed to update proxy policy setting");
+                        }
+                      }}
+                    />
                   </div>
                   <Button
                     className="w-full"
@@ -6201,7 +6275,18 @@ bsContent>
                 </Select>
               </div>
               <div className="flex items-center space-x-2 p-3 rounded bg-zinc-900 border border-zinc-800">
-                <Switch id="art-72" defaultChecked />
+                <Switch
+                  id="art-72"
+                  checked={isArticle72}
+                  onCheckedChange={checked => {
+                    setIsArticle72(checked);
+                    if (checked) {
+                      toast.info(
+                        "This incident will be reported as Article 72 serious incident"
+                      );
+                    }
+                  }}
+                />
                 <Label
                   htmlFor="art-72"
                   className="text-xs font-medium cursor-pointer text-white"
@@ -6225,10 +6310,10 @@ bsContent>
                   "Archiving incident and triggering forensic analysis..."
                 );
                 try {
-                  const res =
-                    await extendedApi.compliance.reportIncident(
-                      newIncidentData
-                    );
+                  const res = await extendedApi.compliance.reportIncident({
+                    ...newIncidentData,
+                    article_72: isArticle72,
+                  });
                   setIncidents(prev => [
                     {
                       ...res,
@@ -6237,26 +6322,20 @@ bsContent>
                       date: new Date() as any,
                       affectedSystems: res.affected_systems || ["Main System"],
                       status: "open" as const,
+                      article72: isArticle72,
                     },
                     ...prev,
                   ]);
                   toast.success(
-                    "Incident reported to authorities (Post-market Monitoring alignment)."
+                    isArticle72
+                      ? "Article 72 serious incident reported to authorities."
+                      : "Incident reported to authorities (Post-market Monitoring alignment)."
                   );
                 } catch (error) {
+                  console.error("Failed to report incident:", error);
                   toast.error(
-                    "Failed to report incident. Archiving locally..."
+                    "Failed to register incident with regulatory authority. System in READ-ONLY mode for this event."
                   );
-                  const newIncident = {
-                    id: `inc-demo-${Date.now()}`,
-                    title: "Post-market Performance Shift",
-                    ...newIncidentData,
-                    date: new Date(),
-                    affectedSystems: ["Alpha v1 LLM"],
-                    status: "open",
-                  };
-                  setIncidents(prev => [newIncident as Incident, ...prev]);
-                  toast.success("Incident archived in local regulatory vault.");
                 }
                 setShowIncidentDialog(false);
                 setNewIncidentData({ description: "", severity: "medium" });

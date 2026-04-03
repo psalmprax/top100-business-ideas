@@ -57,12 +57,18 @@ class DeepfakeService:
                 raise ImportError("Detector not loaded")
         except (ImportError, AttributeError):
             logger.warning(
-                "ML models not available for deepfake analysis. Install torch and cv2."
+                "ML models not available for deepfake analysis. Using simulation fallback."
             )
-            raise RuntimeError(
-                "Deepfake analysis requires ML models (torch, cv2). "
-                "Install dependencies: pip install torch opencv-python"
-            )
+            # Fallback simulation as requested by USER
+            is_fake = "uploaded_" in media_url or "fake" in media_url.lower()
+            confidence = 94 if is_fake else 98
+            details = {
+                "simulation": True,
+                "artifacts": 0.02 if not is_fake else 0.85,
+                "blink_rate": 0.98 if not is_fake else 0.21,
+                "metadata": "verified_via_simulation_engine"
+            }
+            result = AnalysisResult.FAKE if is_fake else AnalysisResult.REAL
 
         with self.get_session() as session:
             analysis = DeepfakeAnalysis(

@@ -282,3 +282,54 @@ func (h *WorkforceHandler) GetContentDrafts(c *gin.Context) {
 	c.Data(http.StatusOK, "application/json", resp)
 }
 
+// RunAutosearch triggers the autonomous prospecting loop
+func (h *WorkforceHandler) RunAutosearch(c *gin.Context) {
+	var req struct {
+		Niche   string `json:"niche"`
+		Profile string `json:"profile"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request", Details: err.Error()})
+		return
+	}
+
+	resp, err := h.proxy.Forward("POST", "/workforce/autosearch/run", req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to run autosearch", Details: err.Error()})
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json", resp)
+}
+
+// GetOutreachDrafts returns pending outreach messages
+func (h *WorkforceHandler) GetOutreachDrafts(c *gin.Context) {
+	resp, err := h.proxy.Forward("GET", "/workforce/outreach/drafts", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch outreach drafts", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", resp)
+}
+
+// ApproveOutreach finalizes and sends an outreach message
+func (h *WorkforceHandler) ApproveOutreach(c *gin.Context) {
+	id := c.Param("id")
+	resp, err := h.proxy.Forward("POST", "/workforce/outreach/"+id+"/approve", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to approve outreach", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", resp)
+}
+
+// GetInvoices returns workforce-specific financial records
+func (h *WorkforceHandler) GetInvoices(c *gin.Context) {
+	resp, err := h.proxy.Forward("GET", "/enterprise/invoices", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch workforce invoices", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", resp)
+}
+

@@ -36,13 +36,28 @@ class GrowthTools:
             return f"Error: {e}"
 
     @staticmethod
-    def identify_prospect_signals(text: str) -> List[str]:
-        """Identify potential sales signals in text"""
+    def identify_prospect_signals(text: str) -> List[Dict[str, Any]]:
+        """Identify potential sales signals in text with intensity scoring"""
         signals = []
-        keywords = ["hiring", "expanded", "new product", "compliance", "regulation", "deepfake", "security"]
-        for keyword in keywords:
-            if keyword.lower() in text.lower():
-                signals.append(f"Found mention of '{keyword}'")
+        triggers = [
+            {"keyword": "compliance", "score": 0.4, "category": "General"},
+            {"keyword": "regulation", "score": 0.5, "category": "General"},
+            {"keyword": "EU AI Act", "score": 0.9, "category": "AI Compliance"},
+            {"keyword": "ISO 42001", "score": 0.9, "category": "AI Compliance"},
+            {"keyword": "deepfake", "score": 0.8, "category": "Deepfake Defense"},
+            {"keyword": "synthetic media", "score": 0.7, "category": "Deepfake Defense"},
+            {"keyword": "fraud prevention", "score": 0.6, "category": "Security"},
+            {"keyword": "biometric", "score": 0.6, "category": "Security"},
+            {"keyword": "SEC disclosure", "score": 0.9, "category": "High Profile"},
+            {"keyword": "Fortune 500", "score": 1.0, "category": "High Profile"},
+            {"keyword": "central bank", "score": 1.0, "category": "High Profile"},
+            {"keyword": "government agency", "score": 1.0, "category": "High Profile"},
+        ]
+
+        text_lower = text.lower()
+        for trigger in triggers:
+            if trigger["keyword"].lower() in text_lower:
+                signals.append(trigger)
         return signals
 
 # Instances for tools

@@ -759,7 +759,9 @@ export default function AlphaAgentOps() {
       });
       toast.success("Enterprise Client Space provisioned successfully.");
     } catch (err: any) {
-      toast.error(`Provisioning failed: ${err.message || "Endpoint unreachable"}`);
+      toast.error(
+        `Provisioning failed: ${err.message || "Endpoint unreachable"}`
+      );
     } finally {
       setIsProvisioningClient(false);
     }
@@ -913,6 +915,16 @@ export default function AlphaAgentOps() {
   const [showSnapshotsDialog, setShowSnapshotsDialog] = useState(false);
   const [snapshots, setSnapshots] = useState<any[]>([]);
   const [proxyTarget, setProxyTarget] = useState("aws-us-east-1");
+
+  // Advanced Filtering State (P0 Gap Fix)
+  const [showAdvancedFilterDialog, setShowAdvancedFilterDialog] =
+    useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState({
+    status: "all",
+    provider: "all",
+    minBudget: 0,
+    maxBudget: 1000000,
+  });
 
   // Sentinel Bridge: Real-time Metrics & Self-Healing State
   const [liveMetrics, setLiveMetrics] = useState({
@@ -1201,14 +1213,14 @@ export default function AlphaAgentOps() {
           {
             period: "current",
             metric_name: "ROI",
-            value: roi.current_roi_multiplier || 8.4,
-            roi_percentage: (roi.current_roi_multiplier || 8.4) * 100,
+            value: roi.current_roi_multiplier || 0,
+            roi_percentage: (roi.current_roi_multiplier || 0) * 100,
             total_cost:
-              roi.total_realized_savings / (roi.current_roi_multiplier || 8.4),
+              roi.total_realized_savings / (roi.current_roi_multiplier || 1),
             value_generated: roi.total_realized_savings,
-            trend_percentage: 15,
+            trend_percentage: roi.trend_percentage || 0,
             cost_savings: roi.total_realized_savings,
-            efficiency_gains: 42,
+            efficiency_gains: roi.efficiency_gains || 0,
           },
         ]);
       }
@@ -1392,13 +1404,13 @@ export default function AlphaAgentOps() {
   };
 
   const handleRotateApiKey = async () => {
-    toast.info("Rotating API key...");
+    toast.info("Requesting secure rotation of live API key from vault...");
     try {
-      await extendedApi.post(`/agent-ops/security/rotate-key`, {});
-      toast.success("API key rotated successfully.");
+      await extendedApi.agentOps.rotateKey("primary");
+      toast.success("API key rotated successfully within production vault.");
     } catch (e) {
-      console.error("Key rotation failed", e);
-      toast.error("Failed to rotate API key.");
+      console.error("Rotation failed", e);
+      toast.error("Failed to rotate API key. Security service unavailable.");
     }
   };
 
@@ -2108,7 +2120,9 @@ export default function AlphaAgentOps() {
     if (!researchTopic) return;
     setIsResearching(true);
     try {
-      const response = await fetch(`/api/v1/agent-ops/intelligence/research?topic=${encodeURIComponent(researchTopic)}`);
+      const response = await fetch(
+        `/api/v1/agent-ops/intelligence/research?topic=${encodeURIComponent(researchTopic)}`
+      );
       const data = await response.json();
       setResearchResult(data);
       toast.success("Paperclip research complete!");
@@ -2669,14 +2683,21 @@ export default function AlphaAgentOps() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex gap-2">
-                    <Input 
-                      placeholder="Enter market topic (e.g., 'Decentralized Finance')" 
+                    <Input
+                      placeholder="Enter market topic (e.g., 'Decentralized Finance')"
                       value={researchTopic}
-                      onChange={(e) => setResearchTopic(e.target.value)}
+                      onChange={e => setResearchTopic(e.target.value)}
                       className="bg-background/50"
                     />
-                    <Button onClick={handlePaperclipResearch} disabled={isResearching}>
-                      {isResearching ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Zap className="w-4 h-4 mr-2" />}
+                    <Button
+                      onClick={handlePaperclipResearch}
+                      disabled={isResearching}
+                    >
+                      {isResearching ? (
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Zap className="w-4 h-4 mr-2" />
+                      )}
                       Run Research
                     </Button>
                   </div>
@@ -2692,12 +2713,27 @@ export default function AlphaAgentOps() {
                         </CardHeader>
                         <CardContent>
                           <div className="space-y-3">
-                            {researchResult.competitors.map((comp: any, i: number) => (
-                              <div key={i} className="flex justify-between items-center p-2 rounded bg-background/40 border border-border/50">
-                                <span className="font-medium">{comp.name}</span>
-                                <Badge variant={comp.status === "dominant" ? "default" : "outline"}>{comp.market_share}</Badge>
-                              </div>
-                            ))}
+                            {researchResult.competitors.map(
+                              (comp: any, i: number) => (
+                                <div
+                                  key={i}
+                                  className="flex justify-between items-center p-2 rounded bg-background/40 border border-border/50"
+                                >
+                                  <span className="font-medium">
+                                    {comp.name}
+                                  </span>
+                                  <Badge
+                                    variant={
+                                      comp.status === "dominant"
+                                        ? "default"
+                                        : "outline"
+                                    }
+                                  >
+                                    {comp.market_share}
+                                  </Badge>
+                                </div>
+                              )
+                            )}
                           </div>
                         </CardContent>
                       </Card>
@@ -2712,27 +2748,51 @@ export default function AlphaAgentOps() {
                         <CardContent>
                           <div className="grid grid-cols-2 gap-2 text-[10px]">
                             <div className="p-2 bg-green-500/5 border border-green-500/20 rounded">
-                              <div className="font-bold text-green-500 mb-1 uppercase tracking-tighter">Strengths</div>
+                              <div className="font-bold text-green-500 mb-1 uppercase tracking-tighter">
+                                Strengths
+                              </div>
                               <ul className="list-disc pl-3 space-y-1">
-                                {researchResult.swot.strengths.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                                {researchResult.swot.strengths.map(
+                                  (s: string, i: number) => (
+                                    <li key={i}>{s}</li>
+                                  )
+                                )}
                               </ul>
                             </div>
                             <div className="p-2 bg-red-500/5 border border-red-500/20 rounded">
-                              <div className="font-bold text-red-500 mb-1 uppercase tracking-tighter">Weaknesses</div>
+                              <div className="font-bold text-red-500 mb-1 uppercase tracking-tighter">
+                                Weaknesses
+                              </div>
                               <ul className="list-disc pl-3 space-y-1">
-                                {researchResult.swot.weaknesses.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                                {researchResult.swot.weaknesses.map(
+                                  (s: string, i: number) => (
+                                    <li key={i}>{s}</li>
+                                  )
+                                )}
                               </ul>
                             </div>
                             <div className="p-2 bg-blue-500/5 border border-blue-500/20 rounded">
-                              <div className="font-bold text-blue-500 mb-1 uppercase tracking-tighter">Opportunities</div>
+                              <div className="font-bold text-blue-500 mb-1 uppercase tracking-tighter">
+                                Opportunities
+                              </div>
                               <ul className="list-disc pl-3 space-y-1">
-                                {researchResult.swot.opportunities.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                                {researchResult.swot.opportunities.map(
+                                  (s: string, i: number) => (
+                                    <li key={i}>{s}</li>
+                                  )
+                                )}
                               </ul>
                             </div>
                             <div className="p-2 bg-yellow-500/5 border border-yellow-500/20 rounded">
-                              <div className="font-bold text-yellow-500 mb-1 uppercase tracking-tighter">Threats</div>
+                              <div className="font-bold text-yellow-500 mb-1 uppercase tracking-tighter">
+                                Threats
+                              </div>
                               <ul className="list-disc pl-3 space-y-1">
-                                {researchResult.swot.threats.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                                {researchResult.swot.threats.map(
+                                  (s: string, i: number) => (
+                                    <li key={i}>{s}</li>
+                                  )
+                                )}
                               </ul>
                             </div>
                           </div>
@@ -2757,14 +2817,21 @@ export default function AlphaAgentOps() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex gap-2">
-                    <Input 
-                      placeholder="Enter project name or idea" 
+                    <Input
+                      placeholder="Enter project name or idea"
                       value={strategyPrompt}
-                      onChange={(e) => setStrategyPrompt(e.target.value)}
+                      onChange={e => setStrategyPrompt(e.target.value)}
                       className="bg-background/50"
                     />
-                    <Button onClick={handleHermesStrategy} disabled={isGeneratingStrategy}>
-                      {isGeneratingStrategy ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Brain className="w-4 h-4 mr-2" />}
+                    <Button
+                      onClick={handleHermesStrategy}
+                      disabled={isGeneratingStrategy}
+                    >
+                      {isGeneratingStrategy ? (
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Brain className="w-4 h-4 mr-2" />
+                      )}
                       Generate Strategy
                     </Button>
                   </div>
@@ -2773,10 +2840,19 @@ export default function AlphaAgentOps() {
                     <div className="space-y-6 mt-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {strategyResult.roadmap.map((phase: any, i: number) => (
-                          <div key={i} className="p-4 rounded-lg bg-muted/40 border border-border/50 relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 p-2 text-[8px] font-black opacity-20 group-hover:opacity-100 transition-opacity">PHASE {i+1}</div>
-                            <div className="text-xs font-bold text-primary mb-1 uppercase tracking-wider">{phase.phase}</div>
-                            <div className="text-lg font-black mb-1">{phase.goal}</div>
+                          <div
+                            key={i}
+                            className="p-4 rounded-lg bg-muted/40 border border-border/50 relative overflow-hidden group"
+                          >
+                            <div className="absolute top-0 right-0 p-2 text-[8px] font-black opacity-20 group-hover:opacity-100 transition-opacity">
+                              PHASE {i + 1}
+                            </div>
+                            <div className="text-xs font-bold text-primary mb-1 uppercase tracking-wider">
+                              {phase.phase}
+                            </div>
+                            <div className="text-lg font-black mb-1">
+                              {phase.goal}
+                            </div>
                             <div className="text-[10px] text-muted-foreground flex items-center gap-1">
                               <Clock className="w-3 h-3" /> {phase.duration}
                             </div>
@@ -2794,16 +2870,26 @@ export default function AlphaAgentOps() {
                         <CardContent>
                           <div className="grid grid-cols-2 gap-6">
                             <div>
-                              <div className="text-[10px] font-bold uppercase text-muted-foreground mb-2">Core Components</div>
+                              <div className="text-[10px] font-bold uppercase text-muted-foreground mb-2">
+                                Core Components
+                              </div>
                               <div className="flex flex-wrap gap-2">
-                                {strategyResult.ux_blueprint.core_components.map((c: string, i: number) => (
-                                  <Badge key={i} variant="secondary">{c}</Badge>
-                                ))}
+                                {strategyResult.ux_blueprint.core_components.map(
+                                  (c: string, i: number) => (
+                                    <Badge key={i} variant="secondary">
+                                      {c}
+                                    </Badge>
+                                  )
+                                )}
                               </div>
                             </div>
                             <div>
-                              <div className="text-[10px] font-bold uppercase text-muted-foreground mb-2">Aesthetic Identity</div>
-                              <div className="text-sm italic">{strategyResult.ux_blueprint.aesthetic}</div>
+                              <div className="text-[10px] font-bold uppercase text-muted-foreground mb-2">
+                                Aesthetic Identity
+                              </div>
+                              <div className="text-sm italic">
+                                {strategyResult.ux_blueprint.aesthetic}
+                              </div>
                             </div>
                           </div>
                           <Separator className="my-4 opacity-30" />
@@ -2829,28 +2915,28 @@ export default function AlphaAgentOps() {
                 <MetricCard
                   title="Daily Spend"
                   value={`$${totalDailySpend.toFixed(2)}`}
-                  change={-12}
+                  change={0}
                   icon={DollarSign}
                   color="bg-green-500/10 text-green-500"
                 />
                 <MetricCard
                   title="Loops Prevented"
                   value={(loopsPrevented || 0).toString()}
-                  change={34}
+                  change={0}
                   icon={ShieldAlert}
                   color="bg-purple-500/10 text-purple-500"
                 />
                 <MetricCard
                   title="Cost Saved"
                   value={`$${totalCostSaved.toFixed(2)}`}
-                  change={28}
+                  change={0}
                   icon={TrendingDown}
                   color="bg-emerald-500/10 text-emerald-500"
                 />
                 <MetricCard
                   title="ROI Forecast (Net)"
                   value={`${roiMetrics?.[0]?.value || 0}x`}
-                  change={roiMetrics?.[0]?.trend_percentage || 0}
+                  change={0}
                   icon={LineChart}
                   color="bg-indigo-500/10 text-indigo-400"
                   footer="Projected annual savings vs compute"
@@ -3087,7 +3173,12 @@ export default function AlphaAgentOps() {
                       >
                         <Upload className="w-4 h-4" /> Import
                       </Button>
-                      <Button variant="outline" size="sm" className="h-8 gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 gap-2"
+                        onClick={() => setShowAdvancedFilterDialog(true)}
+                      >
                         <Filter className="w-4 h-4" />
                         Advanced Filter
                       </Button>
@@ -3131,8 +3222,16 @@ export default function AlphaAgentOps() {
                       {(Array.isArray(agents) ? agents : [])
                         .filter(
                           agent =>
-                            dashboardFilter === "all" ||
-                            agent.tier === dashboardFilter
+                            (dashboardFilter === "all" ||
+                              agent.tier === dashboardFilter) &&
+                            (advancedFilters.status === "all" ||
+                              agent.status === advancedFilters.status) &&
+                            (advancedFilters.provider === "all" ||
+                              agent.config?.provider?.toLowerCase() ===
+                                advancedFilters.provider) &&
+                            agent.budget >= advancedFilters.minBudget &&
+                            agent.budget <=
+                              (advancedFilters.maxBudget || 1000000)
                         )
                         .map(agent => (
                           <TableRow
@@ -3525,11 +3624,18 @@ export default function AlphaAgentOps() {
                     <div className="space-y-4">
                       <div className="p-3 rounded-lg bg-blue-500/10">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="font-medium">This Week (Projected)</span>
+                          <span className="font-medium">
+                            This Week (Projected)
+                          </span>
                           <span className="text-blue-500">
                             $
                             {(
-                              usageForecasts?.slice(0, 7).reduce((sum, f) => sum + (f.predicted_cost || 0), 0) || 0
+                              usageForecasts
+                                ?.slice(0, 7)
+                                .reduce(
+                                  (sum, f) => sum + (f.predicted_cost || 0),
+                                  0
+                                ) || 0
                             ).toFixed(2)}
                           </span>
                         </div>
@@ -3543,7 +3649,12 @@ export default function AlphaAgentOps() {
                           <span className="text-purple-500">
                             $
                             {(
-                              usageForecasts?.slice(7, 14).reduce((sum, f) => sum + (f.predicted_cost || 0), 0) || 0
+                              usageForecasts
+                                ?.slice(7, 14)
+                                .reduce(
+                                  (sum, f) => sum + (f.predicted_cost || 0),
+                                  0
+                                ) || 0
                             ).toFixed(2)}
                           </span>
                         </div>
@@ -3559,7 +3670,7 @@ export default function AlphaAgentOps() {
                             {(
                               roiMetrics.find(
                                 m => m.metric_name === "Cost Savings"
-                              )?.value ?? 2717.60
+                              )?.value ?? 2717.6
                             ).toLocaleString()}
                           </span>
                         </div>
@@ -4575,7 +4686,21 @@ export default function AlphaAgentOps() {
                           Logs never leave your perimeter
                         </p>
                       </div>
-                      <Switch defaultChecked />
+                      <Switch
+                        defaultChecked
+                        onCheckedChange={async checked => {
+                          try {
+                            await extendedApi.governance.settings.update({
+                              zero_knowledge_logging: checked,
+                            });
+                            toast.success(
+                              `Zero-Knowledge Logging ${checked ? "enabled" : "disabled"}`
+                            );
+                          } catch (err) {
+                            toast.error("Failed to update logging setting");
+                          }
+                        }}
+                      />
                     </div>
                     <div className="flex items-center justify-between p-2 border rounded-lg">
                       <div className="space-y-0.5">
@@ -4584,7 +4709,21 @@ export default function AlphaAgentOps() {
                           Automated masking of sensitive data
                         </p>
                       </div>
-                      <Switch defaultChecked />
+                      <Switch
+                        defaultChecked
+                        onCheckedChange={async checked => {
+                          try {
+                            await extendedApi.governance.settings.update({
+                              pii_redaction: checked,
+                            });
+                            toast.success(
+                              `PII Redaction ${checked ? "enabled" : "disabled"}`
+                            );
+                          } catch (err) {
+                            toast.error("Failed to update PII setting");
+                          }
+                        }}
+                      />
                     </div>
                   </CardContent>
                 </Card>
@@ -4977,9 +5116,18 @@ export default function AlphaAgentOps() {
                           variant="ghost"
                           size="icon"
                           className="h-6 w-6"
-                          onClick={() =>
-                            toast.success("Key copied to clipboard")
-                          }
+                          onClick={async () => {
+                            try {
+                              await navigator.clipboard.writeText(
+                                "sk_sentinel_prod_....8f3c"
+                              );
+                              toast.success(
+                                "Production key copied to clipboard"
+                              );
+                            } catch (err) {
+                              toast.error("Failed to copy to clipboard");
+                            }
+                          }}
                         >
                           <Copy className="w-3 h-3" />
                         </Button>
@@ -4990,9 +5138,16 @@ export default function AlphaAgentOps() {
                           variant="ghost"
                           size="icon"
                           className="h-6 w-6"
-                          onClick={() =>
-                            toast.success("Key copied to clipboard")
-                          }
+                          onClick={async () => {
+                            try {
+                              await navigator.clipboard.writeText(
+                                "sk_sentinel_test_....12b9"
+                              );
+                              toast.success("Test key copied to clipboard");
+                            } catch (err) {
+                              toast.error("Failed to copy to clipboard");
+                            }
+                          }}
                         >
                           <Copy className="w-3 h-3" />
                         </Button>
@@ -5099,7 +5254,21 @@ export default function AlphaAgentOps() {
                             Auto-purge agent memory on user request
                           </p>
                         </div>
-                        <Switch defaultChecked />
+                        <Switch
+                          defaultChecked
+                          onCheckedChange={async checked => {
+                            try {
+                              await extendedApi.governance.settings.update({
+                                gdpr_right_to_be_forgotten: checked,
+                              });
+                              toast.success(
+                                `GDPR Right to Be Forgotten ${checked ? "enabled" : "disabled"}`
+                              );
+                            } catch (err) {
+                              toast.error("Failed to update GDPR setting");
+                            }
+                          }}
+                        />
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="space-y-0.5">
@@ -5108,7 +5277,20 @@ export default function AlphaAgentOps() {
                             Restrict agent wallet interactions under EU rule
                           </p>
                         </div>
-                        <Switch />
+                        <Switch
+                          onCheckedChange={async checked => {
+                            try {
+                              await extendedApi.governance.settings.update({
+                                mica_crypto_guard: checked,
+                              });
+                              toast.success(
+                                `MiCA Crypto Asset Guard ${checked ? "enabled" : "disabled"}`
+                              );
+                            } catch (err) {
+                              toast.error("Failed to update MiCA setting");
+                            }
+                          }}
+                        />
                       </div>
                       <Button
                         variant="outline"
@@ -5960,6 +6142,117 @@ export default function AlphaAgentOps() {
             </TabsContent>
           </Tabs>
         </div>
+
+        {/* Advanced Filter Dialog (P0 Gap Fix) */}
+        <Dialog
+          open={showAdvancedFilterDialog}
+          onOpenChange={setShowAdvancedFilterDialog}
+        >
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Advanced Agent Filtering</DialogTitle>
+              <DialogDescription>
+                Refine visibility based on performance, status, and
+                infrastructure tier.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="status-filter" className="text-right">
+                  Status
+                </Label>
+                <Select
+                  value={advancedFilters.status}
+                  onValueChange={val =>
+                    setAdvancedFilters(prev => ({ ...prev, status: val }))
+                  }
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="paused">Paused</SelectItem>
+                    <SelectItem value="error">Error</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="provider-filter" className="text-right">
+                  Provider
+                </Label>
+                <Select
+                  value={advancedFilters.provider}
+                  onValueChange={val =>
+                    setAdvancedFilters(prev => ({ ...prev, provider: val }))
+                  }
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Select Provider" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Providers</SelectItem>
+                    <SelectItem value="openai">OpenAI</SelectItem>
+                    <SelectItem value="anthropic">Anthropic</SelectItem>
+                    <SelectItem value="google">Google</SelectItem>
+                    <SelectItem value="meta">Meta (Llama)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Input
+                  id="budget-min"
+                  type="number"
+                  className="col-span-3"
+                  value={advancedFilters.minBudget}
+                  onChange={e =>
+                    setAdvancedFilters(prev => ({
+                      ...prev,
+                      minBudget: parseInt(e.target.value) || 0,
+                    }))
+                  }
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="budget-max" className="text-right">
+                  Max Budget
+                </Label>
+                <Input
+                  id="budget-max"
+                  type="number"
+                  className="col-span-3"
+                  value={advancedFilters.maxBudget}
+                  onChange={e =>
+                    setAdvancedFilters(prev => ({
+                      ...prev,
+                      maxBudget: parseInt(e.target.value) || 1000000,
+                    }))
+                  }
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setAdvancedFilters({
+                    status: "all",
+                    provider: "all",
+                    minBudget: 0,
+                    maxBudget: 1000000,
+                  });
+                  setShowAdvancedFilterDialog(false);
+                }}
+              >
+                Reset Filters
+              </Button>
+              <Button onClick={() => setShowAdvancedFilterDialog(false)}>
+                Apply Filters
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Alert Settings Dialog */}
         <Dialog open={showAlertDialog} onOpenChange={setShowAlertDialog}>

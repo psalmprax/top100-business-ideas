@@ -669,6 +669,47 @@ class WorkforceContent(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
+class OutreachStatus(str, Enum):
+    PENDING_APPROVAL = "PENDING_APPROVAL"
+    APPROVED = "APPROVED"
+    SENT = "SENT"
+    REPLIED = "REPLIED"
+    CONVERTED = "CONVERTED"
+    DISCARDED = "DISCARDED"
+
+
+class WorkforceOutreach(SQLModel, table=True):
+    """Persistent storage for Outreach message previews for human-in-the-loop approval"""
+
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    recipient_name: str
+    recipient_company: str
+    recipient_role: Optional[str] = None
+    subject: str
+    body: str
+    status: OutreachStatus = Field(default=OutreachStatus.PENDING_APPROVAL)
+    niche: str = Field(index=True)
+    profile: str = Field(default="enterprise")
+    score: float = Field(default=0.0)
+    interaction_id: Optional[str] = Field(default=None, foreign_key="workforceinteraction.id")
+    is_auto_trigger: bool = Field(default=False)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class WorkforceMessage(SQLModel, table=True):
+    """Persistent storage for multi-agent and user-to-agent dialogue"""
+
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    sender: str  # "user" or agent role (e.g., "Prospector")
+    recipient: str = Field(default="all")  # "all" (group) or specific agent role
+    content: str
+    reasoning_path: Optional[str] = None  # Agent's internal dialogue/cross-reasoning
+    is_group_chat: bool = Field(default=True)
+    interaction_id: Optional[str] = Field(default=None, foreign_key="workforceinteraction.id")
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 class ComplianceAuditLog(SQLModel, table=True):
     """Persistent audit logs for HIPAA/SOX/GDPR compliance"""
 

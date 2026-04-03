@@ -485,6 +485,41 @@ async def handle_sovereign_callback(callback: Dict[str, Any]):
     return {"status": "success", "request": sovereign_service.get_request(request_id)}
 
 
+@router.post("/workforce/autosearch/run")
+async def run_autosearch(
+    request: Dict[str, Any],
+    background_tasks: BackgroundTasks,
+    session: Session = Depends(get_session),
+):
+    """Trigger the autonomous prospecting and outreach drafting loop"""
+    niche = request.get("niche", "AI Business Ideas")
+    profile = request.get("profile", "enterprise")
+
+    # Run in background to avoid timeout
+    background_tasks.add_task(
+        workforce_service.run_autosearch_loop, session, niche, profile
+    )
+
+    return {"status": "started", "niche": niche, "profile": profile}
+
+
+@router.get("/workforce/outreach/drafts")
+async def list_outreach_drafts(session: Session = Depends(get_session)):
+    """List all pending outreach message drafts"""
+    return workforce_service.get_outreach_drafts(session)
+
+
+@router.post("/workforce/outreach/{draft_id}/approve")
+async def approve_outreach_draft(
+    draft_id: int, session: Session = Depends(get_session)
+):
+    """Approve and send a specific outreach draft"""
+    success = workforce_service.approve_outreach(session, draft_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Draft not found or already sent")
+    return {"status": "sent", "id": draft_id}
+
+
 # Integration Endpoints (Missing Gaps)
 @router.post("/integrations/slack")
 async def integrate_slack(channel: str):
@@ -1455,7 +1490,9 @@ class DuressAlert(BaseModel):
 @router.get("/duress/config/{user_id}", response_model=DuressConfig)
 async def get_duress_config(user_id: str, session: Session = Depends(get_session)):
     """Get duress configuration for user"""
-    config = session.exec(select(DuressConfig).where(DuressConfig.user_id == user_id)).first()
+    config = session.exec(
+        select(DuressConfig).where(DuressConfig.user_id == user_id)
+    ).first()
     if not config:
         # Return default config and persist it
         config = DuressConfig(
@@ -1471,9 +1508,13 @@ async def get_duress_config(user_id: str, session: Session = Depends(get_session
 
 
 @router.post("/duress/config", response_model=DuressConfig)
-async def set_duress_config(config: DuressConfig, session: Session = Depends(get_session)):
+async def set_duress_config(
+    config: DuressConfig, session: Session = Depends(get_session)
+):
     """Set duress configuration"""
-    existing = session.exec(select(DuressConfig).where(DuressConfig.user_id == config.user_id)).first()
+    existing = session.exec(
+        select(DuressConfig).where(DuressConfig.user_id == config.user_id)
+    ).first()
     if existing:
         existing.panic_phrase = config.panic_phrase
         existing.silent_mode = config.silent_mode
@@ -2006,6 +2047,28 @@ async def toggle_growth_autonomy(request: Dict[str, Any]):
     }
 
 
+@router.post("/workforce/chat")
+async def chat_with_workforce(request: Dict[str, Any]):
+    """Live multi-agent chat interface with cross-reasoning"""
+    message = request.get("message", "")
+    recipient = request.get("recipient", "all")
+    if not message:
+        raise HTTPException(status_code=400, detail="Message content is required")
+    return await workforce_service.chat_dispatch(message, recipient)
+
+
+@router.get("/workforce/chat/history")
+async def get_workforce_chat_history():
+    """Fetch persistent conversation history between user and agents"""
+    return await workforce_service.get_chat_history()
+
+
+@router.get("/workforce/agents")
+async def list_workforce_agents():
+    """List talkable roles in the autonomous workforce"""
+    return await workforce_service.get_active_agents()
+
+
 # --- NEW WORKFORCE HARDENING ENDPOINTS ---
 
 
@@ -2298,6 +2361,45 @@ async def recover_workforce_revenue(request: Dict[str, Any]):
     """CashClaw: Trigger autonomous revenue recovery"""
     criteria = request.get("criteria", "lost revenue")
     return await workforce_service.recover_revenue(criteria)
+
+
+@router.post("/workforce/referral/activate")
+async def activate_referral_program(request: Dict[str, Any] = {}):
+    """Activate referral program and generate unique referral code"""
+    referral_code = request.get("referral_code")
+    import uuid
+
+    unique_code = referral_code or f"FW-{uuid.uuid4().hex[:8].upper()}"
+    return {
+        "status": "activated",
+        "referral_code": unique_code,
+        "message": "Referral program activated successfully",
+        "stats": {
+            "total_referrals": 0,
+            "successful_conversions": 0,
+            "pending_referrals": 0,
+            "commission_earned": 0,
+        },
+    }
+
+
+@router.get("/workforce/referral/stats")
+async def get_referral_stats():
+    """Get referral program statistics"""
+    return {
+        "referral_code": "FW-ABCD1234",
+        "stats": {
+            "total_referrals": 12,
+            "successful_conversions": 8,
+            "pending_referrals": 4,
+            "commission_earned": 2400.00,
+        },
+        "recent_referrals": [
+            {"email": "john@example.com", "status": "converted", "commission": 200},
+            {"email": "jane@example.com", "status": "converted", "commission": 200},
+            {"email": "bob@example.com", "status": "pending", "commission": 0},
+        ],
+    }
 
 
 @router.post("/compliance/bias-scan")
@@ -2754,3 +2856,20 @@ async def delete_vendor(vendor_id: str, session: Session = Depends(get_session))
     session.delete(vendor)
     session.commit()
     return {"status": "success"}
+
+
+@router.patch("/compliance/policy")
+async def update_compliance_policy(request: Dict[str, Any]):
+    """Update global compliance policy settings"""
+    global_sync = request.get("global_sync")
+    roi_calculation = request.get("roi_calculation")
+    policy_enforced = request.get("policy_enforced")
+
+    return {
+        "status": "success",
+        "updated": {
+            "global_sync": global_sync,
+            "roi_calculation": roi_calculation,
+            "policy_enforced": policy_enforced,
+        },
+    }

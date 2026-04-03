@@ -79,15 +79,15 @@ func main() {
 	authHandler := handlers.NewAuthHandler(authService)
 	agentOpsHandler := handlers.NewAgentOpsHandler(proxyService)
 	
-	// Initialize File Upload Service for Compliance
-	complianceUploadDir := os.Getenv("COMPLIANCE_UPLOAD_DIR")
-	if complianceUploadDir == "" {
-		complianceUploadDir = "./uploads/compliance"
+	// Initialize File Upload Services
+	uploadDir := os.Getenv("UPLOAD_DIR")
+	if uploadDir == "" {
+		uploadDir = "./uploads"
 	}
-	complianceUploadHandler := services.NewFileUploadHandler(complianceUploadDir, 10*1024*1024) // 10MB limit
+	commonUploadHandler := services.NewFileUploadHandler(uploadDir, 20*1024*1024) // 20MB limit
 
-	complianceHandler := handlers.NewComplianceHandler(proxyService, complianceUploadHandler)
-	deepfakeHandler := handlers.NewDeepfakeHandler(proxyService)
+	complianceHandler := handlers.NewComplianceHandler(proxyService, commonUploadHandler)
+	deepfakeHandler := handlers.NewDeepfakeHandler(proxyService, commonUploadHandler)
 	wsHandler := handlers.NewWebSocketHandler(wsHub)
 	rulesHandler := handlers.NewRulesHandler(proxyService)
 	metricsHandler := handlers.NewMetricsHandler(proxyService)
@@ -245,6 +245,7 @@ func main() {
 			deepfake.Use(middleware.ProductAccess("deepfake"))
 			{
 				deepfake.POST("/analyze", deepfakeHandler.Analyze)
+				deepfake.POST("/upload", deepfakeHandler.Upload)
 				deepfake.GET("/analyses", deepfakeHandler.ListAnalyses)
 				deepfake.GET("/analyses/:id", deepfakeHandler.GetAnalysis)
 				deepfake.GET("/stats", deepfakeHandler.GetStats)
@@ -514,6 +515,12 @@ func main() {
 				workforce.GET("/content", workforceHandler.GetContentDrafts)
 				workforce.GET("/decisions", workforceHandler.ListDecisions)
 				workforce.GET("/traces", workforceHandler.ListTraces)
+
+				// Autosearch & Outreach
+				workforce.POST("/autosearch/run", workforceHandler.RunAutosearch)
+				workforce.GET("/outreach/drafts", workforceHandler.GetOutreachDrafts)
+				workforce.POST("/outreach/:id/approve", workforceHandler.ApproveOutreach)
+				workforce.GET("/invoices", workforceHandler.GetInvoices)
 			}
 
 			// On-Premise (Agent Ops UC18)
