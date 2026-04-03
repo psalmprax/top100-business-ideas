@@ -207,6 +207,7 @@ func main() {
 			compliance := protected.Group("/compliance")
 			compliance.Use(middleware.ProductAccess("compliance"))
 			{
+				compliance.GET("/stats", complianceHandler.GetStats)
 				compliance.GET("", complianceHandler.ListChecks)
 				compliance.GET("/:id", complianceHandler.GetCheck)
 				compliance.POST("/check", complianceHandler.RunCheck)

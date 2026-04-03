@@ -3,7 +3,7 @@
  * Company landing page showcasing products
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
 import {
@@ -39,7 +39,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { extendedApi } from "@/lib/api";
+import { extendedApi, agentsApi, Agent } from "@/lib/api";
 
 const products = [
   {
@@ -298,7 +298,7 @@ export default function AlphaAI() {
         ]);
         
         setPlatformStats({
-          agentsOnline: agents.filter(a => a.status === "active").length,
+          agentsOnline: agents.filter((a: Agent) => a.status === "active").length,
           threatsBlocked: safety?.threats_detected || 0,
           complianceScore: compliance?.overall_score || 0,
           deepfakeConfidence: safety?.accuracy_score || 0,

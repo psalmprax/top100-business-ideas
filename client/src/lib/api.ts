@@ -1173,6 +1173,7 @@ export const extendedApi = {
 
   // Compliance Integration (EU AI Act articles)
   compliance: {
+    getStats: () => apiRequest<any>("/api/v1/compliance/stats"),
     listModels: () => apiRequest<any[]>("/api/v1/compliance/models"),
     registerModel: (modelData: any) =>
       apiRequest<any>("/api/v1/compliance/models", {

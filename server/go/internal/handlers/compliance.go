@@ -23,6 +23,15 @@ func NewComplianceHandler(proxyService *services.ProxyService, uploadHandler *se
 	}
 }
 
+func (h *ComplianceHandler) GetStats(c *gin.Context) {
+	response, err := h.proxyService.Forward("GET", "/compliance/stats", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch compliance stats", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
+}
+
 func (h *ComplianceHandler) ListChecks(c *gin.Context) {
 	response, err := h.proxyService.ListComplianceChecks()
 	if err != nil {
