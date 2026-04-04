@@ -5,6 +5,7 @@ Actively monitors token usage across all agents and automatically pauses operati
 
 import stripe
 import os
+import logging
 from sqlmodel import Session, select
 from app.core.database import engine
 from app.core.models import Agent, AlertConfig, Subscription, Invoice, User
