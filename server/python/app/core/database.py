@@ -27,6 +27,11 @@ from app.core.models import (
     SystemSetting,
     BusinessIdea,
     WorkforceSkill,
+    WorkforceJob,
+    WorkforceAcquisition,
+    WorkforceContent,
+    ForensicTrace,
+    GovernanceDecision,
 )
 
 # Database connection string
@@ -484,21 +489,9 @@ def seed_workforce_data():
                     "purpose": "Hiring: Senior AI Dev",
                     "amount": "$15,000",
                 },
-                {
-                    "name": "Social Media Mgmt",
-                    "price": "$49.00",
-                    "jobs_completed": 18,
-                    "category": "Marketing",
-                },
-                {
-                    "name": "WhatsApp Support",
-                    "price": "$5.00",
-                    "jobs_completed": 256,
-                    "category": "Support",
-                },
             ]
-            for s in skills:
-                session.add(WorkforceSkill(**s))
+            for r in requests:
+                session.add(FiscalRequest(**r))
 
         # 5. Forensic Traces (Operations History)
         if session.query(ForensicTrace).count() == 0:

@@ -6,6 +6,8 @@ Actively monitors token usage across all agents and automatically pauses operati
 import stripe
 import os
 import logging
+import asyncio
+from datetime import datetime
 from typing import Optional, List, Dict, Any
 from sqlmodel import Session, select
 from app.core.database import engine
@@ -93,6 +95,15 @@ class BillingService:
                     )
                     user.stripe_customer_id = customer.id
                     session.add(user)
+                    
+                    requests = [
+                        {
+                            "purpose": "WhatsApp Support",
+                            "amount": "$5.00",
+                        },
+                    ]
+                    for r in requests:
+                        session.add(FiscalRequest(**r))
                     session.commit()
                 
                 checkout_session = stripe.checkout.Session.create(

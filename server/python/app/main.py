@@ -8,31 +8,17 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 import sys
+import asyncio
 from unittest.mock import MagicMock
 
-# Real-First Hardening: Dependency Inventory
-# Instead of masking missing libraries with MagicMock, we inventory them for the Vigilance dashboard.
-DEPENDENCY_STATUS = {}
-for mod in ["numpy", "torch", "transformers", "cv2", "PIL"]:
-    try:
-        __import__(mod)
-        DEPENDENCY_STATUS[mod] = "INSTALLED"
-    except ImportError:
-        DEPENDENCY_STATUS[mod] = "MISSING"
-        # We only mock if strictly necessary for the server to BOOT, 
-        # but we log the technical debt.
-        logger.warning(f"Technical Debt Detected: AI/ML library '{mod}' is MISSION CRITICAL but MISSING.")
-
-from app.api import agents, compliance, deepfake, health, auth_verify, extended, enterprise, governance, venture, security, alerts, intelligence
-from app.core.config import settings
-from app.services.billing_service import billing_service
-
-# Configure logging
+# Configure logging early
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+
+# Real-First Hardening: Dependency Inventory
 
 
 @asynccontextmanager
