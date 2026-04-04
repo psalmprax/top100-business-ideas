@@ -497,19 +497,19 @@ def seed_workforce_data():
         if session.query(ForensicTrace).count() == 0:
             traces = [
                 {
-                    "user_id": "test-user",
+                    "user_id": "e8b5c731-15f7-4a00-9e96-e13768d57d00",
                     "agent_id": "marketing-alpha",
                     "action": "Market Intelligence Scan",
                     "details": "High demand detected for 'Sovereign Compliance' services in EU.",
                 },
                 {
-                    "user_id": "test-user",
+                    "user_id": "e8b5c731-15f7-4a00-9e96-e13768d57d00",
                     "agent_id": "sales-omega",
                     "action": "Lead List Generation",
                     "details": "120 high-intent leads generated from Sentinel network.",
                 },
                 {
-                    "user_id": "test-user",
+                    "user_id": "e8b5c731-15f7-4a00-9e96-e13768d57d00",
                     "agent_id": "legal-council",
                     "action": "Contract Analysis",
                     "details": "MiCA compliance risk identified in new partnership agreement.",
@@ -522,19 +522,19 @@ def seed_workforce_data():
         if session.query(GovernanceDecision).count() == 0:
             decisions = [
                 {
-                    "user_id": "test-user",
+                    "user_id": "e8b5c731-15f7-4a00-9e96-e13768d57d00",
                     "stage": 1,
                     "decision": "Autonomous",
                     "status": "FULLY_AUTONOMOUS",
                 },
                 {
-                    "user_id": "test-user",
+                    "user_id": "e8b5c731-15f7-4a00-9e96-e13768d57d00",
                     "stage": 2,
                     "decision": "Human override",
                     "status": "REVIEW_REQUIRED",
                 },
                 {
-                    "user_id": "test-user",
+                    "user_id": "e8b5c731-15f7-4a00-9e96-e13768d57d00",
                     "stage": 5,
                     "decision": "Waiting for signature",
                     "status": "REVIEW_REQUIRED",

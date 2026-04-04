@@ -9,6 +9,8 @@ from fastapi.middleware.cors import CORSMiddleware
 import logging
 import sys
 import asyncio
+import os
+from starlette.middleware.sessions import SessionMiddleware
 from unittest.mock import MagicMock
 
 # Configure logging early
@@ -80,6 +82,12 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+# Starlette SessionMiddleware for OAuth State
+app.add_middleware(
+    SessionMiddleware, 
+    secret_key=os.getenv("SESSION_SECRET_KEY", "sentinel-super-secret-sso-key")
 )
 
 # Include routers
