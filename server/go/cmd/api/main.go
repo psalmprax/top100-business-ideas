@@ -181,17 +181,20 @@ func main() {
 			agents := protected.Group("/agents")
 			agents.Use(middleware.ProductAccess("agent-ops"))
 			{
-				agents.GET("", agentOpsHandler.ListAgents)
-				agents.GET("/:id", agentOpsHandler.GetAgent)
-				agents.POST("", agentOpsHandler.CreateAgent)
-				agents.PUT("/:id", agentOpsHandler.UpdateAgent)
-				agents.DELETE("/:id", agentOpsHandler.DeleteAgent)
 				agents.GET("/:id/logs", agentOpsHandler.GetAgentLogs)
 				agents.GET("/:id/forecast", agentOpsHandler.GetForecast)
-				agents.POST("/:id/stop", agentOpsHandler.StopAgent)
-				agents.POST("/:id/restart", agentOpsHandler.RestartAgent)
-				agents.POST("/:id/clone", agentOpsHandler.CloneConfig)
-				agents.POST("/:id/optimize", agentOpsHandler.OptimizeMemory)
+				
+				// Management only actions
+				agents.Use(middleware.RequireRole("management"))
+				{
+					agents.POST("", agentOpsHandler.CreateAgent)
+					agents.PUT("/:id", agentOpsHandler.UpdateAgent)
+					agents.DELETE("/:id", agentOpsHandler.DeleteAgent)
+					agents.POST("/:id/stop", agentOpsHandler.StopAgent)
+					agents.POST("/:id/restart", agentOpsHandler.RestartAgent)
+					agents.POST("/:id/clone", agentOpsHandler.CloneConfig)
+					agents.POST("/:id/optimize", agentOpsHandler.OptimizeMemory)
+				}
 				agents.POST("/:id/hint", agentOpsHandler.ProxyToPython)
 			}
 
@@ -303,21 +306,30 @@ func main() {
 			{
 				billing.GET("/subscription", billingHandler.GetSubscription)
 				billing.GET("/invoices", billingHandler.GetInvoices)
-				billing.POST("/checkout", billingHandler.CreateCheckout)
-				billing.POST("/cancel", billingHandler.CancelSubscription)
-				billing.PUT("/payment-method", billingHandler.UpdatePaymentMethod)
+				
+				// Financial actions (Management only)
+				billing.Use(middleware.RequireRole("management"))
+				{
+					billing.POST("/checkout", billingHandler.CreateCheckout)
+					billing.POST("/cancel", billingHandler.CancelSubscription)
+					billing.PUT("/payment-method", billingHandler.UpdatePaymentMethod)
+				}
 			}
 
 			// Webhooks (Agent Ops UC12)
 			webhooks := protected.Group("/webhooks")
 			webhooks.Use(middleware.ProductAccess("agent-ops"))
 			{
-				webhooks.GET("", webhookHandler.ListWebhooks)
 				webhooks.GET("/:id", webhookHandler.GetWebhook)
-				webhooks.POST("", webhookHandler.CreateWebhook)
-				webhooks.PUT("/:id", webhookHandler.UpdateWebhook)
-				webhooks.DELETE("/:id", webhookHandler.DeleteWebhook)
-				webhooks.POST("/:id/test", webhookHandler.TestWebhook)
+				
+				// Config actions (Management only)
+				webhooks.Use(middleware.RequireRole("management"))
+				{
+					webhooks.POST("", webhookHandler.CreateWebhook)
+					webhooks.PUT("/:id", webhookHandler.UpdateWebhook)
+					webhooks.DELETE("/:id", webhookHandler.DeleteWebhook)
+					webhooks.POST("/:id/test", webhookHandler.TestWebhook)
+				}
 				webhooks.GET("/:id/executions", webhookHandler.GetWebhookExecutions)
 			}
 
@@ -326,9 +338,14 @@ func main() {
 			alerts.Use(middleware.ProductAccess("agent-ops"))
 			{
 				alerts.GET("", alertHandler.ListAlerts)
-				alerts.POST("", alertHandler.CreateAlert)
-				alerts.PUT("/:id", alertHandler.UpdateAlert)
-				alerts.DELETE("/:id", alertHandler.DeleteAlert)
+				
+				// Management only actions
+				alerts.Use(middleware.RequireRole("management"))
+				{
+					alerts.POST("", alertHandler.CreateAlert)
+					alerts.PUT("/:id", alertHandler.UpdateAlert)
+					alerts.DELETE("/:id", alertHandler.DeleteAlert)
+				}
 			}
 
 			// Consolidated Agent Operations (Frontend Alignment)
@@ -356,16 +373,22 @@ func main() {
 				agentOps.POST("/proxy/config", agentOpsHandler.ProxyToPython)
 				agentOps.POST("/retention", agentOpsHandler.ProxyToPython)
 				agentOps.GET("/metrics/stream", agentOpsHandler.ProxyToPython)
-				agentOps.POST("/forensics", agentOpsHandler.RunForensics)
-				agentOps.POST("/whitelabel/provision", agentOpsHandler.ProvisionClient)
-				agentOps.POST("/bulk/:action", agentOpsHandler.ProxyToPython)
-				agentOps.POST("/:id/optimize", agentOpsHandler.ProxyToPython)
-				agentOps.POST("/:id/dump", agentOpsHandler.ProxyToPython)
-				agentOps.POST("/:id/compress", agentOpsHandler.ProxyToPython)
-				agentOps.PATCH("/compliance/alerts/:id/resolve", agentOpsHandler.ProxyToPython)
-				agentOps.POST("/compliance/audit/sox", agentOpsHandler.ProxyToPython)
-				agentOps.POST("/security/rotate-key", agentOpsHandler.ProxyToPython)
-				agentOps.POST("/venture/realize/:id", agentOpsHandler.ProxyToPython)
+				
+				// Sensitive Management Actions
+				agentOps.Use(middleware.RequireRole("management"))
+				{
+					agentOps.POST("/forensics", agentOpsHandler.RunForensics)
+					agentOps.POST("/whitelabel/provision", agentOpsHandler.ProvisionClient)
+					agentOps.POST("/bulk/:action", agentOpsHandler.ProxyToPython)
+					agentOps.POST("/:id/optimize", agentOpsHandler.ProxyToPython)
+					agentOps.POST("/:id/dump", agentOpsHandler.ProxyToPython)
+					agentOps.POST("/:id/compress", agentOpsHandler.ProxyToPython)
+					agentOps.PATCH("/compliance/alerts/:id/resolve", agentOpsHandler.ProxyToPython)
+					agentOps.POST("/compliance/audit/sox", agentOpsHandler.ProxyToPython)
+					agentOps.POST("/security/rotate-key", agentOpsHandler.ProxyToPython)
+					agentOps.POST("/venture/realize/:id", agentOpsHandler.ProxyToPython)
+					agentOps.POST("/skills/install", agentOpsHandler.ProxyToPython)
+				}
 
 				// Vigilance (Sentinel Monitoring)
 				vigilance := agentOps.Group("/vigilance")
@@ -429,7 +452,12 @@ func main() {
 			{
 				training.GET("/modules", trainingHandler.ListModules)
 				training.GET("/modules/:id", trainingHandler.GetModule)
-				training.POST("/modules", trainingHandler.CreateModule)
+				
+				training.Use(middleware.RequireRole("management"))
+				{
+					training.POST("/modules", trainingHandler.CreateModule)
+				}
+				
 				training.POST("/progress", trainingHandler.UpdateProgress)
 				training.GET("/progress/:userId", trainingHandler.GetUserProgress)
 				training.GET("/stats", trainingHandler.GetTrainingStats)

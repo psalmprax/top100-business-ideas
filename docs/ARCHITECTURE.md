@@ -60,6 +60,8 @@ The Top100 Business Ideas platform is a multi-venture portfolio with a full-stac
 
 ### AI/ML Backend (Python)
 - **FastAPI** - REST API framework
+- **SQLModel** - ORM (Agnostic Bridge)
+- **Alembic** - Database Migrations
 - **PyTorch** - ML framework
 - **Transformers** - NLP models
 - **OpenCV** - Computer vision
@@ -122,6 +124,12 @@ top100-business-ideas/
 - Audio deepfake detection
 - Confidence scoring
 
+### 4. Agent Skill Marketplace
+- Hybrid Gated Discovery (Public/Internal)
+- "Proprietary Shield" intellectual property protection
+- Direct skill-to-venture mapping (v001 - v100)
+- Verified provider transparency (ClawHub, GitHub)
+
 ## Running the Application
 
 ### Prerequisites
@@ -148,6 +156,9 @@ pip install -r requirements.txt
 
 # Run the server
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# (Optional) Run Database Migrations
+alembic upgrade head
 ```
 
 The Python backend will be available at `http://localhost:8000`

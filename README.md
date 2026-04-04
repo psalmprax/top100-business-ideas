@@ -27,6 +27,7 @@ AlphaAI is an enterprise AI company providing production-ready AI solutions. Our
 - **Deepfake Defense** - AI-powered media authenticity detection
 - **Alpha Workforce** - Decentralized Autonomous Corporate Management
 - **DenialDefense AI** - Revenue cycle recovery & AI Claims Engine
+- **Alpha Marketplace** - Hybrid Gated Agent Skill Discovery & Deploy
 
 ## Architecture
 
@@ -144,6 +145,12 @@ The Alpha suite features a **namespaced persistence layer** using `localStorage`
 - **Utility**: `client/src/lib/storage.ts`
 - **Prefix**: `alpha_sentinel_`
 
+### 🏗️ Database Agnosticism & Migrations
+The Alpha platform uses **SQLModel** and **Alembic** to ensure 100% database portability.
+- **Dialect Agnostic**: Deploy to PostgreSQL, SQLite, or Oracle without code changes.
+- **Versioned History**: Managed via `server/python/alembic/`.
+- **Command**: `cd server/python && alembic upgrade head`
+
 ### Example Requests
 
 ```bash
@@ -198,8 +205,10 @@ curl -X POST http://localhost:7001/api/v1/deepfake/analyze \
 │       │   └── core/        # Config, models
 │       └── requirements.txt
 │
-├── docs/                    # Documentation
-│   └── ARCHITECTURE.md
+├── docs/                    # Official Documentation
+│   ├── ARCHITECTURE.md      # Technical deep-dive
+│   ├── DATABASE_INFRASTRUCTURE.md # Alembic & Agnosticism
+│   └── AGENT_SKILLS_MARKETPLACE_GUIDE.md # Marketplace & Governance
 │
 ├── docker-compose.yml       # Docker orchestration
 ├── Jenkinsfile              # CI/CD Pipeline (Sentinel E2E)

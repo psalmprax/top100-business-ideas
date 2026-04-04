@@ -13,6 +13,7 @@ from app.core.models import (
 from app.ml.deepfake_detector import deepfake_detector
 from app.services.authlink_service import authlink_service
 from app.core.database import get_session
+from app.services.bridging_service import bridging_service
 import logging
 import os
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, BackgroundTasks
@@ -78,6 +79,9 @@ async def analyze(request: AnalyzeDeepfakeRequest, session: Session = Depends(ge
     session.add(analysis)
     session.commit()
     session.refresh(analysis)
+
+    # Trigger Integrated Vigilance Alert
+    bridging_service.trigger_deepfake_alert(analysis, session)
     return analysis
 
 
@@ -117,6 +121,9 @@ async def analyze_enterprise(request: Dict[str, Any], session: Session = Depends
         created_at=datetime.utcnow()
     )
     
+
+    # Trigger Integrated Vigilance Alert
+    bridging_service.trigger_deepfake_alert(analysis, session)
     session.add(analysis)
     session.commit()
     session.refresh(analysis)

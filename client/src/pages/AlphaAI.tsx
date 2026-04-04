@@ -344,6 +344,13 @@ export default function AlphaAI() {
                   <Lock className="h-3 w-3" /> Internal
                 </a>
               )}
+              <Link
+                href="/marketplace"
+                className="text-feature font-medium text-muted-foreground hover:text-foreground transition-colors"
+                data-testid="nav-marketplace"
+              >
+                Marketplace
+              </Link>
               <a
                 href="#solutions"
                 className="text-feature font-medium text-muted-foreground hover:text-foreground transition-colors"
@@ -401,6 +408,13 @@ export default function AlphaAI() {
                   Internal Tools
                 </a>
               )}
+              <Link
+                href="/marketplace"
+                className="text-feature font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Marketplace
+              </Link>
               <a
                 href="#solutions"
                 className="text-feature font-medium"

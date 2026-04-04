@@ -6,7 +6,7 @@ from sqlmodel import Session, select
 from datetime import datetime
 
 from app.core.models import (
-    Agent, AgentCreate, AgentUpdate, AgentStatus
+    Agent, AgentCreate, AgentUpdate, AgentStatus, SkillInstall, AgentType
 )
 from app.core.database import get_session
 
@@ -208,3 +208,46 @@ async def clone_agent(agent_id: str, session: Session = Depends(get_session)):
     session.commit()
     session.refresh(new_agent)
     return new_agent
+
+
+@router.post("/skills/install")
+async def install_skill(request: SkillInstall, session: Session = Depends(get_session)):
+    """
+    Install a skill from the marketplace.
+    In a real production environment, this would pull from a secure registry.
+    For this 'Hardened' platform, we persist the skill-to-agent mapping.
+    """
+    # 1. Validate skill existence (mocked against the marketplace catalog in frontend)
+    # 2. Check if a 'Control' agent exists to receive the skill, or create one
+    system_agent = session.exec(select(Agent).where(Agent.name == "System Orchestrator")).first()
+    
+    if not system_agent:
+        # Auto-provision a system agent if missing
+        system_agent = Agent(
+            name="System Orchestrator",
+            type=AgentType.automation,
+            tier="strategic",
+            status=AgentStatus.RUNNING
+        )
+        session.add(system_agent)
+        session.commit()
+        session.refresh(system_agent)
+    
+    # 3. Update agent config with new skill
+    if not system_agent.config:
+        system_agent.config = {}
+    
+    skills = system_agent.config.get("installed_skills", [])
+    if request.skillId not in skills:
+        skills.append(request.skillId)
+        system_agent.config["installed_skills"] = skills
+        system_agent.updated_at = datetime.utcnow()
+        
+        session.add(system_agent)
+        session.commit()
+        
+    return {
+        "message": f"Skill {request.skillId} installed successfully",
+        "agent_id": system_agent.id,
+        "timestamp": datetime.utcnow().isoformat()
+    }

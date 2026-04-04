@@ -47,27 +47,10 @@ def init_db():
         try:
             SQLModel.metadata.create_all(engine)
 
-            # Manual Migration: Add columns if they don't exist
-            # This is necessary because SQLModel.metadata.create_all doesn't handle migrations
-            from sqlalchemy import text
+            SQLModel.metadata.create_all(engine)
 
-            with engine.connect() as conn:
-                conn.execute(
-                    text(
-                        'ALTER TABLE alertconfig ADD COLUMN IF NOT EXISTS "limit" FLOAT DEFAULT 100.0;'
-                    )
-                )
-                conn.execute(
-                    text(
-                        "ALTER TABLE alertconfig ADD COLUMN IF NOT EXISTS \"action\" VARCHAR DEFAULT 'pause';"
-                    )
-                )
-                conn.execute(
-                    text(
-                        "ALTER TABLE alertconfig ADD COLUMN IF NOT EXISTS \"priority\" VARCHAR DEFAULT 'medium';"
-                    )
-                )
-                conn.commit()
+            # Manual Migration block removed. Using Alembic for dialect-agnostic migrations.
+            # Refer to alembic/versions/a1b2c3d4e5f6_initial_agnostic_hardening.py
 
             # Seed initial data only when explicitly requested
             if os.getenv("SEED_DATABASE", "false").lower() == "true":

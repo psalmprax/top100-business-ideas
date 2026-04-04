@@ -18,6 +18,7 @@ import LoginPage from "./pages/Login";
 import BillingPage from "./pages/Billing";
 import SettingsPage from "./pages/Settings";
 import VentureDetailPage from "./pages/VentureUniversalTemplate";
+import SkillMarketplacePage from "./pages/SkillMarketplace";
 
 
 import { useAuth } from "./contexts/AuthContext";
@@ -71,6 +72,7 @@ function Router() {
       {/* Company Landing Page */}
       <Route path={"/"} component={AlphaAI} />
       <Route path={"/market-intelligence"} component={Home} />
+      <Route path={"/marketplace"} component={SkillMarketplacePage} />
 
       {/* Product Pages */}
       <ProtectedRoute path="/products/agent-ops" component={AlphaAgentOpsPage} productId="agent-ops" />

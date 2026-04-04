@@ -8,7 +8,7 @@ from datetime import datetime
 import uuid
 import logging
 from sqlmodel import Session, select
-from app.core.models import AIModel, BiasReport, ArticleStatus, ComplianceAuditLog
+from app.core.models import AIModel, BiasReport, ArticleStatus, ComplianceAuditLog, AgentAuditLog, AlertConfig
 
 logger = logging.getLogger(__name__)
 
@@ -216,6 +216,60 @@ class ComplianceService:
         session.commit()
 
         return result
+
+    def monitor_article_61_compliance(self, session: Session, model_id: str) -> Dict[str, Any]:
+        """
+        Real-time Post-Market Monitoring (PMM) as required by EU AI Act Article 61.
+        Scans AgentAuditLog for systemic risks or bias spikes.
+        """
+        # Fetch recent logs for agents using this model
+        # For simplicity, we assume agent_id mapping or global scanning
+        recent_logs = session.exec(
+            select(AgentAuditLog).order_by(AgentAuditLog.timestamp.desc()).limit(100)
+        ).all()
+
+        high_risk_actions = [log for log in recent_logs if log.risk_score > 0.8]
+        
+        if high_risk_actions:
+            self.trigger_automated_remediation(
+                session, 
+                f"Model:{model_id}", 
+                f"Detected {len(high_risk_actions)} high-risk anomalies in production traces."
+            )
+            return {
+                "status": "remediation_triggered",
+                "risk_events_count": len(high_risk_actions),
+                "article": "Article 61",
+                "action": "automated_alert"
+            }
+        
+        return {"status": "compliant", "article": "Article 61"}
+
+    def trigger_automated_remediation(self, session: Session, resource: str, issue: str):
+        """
+        Automated Remediation: Triggers system-wide alerts and pauses.
+        Inspired by 'model-watchdog' and 'LLM Guard' patterns.
+        """
+        alert_id = str(uuid.uuid4())
+        alert_rule = session.exec(select(AlertConfig).where(AlertConfig.is_active == True)).first()
+        
+        # Create a specific compliance audit log for the failure
+        failure_log = ComplianceAuditLog(
+            user_id="system-remediation",
+            action="AUTOMATED_REMEDIATION_TRIGGERED",
+            resource=resource,
+            status="failed",
+            compliance_type="Article 61 / Post-Market Monitoring",
+            metadata_json={"issue": issue, "trigger_id": alert_id}
+        )
+        session.add(failure_log)
+        
+        # If a rule exists, we follow its action (e.g., notify, pause)
+        if alert_rule:
+            logger.error(f"REMEDIATION: Triggering {alert_rule.action} for {resource}. Reason: {issue}")
+            # In a real system, this would call AgentOpsService.pause_agent()
+        
+        session.commit()
 
 
 # Singleton

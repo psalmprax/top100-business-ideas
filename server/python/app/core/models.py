@@ -91,6 +91,13 @@ class AgentUpdate(SQLModel):
     budget: Optional[float] = None
 
 
+class SkillInstall(SQLModel):
+    """Marketplace skill installation request"""
+
+    skillId: str
+    metadata: Optional[Dict[str, Any]] = {}
+
+
 # Connection & Integration Models
 class ConnectionType(str, Enum):
     """System connection types"""

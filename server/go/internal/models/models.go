@@ -29,6 +29,8 @@ type Agent struct {
 	ControlWebhook string        `json:"control_webhook" db:"control_webhook"`
 	APISecret      string        `json:"api_secret" db:"api_secret"`
 	Config         string        `json:"config" db:"config"` // JSON string
+	Budget         float64       `json:"budget" db:"budget"`
+	MaxTokens      int           `json:"max_tokens" db:"max_tokens"`
 	Metrics        *AgentMetrics `json:"metrics"`
 	CreatedAt      time.Time     `json:"created_at" db:"created_at"`
 	UpdatedAt      time.Time     `json:"updated_at" db:"updated_at"`
@@ -225,6 +227,9 @@ type AlertConfig struct {
 	Name       string    `json:"name" db:"name"`
 	Type       string    `json:"type" db:"type"` // budget, agent_failure, rate_limit
 	Threshold  int       `json:"threshold" db:"threshold"`
+	Limit      float64   `json:"limit" db:"limit"`
+	Action     string    `json:"action" db:"action"`
+	Priority   string    `json:"priority" db:"priority"`
 	IsActive   bool      `json:"is_active" db:"is_active"`
 	Channels   []string  `json:"channels" db:"channels"` // slack, email, pagerduty
 	Recipients string    `json:"recipients,omitempty" db:"recipients"`
@@ -566,4 +571,18 @@ type RevenueRecovery struct {
 	ConfidenceScore float64   `json:"confidence_score" db:"confidence_score"`
 	InteractionID   string    `json:"interaction_id" db:"interaction_id"`
 	Timestamp       time.Time `json:"timestamp" db:"timestamp"`
+}
+
+// BusinessIdea represents one of the Top 100 Business Ideas
+type BusinessIdea struct {
+	ID               string    `json:"id" db:"id"`
+	Rank             int       `json:"rank" db:"rank"`
+	Title            string    `json:"title" db:"title"`
+	Category         string    `json:"category" db:"category"`
+	Market           string    `json:"market" db:"market"`
+	Description      string    `json:"description" db:"description"`
+	EarningPotential string    `json:"earning_potential" db:"earning_potential"`
+	RolloutSpeed     string    `json:"rollout_speed" db:"rollout_speed"`
+	Trend            string    `json:"trend" db:"trend"`
+	CreatedAt        time.Time `json:"created_at" db:"created_at"`
 }

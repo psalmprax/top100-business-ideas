@@ -4,52 +4,57 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/top100-business-ideas/api/internal/models"
 )
 
-// ProductAccess middleware restricts access to specific products
-func ProductAccess(productName string) gin.HandlerFunc {
+// RequireRole restricts access to users with a specific role
+func RequireRole(requiredRole string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Admin bypass
 		role, exists := c.Get("user_role")
-		if exists && role == "admin" {
-			c.Next()
-			return
-		}
-
-		// Check allowed products
-		allowedProductsRaw, exists := c.Get("user_allowed_products")
 		if !exists {
-			c.AbortWithStatusJSON(http.StatusForbidden, models.ErrorResponse{
-				Error: "Access denied",
-				Details: "No product access information found",
-			})
+			c.JSON(http.StatusForbidden, gin.H{"error": "Access denied: Role information missing"})
+			c.Abort()
 			return
 		}
 
-		allowedProducts, ok := allowedProductsRaw.([]string)
-		if !ok {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, models.ErrorResponse{
-				Error: "Internal server error",
-				Details: "Invalid product access format",
+		if role.(string) != requiredRole && role.(string) != "admin" {
+			c.JSON(http.StatusForbidden, gin.H{
+				"error":   "Access denied: Insufficient privileges",
+				"message": "Only management users can perform this action",
 			})
+			c.Abort()
 			return
 		}
 
-		// Check if the user has access to all products (*) or the specific product
-		hasAccess := false
-		for _, p := range allowedProducts {
-			if p == "*" || p == productName {
-				hasAccess = true
+		c.Next()
+	}
+}
+
+// ProductAccess restricts access to users with access to a specific product
+func ProductAccess(requiredProduct string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		allowedProducts, exists := c.Get("user_allowed_products")
+		if !exists {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Access denied: Subscription information missing"})
+			c.Abort()
+			return
+		}
+
+		// Simple slice check
+		products := allowedProducts.([]string)
+		found := false
+		for _, p := range products {
+			if p == requiredProduct || p == "*" {
+				found = true
 				break
 			}
 		}
 
-		if !hasAccess {
-			c.AbortWithStatusJSON(http.StatusForbidden, models.ErrorResponse{
-				Error: "Access denied",
-				Details: "You do not have access to this product: " + productName,
+		if !found {
+			c.JSON(http.StatusForbidden, gin.H{
+				"error":   "Access denied: Product not in subscription",
+				"message": "Please upgrade your plan to access this module",
 			})
+			c.Abort()
 			return
 		}
 

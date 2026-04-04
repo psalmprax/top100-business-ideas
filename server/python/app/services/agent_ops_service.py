@@ -7,11 +7,15 @@ from sqlmodel import Session, select
 from app.core.database import engine
 from app.core.models import (
     Agent,
+    AgentStatus,
     AgentVigilanceAlert,
     AgentMemorySegment,
     SecurityKey,
     SystemSetting,
     ComplianceAuditLog,
+    AgentAuditLog,
+    SovereignRequest,
+    SovereignStatus,
 )
 
 logger = logging.getLogger(__name__)
@@ -193,6 +197,86 @@ class AgentOpsService:
                 "forecasted_annual_savings": round(forecasted_annual, 2),
                 "total_agent_cost": round(total_cost, 2),
             }
+
+    @staticmethod
+    def check_budget_guardrail(agent_id: str) -> Dict[str, Any]:
+        """
+        Circuit Breaker: Automatically pause agents exceeding budget.
+        Inspired by 'MagiC' and 'Paperclip' budget-capping systems.
+        """
+        with Session(engine) as session:
+            agent = session.get(Agent, agent_id)
+            if not agent:
+                return {"status": "error", "message": "Agent not found"}
+
+            if agent.dailySpend >= agent.budget:
+                agent.status = AgentStatus.PAUSED
+                # Generate high-priority Vigilance Alert
+                alert = AgentVigilanceAlert(
+                    agent_id=agent_id,
+                    type="budget_breach",
+                    description=f"Agent '{agent.name}' exceeded daily budget of ${agent.budget}. Automated pause engaged.",
+                    severity="critical"
+                )
+                session.add(agent)
+                session.add(alert)
+                session.commit()
+                logger.warning(f"Circuit Breaker: Agent {agent_id} paused due to budget exhaustion.")
+                return {"status": "triggered", "action": "paused"}
+            
+            return {"status": "safe", "daily_spend": agent.dailySpend}
+
+    @staticmethod
+    def validate_agent_action(agent_id: str, action: str, risk_score: float, reasoning: str) -> Dict[str, Any]:
+        """
+        Governance Guardrail: Trigger Human-in-the-loop for high-risk actions.
+        Inspired by 'Guardrails AI' and 'Paperclip' approval gates.
+        """
+        with Session(engine) as session:
+            # Persistent Audit Log
+            log = AgentAuditLog(
+                agent_id=agent_id,
+                action=action,
+                intent="automated_processing",
+                outcome="pending_validation",
+                risk_score=risk_score,
+                reasoning=reasoning
+            )
+            session.add(log)
+
+            # Check if risk score triggers Sovereign Matrix (High-Risk EU AI Act Compliance)
+            if risk_score >= 0.7:
+                # Create Sovereign Approval Request
+                request = SovereignRequest(
+                    stage="ethics",
+                    action=action,
+                    reasoning=reasoning,
+                    context=f"Autonomous action flagged by high-risk guardrail (Score: {risk_score})",
+                    status=SovereignStatus.PENDING
+                )
+                session.add(request)
+                session.commit()
+                return {"status": "governance_review_required", "request_id": request.id}
+            
+            session.commit()
+            return {"status": "authorized"}
+
+    @staticmethod
+    def trace_action(agent_id: str, step: str, metadata: Dict[str, Any]) -> None:
+        """
+        Observability Hook: Standardized tracing for external monitoring.
+        Inspired by 'LangSmith' and 'Helicone' observability standards.
+        """
+        # Standardized log entry for parsing by observability agents
+        trace_id = uuid.uuid4().hex[:8]
+        trace_data = {
+            "trace_id": trace_id,
+            "agent_id": agent_id,
+            "step": step,
+            "timestamp": datetime.utcnow().isoformat(),
+            "metadata": metadata
+        }
+        logger.info(f"TRACE_HOOK:{trace_id} {trace_data}")
 
 
 agent_ops_service = AgentOpsService()

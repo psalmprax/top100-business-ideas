@@ -371,6 +371,12 @@ export const agentsApi = {
     apiRequest<Agent>(`/agents/${id}/restart`, { method: "POST" }),
 
   logs: (id: string) => apiRequest<AgentLog[]>(`/agents/${id}/logs`),
+  
+  installSkill: (skillId: string) =>
+    apiRequest<{ message: string }>("/api/v1/agent-ops/skills/install", {
+      method: "POST",
+      body: JSON.stringify({ skillId }),
+    }),
 };
 
 export interface AgentLog {
