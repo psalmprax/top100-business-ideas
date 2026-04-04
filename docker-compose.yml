@@ -63,6 +63,8 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - SEED_DATABASE=${SEED_DATABASE:-false}
+      - OIDC_GOOGLE_CLIENT_ID=${OIDC_GOOGLE_CLIENT_ID}
+      - OIDC_GOOGLE_CLIENT_SECRET=${OIDC_GOOGLE_CLIENT_SECRET}
     volumes:
       - ./models:/models
     networks:
