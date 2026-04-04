@@ -116,7 +116,7 @@ class SSOService:
             raise ValueError(f"Provider {p} credentials not configured")
 
         redirect_obj = await client.authorize_redirect(request, redirect_uri)
-        return str(redirect_obj.url)
+        return redirect_obj.headers.get("location")
 
     async def handle_callback(self, provider: str, request: Request) -> Dict[str, Any]:
         """Handle OIDC callback"""
