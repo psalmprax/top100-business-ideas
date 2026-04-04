@@ -181,6 +181,7 @@ func main() {
 			agents := protected.Group("/agents")
 			agents.Use(middleware.ProductAccess("agent-ops"))
 			{
+				agents.GET("", agentOpsHandler.ListAgents)
 				agents.GET("/:id/logs", agentOpsHandler.GetAgentLogs)
 				agents.GET("/:id/forecast", agentOpsHandler.GetForecast)
 				

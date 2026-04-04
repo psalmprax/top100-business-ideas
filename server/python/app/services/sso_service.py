@@ -121,7 +121,7 @@ class SSOService:
         if not client or not client.client_id:
             raise ValueError(f"Provider {p} credentials not configured")
 
-        redirect_obj = await client.authorize_redirect(request, redirect_uri)
+        redirect_obj = await client.authorize_redirect(request, redirect_uri, scope="openid email profile")
         return redirect_obj.headers.get("location")
 
     async def handle_callback(self, provider: str, request: Request) -> Dict[str, Any]:
