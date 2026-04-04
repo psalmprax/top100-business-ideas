@@ -600,13 +600,51 @@ class WorkforceService:
         Calculate the real-time status of Alpha Workforce products.
         Derived from recent interaction success rates and agent availability.
         """
-        # (Original method body continues here, I'll place the new methods after)
+        from datetime import timedelta
         with Session(engine) as session:
             try:
-                # ... existing logic ...
-                return [{"name": "Autosearch", "status": "active", "health": 98.7}]
+                one_day_ago = datetime.utcnow() - timedelta(days=1)
+
+                # Standard product definitions
+                products = [
+                    {"id": "cashclaw", "name": "CashClaw™", "role": "FinOps"},
+                    {"id": "viralsync", "name": "ViralSync™", "role": "Growth"},
+                    {"id": "marketpulse", "name": "MarketPulse™", "role": "Analysis"},
+                    {"id": "authlink", "name": "AuthLink™", "role": "Identity"},
+                ]
+
+                results = []
+                for p in products:
+                    # Query real interaction history for this product role
+                    statement = select(WorkforceInteraction).where(
+                        (WorkforceInteraction.agent_role.ilike(f"%{p['role']}%"))
+                        & (WorkforceInteraction.created_at >= one_day_ago)
+                    )
+                    interactions = session.exec(statement).all()
+
+                    total = len(interactions)
+                    success = sum(
+                        1
+                        for i in interactions
+                        if i.user_feedback == InteractionStatus.APPROVED
+                    )
+
+                    # Real telemetry-based health calculation
+                    health = (success / total * 100) if total > 0 else 100.0
+                    status = "active" if health > 90 else ("degraded" if health > 70 else "error")
+
+                    results.append({
+                        **p,
+                        "status": status,
+                        "health": round(health, 1),
+                        "total_tasks": total,
+                        "last_signal": interactions[0].created_at.isoformat() if interactions else datetime.utcnow().isoformat()
+                    })
+
+                return results
             except Exception as e:
-                logger.error(f"Error getting products status: {e}")
+                logger.error(f"Workforce Telemetry Error: {e}")
+                # Real-First Policy: Return empty instead of dummy data to signal a failure in the real pipeline.
                 return []
 
     async def chat_dispatch(self, user_message: str, recipient: str = "all") -> Dict[str, Any]:
@@ -782,7 +820,8 @@ class WorkforceService:
 
                 return results
             except Exception as e:
-                return [{"name": "CashClaw", "status": "active", "health": 98.5}]
+                logger.error(f"Workforce Telemetry Error: {e}")
+                return []
 
     async def get_fiscal_requests(self) -> List[FiscalRequest]:
         """Fetch all fiscal requests from the database"""

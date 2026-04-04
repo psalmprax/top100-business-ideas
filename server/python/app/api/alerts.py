@@ -18,6 +18,13 @@ async def list_alert_configs(session: Session = Depends(get_session)):
     return session.exec(select(AlertConfig)).all()
 
 
+@router.get("/rules/budget", response_model=List[AlertConfig])
+async def list_budget_rules(session: Session = Depends(get_session)):
+    """List specifically budget-related alert rules"""
+    rules = session.exec(select(AlertConfig).where(AlertConfig.alert_type == "budget")).all()
+    return rules
+
+
 @router.post("/alerts", response_model=AlertConfig)
 async def create_alert_config(config: dict, session: Session = Depends(get_session)):
     """Create a new AI alert configuration"""
@@ -93,3 +100,25 @@ async def resolve_vigilance_alert(alert_id: str, session: Session = Depends(get_
     session.add(alert)
     session.commit()
     return {"message": "Alert resolved"}
+
+
+@router.post("/rules/budget", response_model=AlertConfig)
+async def create_budget_rule(rule_data: dict, session: Session = Depends(get_session)):
+    """Create a new budget alert rule"""
+    new_rule = AlertConfig(
+        id=str(uuid.uuid4()),
+        name=rule_data.get("name", "New Budget Rule"),
+        alert_type="budget",
+        threshold=rule_data.get("threshold", 0.0),
+        limit=rule_data.get("limit", 100.0),
+        action=rule_data.get("action", "pause"),
+        priority=rule_data.get("priority", "medium"),
+        is_active=rule_data.get("is_active", True),
+        channels=rule_data.get("channels", ["email"]),
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow()
+    )
+    session.add(new_rule)
+    session.commit()
+    session.refresh(new_rule)
+    return new_rule

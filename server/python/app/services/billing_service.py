@@ -3,15 +3,17 @@ Billing and Dynamic Budget Enforcement Service
 Actively monitors token usage across all agents and automatically pauses operations if budget limits are exceeded.
 """
 
-import asyncio
-import logging
-from typing import Optional, List, Dict, Any
-from datetime import datetime
+import stripe
+import os
 from sqlmodel import Session, select
 from app.core.database import engine
-from app.core.models import Agent, AlertConfig, Subscription, Invoice
+from app.core.models import Agent, AlertConfig, Subscription, Invoice, User
 
 logger = logging.getLogger(__name__)
+
+# Initialize Stripe with Secret Key from environment
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+stripe_webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
 
 class BillingService:
     def __init__(self):
@@ -72,6 +74,78 @@ class BillingService:
     def list_user_invoices(self, session: Session, user_id: str) -> List[Invoice]:
         """Fetch historical invoices for the user"""
         return session.exec(select(Invoice).where(Invoice.user_id == user_id).order_by(Invoice.date.desc())).all()
+
+    async def create_checkout_session(self, user_id: str, price_id: str) -> Dict[str, Any]:
+        """Create a real Stripe Checkout Session for a subscription"""
+        try:
+            with Session(engine) as session:
+                user = session.get(User, user_id)
+                if not user:
+                    raise ValueError("User not found")
+                
+                # Create or retrieve Stripe customer
+                if not user.stripe_customer_id:
+                    customer = stripe.Customer.create(
+                        email=user.email,
+                        metadata={"user_id": user_id}
+                    )
+                    user.stripe_customer_id = customer.id
+                    session.add(user)
+                    session.commit()
+                
+                checkout_session = stripe.checkout.Session.create(
+                    customer=user.stripe_customer_id,
+                    success_url=f"{os.getenv('FRONTEND_URL', 'http://localhost:3000')}/billing?success=true",
+                    cancel_url=f"{os.getenv('FRONTEND_URL', 'http://localhost:3000')}/billing?canceled=true",
+                    payment_method_types=["card"],
+                    mode="subscription",
+                    line_items=[{"price": price_id, "quantity": 1}],
+                )
+                return {"url": checkout_session.url, "id": checkout_session.id}
+        except Exception as e:
+            logger.error(f"Stripe Checkout Error: {e}")
+            raise
+
+    def handle_stripe_webhook(self, payload: bytes, sig_header: str):
+        """Process incoming Stripe webhooks with signature verification"""
+        event = None
+        try:
+            event = stripe.Webhook.construct_event(
+                payload, sig_header, stripe_webhook_secret
+            )
+        except ValueError:
+            raise ValueError("Invalid payload")
+        except stripe.error.SignatureVerificationError:
+            raise ValueError("Invalid signature")
+
+        # Handle specifically the checkout.session.completed event
+        if event["type"] == "checkout.session.completed":
+            session = event["data"]["object"]
+            self._fulfill_subscription(session)
+        
+        return {"status": "success"}
+
+    def _fulfill_subscription(self, stripe_session: Any):
+        """Update database with new subscription status from Stripe fulfillment"""
+        customer_id = stripe_session.get("customer")
+        subscription_id = stripe_session.get("subscription")
+        
+        with Session(engine) as session:
+            user = session.exec(select(User).where(User.stripe_customer_id == customer_id)).first()
+            if user:
+                # Create or update subscription
+                sub = session.exec(select(Subscription).where(Subscription.user_id == user.id)).first()
+                if not sub:
+                    sub = Subscription(user_id=user.id)
+                
+                sub.stripe_subscription_id = subscription_id
+                sub.status = "active"
+                sub.plan_id = stripe_session.get("line_items", [{}])[0].get("price", "starter") # Fallback to starter
+                sub.current_period_end = datetime.fromtimestamp(stripe_session.get("expires_at", 0))
+                
+                session.add(sub)
+                session.commit()
+                logger.info(f"Subscription fulfilled for user {user.id}")
 
 # Singleton
 billing_service = BillingService()

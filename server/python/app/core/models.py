@@ -1136,6 +1136,7 @@ class Subscription(SQLModel, table=True):
 
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     user_id: str = Field(index=True)
+    stripe_subscription_id: Optional[str] = Field(default=None, index=True)
     plan: str  # professional, enterprise, starter
     status: str = Field(default="active")  # active, canceled, past_due
     current_period_end: datetime
@@ -1148,6 +1149,7 @@ class Invoice(SQLModel, table=True):
 
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     user_id: str = Field(index=True)
+    stripe_invoice_id: Optional[str] = Field(default=None, index=True)
     invoice_number: str = Field(index=True)
     amount: float
     status: str = Field(default="paid")  # paid, open, void

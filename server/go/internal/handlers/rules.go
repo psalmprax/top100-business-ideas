@@ -20,7 +20,7 @@ func NewRulesHandler(proxyService *services.ProxyService) *RulesHandler {
 }
 
 func (h *RulesHandler) ListRules(c *gin.Context) {
-	response, err := h.proxyService.Forward("GET", "/agents/alerts", nil)
+	response, err := h.proxyService.Forward("GET", "/agents/rules/budget", nil)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, gin.H{"error": "Failed to fetch rules", "details": err.Error()})
 		return
@@ -35,7 +35,7 @@ func (h *RulesHandler) CreateRule(c *gin.Context) {
 		return
 	}
 
-	response, err := h.proxyService.Forward("POST", "/agents/alerts", body)
+	response, err := h.proxyService.Forward("POST", "/agents/rules/budget", body)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, gin.H{"error": "Failed to create rule", "details": err.Error()})
 		return
