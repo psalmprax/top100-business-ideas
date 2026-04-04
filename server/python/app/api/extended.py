@@ -2534,9 +2534,10 @@ async def connect_sso_provider(provider: str, request: Request):
         # Default redirect URI for the Sentinel dashboard
         redirect_uri = f"{request.base_url}api/v1/sso/callback/{provider}"
         auth_url = await sso_service.get_authorize_url(provider, redirect_uri, request)
+        logger.info(f"Generated SSO Redirect - Provider: {provider}, URI: {redirect_uri}, URL: {auth_url}")
         return {"status": "redirect", "auth_url": auth_url}
     except Exception as e:
-        logger.error(f"Failed to generate SSO redirect: {e}")
+        logger.error(f"Failed to generate SSO redirect: {e}", exc_info=True)
         return {"status": "error", "message": str(e)}
 
 
