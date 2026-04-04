@@ -371,7 +371,7 @@ export default function AlphaAgentOpsConnected() {
             <Card className="bg-slate-800 border-slate-700">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-slate-400">
-                  Loops Prevented
+                  Tasks Completed
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -379,8 +379,8 @@ export default function AlphaAgentOpsConnected() {
                   <Skeleton className="h-8 w-24" />
                 ) : (
                   <>
-                    <div className="text-2xl font-bold">47</div>
-                    <p className="text-sm text-green-400">$892 saved</p>
+                    <div className="text-2xl font-bold">{metrics?.tasksCompleted || 0}</div>
+                    <p className="text-sm text-green-400">${((metrics?.tasksCompleted || 0) * 18.25).toFixed(2)} ROI</p>
                   </>
                 )}
               </CardContent>

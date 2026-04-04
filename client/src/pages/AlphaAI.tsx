@@ -39,7 +39,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { extendedApi, agentsApi, Agent } from "@/lib/api";
+import { extendedApi, Agent } from "@/lib/api";
 
 const products = [
   {
@@ -292,7 +292,7 @@ export default function AlphaAI() {
     async function fetchPlatformStats() {
       try {
         const [agents, compliance, safety] = await Promise.all([
-          agentsApi.list(),
+          extendedApi.agents.list(),
           extendedApi.compliance.getStats(),
           extendedApi.deepfake.getStats()
         ]);

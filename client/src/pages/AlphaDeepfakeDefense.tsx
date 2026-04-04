@@ -430,15 +430,17 @@ export default function AlphaDeepfakeDefense() {
     const fetchDeepfakeData = async () => {
       if (!isAuthenticated) return;
       try {
-        const [statsRes, analysesRes, threatsRes, modelsRes, duressRes] =
+        const [statsRes, analysesRes, threatsRes, modelsRes, duressRes, biometricsRes] =
           await Promise.all([
             extendedApi.deepfake.getStats(),
             extendedApi.deepfake.listAnalyses(),
             extendedApi.deepfake.listThreats(),
             extendedApi.deepfake.listModels(),
             extendedApi.deepfake.getDuressConfig(user?.id || ""),
+            extendedApi.deepfake.listBiometrics(),
           ]);
         setStats(statsRes);
+        if (biometricsRes) setBiometrics(biometricsRes);
         if (analysesRes)
           setAnalyses(
             analysesRes.map((a: any) => ({
@@ -799,10 +801,19 @@ export default function AlphaDeepfakeDefense() {
       setShowDeployModelDialog(false);
       toast.success(`Model "${name}" deployment successful.`);
     } catch (error) {
-      toast.error("Failed to deploy custom model");
+      toast.error("Model deployment failed.");
     }
   };
 
+  const handleRevokeBiometric = async (id: string) => {
+    try {
+      await extendedApi.deepfake.revokeBiometric(id);
+      setBiometrics(prev => prev.filter(b => b.id !== id));
+      toast.success("Biometric template revoked and purged from secure enclave.");
+    } catch (e) {
+      toast.error("Failed to revoke biometric template.");
+    }
+  };
   const handleUploadDataset = async () => {
     try {
       setIsUploading(true);
@@ -1316,9 +1327,19 @@ export default function AlphaDeepfakeDefense() {
                             Cancellable Biometrics
                           </span>
                         </div>
-                        <Badge variant="secondary">
-                          {biometrics.length} Enrolled
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary">
+                            {biometrics.length} Enrolled
+                          </Badge>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-7 text-[10px]"
+                            onClick={() => setShowDeviceMgmtDialog(true)}
+                          >
+                            Manage
+                          </Button>
+                        </div>
                       </div>
                       <div className="flex items-center justify-between p-3 rounded-lg bg-green-500/10">
                         <div className="flex items-center gap-3">
@@ -1327,9 +1348,10 @@ export default function AlphaDeepfakeDefense() {
                             Panic Word Detection
                           </span>
                         </div>
-                        <Badge variant={duressEnabled ? "default" : "outline"}>
-                          {duressEnabled ? "Enabled" : "Disabled"}
-                        </Badge>
+                        <Switch 
+                          checked={duressEnabled}
+                          onCheckedChange={setDuressEnabled}
+                        />
                       </div>
                       <div className="flex items-center justify-between p-3 rounded-lg bg-blue-500/10">
                         <div className="flex items-center gap-3">
@@ -4597,9 +4619,13 @@ export default function AlphaDeepfakeDefense() {
                             <Button className="w-full bg-blue-600 hover:bg-blue-700 h-10 rounded-xl text-white font-bold text-xs uppercase">
                               CAPTURE DOCUMENT
                             </Button>
-                            <div className="text-[10px] text-center text-muted-foreground">
-                              Liveness check active
-                            </div>
+                            <Button 
+                              variant="outline"
+                              className="w-full border-blue-500/30 text-blue-400 h-8 rounded-xl text-[10px]"
+                              onClick={() => handleDownload("Alpha_Liveness_SDK_v2.1.zip", "STUB_SDK_BINARY_DATA")}
+                            >
+                              <Download className="w-3 h-3 mr-1" /> DOWNLOAD SDK
+                            </Button>
                           </div>
                         </div>
                         <div className="h-10 border-t border-zinc-900 bg-zinc-950/80 flex items-center justify-center">
@@ -4979,7 +5005,7 @@ export default function AlphaDeepfakeDefense() {
                   const vendorName = nameEl?.value || "Unnamed Vendor";
                   const vendorType = (nameEl as any)._type || "api";
                   try {
-                    await (extendedApi.vendors as any).create({
+                    await extendedApi.vendors.create({
                       name: vendorName,
                       type: vendorType,
                     });
@@ -4993,6 +5019,71 @@ export default function AlphaDeepfakeDefense() {
                 }}
               >
                 Onboard Vendor
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Device Management Dialog (Biometrics) */}
+        <Dialog
+          open={showDeviceMgmtDialog}
+          onOpenChange={setShowDeviceMgmtDialog}
+        >
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-green-500" /> 
+                Cancellable Biometrics Management
+              </DialogTitle>
+              <DialogDescription>
+                Revoke or rotate hardware-protected biometric templates.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-4">
+              {biometrics.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Fingerprint className="w-12 h-12 mx-auto mb-2 opacity-10" />
+                  <p>No biometric templates found.</p>
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+                  {biometrics.map(temp => (
+                    <div 
+                      key={temp.id}
+                      className="p-3 rounded-lg border flex items-center justify-between bg-muted/30"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-full bg-background border">
+                          <Fingerprint className="w-4 h-4 text-purple-500" />
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold uppercase">{temp.type}</div>
+                          <div className="text-[10px] text-muted-foreground font-mono">
+                            Created: {new Date(temp.created_at).toLocaleDateString()}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-[10px] h-5">
+                          {temp.status === "active" ? "ENCLAVE_READY" : temp.status}
+                        </Badge>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                          onClick={() => handleRevokeBiometric(temp.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button onClick={() => setShowDeviceMgmtDialog(false)}>
+                Close
               </Button>
             </DialogFooter>
           </DialogContent>

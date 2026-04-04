@@ -33,7 +33,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { storage } from "@/lib/storage";
-import { metricsApi, agentsApi, extendedApi } from "@/lib/api";
+import { metricsApi, extendedApi } from "@/lib/api";
 
 export default function ActionableAI() {
   const [isExecuting, setIsExecuting] = useState(

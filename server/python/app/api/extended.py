@@ -433,15 +433,21 @@ async def delete_alert(alert_id: str, session: Session = Depends(get_session)):
 
 
 @router.get("/workforce/status")
-async def get_workforce_status():
+async def get_workforce_status(session: Session = Depends(get_session)):
     """Get combined status of the digital workforce and Sovereign Matrix"""
+    from app.core.models import Agent, AgentStatus
+
+    agents = session.exec(select(Agent)).all()
+    active_agents = [a for a in agents if a.status == AgentStatus.RUNNING]
+    total_burn = sum(a.dailySpend for a in agents) * 30
+
     status_data = sovereign_service.get_status()
     # Align with Go models (WorkforceStatus)
     return {
-        "total_agents": 104,
-        "active_agents": 87,
-        "total_roi": 1240.50,
-        "monthly_burn": 450.00,
+        "total_agents": len(agents),
+        "active_agents": len(active_agents),
+        "total_roi": 1240.50,  # TODO: Couple to ROI service if ready
+        "monthly_burn": round(total_burn, 2),
         "autonomy_level": "partial",
         "sovereign_stages": status_data.get("stages", []),
         "last_sync": status_data.get("last_sync", datetime.utcnow().isoformat()),
@@ -528,12 +534,24 @@ async def integrate_slack(channel: str):
 
 
 @router.get("/agents/{agent_id}/memory")
-async def get_agent_memory(agent_id: str):
+async def get_agent_memory(agent_id: str, session: Session = Depends(get_session)):
     """Get agent long-term memory"""
+    from app.core.models import AgentMemorySegment
+
+    segments = session.exec(
+        select(AgentMemorySegment).where(AgentMemorySegment.agent_id == agent_id)
+    ).all()
+
+    summary = (
+        f"Consolidated memory across {len(segments)} segments."
+        if segments
+        else "No active memory segments detected for this agent."
+    )
+
     return {
         "agent_id": agent_id,
-        "memory_fragments": [],
-        "summary": "No active memory leaks detected.",
+        "memory_fragments": [s.dict() for s in segments],
+        "summary": summary,
     }
 
 
@@ -784,14 +802,16 @@ async def get_training_module(module_id: str, session: Session = Depends(get_ses
 @router.get("/training/stats")
 async def get_training_stats(session: Session = Depends(get_session)):
     """Get training statistics"""
-    total_modules = len(session.exec(select(TrainingModule)).all())
-    # Note: We'd need a TrainingProgress model in models.py if we wanted to track per-user
-    # For now, we return real counts from the database
+    from app.core.models import TrainingModule
+
+    modules = session.exec(select(TrainingModule)).all()
+    # In this phase, we treat all as 'not_started' or use a generic 'completed' count if user data exists
+    # Hardening: At least return real total counts
     return {
-        "total_modules": total_modules,
-        "completed": 0,  # Placeholder for user-specific logic
+        "total_modules": len(modules),
+        "completed": 0,
         "in_progress": 0,
-        "not_started": total_modules,
+        "not_started": len(modules),
     }
 
 

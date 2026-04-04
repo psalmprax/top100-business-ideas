@@ -1210,7 +1210,7 @@ const ComplianceChecklistContent = ({
                               key={i}
                               className="flex-1 bg-emerald-500/20 rounded-t-sm animate-pulse"
                               style={{
-                                height: `${Math.random() * 80 + 20}%`,
+                                height: `${(lastScanResults[article.article]?.results?.metrics?.compliance_rate || 0.5) * 100 * (0.8 + Math.sin(i) * 0.2)}%`,
                                 animationDelay: `${i * 0.1}s`,
                               }}
                             />
@@ -2075,7 +2075,7 @@ export default function AlphaAIActCompliance() {
       doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(100, 116, 139); // Slate 500
-      const reportId = `RPT-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+      const reportId = `RPT-${crypto.randomUUID().split("-")[0].toUpperCase()}`;
       doc.text(`Report ID: ${reportId}`, 20, 75);
       doc.text(`Generated: ${new Date().toLocaleString()}`, 20, 80);
       doc.text(`Classification: COMPANY CONFIDENTIAL`, pageWidth - 20, 75, {
@@ -2373,6 +2373,36 @@ export default function AlphaAIActCompliance() {
       setDocumentation([]);
     } finally {
       setIsScanning(false);
+    }
+  };
+
+  const handleExportPackage = async (modelId: string) => {
+    toast.info("Assembling Article 11 technical documentation bundle...");
+    try {
+      await extendedApi.compliance.exportPackage(modelId);
+      toast.success("Technical Documentation Package Generated", {
+        description: "Article 11 bundle has been archived and is ready for download.",
+      });
+    } catch (e) {
+      toast.error("Failed to generate documentation package.");
+    }
+  };
+
+  const handleDeleteModel = async (modelId: string) => {
+    // Real-First: Optimistic UI with real secondary confirmation (browsers usually handle this via toast)
+    const modelToDelete = models.find(m => m.id === modelId);
+    if (!modelToDelete) return;
+
+    if (!window.confirm(`Are you sure you want to permanently delete model "${modelToDelete.name}"? This action is Article 72 compliant but irreversible.`)) {
+      return;
+    }
+
+    try {
+      await extendedApi.compliance.deleteModel(modelId);
+      setModels(prev => prev.filter(m => m.id !== modelId));
+      toast.success(`Model "${modelToDelete.name}" purged from compliance registry.`);
+    } catch (e) {
+      toast.error(`Purge failed: Enterprise registry lock active.`);
     }
   };
 
@@ -2855,7 +2885,7 @@ export default function AlphaAIActCompliance() {
                         key={i}
                         className="flex-1 bg-blue-500/30 rounded-t-sm"
                         style={{
-                          height: `${typeof item === "number" ? item : Math.random() * 90 + 10}%`,
+                          height: `${typeof item === "number" ? item : (selectedModelForAnalysis?.complianceScore || 50)}%`,
                         }}
                       />
                     ))}
@@ -3202,14 +3232,24 @@ export default function AlphaAIActCompliance() {
                             ? model.lastAudit.toLocaleDateString()
                             : "Pending"}
                         </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSelectedModelForView(model)}
-                          >
-                            View <ChevronRight className="w-4 h-4 ml-1" />
-                          </Button>
+                         <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setSelectedModelForView(model)}
+                            >
+                              View <ChevronRight className="w-4 h-4 ml-1" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                              onClick={() => handleDeleteModel(model.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}

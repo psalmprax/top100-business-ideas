@@ -31,6 +31,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { agentsApi } from "@/lib/api";
 
 const categories = ["All", "Fintech", "Healthcare", "Construction", "ESG", "Creator", "Legal"];
 
@@ -175,13 +176,15 @@ export default function SkillMarketplace() {
           <div className="flex flex-col items-end gap-3">
              <div className="flex items-center gap-4 bg-card/30 backdrop-blur-md border border-border/50 p-4 rounded-2xl">
                 <div className="text-right">
-                    <div className="text-sm font-medium text-foreground/70">Integrated skills</div>
-                    <div className="text-2xl font-bold text-primary">5,412</div>
+                    <div className="text-sm font-medium text-foreground/70">Certified skills</div>
+                    <div className="text-2xl font-bold text-primary">{skills.length}</div>
                 </div>
                 <div className="h-10 w-[1px] bg-border/50" />
                 <div className="text-right">
-                    <div className="text-sm font-medium text-foreground/70">Verified providers</div>
-                    <div className="text-2xl font-bold text-indigo-400">12</div>
+                    <div className="text-sm font-medium text-foreground/70">Alpha Verified</div>
+                    <div className="text-2xl font-bold text-indigo-400">
+                      {new Set(skills.map(s => s.provider)).size}
+                    </div>
                 </div>
              </div>
              {isManagement && (

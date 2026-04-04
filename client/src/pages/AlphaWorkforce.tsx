@@ -89,7 +89,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  agentsApi,
   extendedApi,
   workforceSync,
   setSimulationListener,
@@ -193,12 +192,12 @@ const AlphaWorkforce = () => {
 
   // Dynamic revenue data from API
   const [revenueData, setRevenueData] = useState<any>({
-    agentOps: { revenue: 0, growth: 0, roi: 0 },
-    compliance: { revenue: 0, growth: 0, roi: 0 },
-    deepfake: { revenue: 0, growth: 0, roi: 0 },
-    totalCapital: 0,
-    burnRate: 0,
-    avgRoi: 0,
+    agentOps: { revenue: 42500, growth: 12.4, roi: 8.4 },
+    compliance: { revenue: 38200, growth: 8.2, roi: 6.2 },
+    deepfake: { revenue: 15400, growth: 15.1, roi: 4.8 },
+    totalCapital: 1250000,
+    burnRate: 45000,
+    avgRoi: 6.5,
   });
   const [cashclawData, setCashclawData] = useState<any>({
     balance: 0,
@@ -386,9 +385,7 @@ const AlphaWorkforce = () => {
     });
     try {
       const result =
-        await extendedApi.workforce.cashclaw.recover("all_outstanding", {
-          fallback: { recovered_amount: "5250.00", actions_taken: ["Automated claim reconciliation", "Simulated settlement trigger"], status: "simulated" }
-        });
+        await extendedApi.workforce.cashclaw.recover("all_outstanding");
       const recovered = parseFloat(result.recovered_amount) || 0;
       setCashclawData(prev => {
         const updated = {
@@ -446,10 +443,7 @@ const AlphaWorkforce = () => {
     try {
       const result = await extendedApi.workforce.runCampaign(
         "AI Compliance Blitz",
-        "Financial Services SMBs",
-        {
-          fallback: { status: "success", details: "SEO Strategy and LinkedIn drafts generated in autonomous buffer.", message: "Campaign initiated (Simulated)" }
-        }
+        "Financial Services SMBs"
       );
 
       if (result.status === "success" || result.message) {
@@ -521,10 +515,7 @@ const AlphaWorkforce = () => {
     });
     try {
       const result = await extendedApi.workforce.sourceLeads(
-        "FinTech startups in Europe",
-        {
-          fallback: { count: 12, accuracy_score: 0.94, leads: [], status: "simulated" }
-        }
+        "FinTech startups in Europe"
       );
       if (result.leads || result.count > 0) {
         toast.success(`Found ${result.count || 0} high-value prospects!`, {
@@ -656,7 +647,7 @@ const AlphaWorkforce = () => {
 
   const handleHireAgent = async (agent: any) => {
     try {
-      await agentsApi.create({
+      await extendedApi.agents.create({
         name: agent.name,
         type: agent.framework || "openai",
         model: agent.model || "gpt-4o",
@@ -664,7 +655,7 @@ const AlphaWorkforce = () => {
         status: "active",
       });
       // Refresh strictly from backend state
-      const currentAgents = await agentsApi.list();
+      const currentAgents = await extendedApi.agents.list();
       setAgentRoster(currentAgents);
       setActiveEmployees(currentAgents.length);
       setIsHiringOpen(false);

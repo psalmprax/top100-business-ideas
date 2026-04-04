@@ -70,9 +70,7 @@ import { toast } from "sonner";
 import { jsPDF } from "jspdf";
 import { storage } from "@/lib/storage";
 import {
-  billingApi,
   extendedApi,
-  agentsApi,
   metricsApi,
   type Agent,
   type Task,
@@ -169,8 +167,9 @@ export default function FreelancerWorkflowBot() {
           insightsData,
           taxDataResp,
           invoicesData,
+          inboxData,
         ] = await Promise.all([
-          agentsApi.list(),
+          extendedApi.agents.list(),
           metricsApi.current(),
           extendedApi.workforce.getTasks(),
           extendedApi.workforce.getClients(),
@@ -180,6 +179,7 @@ export default function FreelancerWorkflowBot() {
           extendedApi.workforce.getInsights(),
           extendedApi.workforce.getTaxEstimate(),
           extendedApi.workforce.getInvoices(),
+          extendedApi.workforce.getInboxMessages(),
         ]);
 
         setAgents(Array.isArray(agentsData) ? agentsData : []);
@@ -206,6 +206,7 @@ export default function FreelancerWorkflowBot() {
         setEarningsData(insightsData || null);
         setTaxEstimate(taxDataResp || null);
         if (Array.isArray(invoicesData)) setInvoices(invoicesData);
+        if (Array.isArray(inboxData)) setAuditLogs(inboxData); // Re-purpose auditLogs for Inbox for now
       } catch (error) {
         console.error("Failed to fetch workforce bot data:", error);
         // In a real app, we might show an error state here
@@ -396,7 +397,7 @@ export default function FreelancerWorkflowBot() {
 
   const handleStripeConnect = async () => {
     setIsStripeConnecting(true);
-    toast.promise(billingApi.createCheckout("starter", "stripe"), {
+    toast.promise(extendedApi.workforce.billing.createCheckout("starter", "stripe"), {
       loading: "Redirecting to Stripe OAuth...",
       success: (data: any) => {
         setIsStripeConnecting(false);
@@ -468,7 +469,15 @@ export default function FreelancerWorkflowBot() {
     ],
   };
 
-  const handleDownload = (filename: string, content: string) => {
+  const handleDownloadPDF = (filename: string, content: string) => {
+    if (filename.toLowerCase().endsWith(".pdf")) {
+      // @ts-ignore - jsPDF is imported
+      const doc = new jsPDF();
+      doc.text(content, 10, 10);
+      doc.save(filename);
+      return;
+    }
+
     const isBinary =
       filename.endsWith(".zip") ||
       filename.endsWith(".apk") ||
@@ -551,7 +560,7 @@ export default function FreelancerWorkflowBot() {
                 variant="outline"
                 size="sm"
                 className="hidden md:flex border-indigo-200"
-                onClick={() => handleDownload("workflowbot-sdk-v1.zip", sdkZip)}
+                onClick={() => handleDownloadPDF("workflowbot-sdk-v1.zip", sdkZip)}
               >
                 <Download className="w-4 h-4 mr-2 text-indigo-600" />
                 SDK
@@ -561,7 +570,7 @@ export default function FreelancerWorkflowBot() {
                 size="sm"
                 className="hidden md:flex border-indigo-200"
                 onClick={() =>
-                  handleDownload("workflowbot-assistant.apk", sdkZip)
+                  handleDownloadPDF("workflowbot-assistant.apk", sdkZip)
                 }
               >
                 <Smartphone className="w-4 h-4 mr-2 text-indigo-600" />
@@ -784,23 +793,63 @@ export default function FreelancerWorkflowBot() {
           </TabsContent>
 
           <TabsContent value="inbox">
-            <Card className="border-border/50 min-h-[400px] flex items-center justify-center">
-              <div className="text-center p-8">
-                <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center mx-auto mb-4">
-                  <Mail className="w-8 h-8 text-indigo-600" />
+            <Card className="border-border/50">
+              <CardHeader className="py-4 border-b border-border/50">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-caption-premium flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-indigo-600" />
+                    Smart Inbox
+                  </CardTitle>
+                  <Badge variant="outline" className="text-[10px]">
+                    {auditLogs.length} MESSAGES
+                  </Badge>
                 </div>
-                <h3 className="text-section-headline">Inbox Manager Hub</h3>
-                <p className="text-body-sm mt-2 max-w-sm">
-                  Smart email filtering and auto-reply drafting is ready for
-                  activation.
-                </p>
-                <Button
-                  className="mt-6 bg-indigo-600 font-bold uppercase text-[10px]"
-                  onClick={handleOpenInbox}
-                >
-                  Open Inbox Console
-                </Button>
-              </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <ScrollArea className="h-[500px]">
+                  {auditLogs.length > 0 ? (
+                    auditLogs.map((msg: any, idx: number) => (
+                      <div
+                        key={idx}
+                        className="flex flex-col p-4 border-b border-border/30 last:border-0 hover:bg-muted/20 transition-colors"
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-body-sm font-bold text-indigo-600">
+                              {msg.sender || "System"}
+                            </span>
+                            <Badge variant="secondary" className="text-[8px] h-3 px-1">
+                              {msg.category || "General"}
+                            </Badge>
+                          </div>
+                          <span className="text-[10px] text-muted-foreground italic">
+                            {new Date(msg.timestamp || msg.created_at).toLocaleTimeString()}
+                          </span>
+                        </div>
+                        <p className="text-body-sm text-foreground/90 leading-relaxed">
+                          {msg.content || msg.message}
+                        </p>
+                        {msg.actions && (
+                          <div className="flex gap-2 mt-3">
+                            {msg.actions.map((action: string, i: number) => (
+                              <Button key={i} variant="outline" size="sm" className="h-6 text-[10px] py-0 px-2">
+                                {action}
+                              </Button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-12 text-center">
+                      <Mail className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+                      <p className="text-body-sm">
+                        No messages in your smart inbox yet.
+                      </p>
+                    </div>
+                  )}
+                </ScrollArea>
+              </CardContent>
             </Card>
           </TabsContent>
 

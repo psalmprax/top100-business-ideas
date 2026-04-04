@@ -3,14 +3,15 @@ set -e
 
 echo "Starting E2E test services..."
 
-# Install curl for health checks
-apt-get update && apt-get install -y curl
+# Skip apt-get if it fails (not essential for script if curl is present)
+# apt-get update && apt-get install -y curl || true
 
-# Start backend in background
-cd /app/server/python
+# Start backend in background 
+cd /home/psalmprax/ALL_PROJECTS/top100-business-ideas/server/python
 # Fix: uvicorn module path must be app.main:app, and we use VITE_API_PROXY_TARGET for frontend alignment
 export VITE_API_PROXY_TARGET=http://localhost:7002
-nohup python -m uvicorn app.main:app --host 0.0.0.0 --port 7002 > /tmp/backend.log 2>&1 &
+export SECRET_KEY=test_secret_key_12345
+nohup python3 -m uvicorn app.main:app --host 0.0.0.0 --port 7002 > /tmp/backend.log 2>&1 &
 BACKEND_PID=$!
 
 # Wait for backend to be ready
@@ -35,7 +36,7 @@ if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
 fi
 
 # Start frontend in background  
-cd /app/client
+cd /home/psalmprax/ALL_PROJECTS/top100-business-ideas/client
 export VITE_API_URL=http://localhost:7002
 export VITE_API_PROXY_TARGET=http://localhost:7002
 export PORT=7000
@@ -63,7 +64,7 @@ if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
 fi
 
 # Run Playwright tests
-cd /app
+cd /home/psalmprax/ALL_PROJECTS/top100-business-ideas
 npx playwright test client/src/test/sentinel-functional.spec.ts --project=chromium --reporter=list
 TEST_EXIT=$?
 

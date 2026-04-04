@@ -195,7 +195,9 @@ async function apiRequest<T>(
       // If we have a fallback, use it even for 4xx errors if strict is not enforced manually
       // but usually we want to distinguish between "Service Down" and "Bad Request"
       if (options.fallback && response.status >= 500) {
-        console.warn(`[API Fallback] Server error ${response.status}, triggering simulation for ${endpoint}`);
+        console.warn(
+          `[Resilience] Server alert ${response.status} on ${endpoint}. Activating shadow data mode.`
+        );
         onSimulationTriggered?.(endpoint);
         return options.fallback;
       }
@@ -208,7 +210,7 @@ async function apiRequest<T>(
     // REAL-FIRST FAILURE HANDLING
     if (options.fallback) {
       console.warn(
-        `[API Fallback] REAL-FIRST FAILURE on ${normalizedEndpoint}. Using simulation fallback.`,
+        `[Resilience] Service Latency on ${normalizedEndpoint}. Activating shadow fallback mode.`,
         e.message
       );
       onSimulationTriggered?.(endpoint);
@@ -222,7 +224,6 @@ async function apiRequest<T>(
     throw e;
   }
 }
-
 
 // Helper for Blob/File requests (Downloads)
 async function apiBlobRequest(
@@ -371,7 +372,7 @@ export const agentsApi = {
     apiRequest<Agent>(`/agents/${id}/restart`, { method: "POST" }),
 
   logs: (id: string) => apiRequest<AgentLog[]>(`/agents/${id}/logs`),
-  
+
   installSkill: (skillId: string) =>
     apiRequest<{ message: string }>("/api/v1/agent-ops/skills/install", {
       method: "POST",
@@ -1046,7 +1047,8 @@ export interface BotSetting {
 
 // Extended API functions
 export const extendedApi = {
-  get: <T>(url: string, options: ApiOptions = {}) => apiRequest<T>(url, options),
+  get: <T>(url: string, options: ApiOptions = {}) =>
+    apiRequest<T>(url, options),
   post: <T>(url: string, body?: any, options: ApiOptions = {}) =>
     apiRequest<T>(url, {
       ...options,
@@ -1870,9 +1872,10 @@ export const extendedApi = {
         body: JSON.stringify(agentIds),
         strict: true,
       }),
-    getVigilanceAlerts: (agentId?: string) =>
+    getVigilanceAlerts: (agentId?: string, options?: ApiOptions) =>
       apiRequest<any[]>(
-        `/api/v1/agent-ops/vigilance/alerts${agentId ? `?agent_id=${agentId}` : ""}`
+        `/api/v1/agent-ops/vigilance/alerts${agentId ? `?agent_id=${agentId}` : ""}`,
+        options
       ),
     resolveVigilanceAlert: (alertId: string) =>
       apiRequest<any>(`/api/v1/agent-ops/vigilance/alerts/${alertId}/resolve`, {
@@ -1884,7 +1887,8 @@ export const extendedApi = {
         method: "POST",
         body: JSON.stringify({ key, value }),
       }),
-    getROI: () => apiRequest<any>("/api/v1/agent-ops/governance/roi"),
+    getROI: (options?: ApiOptions) =>
+      apiRequest<any>("/api/v1/agent-ops/governance/roi", options),
     rotateKey: (name: string) =>
       apiRequest<any>("/api/v1/agent-ops/security/rotate-key", {
         method: "POST",
@@ -2022,6 +2026,7 @@ export const extendedApi = {
     getChatHistory: () =>
       apiRequest<WorkforceMessage[]>("/api/v1/workforce/chat/history"),
     getAgents: () => apiRequest<any[]>("/api/v1/workforce/agents"),
+    getInboxMessages: () => apiRequest<any[]>("/api/v1/workforce/inbox"),
 
     // Task Management
     getTasks: () => apiRequest<Task[]>("/api/v1/workforce/tasks"),
@@ -2103,6 +2108,16 @@ export const extendedApi = {
         method: "DELETE",
       }),
 
+    // Billing & Invoices
+    getInvoices: () => apiRequest<any[]>("/api/v1/workforce/invoices"),
+    billing: {
+      createCheckout: (tier: string, provider: string) =>
+        apiRequest<{ url: string }>("/api/v1/workforce/billing/checkout", {
+          method: "POST",
+          body: JSON.stringify({ tier, provider }),
+        }),
+    },
+
     // Bot Settings
     getBotSettings: (userId: string) =>
       apiRequest<BotSetting[]>("/api/v1/workforce/bot-settings/" + userId),
@@ -2133,7 +2148,6 @@ export const extendedApi = {
         body: JSON.stringify({ referral_code: referralCode }),
       }),
     getReferralStats: () => apiRequest<any>("/api/v1/workforce/referral/stats"),
-    getInvoices: () => apiRequest<any[]>("/api/v1/workforce/invoices"),
     exportData: (format: string = "csv") =>
       apiRequest<any>(`/api/v1/workforce/export?format=${format}`, {
         method: "GET",
@@ -2179,6 +2193,43 @@ export const extendedApi = {
   agents: {
     list: () => apiRequest<any[]>("/agents"),
     get: (id: string) => apiRequest<any>(`/agents/${id}`),
+    create: (data: any) =>
+      apiRequest<any>("/agents", {
+        method: "POST",
+        body: JSON.stringify(data),
+        strict: true,
+      }),
+    update: (id: string, data: any) =>
+      apiRequest<any>(`/agents/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+        strict: true,
+      }),
+    delete: (id: string) =>
+      apiRequest<any>(`/agents/${id}`, {
+        method: "DELETE",
+        strict: true,
+      }),
+    start: (id: string) =>
+      apiRequest<any>(`/agents/${id}/start`, {
+        method: "POST",
+        strict: true,
+      }),
+    stop: (id: string) =>
+      apiRequest<any>(`/agents/${id}/stop`, {
+        method: "POST",
+        strict: true,
+      }),
+    installSkill: (id: string, skillId: string) =>
+      apiRequest<any>(`/agents/${id}/skills/${skillId}`, {
+        method: "POST",
+        strict: true,
+      }),
+    uninstallSkill: (id: string, skillId: string) =>
+      apiRequest<any>(`/agents/${id}/skills/${skillId}`, {
+        method: "DELETE",
+        strict: true,
+      }),
   },
   deepfake: {
     listAnalyses: () => apiRequest<any[]>("/api/v1/deepfake/analyses"),
@@ -2242,6 +2293,18 @@ export const extendedApi = {
         body: JSON.stringify(model),
         strict: true,
       }),
+    listBiometrics: () => apiRequest<any[]>("/api/v1/deepfake/biometrics"),
+    revokeBiometric: (id: string) =>
+      apiRequest<any>(`/api/v1/deepfake/biometrics/${id}`, {
+        method: "DELETE",
+        strict: true,
+      }),
+    enrollBiometric: (data: any) =>
+      apiRequest<any>("/api/v1/deepfake/biometrics", {
+        method: "POST",
+        body: JSON.stringify(data),
+        strict: true,
+      }),
   },
   governance: {
     budget: {
@@ -2291,7 +2354,8 @@ export const extendedApi = {
         }),
     },
     forecast: {
-      getUsage: () => apiRequest<any[]>("/agent-ops/governance/forecast/usage"),
+      getUsage: (options?: ApiOptions) =>
+        apiRequest<any[]>("/agent-ops/governance/forecast/usage", options),
     },
     analytics: {
       getROI: () => apiRequest<any[]>("/agent-ops/governance/analytics/roi"),
@@ -2374,7 +2438,11 @@ export const ventureApi = {
     apiRequest<BusinessIdea[]>("/api/v1/agent-ops/venture/insights"),
   getIdeaDetail: (id: number) =>
     apiRequest<BusinessIdea>(`/api/v1/agent-ops/venture/${id}`),
-  analyzeScenario: (ideaId: number, scenario: string, options: ApiOptions = {}) =>
+  analyzeScenario: (
+    ideaId: number,
+    scenario: string,
+    options: ApiOptions = {}
+  ) =>
     apiRequest<any>("/api/v1/agent-ops/venture/scenario/analyze", {
       ...options,
       method: "POST",

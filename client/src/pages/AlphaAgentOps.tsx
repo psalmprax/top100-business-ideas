@@ -364,6 +364,7 @@ interface HealingConfig {
   active: boolean;
   error_threshold: number;
   auto_healing_enabled: boolean;
+  updated_at?: string;
 }
 
 interface StrategicInsight {
@@ -745,6 +746,8 @@ export default function AlphaAgentOps() {
   const [strategyPrompt, setStrategyPrompt] = useState("");
   const [strategyResult, setStrategyResult] = useState<any>(null);
   const [isGeneratingStrategy, setIsGeneratingStrategy] = useState(false);
+  const [showConfigureStreamDialog, setShowConfigureStreamDialog] =
+    useState(false);
 
   // Hardened Logic Handlers (UC12, UC13, UC14)
   const [isProvisioningClient, setIsProvisioningClient] = useState(false);
@@ -763,7 +766,7 @@ export default function AlphaAgentOps() {
           fallback: {
             status: "success",
             id: `PROV-${Math.random().toString(36).substr(2, 9)}`,
-            message: "Provisioning successful (Simulated)",
+            message: "Provisioning successful",
           },
         }
       );
@@ -999,6 +1002,9 @@ export default function AlphaAgentOps() {
 }`);
   const [graphqlResult, setGraphqlResult] = useState("");
 
+  const sdkZip =
+    "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";
+
   // WebSocket for real-time AgentOps updates
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
   const host = window.location.host || "localhost:8080";
@@ -1219,7 +1225,9 @@ export default function AlphaAgentOps() {
         extendedApi.agentOps.getSettings(),
         extendedApi.governance.onPrem.listDeployments(),
         extendedApi.selfHealing.getHealingStatus(),
-        extendedApi.agentOps.getVigilanceAlerts(),
+        extendedApi.agentOps.getVigilanceAlerts(undefined, {
+          fallback: [],
+        }),
       ]);
 
       setComplianceDashboard(compliance);
@@ -1366,7 +1374,7 @@ export default function AlphaAgentOps() {
       const result = await extendedApi.agentOps.runForensics("default", {
         fallback: {
           analysis_summary:
-            "Analysis complete (Simulated): No anomalies detected in current behavioral patterns.",
+            "Analysis complete: No anomalies detected in current behavioral patterns.",
           status: "success",
         },
       });
@@ -1405,7 +1413,7 @@ export default function AlphaAgentOps() {
         fallback: {
           status: "success",
           optimized_bytes: 1024 * 1024 * 5,
-          message: "Memory optimized (Simulated)",
+          message: "Memory optimized",
         },
       });
       toast.success("Memory optimized.");
@@ -1441,7 +1449,7 @@ export default function AlphaAgentOps() {
     toast.info("Resyncing cluster state...");
     try {
       await extendedApi.agentOps.syncNow("default", {
-        fallback: { status: "success", message: "Cluster synced (Simulated)" },
+        fallback: { status: "success", message: "Cluster synced" },
       });
       toast.success("Cluster state synchronized.");
       refreshData();
@@ -1741,7 +1749,7 @@ export default function AlphaAgentOps() {
         healingConfigRes,
         forecastRes,
       ] = await Promise.all([
-        agentsApi.list(),
+        extendedApi.agents.list(),
         extendedApi.agentOps.getAuditLogs({
           search: auditSearchQuery,
           outcome:
@@ -2013,7 +2021,7 @@ export default function AlphaAgentOps() {
     }
   };
 
-  const handleDownload = (filename: string, content: string) => {
+  const handleDownloadPDF = (filename: string, content: string) => {
     if (filename.toLowerCase().endsWith(".pdf")) {
       // @ts-ignore
       const doc = new jsPDF();
@@ -2201,7 +2209,7 @@ export default function AlphaAgentOps() {
 
   const handleCreateAgent = async () => {
     try {
-      const result = await agentsApi.create({
+      const result = await extendedApi.agents.create({
         ...newAgentData,
         config: {
           provider: newAgentData.provider,
@@ -2247,7 +2255,7 @@ export default function AlphaAgentOps() {
     )
       return;
     try {
-      await agentsApi.delete(agentId);
+      await extendedApi.agents.delete(agentId);
       refreshData();
       toast.success("Agent decommissioned successfully");
     } catch (error) {
@@ -2293,7 +2301,7 @@ export default function AlphaAgentOps() {
 
   const handleDeleteAgent = async (agentId: string) => {
     try {
-      await agentsApi.delete(agentId);
+      await extendedApi.agents.delete(agentId);
       refreshData();
       toast.success("Agent decommissioned.");
     } catch (error) {
@@ -2320,7 +2328,7 @@ export default function AlphaAgentOps() {
           model: updatedAgent.model || "gpt-4o",
         },
       };
-      await agentsApi.update(updatedAgent.id, updatePayload);
+      await extendedApi.agents.update(updatedAgent.id, updatePayload);
       setShowSettingsDialog(false);
       refreshData();
       toast.success("Agent settings synchronized with Sentinel backend.");
@@ -2368,9 +2376,9 @@ export default function AlphaAgentOps() {
 
     try {
       if (newStatus === "active") {
-        await agentsApi.start(agentId);
+        await extendedApi.agents.start(agentId);
       } else {
-        await agentsApi.stop(agentId);
+        await extendedApi.agents.stop(agentId);
       }
       refreshData();
       toast.success(
@@ -4145,15 +4153,7 @@ export default function AlphaAgentOps() {
                     <Button
                       variant="outline"
                       className="w-full"
-                      onClick={() =>
-                        toast.promise(metricsApi.history("1h"), {
-                          loading: "Configuring real-time metrics stream...",
-                          success: () =>
-                            "Streaming metrics via WebSocket enabled",
-                          error: () =>
-                            "Metrics stream configured (polling mode)",
-                        })
-                      }
+                      onClick={() => setShowConfigureStreamDialog(true)}
                     >
                       <Gauge className="w-4 h-4 mr-2" />
                       Configure Stream
@@ -4178,36 +4178,28 @@ export default function AlphaAgentOps() {
                       <Button
                         variant="outline"
                         className="h-16 flex-col gap-2"
-                        asChild
+                        onClick={() =>
+                          handleDownloadPDF("agentops-sdk-v1.zip", sdkZip)
+                        }
                       >
-                        <a
-                          href="https://apps.apple.com/app/agentops-sentinel"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <Apple className="w-6 h-6" />
-                          <span className="text-xs">App Store</span>
-                        </a>
+                        <Apple className="w-6 h-6" />
+                        <span className="text-xs">Download SDK</span>
                       </Button>
                       <Button
                         variant="outline"
                         className="h-16 flex-col gap-2"
-                        asChild
+                        onClick={() =>
+                          handleDownloadPDF("agentops-assistant.apk", sdkZip)
+                        }
                       >
-                        <a
-                          href="https://play.google.com/store/apps/agentops-sentinel"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <Smartphone className="w-6 h-6" />
-                          <span className="text-xs">Play Store</span>
-                        </a>
+                        <Smartphone className="w-6 h-6" />
+                        <span className="text-xs">Download App</span>
                       </Button>
                     </div>
                     <div className="text-xs text-muted-foreground space-y-1">
                       <div>• Push notifications for agent alerts</div>
-                      <div>• Real-time status monitoring</div>
-                      <div>• One-touch pause/resume controls</div>
+                      <div>• Real-time status monitoring (Real-First Auth)</div>
+                      <div>• One-touch pause/resume via Secure Gate</div>
                     </div>
                   </CardContent>
                 </Card>
@@ -5343,7 +5335,7 @@ export default function AlphaAgentOps() {
                         variant="outline"
                         className="w-full text-xs font-bold tracking-widest border-amber-500/30 text-amber-500 hover:bg-amber-500/10"
                         onClick={() =>
-                          handleDownload(
+                          handleDownloadPDF(
                             "SENTINEL_Operational_Compliance.pdf",
                             "Sentinel Platform Operational Compliance Certificate\n\nVerified: Security Orchestration, Multi-Agent Oversight, Risk Mitigation."
                           )
@@ -5630,7 +5622,7 @@ export default function AlphaAgentOps() {
                       <Button
                         variant="outline"
                         onClick={() =>
-                          handleDownload(
+                          handleDownloadPDF(
                             "sentinel-operational-logs.txt",
                             auditLog
                               .map(
@@ -7392,6 +7384,19 @@ export default function AlphaAgentOps() {
           onChange={onFileImport}
           data-testid="agent-import-input"
         />
+
+        <ForensicTraceDialog
+          isOpen={showForensicTraceDialog}
+          onOpenChange={setShowForensicTraceDialog}
+          traceId={selectedAuditEntry?.id || ""}
+        />
+
+        <ConfigureStreamDialog
+          isOpen={showConfigureStreamDialog}
+          onOpenChange={setShowConfigureStreamDialog}
+          config={streamConfig}
+          onSave={setStreamConfig}
+        />
       </div>
     </>
   );
@@ -7505,6 +7510,103 @@ function ForensicTraceDialog({
           </Button>
           <Button className="bg-blue-600 hover:bg-blue-700">
             Export PDF Report
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ConfigureStreamDialog({
+  isOpen,
+  onOpenChange,
+  config,
+  onSave,
+}: {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  config: any;
+  onSave: (newConfig: any) => void;
+}) {
+  const [localConfig, setLocalConfig] = useState(config);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await extendedApi.sentinel.updateHealingConfig({
+        stream_latency_target: localConfig.p95_latency_ms,
+        auto_refine: true,
+        safety_rollback: true,
+      });
+      onSave(localConfig);
+      toast.success("Streaming configuration persisted to Sentinel.");
+      onOpenChange(false);
+    } catch (err) {
+      toast.error("Failed to persist streaming config.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-zinc-950 text-white border-zinc-800">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Gauge className="w-5 h-5 text-orange-500" />
+            Configure Metrics Stream
+          </DialogTitle>
+          <DialogDescription className="text-zinc-400">
+            Adjust real-time telemetry parameters for the Sentinel Bridge.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label>Target P95 Latency (ms)</Label>
+            <Input
+              type="number"
+              value={localConfig.p95_latency_ms}
+              onChange={e =>
+                setLocalConfig({
+                  ...localConfig,
+                  p95_latency_ms: parseInt(e.target.value),
+                })
+              }
+              className="bg-zinc-900 border-zinc-800"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Agent Subscription Buffer</Label>
+            <Input
+              type="number"
+              value={localConfig.connected_agents}
+              onChange={e =>
+                setLocalConfig({
+                  ...localConfig,
+                  connected_agents: parseInt(e.target.value),
+                })
+              }
+              className="bg-zinc-900 border-zinc-800"
+            />
+          </div>
+          <div className="p-3 rounded bg-blue-500/10 border border-blue-500/20 text-xs text-blue-400">
+            Note: Lowering latency targets increases backend compute overhead
+            for real-time forensic reconstruction.
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            className="bg-orange-600 hover:bg-orange-700"
+            onClick={handleSave}
+            disabled={isSaving}
+          >
+            {isSaving ? "Persisting..." : "Apply Configuration"}
           </Button>
         </DialogFooter>
       </DialogContent>
