@@ -35,30 +35,34 @@ class SSOService:
             client_id=os.getenv("OIDC_GOOGLE_CLIENT_ID"),
             client_secret=os.getenv("OIDC_GOOGLE_CLIENT_SECRET"),
             server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+            client_kwargs={"scope": "openid email profile"},
         )
-
+ 
         # Microsoft (Azure AD)
         self.oauth.register(
             name="microsoft",
             client_id=os.getenv("OIDC_AZURE_CLIENT_ID"),
             client_secret=os.getenv("OIDC_AZURE_CLIENT_SECRET"),
             server_metadata_url="https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration",
+            client_kwargs={"scope": "openid email profile"},
         )
-
+ 
         # Okta
         self.oauth.register(
             name="okta",
             client_id=os.getenv("OIDC_OKTA_CLIENT_ID"),
             client_secret=os.getenv("OIDC_OKTA_CLIENT_SECRET"),
             server_metadata_url=os.getenv("OIDC_OKTA_METADATA_URL"),
+            client_kwargs={"scope": "openid email profile"},
         )
-
+ 
         # Auth0
         self.oauth.register(
             name="auth0",
             client_id=os.getenv("OIDC_AUTH0_CLIENT_ID"),
             client_secret=os.getenv("OIDC_AUTH0_CLIENT_SECRET"),
             server_metadata_url=os.getenv("OIDC_AUTH0_METADATA_URL"),
+            client_kwargs={"scope": "openid email profile"},
         )
         
         # Apple
@@ -67,8 +71,9 @@ class SSOService:
             client_id=os.getenv("OIDC_APPLE_CLIENT_ID"),
             client_secret=os.getenv("OIDC_APPLE_CLIENT_SECRET"),
             server_metadata_url="https://appleid.apple.com/.well-known/openid-configuration",
+            client_kwargs={"scope": "openid email name"},
         )
-
+ 
         # 2. Additional Enterprise/Technical Providers
         providers = ["onelogin", "ping", "github", "gitlab", "salesforce"]
         for p in providers:
@@ -77,6 +82,7 @@ class SSOService:
                 client_id=os.getenv(f"OIDC_{p.upper()}_CLIENT_ID"),
                 client_secret=os.getenv(f"OIDC_{p.upper()}_CLIENT_SECRET"),
                 server_metadata_url=os.getenv(f"OIDC_{p.upper()}_METADATA_URL"),
+                client_kwargs={"scope": "openid email profile"},
             )
 
     def _normalize_provider(self, provider: str) -> str:
