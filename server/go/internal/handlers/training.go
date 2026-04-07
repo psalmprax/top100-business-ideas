@@ -3,7 +3,6 @@ package handlers
 import (
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/top100-business-ideas/api/internal/models"
@@ -45,66 +44,45 @@ func (h *TrainingHandler) GetModule(c *gin.Context) {
 // CreateModule creates a new training module
 // POST /api/v1/training/modules
 func (h *TrainingHandler) CreateModule(c *gin.Context) {
-	var req models.TrainingModule
+	var req map[string]interface{}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request", Details: err.Error()})
 		return
 	}
-	req.ID = "mod-" + generateID()
-	req.CreatedAt = time.Now()
-	req.UpdatedAt = time.Now()
-	c.JSON(http.StatusCreated, req)
+	response, err := h.proxyService.Forward("POST", "/training/modules", req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to create training module", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusCreated, "application/json", response)
 }
 
 // UpdateProgress updates user training progress
 // POST /api/v1/training/progress
 func (h *TrainingHandler) UpdateProgress(c *gin.Context) {
-	var req models.TrainingProgress
+	var req map[string]interface{}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request", Details: err.Error()})
 		return
 	}
-	req.ID = "prog-" + generateID()
-	req.StartedAt = time.Now()
-	req.LastAccessedAt = time.Now()
-	c.JSON(http.StatusOK, req)
+	response, err := h.proxyService.Forward("POST", "/training/progress", req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to update progress", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
 }
 
 // GetUserProgress returns user's training progress
 // GET /api/v1/training/progress/:userId
 func (h *TrainingHandler) GetUserProgress(c *gin.Context) {
 	userID := c.Param("userId")
-	progress := []models.TrainingProgress{
-		{
-			ID:             "prog-001",
-			UserID:         userID,
-			ModuleID:       "mod-001",
-			Status:         "completed",
-			Score:          95,
-			TimeSpent:      35,
-			CompletedAt:    &[]time.Time{time.Now().Add(-2 * 24 * time.Hour)}[0],
-			LastAccessedAt: time.Now().Add(-2 * 24 * time.Hour),
-		},
-		{
-			ID:             "prog-002",
-			UserID:         userID,
-			ModuleID:       "mod-002",
-			Status:         "in_progress",
-			Score:          0,
-			TimeSpent:      25,
-			LastAccessedAt: time.Now(),
-		},
-		{
-			ID:             "prog-003",
-			UserID:         userID,
-			ModuleID:       "mod-003",
-			Status:         "not_started",
-			Score:          0,
-			TimeSpent:      0,
-			LastAccessedAt: time.Now(),
-		},
+	response, err := h.proxyService.Forward("GET", fmt.Sprintf("/training/progress/%s", userID), nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch progress", Details: err.Error()})
+		return
 	}
-	c.JSON(http.StatusOK, progress)
+	c.Data(http.StatusOK, "application/json", response)
 }
 
 // GetTrainingStats returns training statistics
@@ -119,8 +97,12 @@ func (h *TrainingHandler) GetTrainingStats(c *gin.Context) {
 
 func (h *TrainingHandler) DownloadCertificate(c *gin.Context) {
 	id := c.Param("id")
-	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=EU-AI-ACT-CERT-%s.pdf", id))
-	c.Data(http.StatusOK, "application/pdf", []byte("%PDF-1.4\n%real-certificate-data"))
+	response, err := h.proxyService.Forward("GET", fmt.Sprintf("/training/modules/%s/certificate", id), nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to generate certificate", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/pdf", response)
 }
 
 // ShadowAIHandler handles Shadow AI detection for AI Compliance
@@ -148,20 +130,17 @@ func (h *ShadowAIHandler) ListDetections(c *gin.Context) {
 // PUT /api/v1/shadow-ai/detections/:id/remediate
 func (h *ShadowAIHandler) RemediateDetection(c *gin.Context) {
 	id := c.Param("id")
-	var req struct {
-		Action string `json:"action"` // block, approve, investigate
-	}
+	var req map[string]interface{}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request", Details: err.Error()})
 		return
 	}
-	detection := models.ShadowAIDetection{
-		ID:           id,
-		ToolName:     "ChatGPT",
-		Status:       req.Action,
-		RemediatedAt: &[]time.Time{time.Now()}[0],
+	response, err := h.proxyService.Forward("PUT", fmt.Sprintf("/shadow-ai/detections/%s/remediate", id), req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to remediate detection", Details: err.Error()})
+		return
 	}
-	c.JSON(http.StatusOK, detection)
+	c.Data(http.StatusOK, "application/json", response)
 }
 
 // GetShadowAIStats returns Shadow AI detection statistics

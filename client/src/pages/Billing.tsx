@@ -248,12 +248,44 @@ export default function Billing() {
                         : "N/A"}
                     </p>
                   </div>
-                  <Badge
-                    variant="outline"
-                    className="bg-green-500/20 text-green-400 border-green-500/30"
-                  >
-                    {subscription?.status || "Active"}
-                  </Badge>
+                  <div className="flex items-center gap-3">
+                    <Badge
+                      variant="outline"
+                      className="bg-green-500/20 text-green-400 border-green-500/30"
+                    >
+                      {subscription?.status || "Active"}
+                    </Badge>
+                    {subscription?.plan &&
+                      subscription.plan !== "developer" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                          onClick={async () => {
+                            if (
+                              window.confirm(
+                                "Are you sure you want to cancel your subscription? Access will continue until the end of your billing period."
+                              )
+                            ) {
+                              try {
+                                await billingApi.cancel();
+                                toast.success(
+                                  "Subscription cancelled. Access continues until period end."
+                                );
+                                const sub = await billingApi.subscription();
+                                setSubscription(sub);
+                              } catch (err: any) {
+                                toast.error(
+                                  err.message || "Failed to cancel subscription"
+                                );
+                              }
+                            }
+                          }}
+                        >
+                          Cancel Subscription
+                        </Button>
+                      )}
+                  </div>
                 </div>
               </CardContent>
             </Card>

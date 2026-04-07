@@ -1,7 +1,9 @@
 """Database configuration and engine setup"""
 
-from sqlmodel import SQLModel, create_engine, Session
+from sqlmodel import SQLModel, create_engine, Session, field, Field
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from typing import AsyncGenerator
 import os
 from app.core.config import settings
 from app.core.models import (
@@ -34,25 +36,46 @@ from app.core.models import (
     GovernanceDecision,
 )
 
-# Database connection string
 DATABASE_URL = settings.DATABASE_URL
 
-# Create engine
-engine = create_engine(DATABASE_URL)
+
+def get_sync_engine():
+    """Create synchronous engine for migrations and seeding"""
+    return create_engine(DATABASE_URL, echo=False)
+
+
+engine = get_sync_engine()
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+async_engine = None
+AsyncSessionLocal = None
+
+
+def init_async_engine():
+    """Initialize async engine for production use"""
+    global async_engine, AsyncSessionLocal
+    if async_engine is None:
+        async_url = DATABASE_URL.replace("sqlite", "sqlite+aiosqlite")
+        async_engine = create_async_engine(async_url, echo=False)
+        AsyncSessionLocal = async_sessionmaker(
+            async_engine, class_=AsyncSession, expire_on_commit=False
+        )
 
 
 def init_db():
     """Initialize database and create tables with retry logic"""
     import time
 
+    sync_engine = get_sync_engine()
+
     max_retries = 10
     retry_interval = 2
 
     for i in range(max_retries):
         try:
-            SQLModel.metadata.create_all(engine)
+            SQLModel.metadata.create_all(sync_engine)
 
-            SQLModel.metadata.create_all(engine)
+            SQLModel.metadata.create_all(sync_engine)
 
             # Manual Migration block removed. Using Alembic for dialect-agnostic migrations.
             # Refer to alembic/versions/a1b2c3d4e5f6_initial_agnostic_hardening.py
@@ -65,6 +88,7 @@ def init_db():
                 seed_workforce_data()
                 seed_agent_ops_data()
                 seed_business_ideas()
+                seed_training_modules()
             return  # Success
         except Exception as e:
             if i < max_retries - 1:
@@ -78,13 +102,13 @@ def init_db():
 
 def get_session():
     """Dependency for getting database sessions"""
-    with Session(engine) as session:
+    with SessionLocal() as session:
         yield session
 
 
 def seed_compliance_articles():
     """Seed the database with EU AI Act compliance articles"""
-    with Session(engine) as session:
+    with SessionLocal() as session:
         # Check if articles already exist
         existing_count = session.query(ComplianceArticle).count()
         if existing_count > 0:
@@ -163,7 +187,7 @@ def seed_compliance_articles():
 
 def seed_agents():
     """Seed the database with sample agents"""
-    with Session(engine) as session:
+    with SessionLocal() as session:
         # Check if agents already exist
         existing_count = session.query(Agent).count()
         if existing_count > 0:
@@ -263,7 +287,7 @@ def seed_agents():
 
 def seed_deepfake_data():
     """Seed the database with deepfake analysis data and threats"""
-    with Session(engine) as session:
+    with SessionLocal() as session:
         # Check if data already exists
         if session.query(DeepfakeAnalysis).count() > 0:
             return
@@ -399,7 +423,7 @@ def seed_deepfake_data():
 
 def seed_workforce_data():
     """Seed the database with initial workforce ventures, goals and fiscal requests"""
-    with Session(engine) as session:
+    with SessionLocal() as session:
         # 1. Seed Ventures
         if session.query(WorkforceVenture).count() == 0:
             ventures = [
@@ -548,7 +572,7 @@ def seed_workforce_data():
 
 def seed_agent_ops_data():
     """Seed the database with AgentOps security and configuration data"""
-    with Session(engine) as session:
+    with SessionLocal() as session:
         # Check if data already exists
         if session.query(AgentVigilanceAlert).count() > 0:
             return
@@ -641,7 +665,7 @@ def seed_agent_ops_data():
 
 def seed_business_ideas():
     """Seed the database with the Top 100 Business Ideas dataset"""
-    with Session(engine) as session:
+    with SessionLocal() as session:
         # Check if already seeded
         if session.query(BusinessIdea).count() > 0:
             return
@@ -758,5 +782,77 @@ def seed_business_ideas():
         for idea_data in ideas:
             idea = BusinessIdea(**idea_data)
             session.add(idea)
+
+        session.commit()
+
+
+def seed_training_modules():
+    """Seed the database with initial training modules if they don't exist"""
+    with SessionLocal() as session:
+        if session.query(TrainingModule).count() > 0:
+            return
+
+        modules_data = [
+            {
+                "title": "EU AI Act Fundamentals",
+                "description": "Introduction to the EU Artificial Intelligence Act and its requirements.",
+                "category": "ai-act",
+                "duration_minutes": 30,
+                "content": "# EU AI Act Fundamentals\n\nIntroduction to the EU Artificial Intelligence Act and its requirements.\n\n## Chapters\n- Introduction\n- Risk Categories\n- Compliance Requirements\n- Conclusion",
+                "quiz_questions": [],
+            },
+            {
+                "title": "High-Risk AI Systems",
+                "description": "Understanding requirements for high-risk AI systems under the AI Act.",
+                "category": "ai-act",
+                "duration_minutes": 45,
+                "content": "# High-Risk AI Systems\n\nUnderstanding requirements for high-risk AI systems.\n\n## Sections\n- Annex III Categories\n- Conformity Assessment\n- Technical Documentation",
+                "quiz_questions": [],
+            },
+            {
+                "title": "Data Governance & Bias Detection",
+                "description": "Learn to identify and mitigate bias in AI training data.",
+                "category": "ai-act",
+                "duration_minutes": 25,
+                "content": "# Data Governance & Bias Detection\n\nLearn to identify and mitigate bias in AI training data.",
+                "quiz_questions": [
+                    {
+                        "id": "q1",
+                        "question": "What is disparate impact?",
+                        "options": [
+                            "A measure of discrimination",
+                            "A type of algorithm",
+                            "A data format",
+                        ],
+                        "correct": 0,
+                    },
+                    {
+                        "id": "q2",
+                        "question": "Which Article covers data governance?",
+                        "options": ["Article 10", "Article 5", "Article 14"],
+                        "correct": 0,
+                    },
+                ],
+            },
+            {
+                "title": "Technical Documentation Workshop",
+                "description": "Hands-on workshop for creating AI Act technical documentation.",
+                "category": "ai-act",
+                "duration_minutes": 60,
+                "content": "# Technical Documentation Workshop\n\nHands-on workshop for creating AI Act technical documentation.\n\n## Tasks\n- Identify risk category\n- Create model card\n- Document training data\n- Plan conformity assessment",
+                "quiz_questions": [],
+            },
+            {
+                "title": "Compliance Audit Simulation",
+                "description": "Practice conducting a compliance audit.",
+                "category": "ai-act",
+                "duration_minutes": 90,
+                "content": "# Compliance Audit Simulation\n\nPractice conducting a compliance audit.\n\n## Scenario\nAudit of an AI recruitment system\n\n## Checklist\n- Verify registration in EU database\n- Check technical documentation\n- Review data governance measures\n- Assess transparency requirements",
+                "quiz_questions": [],
+            },
+        ]
+
+        for m in modules_data:
+            session.add(TrainingModule(**m))
 
         session.commit()

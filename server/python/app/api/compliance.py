@@ -7,11 +7,17 @@ from datetime import datetime
 from typing import List, Optional
 
 from app.core.models import (
-    ComplianceCheck, ComplianceCategory, RunComplianceCheckRequest,
-    ComplianceCheckType, ComplianceIncident, SelfHealingEvent, HealingConfiguration,
-    ComplianceAuditLog
+    ComplianceCheck,
+    ComplianceCategory,
+    RunComplianceCheckRequest,
+    ComplianceCheckType,
+    ComplianceIncident,
+    SelfHealingEvent,
+    HealingConfiguration,
+    ComplianceAuditLog,
 )
 import logging
+
 # from app.ml.compliance_analyzer import compliance_analyzer (Lazy loaded below)
 from app.connectors.github_connector import github_connector
 from app.services.reporting import reporting_service
@@ -35,9 +41,12 @@ async def list_compliance_incidents(session: Session = Depends(get_session)):
 
 
 @router.post("/incidents", response_model=ComplianceIncident)
-async def report_compliance_incident(request: dict, session: Session = Depends(get_session)):
+async def report_compliance_incident(
+    request: dict, session: Session = Depends(get_session)
+):
     """Report a new compliance, forensic or bias incident (Art 61/62)"""
     import uuid
+
     incident = ComplianceIncident(
         id=str(uuid.uuid4()),
         title=request.get("title"),
@@ -46,7 +55,7 @@ async def report_compliance_incident(request: dict, session: Session = Depends(g
         incident_type=request.get("incident_type", "security"),
         status="open",
         reported_by=request.get("reported_by"),
-        affected_systems=request.get("affected_systems", [])
+        affected_systems=request.get("affected_systems", []),
     )
     session.add(incident)
     session.commit()
@@ -60,10 +69,10 @@ async def resolve_incident(incident_id: str, session: Session = Depends(get_sess
     incident = session.get(ComplianceIncident, incident_id)
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
-    
+
     incident.status = "resolved"
     incident.resolved_at = datetime.utcnow()
-    
+
     session.add(incident)
     session.commit()
     session.refresh(incident)
@@ -80,18 +89,20 @@ async def get_check(check_id: str, session: Session = Depends(get_session)):
 
 
 @router.get("/{check_id}/report")
-async def get_report(check_id: str, format: str = "json", session: Session = Depends(get_session)):
+async def get_report(
+    check_id: str, format: str = "json", session: Session = Depends(get_session)
+):
     """Export compliance check as Annex IV Technical Folder"""
     try:
         check = session.get(ComplianceCheck, check_id)
         if not check:
             raise HTTPException(status_code=404, detail="Compliance check not found")
-        
+
         report_data = reporting_service.generate_annex_iv_report(check)
-        
+
         if format == "markdown":
             return {"markdown": reporting_service.format_as_markdown(report_data)}
-        
+
         return report_data
     except Exception as e:
         logger.error(f"Error generating report for {check_id}: {e}", exc_info=True)
@@ -99,7 +110,9 @@ async def get_report(check_id: str, format: str = "json", session: Session = Dep
 
 
 @router.post("/check", response_model=ComplianceCheck)
-async def run_check(request: RunComplianceCheckRequest, session: Session = Depends(get_session)):
+async def run_check(
+    request: RunComplianceCheckRequest, session: Session = Depends(get_session)
+):
     """Run a compliance check and save to DB"""
     # NEW: Evidence Mapping - If GitHub URL is provided, scan for evidence
     evidence = []
@@ -109,24 +122,33 @@ async def run_check(request: RunComplianceCheckRequest, session: Session = Depen
 
     # Lazy load compliance_analyzer to avoid torch dependency at startup
     from app.ml.compliance_analyzer import compliance_analyzer
+
     if request.type == ComplianceCheckType.AI_ACT:
-        result = compliance_analyzer.analyze_ai_act_compliance({"url": request.url}, evidence=evidence)
+        result = compliance_analyzer.analyze_ai_act_compliance(
+            {"url": request.url}, evidence=evidence
+        )
     elif request.type == ComplianceCheckType.PRIVACY:
-        result = compliance_analyzer.analyze_privacy_compliance({"url": request.url}, evidence=evidence)
+        result = compliance_analyzer.analyze_privacy_compliance(
+            {"url": request.url}, evidence=evidence
+        )
     elif request.type == ComplianceCheckType.SECURITY:
-        result = compliance_analyzer.analyze_security({"url": request.url}, evidence=evidence)
+        result = compliance_analyzer.analyze_security(
+            {"url": request.url}, evidence=evidence
+        )
     else:
         raise HTTPException(status_code=400, detail="Invalid check type")
-    
+
     # Append discovered evidence files to findings in the result
     for item in evidence:
-        result["findings"].append({
-            "rule": f"Documentation Proof: {item['file']}",
-            "severity": "low",
-            "description": "Evidence of compliance verified via GitHub scan.",
-            "recommendation": "Maintain version control for all compliance docs."
-        })
-    
+        result["findings"].append(
+            {
+                "rule": f"Documentation Proof: {item['file']}",
+                "severity": "low",
+                "description": "Evidence of compliance verified via GitHub scan.",
+                "recommendation": "Maintain version control for all compliance docs.",
+            }
+        )
+
     check = ComplianceCheck(
         id=result["id"],
         type=request.type,
@@ -134,9 +156,9 @@ async def run_check(request: RunComplianceCheckRequest, session: Session = Depen
         score=result["score"],
         findings=result["findings"],
         checked_at=datetime.fromisoformat(result["checked_at"]),
-        created_at=datetime.utcnow()
+        created_at=datetime.utcnow(),
     )
-    
+
     session.add(check)
     session.commit()
     session.refresh(check)
@@ -151,98 +173,155 @@ async def get_categories():
             id="unacceptable",
             name="Unacceptable Risk",
             color="red",
-            description="Banned AI systems that pose unacceptable risk to people"
+            description="Banned AI systems that pose unacceptable risk to people",
         ),
         ComplianceCategory(
             id="high",
             name="High Risk",
             color="orange",
-            description="AI systems that pose high risk to fundamental rights"
+            description="AI systems that pose high risk to fundamental rights",
         ),
         ComplianceCategory(
             id="limited",
             name="Limited Risk",
             color="yellow",
-            description="AI systems with limited transparency obligations"
+            description="AI systems with limited transparency obligations",
         ),
         ComplianceCategory(
             id="minimal",
             name="Minimal Risk",
             color="green",
-            description="Low-risk AI systems with minimal requirements"
+            description="Low-risk AI systems with minimal requirements",
         ),
     ]
     return categories
+
+
 @router.post("/audit/sox")
 async def run_sox_audit(
-    session: Session = Depends(get_session),
-    x_user_id: Optional[str] = Header(None)
+    session: Session = Depends(get_session), x_user_id: Optional[str] = Header(None)
 ):
     """Run a SOX §404 financial integrity audit across all agents"""
     import uuid
+    from app.core.models import Agent, AgentStatus
+
     user_id = x_user_id or "system_admin"
     audit_id = str(uuid.uuid4())
-    
-    # Materialize the audit in the ledger
+
+    agents = session.exec(select(Agent)).all()
+    findings = []
+
+    for agent in agents:
+        if agent.status == AgentStatus.RUNNING:
+            if agent.dailySpend > agent.dailyBudget:
+                findings.append(
+                    {
+                        "agent_id": str(agent.id),
+                        "agent_name": agent.name,
+                        "issue": "Budget overrun detected",
+                        "severity": "high",
+                        "daily_budget": float(agent.dailyBudget),
+                        "daily_spend": float(agent.dailySpend),
+                    }
+                )
+            if not agent.model or agent.model == "":
+                findings.append(
+                    {
+                        "agent_id": str(agent.id),
+                        "agent_name": agent.name,
+                        "issue": "Missing model configuration",
+                        "severity": "medium",
+                    }
+                )
+
+    status = "COMPLIANT" if len(findings) == 0 else "NON_COMPLIANT"
+
     audit_log = ComplianceAuditLog(
         id=audit_id,
         user_id=user_id,
         action="RUN_SOX_AUDIT",
         resource="financial_integrity_v1",
         compliance_type="SOX",
-        status="verified",
+        status=status.lower(),
         metadata_json={
-            "integrity_hash": "8f2g8b9c1d4e2f3a",
-            "findings": 0,
-            "agent_scope": "all"
-        }
+            "findings": findings,
+            "finding_count": len(findings),
+            "agent_scope": len(agents),
+        },
     )
     session.add(audit_log)
     session.commit()
-    
+
     return {
         "audit_id": audit_id,
-        "status": "COMPLIANT",
-        "findings": 0,
-        "integrity_hash": "8f2g8b9c1d4e2f3a",
+        "status": status,
+        "findings": findings,
+        "finding_count": len(findings),
+        "agents_scanned": len(agents),
         "timestamp": datetime.utcnow().isoformat(),
-        "message": "SOX Integrity Audit Complete and Persisted"
     }
 
 
 @router.post("/audit/hipaa")
 async def run_hipaa_audit(
-    session: Session = Depends(get_session),
-    x_user_id: Optional[str] = Header(None)
+    session: Session = Depends(get_session), x_user_id: Optional[str] = Header(None)
 ):
     """Run a HIPAA data privacy and security audit"""
     import uuid
+    from app.core.models import BiometricEnrollment, VerificationSession
+
     user_id = x_user_id or "system_admin"
     audit_id = str(uuid.uuid4())
-    
-    # Materialize the audit in the ledger
+
+    findings = []
+
+    enrollments = session.exec(select(BiometricEnrollment)).all()
+    inactive_active = [e for e in enrollments if not e.is_active]
+    if len(inactive_active) > 0:
+        findings.append(
+            {
+                "issue": "Inactive biometric enrollments still present",
+                "severity": "medium",
+                "count": len(inactive_active),
+            }
+        )
+
+    sessions = session.exec(select(VerificationSession)).all()
+    unverified = [s for s in sessions if s.result is None or s.result == "pending"]
+    if len(unverified) > 10:
+        findings.append(
+            {
+                "issue": "High number of unverified sessions",
+                "severity": "high",
+                "count": len(unverified),
+            }
+        )
+
+    status = "COMPLIANT" if len(findings) == 0 else "NON_COMPLIANT"
+
     audit_log = ComplianceAuditLog(
         id=audit_id,
         user_id=user_id,
         action="RUN_HIPAA_AUDIT",
         resource="privacy_controls_v1",
         compliance_type="HIPAA",
-        status="verified",
+        status=status.lower(),
         metadata_json={
-            "risk_level": "none",
-            "findings": 0
-        }
+            "findings": findings,
+            "finding_count": len(findings),
+            "enrollments_checked": len(enrollments),
+            "sessions_checked": len(sessions),
+        },
     )
     session.add(audit_log)
     session.commit()
-    
+
     return {
         "audit_id": audit_id,
-        "status": "COMPLIANT",
-        "findings": 0,
-        "risk_level": "none",
+        "status": status,
+        "findings": findings,
+        "finding_count": len(findings),
         "timestamp": datetime.utcnow().isoformat(),
-        "message": "HIPAA Privacy Audit Complete and Persisted"
     }
 
 
@@ -253,16 +332,18 @@ async def list_healing_configs(session: Session = Depends(get_session)):
 
 
 @router.patch("/healing/{config_id}", response_model=HealingConfiguration)
-async def update_healing_config(config_id: str, update: dict, session: Session = Depends(get_session)):
+async def update_healing_config(
+    config_id: str, update: dict, session: Session = Depends(get_session)
+):
     """Update a healing configuration (e.g., toggle active status)"""
     config = session.get(HealingConfiguration, config_id)
     if not config:
         raise HTTPException(status_code=404, detail="Healing config not found")
-    
+
     for key, value in update.items():
         if hasattr(config, key):
             setattr(config, key, value)
-    
+
     session.add(config)
     session.commit()
     session.refresh(config)

@@ -43,6 +43,7 @@ from app.core.models import (
     WearableDevice,
     TravelKiosk,
     CryptoWallet,
+    WhiteLabelConfig,
     Task,
     Client,
     ScheduleEvent,
@@ -443,10 +444,13 @@ async def get_workforce_status(session: Session = Depends(get_session)):
 
     status_data = sovereign_service.get_status()
     # Align with Go models (WorkforceStatus)
+    from app.services.agent_ops_service import agent_ops_service
+
+    roi_metrics = agent_ops_service.get_roi_metrics()
     return {
         "total_agents": len(agents),
         "active_agents": len(active_agents),
-        "total_roi": 1240.50,  # TODO: Couple to ROI service if ready
+        "total_roi": roi_metrics.get("total_realized_savings", 0),
         "monthly_burn": round(total_burn, 2),
         "autonomy_level": "partial",
         "sovereign_stages": status_data.get("stages", []),
@@ -526,11 +530,214 @@ async def approve_outreach_draft(
     return {"status": "sent", "id": draft_id}
 
 
+# ============================================================================
+# Referral Program Endpoints
+# ============================================================================
+
+
+@router.post("/workforce/referral/activate")
+async def activate_referral(
+    request: Dict[str, Any], session: Session = Depends(get_session)
+):
+    """Activate referral program for a user"""
+    from app.core.models import SystemSetting
+
+    user_id = request.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+
+    # Check if referral program is enabled in system settings
+    referral_setting = session.exec(
+        select(SystemSetting).where(SystemSetting.setting_key == "referral_enabled")
+    ).first()
+
+    if not referral_setting or referral_setting.setting_value != "true":
+        # Enable it
+        new_setting = SystemSetting(
+            id=str(uuid.uuid4()),
+            category="referral",
+            setting_key="referral_enabled",
+            setting_value="true",
+        )
+        session.add(new_setting)
+        session.commit()
+
+    # Generate referral code
+    import secrets
+
+    referral_code = f"ALPHA-{secrets.token_hex(4).upper()}"
+
+    # Store referral code
+    code_setting = SystemSetting(
+        id=str(uuid.uuid4()),
+        category="referral",
+        setting_key=f"referral_code_{user_id}",
+        setting_value=referral_code,
+    )
+    session.add(code_setting)
+    session.commit()
+
+    return {
+        "status": "activated",
+        "user_id": user_id,
+        "referral_code": referral_code,
+        "referral_url": f"https://alphaai.com/signup?ref={referral_code}",
+    }
+
+
+@router.get("/workforce/referral/stats")
+async def get_referral_stats(
+    user_id: str = "", session: Session = Depends(get_session)
+):
+    """Get referral program statistics"""
+    from app.core.models import SystemSetting
+
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+
+    # Get user's referral code
+    user_code = session.exec(
+        select(SystemSetting).where(
+            SystemSetting.setting_key == f"referral_code_{user_id}"
+        )
+    ).first()
+
+    referral_code = user_code.setting_value if user_code else None
+
+    # Count how many users signed up with this code (would need a referrals table in production)
+    # For now, return basic stats
+    all_referral_codes = session.exec(
+        select(SystemSetting).where(SystemSetting.category == "referral")
+    ).all()
+
+    return {
+        "user_id": user_id,
+        "referral_code": referral_code,
+        "total_referrals": 0,
+        "successful_signups": 0,
+        "pending_signups": 0,
+        "total_earnings": 0.0,
+    }
+
+
+# ============================================================================
+# Autonomy Toggle & Deploy Check Endpoints
+# ============================================================================
+
+
+@router.post("/workforce/autonomy/toggle")
+async def toggle_autonomy(
+    request: Dict[str, Any], session: Session = Depends(get_session)
+):
+    """Toggle agent autonomy level"""
+    from app.core.models import SystemSetting
+
+    level = request.get("level", "partial")
+    if level not in ("partial", "full"):
+        raise HTTPException(status_code=400, detail="Level must be 'partial' or 'full'")
+
+    # Update autonomy setting in DB
+    existing = session.exec(
+        select(SystemSetting).where(SystemSetting.setting_key == "autonomy_level")
+    ).first()
+
+    if existing:
+        existing.setting_value = level
+        session.add(existing)
+    else:
+        new_setting = SystemSetting(
+            id=str(uuid.uuid4()),
+            category="workforce",
+            setting_key="autonomy_level",
+            setting_value=level,
+        )
+        session.add(new_setting)
+
+    session.commit()
+
+    return {
+        "status": "updated",
+        "autonomy_level": level,
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+
+
+@router.get("/workforce/deploy/check")
+async def deploy_check(session: Session = Depends(get_session)):
+    """Run deployment health check"""
+    from app.core.models import Agent, AgentStatus
+
+    agents = session.exec(select(Agent)).all()
+    total = len(agents)
+    running = sum(1 for a in agents if a.status == AgentStatus.RUNNING)
+    stopped = sum(1 for a in agents if a.status == AgentStatus.STOPPED)
+    error_count = sum(1 for a in agents if a.status == AgentStatus.ERROR)
+
+    # Check budget compliance
+    over_budget = sum(1 for a in agents if a.dailySpend > a.dailyBudget)
+
+    health_status = "healthy"
+    if error_count > 0:
+        health_status = "degraded"
+    if over_budget > total * 0.3:
+        health_status = "critical"
+
+    return {
+        "status": health_status,
+        "total_agents": total,
+        "running": running,
+        "stopped": stopped,
+        "errors": error_count,
+        "over_budget": over_budget,
+        "budget_compliance_rate": round(((total - over_budget) / total * 100), 1)
+        if total > 0
+        else 100,
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+
+
 # Integration Endpoints (Missing Gaps)
 @router.post("/integrations/slack")
-async def integrate_slack(channel: str):
-    """Integrate with Slack for alerts"""
-    return {"status": "success", "message": f"Slack integrated for channel {channel}"}
+async def integrate_slack(channel: str, webhook_url: Optional[str] = None):
+    """Integrate with Slack for alerts — attempts real webhook delivery"""
+    import httpx
+
+    if not webhook_url:
+        webhook_url = os.environ.get("SLACK_WEBHOOK_URL")
+    if not webhook_url:
+        return {
+            "status": "configured",
+            "message": f"Slack integration configured for channel {channel}. Set SLACK_WEBHOOK_URL env var to enable real notifications.",
+            "channel": channel,
+            "webhook_configured": bool(os.environ.get("SLACK_WEBHOOK_URL")),
+        }
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                webhook_url,
+                json={
+                    "text": f"AlphaAI Alert Integration: Channel {channel} connected"
+                },
+                timeout=10,
+            )
+            if resp.status_code == 200:
+                return {
+                    "status": "success",
+                    "message": f"Slack notification sent to {channel}",
+                    "channel": channel,
+                }
+            else:
+                return {
+                    "status": "partial",
+                    "message": f"Slack webhook returned {resp.status_code}",
+                    "channel": channel,
+                }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Slack webhook failed: {str(e)}",
+            "channel": channel,
+        }
 
 
 @router.get("/agents/{agent_id}/memory")
@@ -684,16 +891,6 @@ class TrainingProgress(BaseModel):
     completed_at: Optional[datetime] = None
 
 
-class WhiteLabelConfig(BaseModel):
-    id: Optional[str] = None
-    brand_name: str
-    logo_url: str
-    primary_color: str
-    secondary_color: str
-    custom_css: Optional[str] = None
-    created_at: Optional[datetime] = None
-
-
 class EdgeDeployment(BaseModel):
     id: Optional[str] = None
     name: str
@@ -801,17 +998,33 @@ async def get_training_module(module_id: str, session: Session = Depends(get_ses
 
 @router.get("/training/stats")
 async def get_training_stats(session: Session = Depends(get_session)):
-    """Get training statistics"""
-    from app.core.models import TrainingModule
+    """Get training statistics from real DB data"""
+    from app.core.models import TrainingModule, TrainingProgress
 
     modules = session.exec(select(TrainingModule)).all()
-    # In this phase, we treat all as 'not_started' or use a generic 'completed' count if user data exists
-    # Hardening: At least return real total counts
+    progress_records = session.exec(select(TrainingProgress)).all()
+
+    completed = sum(
+        1 for p in progress_records if p.status in ("completed", "certified")
+    )
+    in_progress = sum(1 for p in progress_records if p.status == "in_progress")
+    not_started_count = sum(1 for p in progress_records if p.status == "not_started")
+    total_users = (
+        len(set(p.user_id for p in progress_records)) if progress_records else 0
+    )
+    certified_count = sum(1 for p in progress_records if p.status == "certified")
+
     return {
         "total_modules": len(modules),
-        "completed": 0,
-        "in_progress": 0,
-        "not_started": len(modules),
+        "total_enrolled": total_users,
+        "total_progress_records": len(progress_records),
+        "completed": completed,
+        "in_progress": in_progress,
+        "not_started": not_started_count,
+        "total_certifications": certified_count,
+        "completion_rate": round((completed / total_users * 100), 1)
+        if total_users > 0
+        else 0,
     }
 
 
@@ -821,40 +1034,55 @@ async def get_training_stats(session: Session = Depends(get_session)):
 
 
 @router.get("/whitelabel/configs", response_model=List[WhiteLabelConfig])
-async def list_white_label_configs():
+async def list_white_label_configs(session: Session = Depends(get_session)):
     """List all white-label configurations"""
-    return list(white_label_configs.values())
+    return session.exec(select(WhiteLabelConfig)).all()
 
 
 @router.post("/whitelabel/configs", response_model=WhiteLabelConfig)
-async def create_white_label_config(config: WhiteLabelConfig):
+async def create_white_label_config(
+    request: Dict[str, Any], session: Session = Depends(get_session)
+):
     """Create a white-label configuration"""
-    config_id = str(uuid.uuid4())
-    config.id = config_id
-    config.created_at = datetime.utcnow()
-    white_label_configs[config_id] = config
+    config = WhiteLabelConfig(
+        brand_name=request.get("brand_name"),
+        logo_url=request.get("logo_url"),
+        primary_color=request.get("primary_color"),
+        secondary_color=request.get("secondary_color"),
+        custom_css=request.get("custom_css"),
+    )
+    session.add(config)
+    session.commit()
+    session.refresh(config)
     return config
 
 
 @router.put("/whitelabel/configs/{config_id}", response_model=WhiteLabelConfig)
-async def update_white_label_config(config_id: str, config: WhiteLabelConfig):
+async def update_white_label_config(
+    config_id: str, request: Dict[str, Any], session: Session = Depends(get_session)
+):
     """Update a white-label configuration"""
-    if config_id not in white_label_configs:
+    db_config = session.get(WhiteLabelConfig, config_id)
+    if not db_config:
         raise HTTPException(status_code=404, detail="Config not found")
 
-    config.id = config_id
-    config.created_at = white_label_configs[config_id].created_at
-    white_label_configs[config_id] = config
-    return config
+    # Update fields
+    for key, value in request.items():
+        if hasattr(db_config, key):
+            setattr(db_config, key, value)
+
+    session.add(db_config)
+    session.commit()
+    session.refresh(db_config)
+    return db_config
 
 
 @router.get("/whitelabel/preview/{config_id}")
-async def preview_white_label(config_id: str):
+async def preview_white_label(config_id: str, session: Session = Depends(get_session)):
     """Get preview HTML for white-label config"""
-    if config_id not in white_label_configs:
+    config = session.get(WhiteLabelConfig, config_id)
+    if not config:
         raise HTTPException(status_code=404, detail="Config not found")
-
-    config = white_label_configs[config_id]
 
     # Return preview HTML
     return {
@@ -1266,32 +1494,6 @@ class MobileSDKConfig(BaseModel):
     created_at: Optional[datetime] = None
 
 
-class WearableDevice(BaseModel):
-    id: Optional[str] = None
-    device_type: str  # vision_pro, quest, apple_watch
-    user_id: str
-    status: str  # active, inactive, pairing
-    firmware_version: str
-    registered_at: Optional[datetime] = None
-
-
-class TravelKiosk(BaseModel):
-    id: Optional[str] = None
-    location: str  # airport, border, hotel
-    country: str
-    status: str  # operational, maintenance, offline
-    verification_count: int = 0
-    last_maintenance: Optional[datetime] = None
-
-
-class CryptoWallet(BaseModel):
-    id: Optional[str] = None
-    wallet_address: str
-    blockchain: str  # ethereum, solana, bitcoin
-    protection_enabled: bool = True
-    last_verified: Optional[datetime] = None
-
-
 # Services are imported as singletons above.
 
 
@@ -1313,22 +1515,63 @@ async def list_mobile_sdk_configs():
 
 
 @router.get("/mobile-sdk/download/{platform}")
-async def download_mobile_sdk(platform: str):
-    """Get SDK download URL"""
-    urls = {
-        "ios": "https://sdk.livenesslink.com/v2/ios/LivenessLinkSDK-2.0.0.zip",
-        "android": "https://sdk.livenesslink.com/v2/android/LivenessLinkSDK-2.0.0.aar",
-    }
+async def download_mobile_sdk(platform: str, session: Session = Depends(get_session)):
+    """Get SDK download URL from DB config or env var, fallback to generated package info"""
+    from app.services.mobile_sdk import mobile_sdk
+    from app.core.models import SystemSetting
+    from sqlmodel import select
 
-    if platform not in urls:
+    if platform not in ("ios", "android"):
         raise HTTPException(status_code=404, detail="Platform not supported")
 
+    # 1. Try service-level configured URLs first
+    sdk_info = mobile_sdk.get_sdk_download_info(platform)
+    if sdk_info and sdk_info.get("download_url"):
+        return sdk_info
+
+    # 2. Try DB-configured SDK URL
+    db_url = session.exec(
+        select(SystemSetting).where(
+            SystemSetting.setting_key == f"sdk_download_url_{platform}"
+        )
+    ).first()
+    if db_url:
+        return {
+            "platform": platform,
+            "download_url": db_url.setting_value,
+            "version": "2.0.0",
+            "docs_url": os.environ.get(
+                f"SDK_DOCS_URL_{platform.upper()}", f"/docs/sdk/{platform}"
+            ),
+            "api_reference": os.environ.get(
+                f"SDK_API_REF_URL_{platform.upper()}", f"/docs/sdk/{platform}/reference"
+            ),
+        }
+
+    # 3. Try env var
+    env_url = os.environ.get(f"SDK_DOWNLOAD_URL_{platform.upper()}")
+    if env_url:
+        return {
+            "platform": platform,
+            "download_url": env_url,
+            "version": "2.0.0",
+            "docs_url": os.environ.get(
+                f"SDK_DOCS_URL_{platform.upper()}", f"/docs/sdk/{platform}"
+            ),
+            "api_reference": os.environ.get(
+                f"SDK_API_REF_URL_{platform.upper()}", f"/docs/sdk/{platform}/reference"
+            ),
+        }
+
+    # 4. Fallback: return package metadata so frontend can generate/download locally
     return {
         "platform": platform,
-        "download_url": urls[platform],
+        "download_url": None,
         "version": "2.0.0",
-        "docs_url": f"https://docs.livenesslink.com/sdk/{platform}",
-        "api_reference": f"https://api.livenesslink.com/sdk/{platform}/reference",
+        "docs_url": f"/docs/sdk/{platform}",
+        "api_reference": f"/docs/sdk/{platform}/reference",
+        "message": f"No SDK download URL configured for {platform}. Set SDK_DOWNLOAD_URL_{platform.upper()} env var or configure in settings.",
+        "package_info": mobile_sdk.get_sdk_download_info(platform) or {},
     }
 
 
@@ -1338,27 +1581,68 @@ async def get_mobile_sdk_stats_legacy():
     return mobile_sdk.get_sdk_stats()
 
 
-@router.post("/deepfake/advanced/analysis-new")  # Rename or remove to avoid duplicate
+@router.post("/deepfake/advanced/analysis-new")
 async def advanced_deepfake_analysis_new(media_url: str):
-    """Execute advanced multi-material deepfake analysis (3D mask/Silicone)"""
-    return {
-        "status": "completed",
-        "mask_detected": False,
-        "silicone_probability": 0.02,
-        "injection_attack_prevention": "active",
-    }
+    """Execute advanced multi-material deepfake analysis using real detector"""
+    from app.ml.deepfake_detector import deepfake_detector
+
+    try:
+        result = deepfake_detector.analyze_image(media_url)
+        return {
+            "status": "completed",
+            "mask_detected": result.get("details", {}).get("mask_detected", False),
+            "silicone_probability": result.get("details", {}).get(
+                "silicone_probability", 0.0
+            ),
+            "injection_attack_prevention": "active",
+            "confidence": result.get("confidence", 0),
+            "result": result.get("result", "uncertain"),
+        }
+    except Exception as e:
+        logger.error(f"Advanced analysis failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 
 
 @router.post("/deepfake/voice-verify")
 async def voice_verification(user_id: str, audio_url: str):
-    """Verify identity via voice synthesis detection"""
-    return {"user_id": user_id, "status": "verified", "score": 0.99}
+    """Verify identity via voice synthesis detection using real audio analyzer"""
+    from app.ml.deepfake_detector import deepfake_detector
+
+    try:
+        result = deepfake_detector.analyze_audio(audio_url)
+        return {
+            "user_id": user_id,
+            "status": "verified" if result.get("result") == "real" else "suspicious",
+            "score": result.get("confidence", 0) / 100.0,
+            "is_synthesized": result.get("result") == "fake",
+            "details": result.get("details", {}),
+        }
+    except Exception as e:
+        logger.error(f"Voice verification failed: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Voice verification failed: {str(e)}"
+        )
 
 
 @router.post("/verify/document")
 async def verify_document(document_url: str):
-    """Verify document authenticity (NFC/Hologram)"""
-    return {"status": "authentic", "document_type": "passport", "confidence": 0.98}
+    """Verify document authenticity using real image analysis"""
+    from app.ml.deepfake_detector import deepfake_detector
+
+    try:
+        result = deepfake_detector.analyze_image(document_url)
+        return {
+            "status": "authentic" if result.get("result") == "real" else "suspicious",
+            "document_type": "unknown",
+            "confidence": result.get("confidence", 0) / 100.0,
+            "is_tampered": result.get("result") == "fake",
+            "details": result.get("details", {}),
+        }
+    except Exception as e:
+        logger.error(f"Document verification failed: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Document verification failed: {str(e)}"
+        )
 
 
 # ============================================================================
@@ -1367,21 +1651,30 @@ async def verify_document(document_url: str):
 
 
 @router.get("/wearable/devices", response_model=List[WearableDevice])
-async def list_wearable_devices(user_id: Optional[str] = None):
+async def list_wearable_devices(
+    user_id: Optional[str] = None, session: Session = Depends(get_session)
+):
     """List wearable devices"""
-    devices = list(wearable_devices.values())
+    query = select(WearableDevice)
     if user_id:
-        devices = [d for d in devices if d.user_id == user_id]
-    return devices
+        query = query.where(WearableDevice.user_id == user_id)
+    return session.exec(query).all()
 
 
 @router.post("/wearable/devices", response_model=WearableDevice)
-async def register_wearable_device(device: WearableDevice):
+async def register_wearable_device(
+    request: Dict[str, Any], session: Session = Depends(get_session)
+):
     """Register a new wearable device"""
-    device_id = str(uuid.uuid4())
-    device.id = device_id
-    device.registered_at = datetime.utcnow()
-    wearable_devices[device_id] = device
+    device = WearableDevice(
+        user_id=request.get("user_id"),
+        name=request.get("name"),
+        device_type=request.get("device_type", "vision_pro"),
+        status=request.get("status", "active"),
+    )
+    session.add(device)
+    session.commit()
+    session.refresh(device)
     return device
 
 
@@ -1403,24 +1696,31 @@ async def pair_wearable_device(device_id: str, user_id: str):
 
 @router.get("/travel/kiosks", response_model=List[TravelKiosk])
 async def list_travel_kiosks(
-    location: Optional[str] = None, status: Optional[str] = None
+    location: Optional[str] = None,
+    status: Optional[str] = None,
+    session: Session = Depends(get_session),
 ):
     """List travel kiosks"""
-    kiosks = list(travel_kiosks.values())
+    query = select(TravelKiosk)
     if location:
-        kiosks = [k for k in kiosks if k.location == location]
+        query = query.where(TravelKiosk.location == location)
     if status:
-        kiosks = [k for k in kiosks if k.status == status]
-    return kiosks
+        query = query.where(TravelKiosk.status == status)
+    return session.exec(query).all()
 
 
 @router.post("/travel/kiosks", response_model=TravelKiosk)
-async def create_travel_kiosk(kiosk: TravelKiosk):
+async def create_travel_kiosk(
+    request: Dict[str, Any], session: Session = Depends(get_session)
+):
     """Create a travel kiosk registration"""
-    kiosk_id = str(uuid.uuid4())
-    kiosk.id = kiosk_id
-    kiosk.last_maintenance = datetime.utcnow()
-    travel_kiosks[kiosk_id] = kiosk
+    kiosk = TravelKiosk(
+        location=request.get("location"),
+        status=request.get("status", "online"),
+    )
+    session.add(kiosk)
+    session.commit()
+    session.refresh(kiosk)
     return kiosk
 
 
@@ -1449,28 +1749,40 @@ async def get_travel_stats_legacy():
 
 
 @router.get("/crypto/wallets", response_model=List[CryptoWallet])
-async def list_crypto_wallets(blockchain: Optional[str] = None):
+async def list_crypto_wallets(
+    blockchain: Optional[str] = None, session: Session = Depends(get_session)
+):
     """List protected crypto wallets"""
-    return []
+    query = select(CryptoWallet)
+    if blockchain:
+        query = query.where(CryptoWallet.blockchain == blockchain)
+    return session.exec(query).all()
 
 
 @router.post("/crypto/wallets", response_model=CryptoWallet)
-async def protect_crypto_wallet(wallet: CryptoWallet):
+async def protect_crypto_wallet(
+    request: Dict[str, Any], session: Session = Depends(get_session)
+):
     """Add wallet protection"""
-    wallet_id = str(uuid.uuid4())
-    wallet.id = wallet_id
-    wallet.last_verified = datetime.utcnow()
-    crypto_wallets[wallet_id] = wallet
+    wallet = CryptoWallet(
+        user_id=request.get("user_id"),
+        name=request.get("name"),
+        wallet_address=request.get("wallet_address"),
+        blockchain=request.get("blockchain", "ethereum"),
+        protection_enabled=request.get("protection_enabled", True),
+    )
+    session.add(wallet)
+    session.commit()
+    session.refresh(wallet)
     return wallet
 
 
 @router.post("/crypto/wallets/{wallet_id}/verify")
-async def verify_crypto_wallet(wallet_id: str):
+async def verify_crypto_wallet(wallet_id: str, session: Session = Depends(get_session)):
     """Verify wallet ownership via liveness"""
-    if wallet_id not in crypto_wallets:
+    wallet = session.get(CryptoWallet, wallet_id)
+    if not wallet:
         raise HTTPException(status_code=404, detail="Wallet not found")
-
-    wallet = crypto_wallets[wallet_id]
     wallet.last_verified = datetime.utcnow()
 
     return {
@@ -1484,24 +1796,6 @@ async def verify_crypto_wallet(wallet_id: str):
 # ============================================================================
 # Duress Detection Endpoints (Deepfake UC 3)
 # ============================================================================
-
-
-class DuressConfig(BaseModel):
-    id: Optional[str] = None
-    user_id: str
-    panic_phrase: str
-    silent_mode: bool = True
-    trigger_action: str  # lock_account, alert_security, fake_data
-    enabled: bool = True
-
-
-class DuressAlert(BaseModel):
-    id: Optional[str] = None
-    user_id: str
-    alert_type: str
-    location: Optional[str] = None
-    status: str  # active, acknowledged, resolved
-    created_at: Optional[datetime] = None
 
 
 # Services are imported as singletons above.
@@ -2534,7 +2828,9 @@ async def connect_sso_provider(provider: str, request: Request):
         # Default redirect URI for the Sentinel dashboard
         redirect_uri = f"{request.base_url}api/v1/sso/callback/{provider}"
         auth_url = await sso_service.get_authorize_url(provider, redirect_uri, request)
-        logger.info(f"Generated SSO Redirect - Provider: {provider}, URI: {redirect_uri}, URL: {auth_url}")
+        logger.info(
+            f"Generated SSO Redirect - Provider: {provider}, URI: {redirect_uri}, URL: {auth_url}"
+        )
         return {"status": "redirect", "auth_url": auth_url}
     except Exception as e:
         logger.error(f"Failed to generate SSO redirect: {e}", exc_info=True)
@@ -2803,7 +3099,7 @@ async def test_ops_webhook(webhook_id: str, session: Session = Depends(get_sessi
                 )
         return {"status": "success"}
     except Exception as e:
-        print(f"ROI calculation error: {e}")
+        logger.error(f"ROI calculation error: {e}")
         raise HTTPException(
             status_code=500, detail=f"Failed to calculate governance ROI: {str(e)}"
         )
@@ -2894,3 +3190,52 @@ async def update_compliance_policy(request: Dict[str, Any]):
             "policy_enforced": policy_enforced,
         },
     }
+
+
+# ============================================================================
+# Hermes Agent Integration
+# ============================================================================
+
+
+@router.post("/hermes/chat")
+async def hermes_chat(request: Dict[str, Any]):
+    """Chat with Hermes AI agent for advanced reasoning"""
+    from app.services.hermes_service import hermes_agent_service
+
+    message = request.get("message", "")
+    system_prompt = request.get("system_prompt")
+
+    response = hermes_agent_service.chat(message, system_prompt)
+    return {"response": response, "source": "hermes"}
+
+
+@router.post("/hermes/analyze")
+async def hermes_analyze_metrics(request: Dict[str, Any]):
+    """Use Hermes to analyze performance metrics"""
+    from app.services.hermes_service import hermes_agent_service
+
+    metrics = request.get("metrics", {})
+    result = hermes_agent_service.analyze_performance(metrics)
+    return result
+
+
+@router.post("/hermes/suggest-fix")
+async def hermes_suggest_fix(request: Dict[str, Any]):
+    """Use Hermes to suggest a fix for an error"""
+    from app.services.hermes_service import hermes_agent_service
+
+    error = request.get("error", "")
+    context = request.get("context", {})
+
+    result = hermes_agent_service.suggest_fix(error, context)
+    return result
+
+
+@router.post("/hermes/validate-strategy")
+async def hermes_validate_strategy(request: Dict[str, Any]):
+    """Use Hermes to validate a product strategy"""
+    from app.services.hermes_service import hermes_agent_service
+
+    strategy = request.get("strategy", {})
+    result = hermes_agent_service.validate_strategy(strategy)
+    return result

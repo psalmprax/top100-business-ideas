@@ -284,6 +284,21 @@ export const authApi = {
     }),
 
   me: () => apiRequest<User>("/api/v1/auth/me"),
+
+  requestPasswordReset: (email: string) =>
+    apiRequest<{ message: string; reset_url?: string }>(
+      "/api/v1/auth/password-reset",
+      {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      }
+    ),
+
+  resetPassword: (email: string, token: string, newPassword: string) =>
+    apiRequest<{ message: string }>("/api/v1/auth/password-reset/confirm", {
+      method: "POST",
+      body: JSON.stringify({ email, token, new_password: newPassword }),
+    }),
 };
 
 // ============================================================================
@@ -1936,10 +1951,10 @@ export const extendedApi = {
   },
 
   workforce: {
-    toggleAutonomy: (enabled: boolean) =>
+    toggleAutonomy: (level: "partial" | "full") =>
       apiRequest<any>("/api/v1/workforce/autonomy", {
         method: "POST",
-        body: JSON.stringify({ enabled }),
+        body: JSON.stringify({ level }),
       }),
     getFiscalRequests: () =>
       apiRequest<FiscalRequest[]>("/api/v1/workforce/fiscal-requests"),
@@ -1968,7 +1983,7 @@ export const extendedApi = {
     getVentures: () =>
       apiRequest<WorkforceVenture[]>("/api/v1/workforce/ventures"),
     deployCheck: () =>
-      apiRequest<any>("/api/v1/workforce/deploy-check", { method: "POST" }),
+      apiRequest<any>("/api/v1/workforce/deploy/check", { method: "GET" }),
 
     runCampaign: (topic: string, audience: string) =>
       apiRequest<any>("/api/v1/workforce/campaigns/run", {
@@ -2142,10 +2157,10 @@ export const extendedApi = {
     getTaxEstimate: () => apiRequest<any>("/api/v1/workforce/tax-estimate"),
 
     // Referral Program
-    activateReferral: (referralCode?: string) =>
+    activateReferral: (userId?: string) =>
       apiRequest<any>("/api/v1/workforce/referral/activate", {
         method: "POST",
-        body: JSON.stringify({ referral_code: referralCode }),
+        body: JSON.stringify({ user_id: userId }),
       }),
     getReferralStats: () => apiRequest<any>("/api/v1/workforce/referral/stats"),
     exportData: (format: string = "csv") =>
@@ -2534,3 +2549,33 @@ export const ALL_CATEGORIES = [
 
 export const ALL_MARKETS = ["US", "UK", "EU", "Canada"];
 export const ALL_TRENDS = ["Explosive", "High Growth", "Steady"];
+
+// ============================================================================
+// Hermes AI Agent Integration
+// ============================================================================
+
+export const hermesApi = {
+  chat: (message: string, systemPrompt?: string) =>
+    apiRequest<{ response: string; source: string }>("/api/v1/hermes/chat", {
+      method: "POST",
+      body: JSON.stringify({ message, system_prompt: systemPrompt }),
+    }),
+
+  analyzeMetrics: (metrics: Record<string, unknown>) =>
+    apiRequest<any>("/api/v1/hermes/analyze", {
+      method: "POST",
+      body: JSON.stringify({ metrics }),
+    }),
+
+  suggestFix: (error: string, context: Record<string, unknown>) =>
+    apiRequest<any>("/api/v1/hermes/suggest-fix", {
+      method: "POST",
+      body: JSON.stringify({ error, context }),
+    }),
+
+  validateStrategy: (strategy: Record<string, unknown>) =>
+    apiRequest<any>("/api/v1/hermes/validate-strategy", {
+      method: "POST",
+      body: JSON.stringify({ strategy }),
+    }),
+};

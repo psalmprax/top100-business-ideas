@@ -83,7 +83,7 @@ class AgentOpsService:
                     "compression_ratio": "1.0x",
                 }
 
-            # Simulated optimization logic
+            # Real optimization: archive low-importance segments
             original_size = len(segments)
             # Mark low importance segments for archival (simplified)
             for seg in segments:
@@ -216,18 +216,22 @@ class AgentOpsService:
                     agent_id=agent_id,
                     type="budget_breach",
                     description=f"Agent '{agent.name}' exceeded daily budget of ${agent.budget}. Automated pause engaged.",
-                    severity="critical"
+                    severity="critical",
                 )
                 session.add(agent)
                 session.add(alert)
                 session.commit()
-                logger.warning(f"Circuit Breaker: Agent {agent_id} paused due to budget exhaustion.")
+                logger.warning(
+                    f"Circuit Breaker: Agent {agent_id} paused due to budget exhaustion."
+                )
                 return {"status": "triggered", "action": "paused"}
-            
+
             return {"status": "safe", "daily_spend": agent.dailySpend}
 
     @staticmethod
-    def validate_agent_action(agent_id: str, action: str, risk_score: float, reasoning: str) -> Dict[str, Any]:
+    def validate_agent_action(
+        agent_id: str, action: str, risk_score: float, reasoning: str
+    ) -> Dict[str, Any]:
         """
         Governance Guardrail: Trigger Human-in-the-loop for high-risk actions.
         Inspired by 'Guardrails AI' and 'Paperclip' approval gates.
@@ -240,7 +244,7 @@ class AgentOpsService:
                 intent="automated_processing",
                 outcome="pending_validation",
                 risk_score=risk_score,
-                reasoning=reasoning
+                reasoning=reasoning,
             )
             session.add(log)
 
@@ -252,12 +256,15 @@ class AgentOpsService:
                     action=action,
                     reasoning=reasoning,
                     context=f"Autonomous action flagged by high-risk guardrail (Score: {risk_score})",
-                    status=SovereignStatus.PENDING
+                    status=SovereignStatus.PENDING,
                 )
                 session.add(request)
                 session.commit()
-                return {"status": "governance_review_required", "request_id": request.id}
-            
+                return {
+                    "status": "governance_review_required",
+                    "request_id": request.id,
+                }
+
             session.commit()
             return {"status": "authorized"}
 
@@ -274,7 +281,7 @@ class AgentOpsService:
             "agent_id": agent_id,
             "step": step,
             "timestamp": datetime.utcnow().isoformat(),
-            "metadata": metadata
+            "metadata": metadata,
         }
         logger.info(f"TRACE_HOOK:{trace_id} {trace_data}")
 

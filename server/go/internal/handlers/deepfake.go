@@ -1,8 +1,14 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/top100-business-ideas/api/internal/models"
@@ -11,22 +17,149 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// File validation constants
+const (
+	MaxFileSize     = 50 * 1024 * 1024 // 50MB
+	AllowedImageExt = ".jpg,.jpeg,.png,.bmp,.tiff,.webp"
+	AllowedVideoExt = ".mp4,.avi,.mov,.wmv,.flv,.webm"
+	AllowedAudioExt = ".mp3,.wav,.flac,.aac,.ogg,.m4a"
+)
+
 type DeepfakeHandler struct {
-	proxyService  *services.ProxyService
-	uploadHandler *services.FileUploadHandler
+	proxyService     *services.ProxyService
+	uploadHandler    *services.FileUploadHandler
+	httpClient       *http.Client
+	pythonServiceURL string
 }
 
 func NewDeepfakeHandler(proxyService *services.ProxyService, uploadHandler *services.FileUploadHandler) *DeepfakeHandler {
 	return &DeepfakeHandler{
 		proxyService:  proxyService,
 		uploadHandler: uploadHandler,
+		httpClient: &http.Client{
+			Timeout: 30 * time.Second,
+		},
+		pythonServiceURL: "http://localhost:8000", // Python service URL
 	}
+}
+
+// validateFile performs comprehensive file validation
+func (h *DeepfakeHandler) validateFile(file *multipart.FileHeader, mediaType string) error {
+	// Check file size
+	if file.Size > MaxFileSize {
+		return fmt.Errorf("file size exceeds maximum allowed size of %d MB", MaxFileSize/(1024*1024))
+	}
+
+	// Check file extension
+	ext := strings.ToLower(filepath.Ext(file.Filename))
+	var allowedExt string
+	switch mediaType {
+	case "image":
+		allowedExt = AllowedImageExt
+	case "video":
+		allowedExt = AllowedVideoExt
+	case "audio":
+		allowedExt = AllowedAudioExt
+	default:
+		return fmt.Errorf("unsupported media type: %s", mediaType)
+	}
+
+	if !strings.Contains(allowedExt, ext) {
+		return fmt.Errorf("file extension %s not allowed for %s files. Allowed: %s", ext, mediaType, allowedExt)
+	}
+
+	// Basic content validation by reading file header
+	f, err := file.Open()
+	if err != nil {
+		return fmt.Errorf("failed to open file for validation: %w", err)
+	}
+	defer f.Close()
+
+	header := make([]byte, 512)
+	n, err := f.Read(header)
+	if err != nil && err != io.EOF {
+		return fmt.Errorf("failed to read file header: %w", err)
+	}
+
+	contentType := http.DetectContentType(header[:n])
+	expectedTypes := map[string][]string{
+		"image": {"image/jpeg", "image/png", "image/bmp", "image/tiff", "image/webp"},
+		"video": {"video/mp4", "video/avi", "video/quicktime", "video/x-ms-wmv", "video/webm"},
+		"audio": {"audio/mpeg", "audio/wav", "audio/flac", "audio/aac", "audio/ogg"},
+	}
+
+	if allowedTypes, ok := expectedTypes[mediaType]; ok {
+		valid := false
+		for _, allowedType := range allowedTypes {
+			if strings.HasPrefix(contentType, allowedType) {
+				valid = true
+				break
+			}
+		}
+		if !valid {
+			return fmt.Errorf("file content type %s does not match expected %s types", contentType, mediaType)
+		}
+	}
+
+	return nil
+}
+
+// callPythonService makes HTTP call to Python deepfake detection service
+func (h *DeepfakeHandler) callPythonService(mediaURL, mediaType string) (*models.DeepfakeAnalysis, error) {
+	requestBody := map[string]interface{}{
+		"media_url":  mediaURL,
+		"media_type": mediaType,
+	}
+
+	jsonData, err := json.Marshal(requestBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	req, err := http.NewRequest("POST", h.pythonServiceURL+"/api/v1/deepfake/analyze", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := h.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to call Python service: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("Python service returned status %d", resp.StatusCode)
+	}
+
+	var analysis models.DeepfakeAnalysis
+	if err := json.NewDecoder(resp.Body).Decode(&analysis); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &analysis, nil
 }
 
 func (h *DeepfakeHandler) Upload(c *gin.Context) {
 	file, err := c.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "No file uploaded"})
+		return
+	}
+
+	// Get media type from form data
+	mediaType := c.PostForm("media_type")
+	if mediaType == "" {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "media_type is required"})
+		return
+	}
+
+	// Validate file
+	if err := h.validateFile(file, mediaType); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{
+			Error:   "File validation failed",
+			Details: err.Error(),
+		})
 		return
 	}
 
@@ -37,7 +170,10 @@ func (h *DeepfakeHandler) Upload(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"url": "/api/v1" + result.URL,
+		"url":       "/api/v1" + result.URL,
+		"filename":  file.Filename,
+		"size":      file.Size,
+		"validated": true,
 	})
 }
 
@@ -48,17 +184,28 @@ func (h *DeepfakeHandler) Analyze(c *gin.Context) {
 		return
 	}
 
-	response, err := h.proxyService.AnalyzeDeepfake(req)
+	// Perform actual detection by calling Python service
+	analysis, err := h.callPythonService(req.MediaURL, req.MediaType)
 	if err != nil {
-		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to analyze media", Details: err.Error()})
-		return
+		// Fallback to proxy service if Python service is unavailable
+		response, proxyErr := h.proxyService.AnalyzeDeepfake(req)
+		if proxyErr != nil {
+			c.JSON(http.StatusBadGateway, models.ErrorResponse{
+				Error:   "Failed to analyze media",
+				Details: fmt.Sprintf("Python service error: %v, Proxy error: %v", err, proxyErr),
+			})
+			return
+		}
+
+		if err := json.Unmarshal(response, analysis); err != nil {
+			c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to parse response"})
+			return
+		}
 	}
 
-	var analysis models.DeepfakeAnalysis
-	if err := json.Unmarshal(response, &analysis); err != nil {
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to parse response"})
-		return
-	}
+	// Set analysis timestamp
+	analysis.AnalysisAt = time.Now()
+	analysis.CreatedAt = time.Now()
 
 	c.JSON(http.StatusAccepted, analysis)
 }
@@ -169,14 +316,7 @@ func (h *DeepfakeHandler) AnalyzeEnterprise(c *gin.Context) {
 
 	response, err := h.proxyService.Forward("POST", "/deepfake/analyze/enterprise", req)
 	if err != nil {
-		// Real-First Fallback
-		c.JSON(http.StatusOK, gin.H{
-			"status":            "complete",
-			"forensic_score":    0.998,
-			"artifacts_found":   0,
-			"liveness_verified": true,
-			"timestamp":         time.Now().Format(time.RFC3339),
-		})
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to analyze enterprise deepfake", Details: err.Error()})
 		return
 	}
 

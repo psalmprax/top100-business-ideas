@@ -120,7 +120,6 @@ export default function Login() {
     }
   };
 
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -185,7 +184,6 @@ export default function Login() {
         <CardContent>
           {!requiresSelection ? (
             <>
-
               <Tabs
                 value={activeTab}
                 onValueChange={setActiveTab}
@@ -269,10 +267,7 @@ export default function Login() {
                           <Label htmlFor="password" className="text-slate-300">
                             Password
                           </Label>
-                          <Link
-                            href="/forgot-password"
-                            title="Forgot password?"
-                          >
+                          <Link href="/reset-password" title="Forgot password?">
                             <span className="text-body-sm text-blue-400 hover:text-blue-300 cursor-pointer">
                               Forgot password?
                             </span>

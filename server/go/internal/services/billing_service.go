@@ -1,14 +1,19 @@
 package services
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/plutov/paypal/v4"
 	"github.com/stripe/stripe-go/v76"
 	"github.com/stripe/stripe-go/v76/checkout/session"
+	"github.com/stripe/stripe-go/v76/customer"
+	"github.com/stripe/stripe-go/v76/subscription"
 	"github.com/top100-business-ideas/api/internal/config"
 )
 
@@ -83,7 +88,7 @@ func (s *BillingService) CreatePayPalOrder(planID string) (string, error) {
 	// For subscriptions, PayPal usually uses Billing Plans/Agreements
 	// For simplicity in this implementation, we'll create a standard order
 	// In a full implementation, you'd use s.paypalClient.CreateBillingPlan
-	
+
 	order, err := s.paypalClient.CreateOrder(context.Background(), paypal.OrderIntentCapture, []paypal.PurchaseUnitRequest{
 		{
 			Amount: &paypal.PurchaseUnitAmount{
@@ -131,5 +136,97 @@ func (s *BillingService) getAmountForPlan(planID string) float64 {
 		return 2500.00
 	default:
 		return 0
+	}
+}
+
+func (s *BillingService) CancelSubscription(subscriptionID string, provider string) error {
+	if subscriptionID == "" {
+		return errors.New("no active subscription to cancel")
+	}
+
+	switch provider {
+	case "stripe":
+		params := &stripe.SubscriptionCancelParams{}
+		_, err := subscription.Cancel(subscriptionID, params)
+		if err != nil {
+			return fmt.Errorf("failed to cancel Stripe subscription: %w", err)
+		}
+		return nil
+	case "paypal":
+		if s.paypalClient == nil {
+			return errors.New("PayPal client not initialized")
+		}
+		token, err := s.paypalClient.GetAccessToken(context.Background())
+		if err != nil {
+			return fmt.Errorf("failed to get PayPal access token: %w", err)
+		}
+		req, _ := http.NewRequestWithContext(context.Background(), "POST",
+			fmt.Sprintf("%s/v1/billing/subscriptions/%s/cancel", s.paypalClient.APIBase, subscriptionID),
+			nil)
+		req.Header.Set("Authorization", "Bearer "+token.Token)
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := s.paypalClient.Client.Do(req)
+		if err != nil {
+			return fmt.Errorf("failed to cancel PayPal subscription: %w", err)
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode >= 400 {
+			return fmt.Errorf("PayPal subscription cancel failed with status %d", resp.StatusCode)
+		}
+		return nil
+	default:
+		return fmt.Errorf("unsupported payment provider: %s", provider)
+	}
+}
+
+func (s *BillingService) UpdateCustomerPaymentMethod(customerID, paymentMethodID string, provider string) error {
+	if customerID == "" {
+		return errors.New("customer ID required")
+	}
+
+	switch provider {
+	case "stripe":
+		params := &stripe.CustomerParams{
+			InvoiceSettings: &stripe.CustomerInvoiceSettingsParams{
+				DefaultPaymentMethod: stripe.String(paymentMethodID),
+			},
+		}
+		_, err := customer.Update(customerID, params)
+		if err != nil {
+			return fmt.Errorf("failed to update Stripe customer payment method: %w", err)
+		}
+		return nil
+	case "paypal":
+		if s.paypalClient == nil {
+			return errors.New("PayPal client not initialized")
+		}
+		token, err := s.paypalClient.GetAccessToken(context.Background())
+		if err != nil {
+			return fmt.Errorf("failed to get PayPal access token: %w", err)
+		}
+		patchData := []map[string]interface{}{
+			{
+				"op":    "replace",
+				"path":  "/payment_source",
+				"value": map[string]interface{}{"paypal": map[string]interface{}{"experience_context": map[string]interface{}{"payment_method_preference": "IMMEDIATE_PAYMENT_REQUIRED"}}},
+			},
+		}
+		patchBytes, _ := json.Marshal(patchData)
+		req, _ := http.NewRequestWithContext(context.Background(), "PATCH",
+			fmt.Sprintf("%s/v1/billing/subscriptions/%s", s.paypalClient.APIBase, customerID),
+			bytes.NewReader(patchBytes))
+		req.Header.Set("Authorization", "Bearer "+token.Token)
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := s.paypalClient.Client.Do(req)
+		if err != nil {
+			return fmt.Errorf("failed to update PayPal subscription payment source: %w", err)
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode >= 400 {
+			return fmt.Errorf("PayPal payment method update failed with status %d", resp.StatusCode)
+		}
+		return nil
+	default:
+		return fmt.Errorf("unsupported payment provider: %s", provider)
 	}
 }

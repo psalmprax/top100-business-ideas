@@ -51,10 +51,10 @@ func Connect(cfg *Config) error {
 	var p *pgxpool.Pool
 	var err error
 	maxRetries := 10
-	
+
 	for i := 0; i < maxRetries; i++ {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		
+
 		poolConfig, perr := pgxpool.ParseConfig(cfg.DSN())
 		if perr != nil {
 			cancel()
@@ -63,7 +63,7 @@ func Connect(cfg *Config) error {
 
 		poolConfig.MaxConns = 25
 		poolConfig.MinConns = 5
-		
+
 		p, err = pgxpool.NewWithConfig(ctx, poolConfig)
 		if err == nil {
 			err = p.Ping(ctx)
@@ -74,7 +74,7 @@ func Connect(cfg *Config) error {
 			}
 			p.Close()
 		}
-		
+
 		cancel()
 		fmt.Printf("Database not ready, retrying in 2s... (%d/%d): %v\n", i+1, maxRetries, err)
 		time.Sleep(2 * time.Second)
@@ -417,6 +417,16 @@ func RunMigrations(ctx context.Context) error {
 			risk VARCHAR(50) DEFAULT 'unknown',
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`,
+
+		// Password Reset Tokens
+		`CREATE TABLE IF NOT EXISTS password_resets (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+			token VARCHAR(255) UNIQUE NOT NULL,
+			expires_at TIMESTAMP NOT NULL,
+			used BOOLEAN DEFAULT false,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`,
 	}
 

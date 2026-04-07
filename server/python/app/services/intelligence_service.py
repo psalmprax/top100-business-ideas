@@ -170,6 +170,19 @@ class IntelligenceService:
         session.refresh(new_strategy)
 
         result = new_strategy.dict()
+
+        # Try Hermes AI validation
+        try:
+            from app.services.hermes_service import hermes_agent_service
+
+            validation = hermes_agent_service.validate_strategy(result)
+            if validation and not validation.get("fallback"):
+                result["hermes_validation"] = validation.get("validation", "")
+        except ImportError:
+            logger.debug("Hermes not available for validation")
+        except Exception as e:
+            logger.warning(f"Hermes validation failed: {e}")
+
         result["agent"] = "Hermes"
         return result
 

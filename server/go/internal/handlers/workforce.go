@@ -2,7 +2,11 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
+	"regexp"
+	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/top100-business-ideas/api/internal/models"
@@ -10,27 +14,122 @@ import (
 	"github.com/top100-business-ideas/api/internal/services"
 )
 
+var uuidRegex = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
+
 // WorkforceHandler handles digital workforce and Sovereign operations
 type WorkforceHandler struct {
 	proxy *services.ProxyService
 	repo  *repository.WorkforceRepository
+	cache *workforceCache
+}
+
+type workforceCache struct {
+	mu         sync.RWMutex
+	status     cacheItem
+	skills     cacheItem
+	lastUpdate time.Time
+}
+
+type cacheItem struct {
+	data      []byte
+	expiresAt time.Time
+}
+
+func newWorkforceCache() *workforceCache {
+	return &workforceCache{
+		status:     cacheItem{expiresAt: time.Now()},
+		skills:     cacheItem{expiresAt: time.Now()},
+		lastUpdate: time.Now(),
+	}
+}
+
+func (c *workforceCache) get(key string) ([]byte, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	var entry cacheItem
+	switch key {
+	case "status":
+		entry = c.status
+	case "skills":
+		entry = c.skills
+	}
+
+	if time.Now().After(entry.expiresAt) {
+		return nil, false
+	}
+	return entry.data, true
+}
+
+func (c *workforceCache) set(key string, data []byte, ttl time.Duration) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	entry := cacheItem{
+		data:      data,
+		expiresAt: time.Now().Add(ttl),
+	}
+	switch key {
+	case "status":
+		c.status = entry
+	case "skills":
+		c.skills = entry
+	}
 }
 
 func NewWorkforceHandler(proxy *services.ProxyService, repo *repository.WorkforceRepository) *WorkforceHandler {
 	return &WorkforceHandler{
 		proxy: proxy,
 		repo:  repo,
+		cache: newWorkforceCache(),
 	}
+}
+
+// validateCampaignRequest validates campaign request before forwarding
+func (h *WorkforceHandler) validateCampaignRequest(c *gin.Context) error {
+	var req struct {
+		Topic    string `json:"topic"`
+		Audience string `json:"audience"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		return err
+	}
+	if req.Topic == "" {
+		return errors.New("topic is required")
+	}
+	if len(req.Topic) > 200 {
+		return errors.New("topic exceeds maximum length of 200 characters")
+	}
+	return nil
+}
+
+// validateLeadCriteria validates lead sourcing criteria
+func (h *WorkforceHandler) validateLeadCriteria(c *gin.Context) error {
+	criteria := c.Query("criteria")
+	if criteria != "" && len(criteria) > 100 {
+		return errors.New("criteria exceeds maximum length of 100 characters")
+	}
+	return nil
 }
 
 // GetStatus returns the current status of the digital workforce
 // GET /api/v1/workforce/status
 func (h *WorkforceHandler) GetStatus(c *gin.Context) {
+	// Try cache first (TTL: 30 seconds)
+	if cached, ok := h.cache.get("status"); ok {
+		c.Data(http.StatusOK, "application/json", cached)
+		return
+	}
+
 	resp, err := h.proxy.Forward("GET", "/workforce/status", nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch workforce status", Details: err.Error()})
 		return
 	}
+
+	// Cache the response
+	h.cache.set("status", resp, 30*time.Second)
+
 	c.Data(http.StatusOK, "application/json", resp)
 }
 
@@ -149,6 +248,11 @@ func (h *WorkforceHandler) RecoverRevenue(c *gin.Context) {
 
 // RunCampaign triggers a marketing trend research and deployment
 func (h *WorkforceHandler) RunCampaign(c *gin.Context) {
+	if err := h.validateCampaignRequest(c); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid campaign request", Details: err.Error()})
+		return
+	}
+
 	var req struct {
 		Topic    string `json:"topic"`
 		Audience string `json:"audience"`
@@ -164,11 +268,19 @@ func (h *WorkforceHandler) RunCampaign(c *gin.Context) {
 		return
 	}
 
+	// Invalidate cache since new campaign was created
+	h.cache.set("status", nil, 0)
+
 	c.Data(http.StatusOK, "application/json", resp)
 }
 
 // SourceLeads handles lead generation scraping
 func (h *WorkforceHandler) SourceLeads(c *gin.Context) {
+	if err := h.validateLeadCriteria(c); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid criteria", Details: err.Error()})
+		return
+	}
+
 	criteria := c.Query("criteria")
 	if criteria == "" {
 		criteria = "general"
@@ -244,11 +356,21 @@ func (h *WorkforceHandler) ProvideFeedback(c *gin.Context) {
 
 // GetSkills returns available skills from the marketplace
 func (h *WorkforceHandler) GetSkills(c *gin.Context) {
+	// Try cache first (TTL: 60 seconds)
+	if cached, ok := h.cache.get("skills"); ok {
+		c.Data(http.StatusOK, "application/json", cached)
+		return
+	}
+
 	resp, err := h.proxy.Forward("GET", "/workforce/skills", nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch skills", Details: err.Error()})
 		return
 	}
+
+	// Cache the response
+	h.cache.set("skills", resp, 60*time.Second)
+
 	c.Data(http.StatusOK, "application/json", resp)
 }
 
@@ -315,11 +437,26 @@ func (h *WorkforceHandler) GetOutreachDrafts(c *gin.Context) {
 // ApproveOutreach finalizes and sends an outreach message
 func (h *WorkforceHandler) ApproveOutreach(c *gin.Context) {
 	id := c.Param("id")
+	if id == "" {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Outreach ID is required"})
+		return
+	}
+
+	// Validate UUID format
+	if !uuidRegex.MatchString(id) {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid outreach ID format"})
+		return
+	}
+
 	resp, err := h.proxy.Forward("POST", "/workforce/outreach/"+id+"/approve", nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to approve outreach", Details: err.Error()})
 		return
 	}
+
+	// Invalidate cache after approval
+	h.cache.set("status", nil, 0)
+
 	c.Data(http.StatusOK, "application/json", resp)
 }
 
@@ -333,3 +470,65 @@ func (h *WorkforceHandler) GetInvoices(c *gin.Context) {
 	c.Data(http.StatusOK, "application/json", resp)
 }
 
+// ActivateReferral activates the referral program for a user
+func (h *WorkforceHandler) ActivateReferral(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "User not authenticated"})
+		return
+	}
+
+	req := map[string]interface{}{
+		"user_id": userID,
+	}
+	resp, err := h.proxy.Forward("POST", "/workforce/referral/activate", req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to activate referral", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", resp)
+}
+
+// GetReferralStats returns referral program statistics
+func (h *WorkforceHandler) GetReferralStats(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "User not authenticated"})
+		return
+	}
+
+	resp, err := h.proxy.Forward("GET", "/workforce/referral/stats?user_id="+userID.(string), nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch referral stats", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", resp)
+}
+
+// ToggleAutonomy toggles agent autonomy level
+func (h *WorkforceHandler) ToggleAutonomy(c *gin.Context) {
+	var req struct {
+		Level string `json:"level"` // partial, full
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request", Details: err.Error()})
+		return
+	}
+
+	resp, err := h.proxy.Forward("POST", "/workforce/autonomy/toggle", req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to toggle autonomy", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", resp)
+}
+
+// DeployCheck runs a deployment health check
+func (h *WorkforceHandler) DeployCheck(c *gin.Context) {
+	resp, err := h.proxy.Forward("GET", "/workforce/deploy/check", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to run deploy check", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", resp)
+}

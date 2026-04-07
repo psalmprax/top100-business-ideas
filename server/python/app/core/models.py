@@ -493,6 +493,23 @@ class TrainingModule(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
+class TrainingProgress(SQLModel, table=True):
+    """User progress through a training module"""
+
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    user_id: str = Field(index=True)
+    module_id: str = Field(foreign_key="trainingmodule.id")
+    status: str = Field(
+        default="not_started"
+    )  # not_started, in_progress, completed, certified, expired
+    progress_percent: int = Field(default=0)
+    quiz_score: Optional[float] = Field(default=None)
+    started_at: Optional[datetime] = Field(default=None)
+    completed_at: Optional[datetime] = Field(default=None)
+    certified_at: Optional[datetime] = Field(default=None)
+    certificate_id: Optional[str] = Field(default=None)
+
+
 class AgentAuditLog(SQLModel, table=True):
     """Comprehensive audit trail for agent actions"""
 
@@ -698,7 +715,9 @@ class WorkforceOutreach(SQLModel, table=True):
     niche: str = Field(index=True)
     profile: str = Field(default="enterprise")
     score: float = Field(default=0.0)
-    interaction_id: Optional[str] = Field(default=None, foreign_key="workforceinteraction.id")
+    interaction_id: Optional[str] = Field(
+        default=None, foreign_key="workforceinteraction.id"
+    )
     is_auto_trigger: bool = Field(default=False)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
@@ -713,7 +732,9 @@ class WorkforceMessage(SQLModel, table=True):
     content: str
     reasoning_path: Optional[str] = None  # Agent's internal dialogue/cross-reasoning
     is_group_chat: bool = Field(default=True)
-    interaction_id: Optional[str] = Field(default=None, foreign_key="workforceinteraction.id")
+    interaction_id: Optional[str] = Field(
+        default=None, foreign_key="workforceinteraction.id"
+    )
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -794,6 +815,34 @@ class TravelKiosk(SQLModel, table=True):
     location: str
     status: str = Field(default="online")
     last_ping: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class KioskVerificationSession(SQLModel, table=True):
+    """Persistent Kiosk Verification Sessions for border control"""
+
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    session_id: str = Field(index=True, unique=True)
+    kiosk_id: str
+    kiosk_location: Optional[str] = None
+    verification_level: str
+    passenger_name: Optional[str] = None
+    passenger_id: Optional[str] = None
+    status: str = Field(default="pending")
+    challenges_json: Optional[Dict[str, Any]] = Field(
+        default={}, sa_column=Column(JSON)
+    )
+    challenge_results_json: Optional[Dict[str, Any]] = Field(
+        default={}, sa_column=Column(JSON)
+    )
+    biometric_data_json: Optional[Dict[str, Any]] = Field(
+        default={}, sa_column=Column(JSON)
+    )
+    final_result_json: Optional[Dict[str, Any]] = Field(
+        default={}, sa_column=Column(JSON)
+    )
+    started_at: datetime = Field(default_factory=datetime.utcnow)
+    completed_at: Optional[datetime] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -1022,6 +1071,17 @@ class SecurityKey(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
+class PasswordReset(SQLModel, table=True):
+    """Password reset token storage"""
+
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    user_id: str = Field(index=True)
+    token: str = Field(index=True, unique=True)
+    expires_at: datetime
+    used: bool = Field(default=False)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 class OnPremDeployment(SQLModel, table=True):
     """On-premises deployment configuration"""
 
@@ -1170,4 +1230,16 @@ class BusinessIdea(SQLModel, table=True):
     rollout_speed: str
     trend: str  # Explosive, High Growth, Steady
     rank: int
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class WhiteLabelConfig(SQLModel, table=True):
+    """White-label configuration for branded deployments"""
+
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    brand_name: str
+    logo_url: str
+    primary_color: str
+    secondary_color: str
+    custom_css: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)

@@ -2,7 +2,7 @@
 
 from typing import Dict, Any, Optional
 from fastapi import APIRouter, HTTPException, Depends
-from sqlmodel import Session
+from sqlmodel import Session, select
 from datetime import datetime
 import uuid
 
@@ -14,8 +14,6 @@ router = APIRouter(prefix="/enterprise", tags=["Enterprise"])
 @router.get("/partner-config")
 async def get_partner_config(session: Session = Depends(get_session)):
     """Get white-label and partner configuration from the database"""
-    # Real-First Hardening: No more hardcoded dictionaries.
-    # Must be fetched from a 'PartnerConfig' or 'SystemSetting' table.
     from app.core.models import SystemSetting
 
     settings = session.exec(
@@ -30,16 +28,46 @@ async def get_partner_config(session: Session = Depends(get_session)):
 
 
 @router.post("/sla-tier")
-async def update_sla_tier(request: Dict[str, Any]):
-    """Update SLA tier and performance guarantees"""
-    tier = request.get("tier", "enterprise")
+async def update_sla_tier(
+    request: Dict[str, Any], session: Session = Depends(get_session)
+):
+    """Update SLA tier and persist to database"""
+    from app.core.models import SystemSetting
 
-    # Mocking persistence and logic
+    tier = request.get("tier", "enterprise")
+    uptime = request.get("guaranteed_uptime", 99.99 if tier == "premium" else 99.9)
+    response_time = request.get("response_time_ms", 200 if tier == "premium" else 500)
+
+    sla_settings = {
+        "sla_tier": tier,
+        "sla_uptime": str(uptime),
+        "sla_response_time_ms": str(response_time),
+        "sla_updated_at": datetime.utcnow().isoformat(),
+    }
+
+    for key, value in sla_settings.items():
+        existing = session.exec(
+            select(SystemSetting).where(SystemSetting.setting_key == key)
+        ).first()
+        if existing:
+            existing.setting_value = value
+            session.add(existing)
+        else:
+            new_setting = SystemSetting(
+                id=str(uuid.uuid4()),
+                category="sla",
+                setting_key=key,
+                setting_value=value,
+            )
+            session.add(new_setting)
+
+    session.commit()
+
     return {
         "status": "updated",
         "tier": tier,
-        "guaranteed_uptime": 99.99 if tier == "premium" else 99.9,
-        "response_time_ms": 200 if tier == "premium" else 500,
+        "guaranteed_uptime": uptime,
+        "response_time_ms": response_time,
         "last_updated": datetime.utcnow().isoformat(),
     }
 

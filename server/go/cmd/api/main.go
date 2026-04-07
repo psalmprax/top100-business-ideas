@@ -78,7 +78,7 @@ func main() {
 	healthHandler := handlers.NewHealthHandler()
 	authHandler := handlers.NewAuthHandler(authService)
 	agentOpsHandler := handlers.NewAgentOpsHandler(proxyService)
-	
+
 	// Initialize File Upload Services
 	uploadDir := os.Getenv("UPLOAD_DIR")
 	if uploadDir == "" {
@@ -114,6 +114,7 @@ func main() {
 	enterpriseHandler := handlers.NewEnterpriseHandler(proxyService)
 	denialDefenseRepo := repository.NewDenialDefenseRepository()
 	denialDefenseHandler := handlers.NewDenialDefenseHandler(denialDefenseRepo)
+	userHandler := handlers.NewUserHandler(userRepo, authService)
 
 	// Setup Gin router
 	if cfg.Environment == "production" {
@@ -146,6 +147,8 @@ func main() {
 			auth.POST("/login", authHandler.Login)
 			auth.POST("/register", authHandler.Register)
 			auth.POST("/refresh", authHandler.RefreshToken)
+			auth.POST("/password-reset", authHandler.RequestPasswordReset)
+			auth.POST("/password-reset/confirm", authHandler.ResetPassword)
 		}
 
 		// Public SSO routes for login
@@ -162,6 +165,11 @@ func main() {
 			// User routes
 			protected.GET("/auth/me", authHandler.Me)
 			protected.POST("/auth/logout", authHandler.Logout)
+			protected.PUT("/user", userHandler.UpdateProfile)
+			protected.PUT("/user/password", userHandler.UpdatePassword)
+			protected.GET("/user/api-keys", userHandler.ListAPIKeys)
+			protected.POST("/user/api-keys", userHandler.CreateAPIKey)
+			protected.DELETE("/user/api-keys/:id", userHandler.DeleteAPIKey)
 
 			// Protected SSO configuration
 			ssoProtected := protected.Group("/sso")
@@ -184,7 +192,7 @@ func main() {
 				agents.GET("", agentOpsHandler.ListAgents)
 				agents.GET("/:id/logs", agentOpsHandler.GetAgentLogs)
 				agents.GET("/:id/forecast", agentOpsHandler.GetForecast)
-				
+
 				// Management only actions
 				agents.Use(middleware.RequireRole("management"))
 				{
@@ -307,7 +315,7 @@ func main() {
 			{
 				billing.GET("/subscription", billingHandler.GetSubscription)
 				billing.GET("/invoices", billingHandler.GetInvoices)
-				
+
 				// Financial actions (Management only)
 				billing.Use(middleware.RequireRole("management"))
 				{
@@ -322,7 +330,7 @@ func main() {
 			webhooks.Use(middleware.ProductAccess("agent-ops"))
 			{
 				webhooks.GET("/:id", webhookHandler.GetWebhook)
-				
+
 				// Config actions (Management only)
 				webhooks.Use(middleware.RequireRole("management"))
 				{
@@ -339,7 +347,7 @@ func main() {
 			alerts.Use(middleware.ProductAccess("agent-ops"))
 			{
 				alerts.GET("", alertHandler.ListAlerts)
-				
+
 				// Management only actions
 				alerts.Use(middleware.RequireRole("management"))
 				{
@@ -374,7 +382,7 @@ func main() {
 				agentOps.POST("/proxy/config", agentOpsHandler.ProxyToPython)
 				agentOps.POST("/retention", agentOpsHandler.ProxyToPython)
 				agentOps.GET("/metrics/stream", agentOpsHandler.ProxyToPython)
-				
+
 				// Sensitive Management Actions
 				agentOps.Use(middleware.RequireRole("management"))
 				{
@@ -453,12 +461,12 @@ func main() {
 			{
 				training.GET("/modules", trainingHandler.ListModules)
 				training.GET("/modules/:id", trainingHandler.GetModule)
-				
+
 				training.Use(middleware.RequireRole("management"))
 				{
 					training.POST("/modules", trainingHandler.CreateModule)
 				}
-				
+
 				training.POST("/progress", trainingHandler.UpdateProgress)
 				training.GET("/progress/:userId", trainingHandler.GetUserProgress)
 				training.GET("/stats", trainingHandler.GetTrainingStats)
@@ -551,6 +559,10 @@ func main() {
 				workforce.GET("/outreach/drafts", workforceHandler.GetOutreachDrafts)
 				workforce.POST("/outreach/:id/approve", workforceHandler.ApproveOutreach)
 				workforce.GET("/invoices", workforceHandler.GetInvoices)
+				workforce.POST("/referral/activate", workforceHandler.ActivateReferral)
+				workforce.GET("/referral/stats", workforceHandler.GetReferralStats)
+				workforce.POST("/autonomy/toggle", workforceHandler.ToggleAutonomy)
+				workforce.GET("/deploy/check", workforceHandler.DeployCheck)
 			}
 
 			// On-Premise (Agent Ops UC18)
@@ -563,9 +575,17 @@ func main() {
 				onPrem.GET("/deployments", agentOpsHandler.ProxyToPython)
 				onPrem.POST("/deploy/:id", agentOpsHandler.ProxyToPython)
 			}
+
+			// GraphQL Proxy
+			protected.POST("/graphql-proxy", agentOpsHandler.ProxyToPython)
+
+			// Hermes AI Agent Integration
+			protected.POST("/hermes/chat", agentOpsHandler.ProxyToPython)
+			protected.POST("/hermes/analyze", agentOpsHandler.ProxyToPython)
+			protected.POST("/hermes/suggest-fix", agentOpsHandler.ProxyToPython)
+			protected.POST("/hermes/validate-strategy", agentOpsHandler.ProxyToPython)
 		}
 	}
-
 
 	// Start WebSocket hub in background
 	go wsHub.Run()

@@ -2,27 +2,49 @@ package services
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"sync"
 	"time"
+)
+
+var (
+	defaultTransport = &http.Transport{
+		MaxIdleConns:        100,
+		MaxIdleConnsPerHost: 20,
+		IdleConnTimeout:     90 * time.Second,
+	}
 )
 
 // ProxyService handles communication with the Python backend
 type ProxyService struct {
 	baseURL string
 	client  *http.Client
+	pool    *sync.Pool
 }
 
 func NewProxyService(baseURL string) *ProxyService {
 	return &ProxyService{
 		baseURL: baseURL,
 		client: &http.Client{
-			Timeout: 30 * time.Minute, // 30 minutes for long-running ML tasks
+			Timeout:   60 * time.Second,
+			Transport: defaultTransport,
+		},
+		pool: &sync.Pool{
+			New: func() interface{} {
+				return &bytes.Buffer{}
+			},
 		},
 	}
 }
+
+const (
+	maxRetries     = 3
+	retryDelayBase = 100 * time.Millisecond
+)
 
 func (p *ProxyService) ForwardWithStatus(method, path string, body interface{}, headers map[string]string) (int, []byte, error) {
 	var reqBody io.Reader
@@ -35,28 +57,56 @@ func (p *ProxyService) ForwardWithStatus(method, path string, body interface{}, 
 	}
 
 	url := p.baseURL + path
-	req, err := http.NewRequest(method, url, reqBody)
-	if err != nil {
-		return 0, nil, fmt.Errorf("failed to create request: %w", err)
+
+	var lastErr error
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		req, err := http.NewRequestWithContext(ctx, method, url, reqBody)
+		if err != nil {
+			return 0, nil, fmt.Errorf("failed to create request: %w", err)
+		}
+
+		req.Header.Set("Content-Type", "application/json")
+		for k, v := range headers {
+			req.Header.Set(k, v)
+		}
+
+		resp, err := p.client.Do(req)
+		if err != nil {
+			if attempt < maxRetries-1 {
+				delay := retryDelayBase * time.Duration(1<<attempt)
+				time.Sleep(delay)
+				lastErr = err
+				continue
+			}
+			return 0, nil, fmt.Errorf("failed to send request after %d attempts: %w", maxRetries, err)
+		}
+		defer resp.Body.Close()
+
+		responseBody, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return resp.StatusCode, nil, fmt.Errorf("failed to read response body: %w", err)
+		}
+
+		// Don't retry on client errors (4xx)
+		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
+			return resp.StatusCode, responseBody, nil
+		}
+
+		// Retry on server errors (5xx) or transient failures
+		if resp.StatusCode >= 500 && attempt < maxRetries-1 {
+			delay := retryDelayBase * time.Duration(1<<attempt)
+			time.Sleep(delay)
+			lastErr = fmt.Errorf("server error: %d", resp.StatusCode)
+			continue
+		}
+
+		return resp.StatusCode, responseBody, nil
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-	for k, v := range headers {
-		req.Header.Set(k, v)
-	}
-
-	resp, err := p.client.Do(req)
-	if err != nil {
-		return 0, nil, fmt.Errorf("failed to send request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	responseBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return resp.StatusCode, nil, fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	return resp.StatusCode, responseBody, nil
+	return 0, nil, fmt.Errorf("retry failed: %w", lastErr)
 }
 
 func (p *ProxyService) Forward(method, path string, body interface{}) ([]byte, error) {

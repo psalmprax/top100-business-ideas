@@ -304,11 +304,44 @@ class SelfHealingManager:
         }
 
     def suggest_fix(self, node_id: str) -> Dict[str, Any]:
-        """Provide suggested fix based on failure pattern."""
+        """Provide suggested fix based on failure pattern - uses Hermes AI if available."""
         node = self.nodes.get(node_id)
         if not node:
             return {"error": "Node not found"}
 
+        # Try Hermes AI first for intelligent suggestions
+        try:
+            from app.services.hermes_service import hermes_agent_service
+
+            context = {
+                "node_id": node_id,
+                "url": node.url,
+                "provider": node.provider,
+                "failure_count": node.failure_count,
+                "last_check": node.last_check.isoformat(),
+                "status": node.status.value,
+                "latency_ms": node.latency_ms,
+            }
+
+            hermes_result = hermes_agent_service.suggest_fix(
+                f"Node {node_id} has failed {node.failure_count} times. Status: {node.status.value}",
+                context,
+            )
+
+            if hermes_result and not hermes_result.get("fallback"):
+                return {
+                    "node_id": node_id,
+                    "source": "hermes",
+                    "suggestion": hermes_result.get("suggestion", ""),
+                    "failure_count": node.failure_count,
+                    "last_check": node.last_check.isoformat(),
+                }
+        except ImportError:
+            logger.debug("Hermes not available, using local suggestions")
+        except Exception as e:
+            logger.warning(f"Hermes suggest_fix failed: {e}")
+
+        # Fallback to rule-based suggestions
         suggestions = []
 
         if node.failure_count >= 5:

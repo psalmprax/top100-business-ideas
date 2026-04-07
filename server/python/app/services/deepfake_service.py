@@ -39,48 +39,38 @@ class DeepfakeService:
     def analyze_media(
         self, media_url: str, media_type: str, user_id: str
     ) -> DeepfakeAnalysis:
-        """Analyze media for deepfake detection.
-
-        When ML models are available (torch, cv2), performs real inference.
-        Otherwise, raises an error requesting ML dependencies to be installed.
-        """
+        """Analyze media for deepfake detection using real FFT-based analysis."""
         try:
             from app.ml.deepfake_detector import deepfake_detector
 
-            if deepfake_detector.is_loaded:
-                result_data = deepfake_detector.analyze(media_url, media_type)
-                is_fake = result_data.get("is_fake", False)
-                confidence = int(result_data.get("confidence", 0) * 100)
-                details = result_data.get("analysis", {})
-                result = AnalysisResult.FAKE if is_fake else AnalysisResult.REAL
+            if media_type == "image":
+                result = deepfake_detector.analyze_image(media_url)
+            elif media_type == "video":
+                result = deepfake_detector.analyze_video(media_url)
+            elif media_type == "audio":
+                result = deepfake_detector.analyze_audio(media_url)
             else:
-                raise ImportError("Detector not loaded")
-        except (ImportError, AttributeError):
-            logger.warning(
-                "ML models not available for deepfake analysis. Using simulation fallback."
-            )
-            # Fallback simulation as requested by USER
-            is_fake = "uploaded_" in media_url or "fake" in media_url.lower()
-            confidence = 94 if is_fake else 98
-            details = {
-                "simulation": True,
-                "artifacts": 0.02 if not is_fake else 0.85,
-                "blink_rate": 0.98 if not is_fake else 0.21,
-                "metadata": "verified_via_simulation_engine"
-            }
-            result = AnalysisResult.FAKE if is_fake else AnalysisResult.REAL
+                raise ValueError(f"Unsupported media type: {media_type}")
+
+            is_fake = result.get("result") == "fake"
+            confidence = result.get("confidence", 0)
+            details = result.get("details", {})
+            result_enum = AnalysisResult.FAKE if is_fake else AnalysisResult.REAL
+        except Exception as e:
+            logger.error(f"Deepfake analysis failed: {e}")
+            raise RuntimeError(f"Deepfake analysis failed: {e}")
 
         with self.get_session() as session:
             analysis = DeepfakeAnalysis(
                 media_url=media_url,
                 media_type=media_type,
-                result=result,
+                result=result_enum,
                 confidence=confidence,
                 details=details,
             )
             session.add(analysis)
 
-            if result == AnalysisResult.FAKE:
+            if result_enum == AnalysisResult.FAKE:
                 threat = DeepfakeThreat(
                     type="synthetic",
                     severity="high",

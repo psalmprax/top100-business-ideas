@@ -2,7 +2,10 @@ package services
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -12,17 +15,17 @@ import (
 )
 
 type AuthService struct {
-	jwtSecret []byte
-	jwtExpiry time.Duration
-	userRepo  *repository.UserRepository
+	jwtSecret   []byte
+	jwtExpiry   time.Duration
+	userRepo    *repository.UserRepository
+	blacklist   map[string]bool
+	blacklistMu sync.RWMutex
 }
 
-type Claims struct {
-	UserID          string   `json:"user_id"`
-	Email           string   `json:"email"`
-	Role            string   `json:"role"`
-	AllowedProducts []string `json:"allowed_products"`
-	jwt.RegisteredClaims
+func generateTokenID() string {
+	b := make([]byte, 16)
+	rand.Read(b)
+	return hex.EncodeToString(b)
 }
 
 func NewAuthService(secret string, userRepo *repository.UserRepository) *AuthService {
@@ -30,24 +33,51 @@ func NewAuthService(secret string, userRepo *repository.UserRepository) *AuthSer
 		jwtSecret: []byte(secret),
 		jwtExpiry: 24 * time.Hour,
 		userRepo:  userRepo,
+		blacklist: make(map[string]bool),
 	}
 }
 
+type Claims struct {
+	UserID          string   `json:"user_id"`
+	Email           string   `json:"email"`
+	Role            string   `json:"role"`
+	TokenType       string   `json:"token_type"`
+	AllowedProducts []string `json:"allowed_products"`
+	jwt.RegisteredClaims
+}
+
 func (s *AuthService) GenerateToken(userID, email, role string, allowedProducts []string) (string, error) {
+	return s.GenerateTokenWithType(userID, email, role, allowedProducts, "access")
+}
+
+func (s *AuthService) GenerateTokenWithType(userID, email, role string, allowedProducts []string, tokenType string) (string, error) {
+	var expiry time.Duration
+	if tokenType == "refresh" {
+		expiry = 7 * 24 * time.Hour // 7 days for refresh token
+	} else {
+		expiry = 24 * time.Hour // 24 hours for access token
+	}
+
 	claims := Claims{
 		UserID:          userID,
 		Email:           email,
 		Role:            role,
+		TokenType:       tokenType,
 		AllowedProducts: allowedProducts,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.jwtExpiry)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(expiry)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			Issuer:    "top100-business-ideas",
+			ID:        generateTokenID(),
 		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(s.jwtSecret)
+}
+
+func (s *AuthService) GenerateRefreshToken(userID, email, role string, allowedProducts []string) (string, error) {
+	return s.GenerateTokenWithType(userID, email, role, allowedProducts, "refresh")
 }
 
 func (s *AuthService) ValidateToken(tokenString string) (*Claims, error) {
@@ -63,10 +93,30 @@ func (s *AuthService) ValidateToken(tokenString string) (*Claims, error) {
 	}
 
 	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
+		s.blacklistMu.RLock()
+		blacklisted := s.blacklist[claims.ID]
+		s.blacklistMu.RUnlock()
+		if blacklisted {
+			return nil, errors.New("token has been revoked")
+		}
 		return claims, nil
 	}
 
 	return nil, errors.New("invalid token")
+}
+
+func (s *AuthService) RevokeToken(tokenID string) {
+	s.blacklistMu.Lock()
+	s.blacklist[tokenID] = true
+	s.blacklistMu.Unlock()
+}
+
+func (s *AuthService) RevokeAllUserTokens(userID string) {
+	s.blacklistMu.Lock()
+	for key := range s.blacklist {
+		delete(s.blacklist, key)
+	}
+	s.blacklistMu.Unlock()
 }
 
 func (s *AuthService) Authenticate(ctx context.Context, email, password string) (*models.User, error) {
@@ -116,6 +166,10 @@ func (s *AuthService) Register(ctx context.Context, email, password, name string
 
 func (s *AuthService) GetUserByID(ctx context.Context, id string) (*models.User, error) {
 	return s.userRepo.GetByID(ctx, id)
+}
+
+func (s *AuthService) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
+	return s.userRepo.GetByEmail(ctx, email)
 }
 
 func (s *AuthService) HashPassword(password string) (string, error) {

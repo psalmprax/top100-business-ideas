@@ -2,8 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"regexp"
+	"sync"
+	"time"
 
 	"github.com/top100-business-ideas/api/internal/models"
 	"github.com/top100-business-ideas/api/internal/services"
@@ -11,28 +15,124 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var modelIDRegex = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
+
 type ComplianceHandler struct {
 	proxyService  *services.ProxyService
 	uploadHandler *services.FileUploadHandler
+	cache         *complianceCache
+}
+
+type complianceCache struct {
+	mu     sync.RWMutex
+	stats  cacheEntry
+	checks cacheEntry
+	models cacheEntry
+}
+
+type cacheEntry struct {
+	data      []byte
+	expiresAt time.Time
+}
+
+func newComplianceCache() *complianceCache {
+	return &complianceCache{}
+}
+
+func (c *complianceCache) get(key string) ([]byte, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	var entry cacheEntry
+	switch key {
+	case "stats":
+		entry = c.stats
+	case "checks":
+		entry = c.checks
+	case "models":
+		entry = c.models
+	}
+
+	if time.Now().After(entry.expiresAt) {
+		return nil, false
+	}
+	return entry.data, true
+}
+
+func (c *complianceCache) set(key string, data []byte, ttl time.Duration) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	entry := cacheEntry{
+		data:      data,
+		expiresAt: time.Now().Add(ttl),
+	}
+	switch key {
+	case "stats":
+		c.stats = entry
+	case "checks":
+		c.checks = entry
+	case "models":
+		c.models = entry
+	}
+}
+
+func (c *complianceCache) invalidate(key string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	switch key {
+	case "stats":
+		c.stats = cacheEntry{}
+	case "checks":
+		c.checks = cacheEntry{}
+	case "models":
+		c.models = cacheEntry{}
+	}
 }
 
 func NewComplianceHandler(proxyService *services.ProxyService, uploadHandler *services.FileUploadHandler) *ComplianceHandler {
 	return &ComplianceHandler{
 		proxyService:  proxyService,
 		uploadHandler: uploadHandler,
+		cache:         newComplianceCache(),
 	}
 }
 
+func (h *ComplianceHandler) validateModelID(id string) error {
+	if id == "" {
+		return errors.New("model ID is required")
+	}
+	if !modelIDRegex.MatchString(id) {
+		return errors.New("invalid model ID format")
+	}
+	return nil
+}
+
 func (h *ComplianceHandler) GetStats(c *gin.Context) {
+	// Try cache first (TTL: 15 seconds)
+	if cached, ok := h.cache.get("stats"); ok {
+		c.Data(http.StatusOK, "application/json", cached)
+		return
+	}
+
 	response, err := h.proxyService.Forward("GET", "/compliance/stats", nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch compliance stats", Details: err.Error()})
 		return
 	}
+
+	h.cache.set("stats", response, 15*time.Second)
 	c.Data(http.StatusOK, "application/json", response)
 }
 
 func (h *ComplianceHandler) ListChecks(c *gin.Context) {
+	// Try cache first (TTL: 30 seconds)
+	if cached, ok := h.cache.get("checks"); ok {
+		c.Data(http.StatusOK, "application/json", cached)
+		return
+	}
+
 	response, err := h.proxyService.ListComplianceChecks()
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch compliance checks", Details: err.Error()})
@@ -45,11 +145,17 @@ func (h *ComplianceHandler) ListChecks(c *gin.Context) {
 		return
 	}
 
+	h.cache.set("checks", response, 30*time.Second)
 	c.JSON(http.StatusOK, checks)
 }
 
 func (h *ComplianceHandler) GetCheck(c *gin.Context) {
 	id := c.Param("id")
+
+	if err := h.validateModelID(id); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: err.Error()})
+		return
+	}
 
 	response, err := h.proxyService.GetComplianceCheck(id)
 	if err != nil {
@@ -73,11 +179,20 @@ func (h *ComplianceHandler) RunCheck(c *gin.Context) {
 		return
 	}
 
+	// Validate required fields
+	if req.Type == "" {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Type is required"})
+		return
+	}
+
 	response, err := h.proxyService.RunComplianceCheck(req)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to run compliance check", Details: err.Error()})
 		return
 	}
+
+	// Invalidate checks cache since a new check was run
+	h.cache.invalidate("checks")
 
 	var check models.ComplianceCheck
 	if err := json.Unmarshal(response, &check); err != nil {

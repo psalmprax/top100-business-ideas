@@ -381,6 +381,24 @@ class MobileSDK:
             "registered_devices": len(self.registered_devices),
         }
 
+    def get_sdk_download_info(self, platform: str) -> Dict[str, Any]:
+        """Get SDK download information for a platform."""
+        sdk_info = {
+            "ios": {
+                "download_url": "https://sdk.livenesslink.com/v2/ios/LivenessLinkSDK-2.0.0.zip",
+                "version": "2.0.0",
+                "min_os_version": "14.0",
+                "size_mb": 12.5,
+            },
+            "android": {
+                "download_url": "https://sdk.livenesslink.com/v2/android/LivenessLinkSDK-2.0.0.aar",
+                "version": "2.0.0",
+                "min_sdk_level": 26,
+                "size_mb": 8.3,
+            },
+        }
+        return sdk_info.get(platform)
+
 
 # Singleton instance
 mobile_sdk = MobileSDK()

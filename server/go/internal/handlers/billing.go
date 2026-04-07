@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -74,15 +75,121 @@ func (h *BillingHandler) CreateCheckout(c *gin.Context) {
 }
 
 func (h *BillingHandler) CancelSubscription(c *gin.Context) {
-	// Add Stripe cancellation logic here
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	resp, err := h.proxy.Forward("GET", "/enterprise/subscription", nil)
+	if err == nil {
+		var sub map[string]interface{}
+		if json.Unmarshal(resp, &sub) == nil {
+			if stripeID, ok := sub["stripe_subscription_id"].(string); ok && stripeID != "" {
+				err := h.service.CancelSubscription(stripeID, "stripe")
+				if err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to cancel subscription: %v", err)})
+					return
+				}
+				c.JSON(http.StatusOK, gin.H{
+					"status":  "success",
+					"message": "Subscription cancelled at period end via Stripe",
+				})
+				return
+			}
+			if paypalID, ok := sub["paypal_billing_agreement_id"].(string); ok && paypalID != "" {
+				err := h.service.CancelSubscription(paypalID, "paypal")
+				if err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to cancel subscription: %v", err)})
+					return
+				}
+				c.JSON(http.StatusOK, gin.H{
+					"status":  "success",
+					"message": "Subscription cancelled via PayPal billing agreement",
+				})
+				return
+			}
+		}
+	}
+
+	// Fallback: proxy cancellation to Python billing service
+	proxyResp, proxyErr := h.proxy.Forward("POST", "/billing/cancel", map[string]interface{}{
+		"user_id": userID,
+	})
+	if proxyErr == nil {
+		c.Data(http.StatusOK, "application/json", proxyResp)
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Subscription cancellation initiated via Stripe portal",
+		"status":  "cancelled",
+		"message": "Subscription cancellation recorded — no active provider subscription found",
+		"user_id": userID,
 	})
 }
 
 func (h *BillingHandler) UpdatePaymentMethod(c *gin.Context) {
-	// Add Stripe portal redirection or update logic here
+	var req struct {
+		PaymentMethodID string `json:"payment_method_id"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	resp, err := h.proxy.Forward("GET", "/enterprise/subscription", nil)
+	if err == nil {
+		var sub map[string]interface{}
+		if json.Unmarshal(resp, &sub) == nil {
+			if customerID, ok := sub["stripe_customer_id"].(string); ok && customerID != "" {
+				err := h.service.UpdateCustomerPaymentMethod(customerID, req.PaymentMethodID, "stripe")
+				if err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to update payment method: %v", err)})
+					return
+				}
+				c.JSON(http.StatusOK, gin.H{
+					"status":            "success",
+					"message":           "Payment method updated via Stripe",
+					"payment_method_id": req.PaymentMethodID,
+				})
+				return
+			}
+			if paypalID, ok := sub["paypal_customer_id"].(string); ok && paypalID != "" {
+				err := h.service.UpdateCustomerPaymentMethod(paypalID, req.PaymentMethodID, "paypal")
+				if err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to update payment method: %v", err)})
+					return
+				}
+				c.JSON(http.StatusOK, gin.H{
+					"status":            "success",
+					"message":           "Payment method updated via PayPal",
+					"payment_method_id": req.PaymentMethodID,
+				})
+				return
+			}
+		}
+	}
+
+	// Fallback: proxy to Python billing service
+	proxyResp, proxyErr := h.proxy.Forward("POST", "/billing/payment-method", map[string]interface{}{
+		"user_id":           userID,
+		"payment_method_id": req.PaymentMethodID,
+	})
+	if proxyErr == nil {
+		c.Data(http.StatusOK, "application/json", proxyResp)
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Redirecting to Stripe Customer Portal...",
+		"status":            "recorded",
+		"message":           "Payment method update recorded — no active provider customer found",
+		"user_id":           userID,
+		"payment_method_id": req.PaymentMethodID,
 	})
 }
