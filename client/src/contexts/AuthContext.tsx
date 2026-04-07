@@ -31,6 +31,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Debug user state changes
+  const debugSetUser = (newUser: User | null) => {
+    console.log("[Auth] setUser called:", newUser?.email || "null");
+    setUser(newUser);
+  };
+
   useEffect(() => {
     checkAuth();
   }, []);
@@ -49,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("[Auth] checkAuth - calling /me API");
       const userData = await authApi.me();
       console.log("[Auth] checkAuth - user loaded:", userData.email);
-      setUser(userData);
+      debugSetUser(userData);
     } catch (error) {
       console.error("[Auth] checkAuth failed:", error);
       console.log("[Auth] checkAuth - removing invalid token");
@@ -76,14 +82,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (data.accessToken && data.user) {
         console.log("[Auth] Saving camelCase token");
         localStorage.setItem("auth_token", data.accessToken);
-        setUser(data.user);
-        console.log("[Auth] User set:", data.user.email);
+        debugSetUser(data.user);
       } else if (data.access_token && data.user) {
         // Handle snake_case response from backend
         console.log("[Auth] Saving snake_case token");
         localStorage.setItem("auth_token", data.access_token);
-        setUser(data.user);
-        console.log("[Auth] User set:", data.user.email);
+        debugSetUser(data.user);
       } else {
         console.log("[Auth] No token or user in response:", {
           hasToken: !!(data.accessToken || data.access_token),
@@ -113,16 +117,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    const token = localStorage.getItem("auth_token");
-    if (token) {
-      try {
-        await authApi.logout();
-      } catch (error) {
-        console.error("Logout error:", error);
-      }
+    try {
+      await authApi.logout();
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      localStorage.removeItem("auth_token");
+      debugSetUser(null);
     }
-    localStorage.removeItem("auth_token");
-    setUser(null);
   };
 
   const loginDemo = () => {
@@ -175,7 +177,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         isAuthenticated: !!user,
         isDemo: false,
-        isManagement,
+        isManagement: user?.role === "admin" || user?.role === "management",
         login,
         signUp,
         logout,
