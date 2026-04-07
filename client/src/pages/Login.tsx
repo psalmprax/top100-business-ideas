@@ -79,7 +79,7 @@ const PRODUCT_MAPPING: Record<
 };
 
 export default function Login() {
-  const { login, signUp } = useAuth();
+  const { login, signUp, isAuthenticated } = useAuth();
   const search = useSearch();
   const params = new URLSearchParams(search);
   const initialProduct = params.get("product") || "";
@@ -154,12 +154,24 @@ export default function Login() {
         return;
       }
 
-      // Redirect to selected product or default
-      const productKey = selectedProduct || "agent-ops";
-      const redirectUrl =
-        PRODUCT_MAPPING[productKey]?.path || "/products/agent-ops";
-      console.log("[Login] Redirecting to:", redirectUrl);
-      window.location.href = redirectUrl;
+      // Wait for authentication state to update, then redirect
+      console.log("[Login] Login successful, waiting for auth state...");
+      const checkAuth = () => {
+        if (isAuthenticated) {
+          const productKey = selectedProduct || "agent-ops";
+          const redirectUrl =
+            PRODUCT_MAPPING[productKey]?.path || "/products/agent-ops";
+          console.log(
+            "[Login] User authenticated, redirecting to:",
+            redirectUrl
+          );
+          window.location.href = redirectUrl;
+        } else {
+          console.log("[Login] Still not authenticated, waiting...");
+          setTimeout(checkAuth, 100);
+        }
+      };
+      setTimeout(checkAuth, 100);
     } catch (err: any) {
       console.error("[Login] Error:", err);
       setError(err.message || "Invalid email or password");

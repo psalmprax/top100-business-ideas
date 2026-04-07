@@ -40,17 +40,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log("[Auth] checkAuth - token exists:", !!token);
 
     if (!token) {
+      console.log("[Auth] checkAuth - no token, setting loading to false");
       setIsLoading(false);
       return;
     }
 
     try {
+      console.log("[Auth] checkAuth - calling /me API");
       const userData = await authApi.me();
       console.log("[Auth] checkAuth - user loaded:", userData.email);
       setUser(userData);
     } catch (error) {
       console.error("[Auth] checkAuth failed:", error);
+      console.log("[Auth] checkAuth - removing invalid token");
       localStorage.removeItem("auth_token");
+      setUser(null);
     } finally {
       setIsLoading(false);
     }
@@ -70,12 +74,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (data.accessToken && data.user) {
+        console.log("[Auth] Saving camelCase token");
         localStorage.setItem("auth_token", data.accessToken);
         setUser(data.user);
+        console.log("[Auth] User set:", data.user.email);
       } else if (data.access_token && data.user) {
         // Handle snake_case response from backend
+        console.log("[Auth] Saving snake_case token");
         localStorage.setItem("auth_token", data.access_token);
         setUser(data.user);
+        console.log("[Auth] User set:", data.user.email);
+      } else {
+        console.log("[Auth] No token or user in response:", {
+          hasToken: !!(data.accessToken || data.access_token),
+          hasUser: !!data.user,
+        });
       }
       return {};
     } catch (error: any) {
