@@ -122,12 +122,14 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("[Login] handleLogin called, email:", email);
     setIsLoading(true);
     setError("");
 
     try {
+      console.log("[Login] Calling login function...");
       const result = await login(email, password, selectedProduct);
-      console.log("Login result:", result);
+      console.log("[Login] Got result:", result);
 
       if (result.requiresSelection) {
         setAvailableProducts(result.availableProducts || []);
@@ -137,13 +139,12 @@ export default function Login() {
 
       // Redirect to selected product or default
       const productKey = selectedProduct || "agent-ops";
-      console.log(
-        "Redirecting to:",
-        PRODUCT_MAPPING[productKey]?.path || "/products/agent-ops"
-      );
-      window.location.href =
+      const redirectUrl =
         PRODUCT_MAPPING[productKey]?.path || "/products/agent-ops";
+      console.log("[Login] Redirecting to:", redirectUrl);
+      window.location.href = redirectUrl;
     } catch (err: any) {
+      console.error("[Login] Error:", err);
       setError(err.message || "Invalid email or password");
     } finally {
       setIsLoading(false);

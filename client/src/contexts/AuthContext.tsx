@@ -37,6 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const checkAuth = async () => {
     const token = localStorage.getItem("auth_token");
+    console.log("[Auth] checkAuth - token exists:", !!token);
 
     if (!token) {
       setIsLoading(false);
@@ -45,9 +46,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       const userData = await authApi.me();
+      console.log("[Auth] checkAuth - user loaded:", userData.email);
       setUser(userData);
     } catch (error) {
-      console.error("Auth check failed:", error);
+      console.error("[Auth] checkAuth failed:", error);
       localStorage.removeItem("auth_token");
     } finally {
       setIsLoading(false);
@@ -55,8 +57,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const login = async (email: string, password: string, productId?: string) => {
+    console.log("[Auth] login called for:", email);
     try {
       const data = await authApi.login(email, password, productId);
+      console.log("[Auth] login response:", data.user?.email);
 
       if (data.requiresProductSelection) {
         return {
