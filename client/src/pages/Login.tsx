@@ -129,6 +129,17 @@ export default function Login() {
       "password length:",
       password.length
     );
+
+    // Validate inputs before proceeding
+    if (!email.trim()) {
+      setError("Email is required");
+      return;
+    }
+    if (!password.trim()) {
+      setError("Password is required");
+      return;
+    }
+
     setIsLoading(true);
     setError("");
 
@@ -211,7 +222,7 @@ export default function Login() {
                 </TabsList>
 
                 <TabsContent value="login">
-                  <form onSubmit={handleLogin} className="space-y-4">
+                  <form onSubmit={handleLogin} className="space-y-4" noValidate>
                     <div className="space-y-4">
                       {selectedProduct && (
                         <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-center justify-between">
@@ -325,6 +336,18 @@ export default function Login() {
                       className="w-full bg-blue-600 hover:bg-blue-700 font-bold"
                       disabled={isLoading}
                       data-testid="btn-signin"
+                      onClick={e => {
+                        console.log("[Login] Button clicked");
+                        // If form submission doesn't work, try manual call
+                        setTimeout(() => {
+                          if (!isLoading) {
+                            console.log(
+                              "[Login] Form might not have submitted, trying manual call"
+                            );
+                            handleLogin(e as any);
+                          }
+                        }, 100);
+                      }}
                     >
                       {isLoading ? (
                         <>
