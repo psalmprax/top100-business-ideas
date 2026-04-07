@@ -285,32 +285,37 @@ export default function AlphaAI() {
     complianceScore: 0,
     deepfakeConfidence: 0,
     agentOpsEfficiency: 0,
-    aiActReadiness: 0
+    aiActReadiness: 0,
   });
 
   useEffect(() => {
     async function fetchPlatformStats() {
+      // Don't fetch stats if not authenticated
+      if (!isAuthenticated) {
+        return;
+      }
       try {
         const [agents, compliance, safety] = await Promise.all([
           extendedApi.agents.list(),
           extendedApi.compliance.getStats(),
-          extendedApi.deepfake.getStats()
+          extendedApi.deepfake.getStats(),
         ]);
-        
+
         setPlatformStats({
-          agentsOnline: agents.filter((a: Agent) => a.status === "active").length,
+          agentsOnline: agents.filter((a: Agent) => a.status === "active")
+            .length,
           threatsBlocked: safety?.threats_detected || 0,
           complianceScore: compliance?.overall_score || 0,
           deepfakeConfidence: safety?.accuracy_score || 0,
-          agentOpsEfficiency: 87, // Derived from logs normally
-          aiActReadiness: compliance?.readiness || 0
+          agentOpsEfficiency: 87,
+          aiActReadiness: compliance?.readiness || 0,
         });
       } catch (e) {
         console.error("Dashboard preview telemetry sync failed");
       }
     }
     fetchPlatformStats();
-  }, []);
+  }, [isAuthenticated]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -323,7 +328,9 @@ export default function AlphaAI() {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600">
                 <Zap className="h-5 w-5 text-white" />
               </div>
-              <span className="text-product-title text-white text-lg">Alpha<span>AI</span></span>
+              <span className="text-product-title text-white text-lg">
+                Alpha<span>AI</span>
+              </span>
             </div>
 
             {/* Desktop Nav */}
@@ -452,18 +459,34 @@ export default function AlphaAI() {
       {/* Hero Section */}
       <section className="pt-32 pb-20 px-4 relative overflow-hidden">
         {/* Ambient glow orbs */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] pointer-events-none" aria-hidden>
-          <div className="absolute top-0 left-1/4 w-72 h-72 bg-blue-500/15 rounded-full blur-[120px] animate-pulse" style={{ animationDuration: '4s' }} />
-          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-[140px] animate-pulse" style={{ animationDuration: '6s', animationDelay: '1s' }} />
-          <div className="absolute top-1/3 right-1/3 w-64 h-64 bg-emerald-500/8 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '5s', animationDelay: '2s' }} />
+        <div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] pointer-events-none"
+          aria-hidden
+        >
+          <div
+            className="absolute top-0 left-1/4 w-72 h-72 bg-blue-500/15 rounded-full blur-[120px] animate-pulse"
+            style={{ animationDuration: "4s" }}
+          />
+          <div
+            className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-[140px] animate-pulse"
+            style={{ animationDuration: "6s", animationDelay: "1s" }}
+          />
+          <div
+            className="absolute top-1/3 right-1/3 w-64 h-64 bg-emerald-500/8 rounded-full blur-[100px] animate-pulse"
+            style={{ animationDuration: "5s", animationDelay: "2s" }}
+          />
         </div>
         {/* Subtle grid */}
-        <div className="absolute inset-0 pointer-events-none" aria-hidden
+        <div
+          className="absolute inset-0 pointer-events-none"
+          aria-hidden
           style={{
             backgroundImage: `linear-gradient(oklch(0.25 0.02 265 / 0.3) 1px, transparent 1px), linear-gradient(90deg, oklch(0.25 0.02 265 / 0.3) 1px, transparent 1px)`,
-            backgroundSize: '64px 64px',
-            maskImage: 'radial-gradient(ellipse 60% 50% at 50% 40%, black 20%, transparent 70%)',
-            WebkitMaskImage: 'radial-gradient(ellipse 60% 50% at 50% 40%, black 20%, transparent 70%)',
+            backgroundSize: "64px 64px",
+            maskImage:
+              "radial-gradient(ellipse 60% 50% at 50% 40%, black 20%, transparent 70%)",
+            WebkitMaskImage:
+              "radial-gradient(ellipse 60% 50% at 50% 40%, black 20%, transparent 70%)",
           }}
         />
         <div className="container mx-auto relative z-10">
@@ -528,7 +551,9 @@ export default function AlphaAI() {
                 viewport={{ once: true }}
                 className="text-center"
               >
-                <div className="text-stat text-gradient-premium">{stat.value}</div>
+                <div className="text-stat text-gradient-premium">
+                  {stat.value}
+                </div>
                 <div className="text-stat-label mt-2">{stat.label}</div>
               </motion.div>
             ))}
@@ -850,38 +875,88 @@ export default function AlphaAI() {
               <div className="relative bg-card/80 backdrop-blur-md border border-white/10 rounded-2xl p-8 shadow-2xl">
                 <div className="space-y-5">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-caption-premium">LIVE DASHBOARD PREVIEW</span>
-                    <span className="flex items-center gap-1.5 text-emerald-400 font-mono text-[10px]"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />OPERATIONAL</span>
+                    <span className="text-caption-premium">
+                      LIVE DASHBOARD PREVIEW
+                    </span>
+                    <span className="flex items-center gap-1.5 text-emerald-400 font-mono text-[10px]">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      OPERATIONAL
+                    </span>
                   </div>
                   <div className="grid grid-cols-3 gap-4">
                     <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/10">
-                      <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-2">AGENTS ONLINE</div>
-                      <div className="text-2xl font-black text-blue-400 tabular-nums">{platformStats.agentsOnline}</div>
+                      <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-2">
+                        AGENTS ONLINE
+                      </div>
+                      <div className="text-2xl font-black text-blue-400 tabular-nums">
+                        {platformStats.agentsOnline}
+                      </div>
                     </div>
                     <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/10">
-                      <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-2">THREATS BLOCKED</div>
-                      <div className="text-2xl font-black text-purple-400 tabular-nums">{platformStats.threatsBlocked >= 1000 ? `${(platformStats.threatsBlocked / 1000).toFixed(1)}K` : platformStats.threatsBlocked}</div>
+                      <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-2">
+                        THREATS BLOCKED
+                      </div>
+                      <div className="text-2xl font-black text-purple-400 tabular-nums">
+                        {platformStats.threatsBlocked >= 1000
+                          ? `${(platformStats.threatsBlocked / 1000).toFixed(1)}K`
+                          : platformStats.threatsBlocked}
+                      </div>
                     </div>
                     <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/10">
-                      <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-2">COMPLIANCE</div>
-                      <div className="text-2xl font-black text-emerald-400 tabular-nums">{platformStats.complianceScore}%</div>
+                      <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-2">
+                        COMPLIANCE
+                      </div>
+                      <div className="text-2xl font-black text-emerald-400 tabular-nums">
+                        {platformStats.complianceScore}%
+                      </div>
                     </div>
                   </div>
                   <div className="space-y-3">
                     <div className="flex items-center gap-3">
-                      <span className="text-[10px] font-mono text-muted-foreground w-20">Deepfake</span>
-                      <div className="flex-1 h-2 bg-muted/50 rounded-full overflow-hidden"><div className="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full" style={{ width: `${platformStats.deepfakeConfidence}%` }} /></div>
-                      <span className="text-[10px] font-mono text-blue-400">{platformStats.deepfakeConfidence}%</span>
+                      <span className="text-[10px] font-mono text-muted-foreground w-20">
+                        Deepfake
+                      </span>
+                      <div className="flex-1 h-2 bg-muted/50 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full"
+                          style={{
+                            width: `${platformStats.deepfakeConfidence}%`,
+                          }}
+                        />
+                      </div>
+                      <span className="text-[10px] font-mono text-blue-400">
+                        {platformStats.deepfakeConfidence}%
+                      </span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-[10px] font-mono text-muted-foreground w-20">AgentOps</span>
-                      <div className="flex-1 h-2 bg-muted/50 rounded-full overflow-hidden"><div className="h-full bg-gradient-to-r from-purple-500 to-purple-400 rounded-full" style={{ width: `${platformStats.agentOpsEfficiency}%` }} /></div>
-                      <span className="text-[10px] font-mono text-purple-400">{platformStats.agentOpsEfficiency}%</span>
+                      <span className="text-[10px] font-mono text-muted-foreground w-20">
+                        AgentOps
+                      </span>
+                      <div className="flex-1 h-2 bg-muted/50 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-purple-500 to-purple-400 rounded-full"
+                          style={{
+                            width: `${platformStats.agentOpsEfficiency}%`,
+                          }}
+                        />
+                      </div>
+                      <span className="text-[10px] font-mono text-purple-400">
+                        {platformStats.agentOpsEfficiency}%
+                      </span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-[10px] font-mono text-muted-foreground w-20">EU AI Act</span>
-                      <div className="flex-1 h-2 bg-muted/50 rounded-full overflow-hidden"><div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full" style={{ width: `${platformStats.aiActReadiness}%` }} /></div>
-                      <span className="text-[10px] font-mono text-emerald-400">{platformStats.aiActReadiness}%</span>
+                      <span className="text-[10px] font-mono text-muted-foreground w-20">
+                        EU AI Act
+                      </span>
+                      <div className="flex-1 h-2 bg-muted/50 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full"
+                          style={{ width: `${platformStats.aiActReadiness}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] font-mono text-emerald-400">
+                        {platformStats.aiActReadiness}%
+                      </span>
                     </div>
                   </div>
                 </div>
