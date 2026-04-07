@@ -121,8 +121,14 @@ export default function Login() {
   };
 
   const handleLogin = async (e: React.FormEvent) => {
+    console.log("[Login] handleLogin called with event:", e.type);
     e.preventDefault();
-    console.log("[Login] handleLogin called, email:", email);
+    console.log(
+      "[Login] handleLogin called, email:",
+      email,
+      "password length:",
+      password.length
+    );
     setIsLoading(true);
     setError("");
 
