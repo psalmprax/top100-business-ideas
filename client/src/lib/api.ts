@@ -258,8 +258,11 @@ async function apiBlobRequest(
 
 export interface AuthResponse {
   accessToken?: string;
+  access_token?: string; // Handle backend snake_case
   refreshToken?: string;
+  refresh_token?: string; // Handle backend snake_case
   expiresIn?: number;
+  expires_in?: number; // Handle backend snake_case
   user?: User;
   requiresProductSelection?: boolean;
   availableProducts?: string[];

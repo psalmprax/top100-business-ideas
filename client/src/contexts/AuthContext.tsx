@@ -72,6 +72,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (data.accessToken && data.user) {
         localStorage.setItem("auth_token", data.accessToken);
         setUser(data.user);
+      } else if (data.access_token && data.user) {
+        // Handle snake_case response from backend
+        localStorage.setItem("auth_token", data.access_token);
+        setUser(data.user);
       }
       return {};
     } catch (error: any) {
@@ -84,6 +88,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await authApi.register(email, password, name);
       if (data.accessToken && data.user) {
         localStorage.setItem("auth_token", data.accessToken);
+        setUser(data.user);
+      } else if (data.access_token && data.user) {
+        // Handle snake_case response from backend
+        localStorage.setItem("auth_token", data.access_token);
         setUser(data.user);
       }
     } catch (error: any) {
