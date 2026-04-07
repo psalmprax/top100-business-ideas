@@ -127,6 +127,7 @@ export default function Login() {
 
     try {
       const result = await login(email, password, selectedProduct);
+      console.log("Login result:", result);
 
       if (result.requiresSelection) {
         setAvailableProducts(result.availableProducts || []);
@@ -136,6 +137,10 @@ export default function Login() {
 
       // Redirect to selected product or default
       const productKey = selectedProduct || "agent-ops";
+      console.log(
+        "Redirecting to:",
+        PRODUCT_MAPPING[productKey]?.path || "/products/agent-ops"
+      );
       window.location.href =
         PRODUCT_MAPPING[productKey]?.path || "/products/agent-ops";
     } catch (err: any) {
