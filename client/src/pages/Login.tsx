@@ -96,6 +96,18 @@ export default function Login() {
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("login");
 
+  // Auto-redirect when authentication succeeds
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      console.log("[Login] Authentication detected, redirecting...");
+      const productKey = selectedProduct || "agent-ops";
+      const redirectUrl =
+        PRODUCT_MAPPING[productKey]?.path || "/products/agent-ops";
+      console.log("[Login] Redirecting authenticated user to:", redirectUrl);
+      window.location.href = redirectUrl;
+    }
+  }, [isAuthenticated, isLoading, selectedProduct]);
+
   const handleOAuthLogin = async (provider: "google" | "apple") => {
     setIsLoading(true);
     setError("");
@@ -154,24 +166,8 @@ export default function Login() {
         return;
       }
 
-      // Wait for authentication state to update, then redirect
-      console.log("[Login] Login successful, waiting for auth state...");
-      const checkAuth = () => {
-        if (isAuthenticated) {
-          const productKey = selectedProduct || "agent-ops";
-          const redirectUrl =
-            PRODUCT_MAPPING[productKey]?.path || "/products/agent-ops";
-          console.log(
-            "[Login] User authenticated, redirecting to:",
-            redirectUrl
-          );
-          window.location.href = redirectUrl;
-        } else {
-          console.log("[Login] Still not authenticated, waiting...");
-          setTimeout(checkAuth, 100);
-        }
-      };
-      setTimeout(checkAuth, 100);
+      // Authentication state will be updated and useEffect will handle redirect
+      console.log("[Login] Login successful, useEffect will handle redirect");
     } catch (err: any) {
       console.error("[Login] Error:", err);
       setError(err.message || "Invalid email or password");
