@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useSearch } from "wouter";
+import { Link, useSearch, useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Card,
@@ -79,7 +79,8 @@ const PRODUCT_MAPPING: Record<
 };
 
 export default function Login() {
-  const { login, signUp, isAuthenticated } = useAuth();
+  const { login, signUp, isAuthenticated, isLoading: authLoading } = useAuth();
+  const [, setLocation] = useLocation();
   const search = useSearch();
   const params = new URLSearchParams(search);
   const initialProduct = params.get("product") || "";
@@ -98,15 +99,16 @@ export default function Login() {
 
   // Auto-redirect when authentication succeeds
   useEffect(() => {
-    if (isAuthenticated && !isLoading) {
-      console.log("[Login] Authentication detected, redirecting...");
+    // Only redirect if authenticated and NOT currently performing an action
+    if (isAuthenticated && !isLoading && !authLoading) {
+      console.log("[Login] User authenticated, preparing SPA redirect...");
       const productKey = selectedProduct || "agent-ops";
-      const redirectUrl =
-        PRODUCT_MAPPING[productKey]?.path || "/products/agent-ops";
-      console.log("[Login] Redirecting authenticated user to:", redirectUrl);
-      window.location.href = redirectUrl;
+      const redirectUrl = PRODUCT_MAPPING[productKey]?.path || "/products/agent-ops";
+      
+      console.log("[Login] Navigating to:", redirectUrl);
+      setLocation(redirectUrl);
     }
-  }, [isAuthenticated, isLoading, selectedProduct]);
+  }, [isAuthenticated, isLoading, authLoading, selectedProduct, setLocation]);
 
   const handleOAuthLogin = async (provider: "google" | "apple") => {
     setIsLoading(true);
@@ -334,7 +336,10 @@ export default function Login() {
                     </div>
 
                     {error && (
-                      <div className="p-3 text-sm text-red-400 bg-red-500/10 rounded-lg border border-red-500/20">
+                      <div
+                        data-testid="error-message"
+                        className="p-3 text-sm text-red-400 bg-red-500/10 rounded-lg border border-red-500/20"
+                      >
                         {error}
                       </div>
                     )}
@@ -344,18 +349,6 @@ export default function Login() {
                       className="w-full bg-blue-600 hover:bg-blue-700 font-bold"
                       disabled={isLoading}
                       data-testid="btn-signin"
-                      onClick={e => {
-                        console.log("[Login] Button clicked");
-                        // If form submission doesn't work, try manual call
-                        setTimeout(() => {
-                          if (!isLoading) {
-                            console.log(
-                              "[Login] Form might not have submitted, trying manual call"
-                            );
-                            handleLogin(e as any);
-                          }
-                        }, 100);
-                      }}
                     >
                       {isLoading ? (
                         <>

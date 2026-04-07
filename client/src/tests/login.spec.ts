@@ -50,7 +50,7 @@ test.describe("Authentication", () => {
 
     // Fill in login credentials
     await page.fill('input[type="email"]', "admin@example.com");
-    await page.fill('input[type="password"]', "admin123");
+    await page.fill('input[type="password"]', "AlphaAI@2026");
 
     // Take screenshot before submitting
     await page.screenshot({ path: "debug-before-form-submit.png" });
@@ -80,17 +80,19 @@ test.describe("Authentication", () => {
     );
     console.log("API-related logs:", apiRequests);
 
-    // If we see handleLogin logs, the form submission worked
-    const handleLoginCalled = logs.some(log =>
-      log.includes("handleLogin called")
-    );
+    // Check various indicators of login success
+    const handleLoginCalled = logs.some(log => log.includes("Got result:"));
     const loginResponseReceived = logs.some(log =>
       log.includes("login response")
     );
     const redirectAttempted = logs.some(log => log.includes("Redirecting to"));
+    const authDetected = logs.some(log =>
+      log.includes("Authentication detected")
+    );
     console.log("handleLogin was called:", handleLoginCalled);
     console.log("Login response received:", loginResponseReceived);
     console.log("Redirect attempted:", redirectAttempted);
+    console.log("Auth state change detected:", authDetected);
 
     if (handleLoginCalled) {
       console.log("✅ Form submission is working!");

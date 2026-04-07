@@ -43,59 +43,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const checkAuth = async () => {
     const token = localStorage.getItem("auth_token");
-    console.log("[Auth] checkAuth - token exists:", !!token);
+    console.log("[Auth] checkAuth - token found:", !!token);
 
     if (!token) {
-      console.log("[Auth] checkAuth - no token, setting loading to false");
+      console.log("[Auth] checkAuth - no token, user remains null");
       setIsLoading(false);
       return;
     }
 
     try {
-      console.log("[Auth] checkAuth - calling /me API");
+      console.log("[Auth] checkAuth - calling /me API with token");
       const userData = await authApi.me();
-      console.log("[Auth] checkAuth - user loaded:", userData.email);
+      console.log("[Auth] checkAuth - user loaded successfully:", userData.email);
       debugSetUser(userData);
-    } catch (error) {
-      console.error("[Auth] checkAuth failed:", error);
-      console.log("[Auth] checkAuth - removing invalid token");
-      localStorage.removeItem("auth_token");
-      setUser(null);
+    } catch (error: any) {
+      console.error("[Auth] checkAuth failed:", error.message);
+      // Only clear if it's a real 401, not a network failure
+      if (error.message.includes("401") || error.message.includes("Unauthorized") || error.message.includes("not found")) {
+        console.log("[Auth] checkAuth - removing invalid/expired token");
+        localStorage.removeItem("auth_token");
+        setUser(null);
+      } else {
+        console.log("[Auth] checkAuth - potential network error, keeping token for retry");
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   const login = async (email: string, password: string, productId?: string) => {
-    console.log("[Auth] login called for:", email);
+    console.log("[Auth] login attempt for:", email);
     try {
       const data = await authApi.login(email, password, productId);
-      console.log("[Auth] login response:", data.user?.email);
+      console.log("[Auth] login API success, user:", data.user?.email);
 
       if (data.requiresProductSelection) {
+        console.log("[Auth] product selection required, returning available products");
         return {
           requiresSelection: true,
           availableProducts: data.availableProducts,
         };
       }
 
-      if (data.accessToken && data.user) {
-        console.log("[Auth] Saving camelCase token");
-        localStorage.setItem("auth_token", data.accessToken);
-        debugSetUser(data.user);
-      } else if (data.access_token && data.user) {
-        // Handle snake_case response from backend
-        console.log("[Auth] Saving snake_case token");
-        localStorage.setItem("auth_token", data.access_token);
+      const token = data.accessToken || data.access_token;
+      if (token && data.user) {
+        console.log("[Auth] token and user confirmed, saving to localStorage");
+        localStorage.setItem("auth_token", token);
         debugSetUser(data.user);
       } else {
-        console.log("[Auth] No token or user in response:", {
-          hasToken: !!(data.accessToken || data.access_token),
+        console.warn("[Auth] login response missing token or user data:", {
+          hasToken: !!token,
           hasUser: !!data.user,
         });
       }
       return {};
     } catch (error: any) {
+      console.error("[Auth] login function failed:", error.message);
       throw new Error(error.message || "Login failed");
     }
   };
@@ -177,7 +180,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         isAuthenticated: !!user,
         isDemo: false,
-        isManagement: user?.role === "admin" || user?.role === "management",
+        isManagement:
+          user?.role === "admin" ||
+          user?.role === "management" ||
+          user?.role === "enterprise",
         login,
         signUp,
         logout,

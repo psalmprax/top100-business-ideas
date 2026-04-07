@@ -748,6 +748,10 @@ export default function AlphaAgentOps() {
   const [isGeneratingStrategy, setIsGeneratingStrategy] = useState(false);
   const [showConfigureStreamDialog, setShowConfigureStreamDialog] =
     useState(false);
+  const [streamConfig, setStreamConfig] = useState({
+    p95_latency_ms: 250,
+    connected_agents: 12,
+  });
 
   // Hardened Logic Handlers (UC12, UC13, UC14)
   const [isProvisioningClient, setIsProvisioningClient] = useState(false);

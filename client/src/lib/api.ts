@@ -202,6 +202,28 @@ async function apiRequest<T>(
         return options.fallback;
       }
 
+      // Handle 401 Unauthorized globally for protected routes
+      if (
+        response.status === 401 &&
+        token &&
+        !finalUrl.includes("/auth/login") &&
+        !finalUrl.includes("/auth/register")
+      ) {
+        console.warn(
+          "[API Error] 401 Unauthorized detected. Clearing session and redirecting."
+        );
+        localStorage.removeItem("auth_token");
+
+        // Use window.location as fallback if SPA navigation is not available in non-React contexts
+        // But aim for simple redirect here
+        if (
+          !window.location.pathname.includes("/login") &&
+          !window.location.pathname.includes("/signup")
+        ) {
+          window.location.href = "/login";
+        }
+      }
+
       throw new Error(errorMessage);
     }
 
