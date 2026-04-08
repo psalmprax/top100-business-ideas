@@ -214,7 +214,7 @@ async def run_sox_audit(
 
     for agent in agents:
         if agent.status == AgentStatus.RUNNING:
-            if agent.dailySpend > agent.dailyBudget:
+            if agent.daily_spend > agent.dailyBudget:
                 findings.append(
                     {
                         "agent_id": str(agent.id),
@@ -222,7 +222,7 @@ async def run_sox_audit(
                         "issue": "Budget overrun detected",
                         "severity": "high",
                         "daily_budget": float(agent.dailyBudget),
-                        "daily_spend": float(agent.dailySpend),
+                        "daily_spend": float(agent.daily_spend),
                     }
                 )
             if not agent.model or agent.model == "":
@@ -409,7 +409,7 @@ async def list_checklists(
     section: Optional[str] = None,
     session: Session = Depends(get_session),
 ):
-    """Retrieve persistent checklist items with segment-specific seeding"""
+    """Retrieve persistent checklist items with segment-specific filtering"""
     try:
         query = select(ComplianceChecklistItem)
         if category:
@@ -418,69 +418,6 @@ async def list_checklists(
             query = query.where(ComplianceChecklistItem.section == section)
 
         items = session.exec(query).all()
-
-        if not items and not category and not section:
-            # Seed comprehensive Real-First checklists
-            seed_items = [
-                # SLA Tiers (Governance)
-                ComplianceChecklistItem(
-                    category="gov",
-                    section="sla",
-                    title="Platinum Tier: High Availability",
-                    description="Verify that agent responsiveness meets the 99.9% uptime requirement for Platinum customers.",
-                    status="compliant",
-                ),
-                ComplianceChecklistItem(
-                    category="gov",
-                    section="sla",
-                    title="Token Refresh Latency",
-                    description="Audit token authentication refresh cycle to ensure <200ms turnaround.",
-                    status="pending",
-                ),
-                # Risk Assessment (Governance)
-                ComplianceChecklistItem(
-                    category="gov",
-                    section="risk",
-                    title="Adversarial Prompt Injection Scan",
-                    description="Systematic audit of agent response boundaries against LlamaGuard-3 filters.",
-                    status="compliant",
-                ),
-                ComplianceChecklistItem(
-                    category="gov",
-                    section="risk",
-                    title="Data Exfiltration Boundary",
-                    description="Verify that agents cannot egress data to unwhitelisted domains.",
-                    status="pending",
-                ),
-                # Audit Trail (Governance)
-                ComplianceChecklistItem(
-                    category="gov",
-                    section="audit-trail",
-                    title="Human-in-the-Loop Traceability",
-                    description="Verify that every autonomous intervention has a corresponding 'HINT_INJECTION' or 'APPROVAL' log.",
-                    status="compliant",
-                ),
-                ComplianceChecklistItem(
-                    category="gov",
-                    section="audit-trail",
-                    title="Budget Overrun Audit",
-                    description="Cross-reference AgentAuditLog against billing quotas for the last 24h.",
-                    status="pending",
-                ),
-                # Technical - Model Scans
-                ComplianceChecklistItem(
-                    category="tech",
-                    section="models",
-                    title="Quantization Precision Loss",
-                    description="Audit INT8 quantized models for accuracy drift >5% vs FP16 baseline.",
-                    status="compliant",
-                ),
-            ]
-            for item in seed_items:
-                session.add(item)
-            session.commit()
-            items = seed_items
-
         return items
     except Exception as e:
         logger.error(f"Checklist Retrieval Error: {e}")

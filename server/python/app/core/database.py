@@ -1,6 +1,6 @@
 """Database configuration and engine setup"""
 
-from sqlmodel import SQLModel, create_engine, Session, field, Field
+from sqlmodel import SQLModel, create_engine, Session, Field
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from typing import AsyncGenerator
@@ -58,18 +58,26 @@ def init_async_engine():
     """Initialize async engine for production use"""
     global async_engine, AsyncSessionLocal
     if async_engine is None:
-        async_url = DATABASE_URL.replace("sqlite", "sqlite+aiosqlite")
+        async_url = DATABASE_URL
+        if async_url.startswith("sqlite"):
+            async_url = async_url.replace("sqlite", "sqlite+aiosqlite")
+        elif async_url.startswith("postgresql"):
+            async_url = async_url.replace("postgresql", "postgresql+asyncpg")
+            
         async_engine = create_async_engine(async_url, echo=False)
         AsyncSessionLocal = async_sessionmaker(
             async_engine, class_=AsyncSession, expire_on_commit=False
         )
 
 
+
 def init_db():
     """Initialize database and create tables with retry logic"""
     import time
 
+    init_async_engine()
     sync_engine = get_sync_engine()
+
 
     max_retries = 10
     retry_interval = 2
@@ -190,6 +198,15 @@ def seed_agents():
     """Seed the database with sample agents"""
     with SessionLocal() as session:
         # Check if agents already exist
+        try:
+            from app.core.models import AgentStatus
+        except ImportError:
+            # Fallback if import fails during seeding context
+            class AgentStatus:
+                RUNNING = "RUNNING"
+                STOPPED = "STOPPED"
+                ERROR = "ERROR"
+
         existing_count = session.query(Agent).count()
         if existing_count > 0:
             return  # Already seeded
@@ -197,85 +214,52 @@ def seed_agents():
         # Sample agents
         agents_data = [
             {
-                "name": "Customer Support Agent",
-                "type": "langgraph",
+                "name": "Prospector",
+                "type": "analysis",
                 "environment": "production",
                 "provider": "openai",
-                "model": "gpt-4-turbo",
+                "model": "gpt-4o",
                 "budget": 50.0,
-                "dailySpend": 32.5,
+                "daily_spend": 12.5,
+                "tier": "tactical",
+                "status": AgentStatus.RUNNING,
+                "config": {"role": "Market Intel"}
+            },
+            {
+                "name": "Sales Closer",
+                "type": "automation",
+                "environment": "production",
+                "provider": "openai",
+                "model": "gpt-4o",
+                "budget": 100.0,
+                "daily_spend": 45.0,
                 "tier": "strategic",
                 "status": AgentStatus.RUNNING,
-                "config": {
-                    "provider": "openai",
-                    "model": "gpt-4-turbo",
-                    "maxTokens": 4000,
-                    "temperature": 0.7,
-                    "rules": [
-                        {
-                            "id": "1",
-                            "name": "Loop Prevention",
-                            "type": "loop_prevention",
-                            "enabled": True,
-                            "config": {"maxIterations": 10, "semanticCheck": True},
-                        },
-                        {
-                            "id": "2",
-                            "name": "Semantic Cost Cap",
-                            "type": "semantic_cost_cap",
-                            "enabled": True,
-                            "config": {"maxSpend": 50, "preserveState": True},
-                        },
-                    ],
-                },
-                "metrics": {
-                    "totalRequests": 15420,
-                    "totalTokens": 2840000,
-                    "totalCost": 142.5,
-                    "avgLatencyMs": 1250,
-                    "errorRate": 0.02,
-                    "loopCount": 3,
-                    "cacheHits": 4230,
-                    "loopsPrevented": 47,
-                    "costSaved": 892.3,
-                },
+                "config": {"role": "Lead Conv."}
+            },
+            {
+                "name": "Marketing Strategist",
+                "type": "content_generation",
+                "environment": "production",
+                "provider": "openai",
+                "model": "gpt-4o",
+                "budget": 50.0,
+                "daily_spend": 22.0,
+                "tier": "tactical",
+                "status": AgentStatus.RUNNING,
+                "config": {"role": "Growth Ops"}
             },
             {
                 "name": "Research Agent",
                 "type": "crewai",
                 "environment": "production",
                 "provider": "anthropic",
-                "model": "claude-3-opus",
-                "budget": 5.0,
-                "dailySpend": 4.2,
+                "model": "claude-3-5-sonnet",
+                "budget": 20.0,
+                "daily_spend": 4.2,
                 "tier": "strategic",
                 "status": AgentStatus.RUNNING,
-                "config": {
-                    "provider": "anthropic",
-                    "model": "claude-3-opus",
-                    "maxTokens": 8000,
-                    "temperature": 0.8,
-                    "rules": [
-                        {
-                            "id": "3",
-                            "name": "Daily Budget Cap",
-                            "type": "budget_cap",
-                            "enabled": True,
-                            "config": {"maxSpend": 5},
-                        },
-                    ],
-                },
-                "metrics": {
-                    "totalRequests": 2340,
-                    "totalTokens": 1250000,
-                    "totalCost": 89.2,
-                    "avgLatencyMs": 2800,
-                    "errorRate": 0.01,
-                    "loopCount": 0,
-                    "cacheHits": 890,
-                    "loopsPrevented": 12,
-                    "costSaved": 156.4,
-                },
+                "config": {"role": "Research"}
             },
         ]
 
@@ -284,6 +268,7 @@ def seed_agents():
             session.add(agent)
 
         session.commit()
+
 
 
 def seed_deepfake_data():

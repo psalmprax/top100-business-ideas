@@ -414,7 +414,7 @@ const AlphaWorkforce = () => {
       const result =
         await extendedApi.workforce.cashclaw.recover("all_outstanding");
       const recovered = parseFloat(result.recovered_amount) || 0;
-      setCashclawData(prev => {
+      setCashclawData((prev: any) => {
         const updated = {
           ...prev,
           balance: prev.balance + recovered,
@@ -599,7 +599,7 @@ const AlphaWorkforce = () => {
   const handleToggleAutonomy = async () => {
     const nextState = !isAutonomous;
     try {
-      await extendedApi.workforce.toggleAutonomy(nextState);
+      await extendedApi.workforce.toggleAutonomy(nextState ? "full" : "partial");
       setIsAutonomous(nextState);
       storage.set("workforce_autonomous", nextState);
       if (nextState) {
@@ -1225,7 +1225,14 @@ const AlphaWorkforce = () => {
                 <CardContent className="py-6 space-y-4">
                   <div className="grid grid-cols-1 gap-4">
                     {workforceData?.strategyRefinements?.map((strat: any) => (
-                      <StrategyIterationCard key={strat.id} {...strat} />
+                      <StrategyIterationCard
+                        key={strat.id}
+                        original="Baseline Strategy"
+                        trigger={strat.topic}
+                        refined={strat.content}
+                        roiDelta={strat.impact}
+                        status={strat.time}
+                      />
                     ))}
                     {(!workforceData || !workforceData.strategyRefinements) && (
                       <div className="text-center py-8 text-muted-foreground italic text-sm">
@@ -2564,8 +2571,8 @@ const AlphaWorkforce = () => {
                       };
                       const updated = [...skillsMarketplace, newSkill];
                       setSkillsMarketplace(updated);
-                      storage.set("workforce_skills", updated);
-                      setCashclawData(prev => ({
+                      storage.set("workforce_marketplace", updated);
+                      setCashclawData((prev: any) => ({
                         ...prev,
                         skillsActive: prev.skillsActive + 1,
                       }));
@@ -2626,7 +2633,7 @@ const AlphaWorkforce = () => {
                             storage.set(`autojob_${r.key}`, checked);
                             try {
                               await extendedApi.workforce.toggleAutonomy(
-                                checked
+                                checked ? "full" : "partial"
                               );
                             } catch {}
                             toast.success(

@@ -1111,6 +1111,34 @@ export interface Integration {
   updated_at?: string;
 }
 
+export interface WorkforceStatus {
+  total_agents: number;
+  active_agents: number;
+  total_roi: number;
+  monthly_burn: number;
+  autonomy_level: string;
+  health_score: number;
+  conflict_resolution_rate: number;
+  actions: Array<{
+    id: string;
+    role: string;
+    action: string;
+    details: string;
+    confidence: number;
+    time: string;
+    framework: string;
+  }>;
+  strategyRefinements: Array<{
+    id: string;
+    topic: string;
+    content: string;
+    impact: string;
+    time: string;
+  }>;
+  sovereign_stages: any[];
+  last_sync: string;
+}
+
 export interface BotSetting {
   id: string;
   user_id: string;
@@ -2547,7 +2575,7 @@ export const extendedApi = {
 
 export async function workforceSync() {
   try {
-    const status = await apiRequest<any>("/api/v1/workforce/status");
+    const status = await apiRequest<WorkforceStatus>("/api/v1/workforce/status");
     return status;
   } catch (e) {
     console.error("Workforce sync failed:", e);

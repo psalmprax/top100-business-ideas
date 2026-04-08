@@ -52,7 +52,7 @@ class Agent(SQLModel, table=True):
     api_secret: str = Field(default_factory=lambda: secrets.token_urlsafe(32))
     config: Optional[Dict[str, Any]] = Field(default={}, sa_column=Column(JSON))
     budget: float = Field(default=10.0)
-    dailySpend: float = Field(default=0.0)
+    daily_spend: float = Field(default=0.0)
     metrics: Dict[str, Any] = Field(
         default={"costSaved": 0.0, "loopsPrevented": 0, "totalRequests": 0},
         sa_column=Column(JSON),
@@ -98,7 +98,7 @@ class AgentUpdate(SQLModel):
 class SkillInstall(SQLModel):
     """Marketplace skill installation request"""
 
-    skillId: str
+    skill_id: str
     metadata: Optional[Dict[str, Any]] = {}
 
 

@@ -13,7 +13,7 @@
  * - API for High-Volume Verification
  */
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePerspective } from "@/contexts/PerspectiveContext";
@@ -71,6 +71,7 @@ import {
   Smartphone,
   Tag,
   Terminal,
+  Trash2,
   TrendingUp,
   Upload,
   Users,
@@ -195,6 +196,7 @@ interface BiometricTemplate {
   enrolledAt: Date;
   lastUsed: Date;
   cancellable: boolean;
+  status?: "active" | "inactive" | "revoked";
 }
 
 interface HardwareChallenge {
@@ -238,14 +240,20 @@ function MetricCard({
     <Card className="overflow-hidden group hover:border-primary/50 transition-colors">
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
-          <motion.div 
+          <motion.div
             whileHover={{ scale: 1.1 }}
             className={`p-2 rounded-lg ${color}`}
           >
             <Icon className="w-5 h-5" />
           </motion.div>
           {change !== undefined && (
-            <Badge className={change >= 0 ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-red-500/10 text-red-500 border-red-500/20"}>
+            <Badge
+              className={
+                change >= 0
+                  ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                  : "bg-red-500/10 text-red-500 border-red-500/20"
+              }
+            >
               {change >= 0 ? "+" : ""}
               {change}%
             </Badge>
@@ -308,9 +316,21 @@ export default function AlphaDeepfakeDefense() {
 
   // Perspective Branding Data
   const perspectiveData = {
-    alpha: { title: "ALPHA", subtitle: "DEEPFAKE DEFENSE SYSTEM", gradient: "from-blue-500/10 via-background to-orange-500/5" },
-    sigma: { title: "SIGMA", subtitle: "IDENTITY INTELLIGENCE", gradient: "from-purple-500/10 via-background to-cyan-500/5" },
-    omega: { title: "OMEGA", subtitle: "SYNTHETIC AUDIT TERMINAL", gradient: "from-green-500/10 via-background to-indigo-500/5" },
+    alpha: {
+      title: "ALPHA",
+      subtitle: "DEEPFAKE DEFENSE SYSTEM",
+      gradient: "from-blue-500/10 via-background to-orange-500/5",
+    },
+    sigma: {
+      title: "SIGMA",
+      subtitle: "IDENTITY INTELLIGENCE",
+      gradient: "from-purple-500/10 via-background to-cyan-500/5",
+    },
+    omega: {
+      title: "OMEGA",
+      subtitle: "SYNTHETIC AUDIT TERMINAL",
+      gradient: "from-green-500/10 via-background to-indigo-500/5",
+    },
   };
 
   const activeBranding = perspectiveData[perspective] || perspectiveData.alpha;
@@ -404,6 +424,7 @@ export default function AlphaDeepfakeDefense() {
     ],
   };
   const [analyses, setAnalyses] = useState<DeepfakeAnalysis[]>([]);
+  const [recentActivity, setRecentActivity] = useState<DeepfakeAnalysis[]>([]);
   const [sessions, setSessions] = useState<VerificationSession[]>([]);
   const [threats, setThreats] = useState<any[]>([]);
   const [biometrics, setBiometrics] = useState<BiometricTemplate[]>([]);
@@ -448,17 +469,32 @@ export default function AlphaDeepfakeDefense() {
     const fetchDeepfakeData = async () => {
       if (!isAuthenticated) return;
       try {
-        const [statsRes, analysesRes, threatsRes, modelsRes, duressRes, biometricsRes] =
-          await Promise.all([
-            extendedApi.deepfake.getStats(),
-            extendedApi.deepfake.listAnalyses(),
-            extendedApi.deepfake.listThreats(),
-            extendedApi.deepfake.listModels(),
-            extendedApi.deepfake.getDuressConfig(user?.id || ""),
-            extendedApi.deepfake.listBiometrics(),
-          ]);
+        const [
+          statsRes,
+          analysesRes,
+          threatsRes,
+          modelsRes,
+          duressRes,
+          biometricsRes,
+        ] = await Promise.all([
+          extendedApi.deepfake.getStats(),
+          extendedApi.deepfake.listAnalyses(),
+          extendedApi.deepfake.listThreats(),
+          extendedApi.deepfake.listModels(),
+          extendedApi.deepfake.getDuressConfig(user?.id || ""),
+          extendedApi.deepfake.listBiometrics(),
+        ]);
         setStats(statsRes);
-        if (biometricsRes) setBiometrics(biometricsRes);
+        if (biometricsRes)
+          setBiometrics(
+            biometricsRes.map((b: any) => ({
+              ...b,
+              userId: b.user_id,
+              enrolledAt: new Date(b.enrolled_at || Date.now()),
+              lastUsed: b.last_used ? new Date(b.last_used) : new Date(),
+              status: b.status || "active",
+            }))
+          );
         if (analysesRes)
           setAnalyses(
             analysesRes.map((a: any) => ({
@@ -819,7 +855,9 @@ export default function AlphaDeepfakeDefense() {
     try {
       await extendedApi.deepfake.revokeBiometric(id);
       setBiometrics(prev => prev.filter(b => b.id !== id));
-      toast.success("Biometric template revoked and purged from secure enclave.");
+      toast.success(
+        "Biometric template revoked and purged from secure enclave."
+      );
     } catch (e) {
       toast.error("Failed to revoke biometric template.");
     }
@@ -840,7 +878,6 @@ export default function AlphaDeepfakeDefense() {
       toast.error("Failed to upload training dataset");
     }
   };
-
 
   const handleExport = () => {
     const latestAnalysis = analyses[0];
@@ -916,7 +953,9 @@ export default function AlphaDeepfakeDefense() {
   };
 
   return (
-    <div className={`min-h-screen bg-background text-foreground selection:bg-primary/30 noise-overlay perspective-${perspective}`}>
+    <div
+      className={`min-h-screen bg-background text-foreground selection:bg-primary/30 noise-overlay perspective-${perspective}`}
+    >
       <input
         type="file"
         ref={fileInputRef}
@@ -924,10 +963,12 @@ export default function AlphaDeepfakeDefense() {
         onChange={onFileSelect}
         accept="image/*,video/*,audio/*"
       />
-      
+
       {/* Background Ambient Glow */}
-      <div className={`fixed inset-0 bg-gradient-to-br ${activeBranding.gradient} pointer-events-none opacity-50`} />
-      
+      <div
+        className={`fixed inset-0 bg-gradient-to-br ${activeBranding.gradient} pointer-events-none opacity-50`}
+      />
+
       <div className="relative z-10 flex flex-col min-h-screen">
         {/* Top Navigation */}
         <header className="border-b bg-background/50 backdrop-blur-md sticky top-0 z-50">
@@ -939,7 +980,8 @@ export default function AlphaDeepfakeDefense() {
                 </div>
                 <div className="flex flex-col">
                   <span className="text-sm font-black tracking-tighter leading-none">
-                    {activeBranding.title}<span className="text-primary/50">_CORE</span>
+                    {activeBranding.title}
+                    <span className="text-primary/50">_CORE</span>
                   </span>
                   <span className="text-[10px] font-bold text-muted-foreground tracking-[0.2em]">
                     {activeBranding.subtitle}
@@ -948,92 +990,95 @@ export default function AlphaDeepfakeDefense() {
               </Link>
               <div className="h-4 w-px bg-border mx-2 hidden md:block" />
               <div className="hidden md:flex items-center gap-4">
-                <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 animate-pulse">
+                <Badge
+                  variant="outline"
+                  className="bg-primary/5 text-primary border-primary/20 animate-pulse"
+                >
                   DEFENSE_ACTIVE
                 </Badge>
               </div>
             </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  data-testid="btn-live-detection"
-                  onClick={() => setActiveTab("liveness")}
-                >
-                  <Play className="w-4 h-4 mr-2" />
-                  Live Detection Portal
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    handleDownload(
-                      "livenesslink-sdk.zip",
-                      "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"
-                    )
-                  }
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  SDK
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    handleDownload(
-                      "livenesslink-mobile.apk",
-                      "UEsDBBQAAAAIAI96V1YAAAAAAAAAAAAAAAALAAAAUkVBRE1FLnR4dGVzc2N0eH19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX0sBAhQAFAAAAAgAj3pXVgAAAAAAAAAAAAAAAAsAAAAAAAAAAAAAAAAAAAAAAFJFQURNRS50eHRQSwUGAAAAAAEAAQA5AAAAVQAAAAAA"
-                    )
-                  }
-                >
-                  <Smartphone className="w-4 h-4 mr-2" />
-                  Mobile App
-                </Button>
-                <Button
-                  size="sm"
-                  data-testid="btn-analyze-media"
-                  onClick={handleAnalyzeMedia}
-                  disabled={isAnalyzing}
-                >
-                  <Upload
-                    className={`w-4 h-4 mr-2 ${isAnalyzing ? "animate-spin" : ""}`}
-                  />
-                  {isAnalyzing ? "Analyzing..." : "Analyze Media"}
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="bg-orange-500/10 text-orange-500 hover:bg-orange-500/20"
-                  onClick={async () => {
-                    const tId = toast.loading(
-                      "Launching Voice Forensics analyzer..."
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                data-testid="btn-live-detection"
+                onClick={() => setActiveTab("liveness")}
+              >
+                <Play className="w-4 h-4 mr-2" />
+                Live Detection Portal
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  handleDownload(
+                    "livenesslink-sdk.zip",
+                    "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"
+                  )
+                }
+              >
+                <Download className="w-4 h-4 mr-2" />
+                SDK
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  handleDownload(
+                    "livenesslink-mobile.apk",
+                    "UEsDBBQAAAAIAI96V1YAAAAAAAAAAAAAAAALAAAAUkVBRE1FLnR4dGVzc2N0eH19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX0sBAhQAFAAAAAgAj3pXVgAAAAAAAAAAAAAAAAsAAAAAAAAAAAAAAAAAAAAAAFJFQURNRS50eHRQSwUGAAAAAAEAAQA5AAAAVQAAAAAA"
+                  )
+                }
+              >
+                <Smartphone className="w-4 h-4 mr-2" />
+                Mobile App
+              </Button>
+              <Button
+                size="sm"
+                data-testid="btn-analyze-media"
+                onClick={handleAnalyzeMedia}
+                disabled={isAnalyzing}
+              >
+                <Upload
+                  className={`w-4 h-4 mr-2 ${isAnalyzing ? "animate-spin" : ""}`}
+                />
+                {isAnalyzing ? "Analyzing..." : "Analyze Media"}
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="bg-orange-500/10 text-orange-500 hover:bg-orange-500/20"
+                onClick={async () => {
+                  const tId = toast.loading(
+                    "Launching Voice Forensics analyzer..."
+                  );
+                  try {
+                    // REAL-FIRST: Implementation for Voice Forensics
+                    const res = await extendedApi.deepfake.analyzeEnterprise({
+                      source: "voice_buffer",
+                      verification_mode: "audio_forensics",
+                    });
+                    toast.success(
+                      res.authenticity_score !== undefined
+                        ? `Voice Forensics match: ${(res.authenticity_score * 100).toFixed(1)}% Authenticity`
+                        : "Forensic Scan Complete: No synthetic artifacts found",
+                      { id: tId }
                     );
-                    try {
-                      // REAL-FIRST: Implementation for Voice Forensics
-                      const res = await extendedApi.deepfake.analyzeEnterprise({
-                        source: "voice_buffer",
-                        verification_mode: "audio_forensics",
-                      });
-                      toast.success(
-                        res.authenticity_score !== undefined
-                          ? `Voice Forensics match: ${(res.authenticity_score * 100).toFixed(1)}% Authenticity`
-                          : "Forensic Scan Complete: No synthetic artifacts found",
-                        { id: tId }
-                      );
-                    } catch (e) {
-                      toast.error(
-                        "Forensic engine offline. Please verify ML provider connectivity.",
-                        { id: tId }
-                      );
-                    }
-                  }}
-                >
-                  Voice Forensics
-                </Button>
-                <UserMenu />
-              </div>
+                  } catch (e) {
+                    toast.error(
+                      "Forensic engine offline. Please verify ML provider connectivity.",
+                      { id: tId }
+                    );
+                  }
+                }}
+              >
+                Voice Forensics
+              </Button>
+              <UserMenu />
             </div>
-          </header>
+          </div>
+        </header>
 
         <div className="container mx-auto px-4 py-6">
           {/* Tier 1: Pillars */}
@@ -1097,7 +1142,7 @@ export default function AlphaDeepfakeDefense() {
                   Fraud-Loss ROI Impact
                 </Button>
               </div>
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.4 }}
@@ -1108,18 +1153,30 @@ export default function AlphaDeepfakeDefense() {
                   value={totalAnalyses}
                   icon={Activity}
                   color="bg-primary/10 text-primary"
-                  change={stats?.analyses_trend !== undefined ? stats.analyses_trend : 12}
+                  change={
+                    stats?.analyses_trend !== undefined
+                      ? stats.analyses_trend
+                      : 12
+                  }
                 />
                 <MetricCard
                   title="Threats Detected"
                   value={threatsDetected}
                   icon={ShieldAlert}
                   color="bg-red-500/10 text-red-500"
-                  change={stats?.threats_trend !== undefined ? stats.threats_trend : -5}
+                  change={
+                    stats?.threats_trend !== undefined
+                      ? stats.threats_trend
+                      : -5
+                  }
                 />
                 <MetricCard
                   title="Verify Rate"
-                  value={stats?.verification_rate !== undefined ? `${(stats.verification_rate * 100).toFixed(1)}%` : `${((verificationRate / (totalAnalyses || 1)) * 100).toFixed(1)}%`}
+                  value={
+                    stats?.verification_rate !== undefined
+                      ? `${(stats.verification_rate * 100).toFixed(1)}%`
+                      : `${((verificationRate / (totalAnalyses || 1)) * 100).toFixed(1)}%`
+                  }
                   icon={CheckCircle2}
                   color="bg-purple-500/10 text-purple-500"
                   change={stats?.verification_trend}
@@ -1334,9 +1391,9 @@ export default function AlphaDeepfakeDefense() {
                           <Badge variant="secondary">
                             {biometrics.length} Enrolled
                           </Badge>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             className="h-7 text-[10px]"
                             onClick={() => setShowDeviceMgmtDialog(true)}
                           >
@@ -1351,7 +1408,7 @@ export default function AlphaDeepfakeDefense() {
                             Panic Word Detection
                           </span>
                         </div>
-                        <Switch 
+                        <Switch
                           checked={duressEnabled}
                           onCheckedChange={setDuressEnabled}
                         />
@@ -4607,10 +4664,15 @@ export default function AlphaDeepfakeDefense() {
                             <Button className="w-full bg-blue-600 hover:bg-blue-700 h-10 rounded-xl text-white font-bold text-xs uppercase">
                               CAPTURE DOCUMENT
                             </Button>
-                            <Button 
+                            <Button
                               variant="outline"
                               className="w-full border-blue-500/30 text-blue-400 h-8 rounded-xl text-[10px]"
-                              onClick={() => handleDownload("Alpha_Liveness_SDK_v2.1.zip", "STUB_SDK_BINARY_DATA")}
+                              onClick={() =>
+                                handleDownload(
+                                  "Alpha_Liveness_SDK_v2.1.zip",
+                                  "STUB_SDK_BINARY_DATA"
+                                )
+                              }
                             >
                               <Download className="w-3 h-3 mr-1" /> DOWNLOAD SDK
                             </Button>
@@ -5020,7 +5082,7 @@ export default function AlphaDeepfakeDefense() {
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-green-500" /> 
+                <ShieldCheck className="w-5 h-5 text-green-500" />
                 Cancellable Biometrics Management
               </DialogTitle>
               <DialogDescription>
@@ -5036,7 +5098,7 @@ export default function AlphaDeepfakeDefense() {
               ) : (
                 <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
                   {biometrics.map(temp => (
-                    <div 
+                    <div
                       key={temp.id}
                       className="p-3 rounded-lg border flex items-center justify-between bg-muted/30"
                     >
@@ -5045,19 +5107,24 @@ export default function AlphaDeepfakeDefense() {
                           <Fingerprint className="w-4 h-4 text-purple-500" />
                         </div>
                         <div>
-                          <div className="text-xs font-bold uppercase">{temp.type}</div>
+                          <div className="text-xs font-bold uppercase">
+                            {temp.type}
+                          </div>
                           <div className="text-[10px] text-muted-foreground font-mono">
-                            Created: {new Date(temp.created_at).toLocaleDateString()}
+                            Created:{" "}
+                            {new Date(temp.enrolledAt).toLocaleDateString()}
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant="outline" className="text-[10px] h-5">
-                          {temp.status === "active" ? "ENCLAVE_READY" : temp.status}
+                          {temp.status === "active"
+                            ? "ENCLAVE_READY"
+                            : temp.status}
                         </Badge>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10"
                           onClick={() => handleRevokeBiometric(temp.id)}
                         >

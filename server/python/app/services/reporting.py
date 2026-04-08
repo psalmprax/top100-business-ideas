@@ -12,7 +12,12 @@ class ReportingService:
     def generate_annex_iv_report(self, check: ComplianceCheck) -> Dict[str, Any]:
         """
         Generates a structured report compatible with EU AI Act Annex IV (Technical Documentation)
+        Enhanced with real-world evidence from persistence layer.
         """
+        from sqlmodel import select, Session
+        from app.core.database import engine
+        from app.core.models import ComplianceChecklistItem, ComplianceAuditLog
+
         # Ensure status is a string
         status_str = (
             str(check.status.value)
@@ -20,15 +25,30 @@ class ReportingService:
             else str(check.status)
         )
 
-        # Ensure findings is a list
         findings = check.findings
         if isinstance(findings, str):
             import json
-
             try:
                 findings = json.loads(findings)
             except (ValueError, TypeError):
                 findings = []
+
+        with Session(engine) as session:
+            # Fetch Article 11 (Documentation) and Article 13 (Transparency) readiness
+            checklists = session.exec(
+                select(ComplianceChecklistItem).where(
+                    ComplianceChecklistItem.category.in_(["docs", "risk", "audit-trail"])
+                )
+            ).all()
+            
+            # Fetch any recent administrative audit logs
+            audit_logs = session.exec(
+                select(ComplianceAuditLog).limit(5)
+            ).all()
+
+        docs_readiness = [c for c in checklists if c.category == "docs"]
+        risk_readiness = [c for c in checklists if c.category == "risk"]
+        audit_trail_status = [c for c in checklists if c.category == "audit-trail"]
 
         return {
             "title": "Annex IV: Technical Documentation for AI System",
@@ -36,44 +56,41 @@ class ReportingService:
             "generated_at": datetime.utcnow().isoformat(),
             "compliance_status": status_str,
             "overall_score": f"{check.score}%",
+            "evidence_summary": {
+                "documentation_ready": all(c.status == "compliant" for c in docs_readiness),
+                "risk_management_verified": any(c.status == "compliant" for c in risk_readiness),
+                "audit_logs_present": len(audit_logs) > 0
+            },
             "sections": [
                 {
                     "id": "1",
                     "title": "General Description of the AI System",
                     "content": f"AI System analyzed via URL: {check.id}. Purpose as per intended use case.",
-                    "status": "Verified"
-                    if int(check.score) > 80
-                    else "Requires Review",
+                    "status": "Verified" if int(check.score) > 80 else "Requires Review",
                 },
                 {
                     "id": "2",
-                    "title": "Detailed Description of the Elements of the AI System",
-                    "findings": [
-                        f.get("description", "")
-                        for f in findings
-                        if f.get("severity") == "high"
-                    ],
-                    "status": "Evidence collected via GitHub Connector",
+                    "title": "Technical Documentation (Article 11 Readiness)",
+                    "findings": [f"{c.title}: {c.status.upper()}" for c in docs_readiness],
+                    "status": "In Progress" if any(c.status == "pending" for c in docs_readiness) else "Ready",
                 },
                 {
                     "id": "3",
-                    "title": "Information about Monitoring and Control",
-                    "findings": [
-                        f.get("description", "")
-                        for f in findings
-                        if f.get("rule", "").startswith("Article 15")
-                    ],
-                    "status": "Review Required",
+                    "title": "Risk Management System (Article 9)",
+                    "findings": [f"{c.title}: {c.status.upper()}" for c in risk_readiness] + 
+                                [f.get("description", "") for f in findings if f.get("severity") == "high"],
+                    "status": "Critical Review Required" if any(c.status == "non_compliant" for c in risk_readiness) else "Verified",
                 },
                 {
                     "id": "4",
-                    "title": "Risk Management System",
+                    "title": "Transparency & Provision of Information (Article 13)",
                     "content": "Evaluation of human-in-the-loop and fail-safe mechanisms.",
-                    "findings": [f.get("recommendation", "") for f in findings],
-                    "status": "Under Evaluation",
+                    "findings": [f.get("recommendation", "") for f in findings] + 
+                                [f"{c.title}: {c.status.upper()}" for c in audit_trail_status],
+                    "status": "Audit Trail Active" if len(audit_trail_status) > 0 else "No Audit Evidence",
                 },
             ],
-            "conclusion": "PASSED" if status_str == "passed" else "ACTION REQUIRED",
+            "conclusion": "PASSED" if status_str == "passed" and all(c.status == "compliant" for c in docs_readiness) else "ACTION REQUIRED",
         }
 
     def format_as_markdown(self, report_data: Dict[str, Any]) -> str:

@@ -176,7 +176,7 @@ class GraphQLResolver:
                     if hasattr(a.status, "value")
                     else str(a.status),
                     "budget": a.budget,
-                    "dailySpend": a.daily_spend,
+                    "daily_spend": a.daily_spend,
                     "metrics": a.metrics or {},
                     "createdAt": a.created_at.isoformat() + "Z" if a.created_at else "",
                 }
@@ -206,7 +206,7 @@ class GraphQLResolver:
                 if hasattr(a.status, "value")
                 else str(a.status),
                 "budget": a.budget,
-                "dailySpend": a.daily_spend,
+                "daily_spend": a.daily_spend,
                 "metrics": a.metrics or {},
             }
 
@@ -258,7 +258,7 @@ class GraphQLResolver:
                 "error": error,
                 "totalCostToday": round(total_cost, 2),
                 "projectedMonthlyCost": round(total_cost * 30, 2),
-                "topConsumers": [{"agentId": aid, "dailySpend": ds} for aid, ds in top],
+                "topConsumers": [{"agentId": aid, "daily_spend": ds} for aid, ds in top],
             }
 
     async def _resolve_create_agent(self, selection: Dict[str, Any]) -> Dict[str, Any]:
@@ -273,7 +273,7 @@ class GraphQLResolver:
             "type": agent_type,
             "status": "STOPPED",
             "budget": budget,
-            "dailySpend": 0.0,
+            "daily_spend": 0.0,
             "metrics": {"totalRequests": 0, "loopsPrevented": 0, "costSaved": 0.0},
             "createdAt": datetime.utcnow().isoformat() + "Z",
         }
@@ -535,7 +535,7 @@ class GraphQLGateway:
             type: AgentType!
             status: AgentStatus!
             budget: Float!
-            dailySpend: Float!
+            daily_spend: Float!
             metrics: AgentMetrics!
             createdAt: String!
         }

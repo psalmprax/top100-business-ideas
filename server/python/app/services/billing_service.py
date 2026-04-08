@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import Optional, List, Dict, Any
 from sqlmodel import Session, select
 from app.core.database import engine
-from app.core.models import Agent, AlertConfig, Subscription, Invoice, User
+from app.core.models import Agent, AlertConfig, Subscription, Invoice, User, AgentVigilanceAlert, AgentAuditLog
 
 logger = logging.getLogger(__name__)
 
@@ -63,11 +63,34 @@ class BillingService:
                 if global_budget_cap and global_budget_cap < agent.budget:
                     effective_limit = global_budget_cap
                 
-                if agent.dailySpend >= effective_limit:
+                if agent.daily_spend >= effective_limit:
                     logger.warning(f"Agent {agent.id} ({agent.name}) exceeded budget cap of {effective_limit}. Pausing agent...")
                     agent.status = AgentStatus.PAUSED
                     
-                    # You would insert a new AuditLog here to document the enforcement
+                    # Create persistent alert
+                    alert = AgentVigilanceAlert(
+                        agent_id=agent.id,
+                        type="budget_breach",
+                        severity="high",
+                        description=f"Agent breached budget cap of {effective_limit} with spend {agent.daily_spend}",
+                        metadata_json={
+                            "current_spend": agent.daily_spend,
+                            "limit": effective_limit,
+                            "is_global_cap": global_budget_cap == effective_limit
+                        }
+                    )
+                    session.add(alert)
+                    
+                    # Create audit log
+                    audit = AgentAuditLog(
+                        agent_id=agent.id,
+                        action="enforcement_pause",
+                        intent="budget_protection",
+                        outcome="agent_paused",
+                        reasoning=f"Automated enforcement due to budget breach ({agent.daily_spend} >= {effective_limit})",
+                        risk_score=0.8
+                    )
+                    session.add(audit)
             
             session.commit()
 

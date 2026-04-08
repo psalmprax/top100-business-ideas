@@ -155,15 +155,18 @@ type CreateAgentRequest struct {
 	OrgID          string  `json:"org_id"`
 	ControlWebhook string  `json:"control_webhook"`
 	Budget         float64 `json:"budget"`
-	MaxTokens      int     `json:"maxTokens"`
+	MaxTokens      int     `json:"max_tokens"`
 	Config         string  `json:"config"`
 }
 
+
 type UpdateAgentRequest struct {
-	Name   string `json:"name"`
-	Type   string `json:"type"`
-	Config string `json:"config"`
-	Status string `json:"status"`
+	Name      string  `json:"name"`
+	Type      string  `json:"type"`
+	Config    string  `json:"config"`
+	Status    string  `json:"status"`
+	Budget    float64 `json:"budget"`
+	MaxTokens int     `json:"max_tokens"`
 }
 
 type RunComplianceCheckRequest struct {

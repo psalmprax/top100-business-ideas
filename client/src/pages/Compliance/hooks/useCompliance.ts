@@ -92,6 +92,7 @@ export const useCompliance = () => {
   const [selfHealingEvents, setSelfHealingEvents] = useState<any[]>([]);
   const [edgeLogs, setEdgeLogs] = useState<any[]>([]);
   const [isLoadingEdgeLogs, setIsLoadingEdgeLogs] = useState(false);
+  const [biasReports, setBiasReports] = useState<BiasReport[]>([]);
   const [complianceScore, setComplianceScore] = useState<number | null>(null);
   const [driftMetrics, setDriftMetrics] = useState<any>(null);
 
@@ -182,9 +183,10 @@ export const useCompliance = () => {
 
     const fetchModelDetails = async () => {
       try {
-        const [scans, biasData] = await Promise.all([
+        const [scans, biasData, handshakes] = await Promise.all([
           extendedApi.compliance.listScans(selectedModelForView.id).catch(() => []),
-          extendedApi.compliance.getBiasReports(selectedModelForView.id).catch(() => [])
+          extendedApi.compliance.getBiasReports(selectedModelForView.id).catch(() => []),
+          extendedApi.compliance.getModelHandshakes(selectedModelForView.id).catch(() => [])
         ]);
 
         // Map scans to audits format
@@ -201,8 +203,11 @@ export const useCompliance = () => {
           postMarket: scans.length > 0 ? 100 : 0
         });
 
-        // Fetch simulated handshakes for this model if none in global list
-        if (modelHandshakes.length === 0) {
+        // Use real handshakes if available
+        if (handshakes && handshakes.length > 0) {
+          setModelHandshakes(handshakes);
+        } else {
+          // Dynamic fallback for new models without active connections yet
           setModelHandshakes([
             {
               type: "registry",
@@ -212,6 +217,8 @@ export const useCompliance = () => {
             }
           ]);
         }
+        
+        if (biasData) setBiasReports(biasData);
         
         // Populate artifacts
         setModelArtifacts(selectedModelForView.artifacts || []);
@@ -394,7 +401,7 @@ export const useCompliance = () => {
       isUploading, selectedFile, artifactType, isAuditRunning, cloudHealth,
       ssoConfig, auditLogs, selfHealingStats, selfHealingEvents, edgeLogs,
       isLoadingEdgeLogs, complianceScore, driftMetrics,
-      totalModels, compliantModels, avgScore, highRiskModels, biasReports: [], // Temporary mock
+      totalModels, compliantModels, avgScore, highRiskModels, biasReports,
       checklists, isLoadingChecklists
     },
 

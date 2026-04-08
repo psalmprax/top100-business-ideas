@@ -209,7 +209,7 @@ class AgentOpsService:
             if not agent:
                 return {"status": "error", "message": "Agent not found"}
 
-            if agent.dailySpend >= agent.budget:
+            if agent.daily_spend >= agent.budget:
                 agent.status = AgentStatus.PAUSED
                 # Generate high-priority Vigilance Alert
                 alert = AgentVigilanceAlert(
@@ -226,7 +226,7 @@ class AgentOpsService:
                 )
                 return {"status": "triggered", "action": "paused"}
 
-            return {"status": "safe", "daily_spend": agent.dailySpend}
+            return {"status": "safe", "daily_spend": agent.daily_spend}
 
     @staticmethod
     def validate_agent_action(

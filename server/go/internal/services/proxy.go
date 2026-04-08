@@ -81,32 +81,48 @@ func (p *ProxyService) ForwardWithStatus(method, path string, body interface{}, 
 				lastErr = err
 				continue
 			}
-			return 0, nil, fmt.Errorf("failed to send request after %d attempts: %w", maxRetries, err)
+			return 0, nil, fmt.Errorf("backend connectivity failure after %d attempts: %w", maxRetries, err)
 		}
 		defer resp.Body.Close()
 
 		responseBody, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return resp.StatusCode, nil, fmt.Errorf("failed to read response body: %w", err)
+			return resp.StatusCode, nil, fmt.Errorf("failed to read backend response: %w", err)
 		}
 
-		// Don't retry on client errors (4xx)
-		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
+		// Success case
+		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 			return resp.StatusCode, responseBody, nil
 		}
 
-		// Retry on server errors (5xx) or transient failures
-		if resp.StatusCode >= 500 && attempt < maxRetries-1 {
-			delay := retryDelayBase * time.Duration(1<<attempt)
-			time.Sleep(delay)
-			lastErr = fmt.Errorf("server error: %d", resp.StatusCode)
-			continue
+		// Handle structured errors from Python (FastAPI uses "detail" field)
+		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
+			var pyErr struct {
+				Detail interface{} `json:"detail"`
+			}
+			if err := json.Unmarshal(responseBody, &pyErr); err == nil {
+				// We found a structured error, propagate it
+				return resp.StatusCode, responseBody, nil
+			}
+			// Fallback for non-structured 4xx
+			return resp.StatusCode, responseBody, nil
+		}
+
+		// Handle server errors (5xx) with retries
+		if resp.StatusCode >= 500 {
+			if attempt < maxRetries-1 {
+				delay := retryDelayBase * time.Duration(1<<attempt)
+				time.Sleep(delay)
+				lastErr = fmt.Errorf("backend server error: %d", resp.StatusCode)
+				continue
+			}
+			return resp.StatusCode, responseBody, nil
 		}
 
 		return resp.StatusCode, responseBody, nil
 	}
 
-	return 0, nil, fmt.Errorf("retry failed: %w", lastErr)
+	return 0, nil, fmt.Errorf("proxy operation failed: %w", lastErr)
 }
 
 func (p *ProxyService) Forward(method, path string, body interface{}) ([]byte, error) {

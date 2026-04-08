@@ -267,8 +267,8 @@ async def install_skill(request: SkillInstall, session: Session = Depends(get_se
         system_agent.config = {}
 
     skills = system_agent.config.get("installed_skills", [])
-    if request.skillId not in skills:
-        skills.append(request.skillId)
+    if request.skill_id not in skills:
+        skills.append(request.skill_id)
         system_agent.config["installed_skills"] = skills
         system_agent.updated_at = datetime.utcnow()
 
@@ -276,7 +276,7 @@ async def install_skill(request: SkillInstall, session: Session = Depends(get_se
         session.commit()
 
     return {
-        "message": f"Skill {request.skillId} installed successfully",
+        "message": f"Skill {request.skill_id} installed successfully",
         "agent_id": system_agent.id,
         "timestamp": datetime.utcnow().isoformat(),
     }
