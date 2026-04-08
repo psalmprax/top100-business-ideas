@@ -5,7 +5,10 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from typing import AsyncGenerator
 import os
+import logging
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 from app.core.models import (
     ComplianceArticle,
     Agent,
@@ -75,8 +78,6 @@ def init_db():
         try:
             SQLModel.metadata.create_all(sync_engine)
 
-            SQLModel.metadata.create_all(sync_engine)
-
             # Manual Migration block removed. Using Alembic for dialect-agnostic migrations.
             # Refer to alembic/versions/a1b2c3d4e5f6_initial_agnostic_hardening.py
 
@@ -92,7 +93,7 @@ def init_db():
             return  # Success
         except Exception as e:
             if i < max_retries - 1:
-                print(
+                logger.warning(
                     f"Database not ready, retrying in {retry_interval}s... ({i + 1}/{max_retries}): {e}"
                 )
                 time.sleep(retry_interval)

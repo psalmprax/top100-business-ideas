@@ -21,7 +21,7 @@ func (r *DenialDefenseRepository) ListClaims(ctx context.Context, userID string)
 
 	query := `SELECT id, user_id, claim_id_string, payer, amount, status, risk, created_at, updated_at 
 	          FROM claims WHERE user_id = $1 ORDER BY created_at DESC`
-	
+
 	rows, err := database.Pool.Query(ctx, query, userID)
 	if err != nil {
 		return nil, err
@@ -43,7 +43,7 @@ func (r *DenialDefenseRepository) ListClaims(ctx context.Context, userID string)
 func (r *DenialDefenseRepository) CreateClaim(ctx context.Context, c *models.Claim) error {
 	query := `INSERT INTO claims (user_id, claim_id_string, payer, amount, status, risk) 
 	          VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, created_at, updated_at`
-	
+
 	return database.Pool.QueryRow(ctx, query, c.UserID, c.ClaimIDString, c.Payer, c.Amount, c.Status, c.Risk).Scan(
 		&c.ID, &c.CreatedAt, &c.UpdatedAt,
 	)

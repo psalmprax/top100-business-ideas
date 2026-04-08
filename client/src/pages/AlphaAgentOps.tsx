@@ -23,6 +23,7 @@ import {
   type SelfHealingEvent,
   type WebhookConfig,
 } from "../lib/api";
+import { usePerspective } from "../contexts/PerspectiveContext";
 import { useWebSocket } from "../hooks/useApi";
 import { storage } from "../lib/storage";
 import {
@@ -147,7 +148,9 @@ import {
   DropdownMenuSeparator,
 } from "../components/ui/dropdown-menu";
 import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert";
+import { motion, AnimatePresence } from "framer-motion";
 import { UserMenu } from "../components/UserMenu";
+import { PremiumPlaceholder } from "../components/skeletons/PremiumPlaceholder";
 
 // ============================================================================
 // Types
@@ -191,13 +194,13 @@ interface DashboardAgent {
 const getTierColor = (tier: string) => {
   switch (tier) {
     case "strategic":
-      return "bg-purple-500/10 text-purple-500 border-purple-500/20 hover:bg-purple-500/20";
+      return "bg-primary/20 text-primary border-primary/30 hover:bg-primary/30";
     case "tactical":
-      return "bg-blue-500/10 text-blue-500 border-blue-500/20 hover:bg-blue-500/20";
+      return "bg-accent/20 text-accent border-accent/30 hover:bg-accent/30";
     case "industrial":
-      return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20";
+      return "bg-green-500/10 text-green-500 border-green-500/20 hover:bg-green-500/20";
     default:
-      return "secondary";
+      return "bg-secondary/20 text-secondary border-secondary/30";
   }
 };
 
@@ -427,11 +430,11 @@ function MetricCard({
   footer,
 }: MetricCardProps) {
   return (
-    <Card className="glass-premium-hover border-border/40">
+    <Card className="glass-premium-hover border-border/40 transition-all duration-500 group">
       <CardContent className="p-5">
         <div className="flex items-center justify-between">
           <div
-            className={`p-2.5 rounded-xl ${color} bg-opacity-10 backdrop-blur-sm border border-current border-opacity-10`}
+            className={`p-2.5 rounded-xl transition-all duration-500 group-hover:scale-110 ${color.includes('primary') ? 'bg-primary/10 text-primary border-primary/20' : color.includes('accent') ? 'bg-accent/10 text-accent border-accent/20' : color} backdrop-blur-sm border`}
           >
             <Icon className="w-5 h-5" />
           </div>
@@ -738,6 +741,8 @@ function AgentSettingsDialog({
 
 export default function AlphaAgentOps() {
   const { isAuthenticated, user } = useAuth();
+  const [, setLocation] = useLocation();
+  const { perspective } = usePerspective();
   const isDemo = !isAuthenticated;
   const [activeTab, setActiveTab] = useState("overview");
   const [researchTopic, setResearchTopic] = useState("");
@@ -897,6 +902,13 @@ export default function AlphaAgentOps() {
   }>({ hipaa: null, sox: null });
   const [retentionDays, setRetentionDays] = useState(30);
   const [activeSlaTier, setActiveSlaTier] = useState<string>("Enterprise");
+  const [brandAssets, setBrandAssets] = useState({
+    logo_url: "",
+    primary_color: "#2563eb",
+    home_url: "",
+    brand_name: "ViralForge",
+  });
+  const [isUpdatingAssets, setIsUpdatingAssets] = useState(false);
 
   // Phase 3 Gaps State
   const [selectedAgentIds, setSelectedAgentIds] = useState<string[]>([]);
@@ -1264,6 +1276,15 @@ export default function AlphaAgentOps() {
       setStrategicInsights(Array.isArray(insp) ? insp : []);
 
       if (sett) {
+        // Extract brand assets from settings
+        const assets: any = { ...brandAssets };
+        Object.entries(sett).forEach(([key, value]) => {
+          if (["logo_url", "primary_color", "home_url", "brand_name"].includes(key)) {
+            assets[key] = String(value);
+          }
+        });
+        setBrandAssets(assets);
+
         const transformedSettings = Object.entries(sett).map(
           ([key, value]) => ({
             id: key,
@@ -1348,6 +1369,21 @@ export default function AlphaAgentOps() {
       toast.error("Daemon deployment failed.");
     } finally {
       setIsDeployingDaemon(false);
+    }
+  };
+
+  const handleUpdateAssets = async () => {
+    setIsUpdatingAssets(true);
+    try {
+      await extendedApi.governance.assets.update(brandAssets);
+      toast.success("Real-First Persistence: Brand assets synchronized.", {
+        description: "Cluster branding updated across all nodes."
+      });
+      fetchGovernanceData(); // Refresh to confirm
+    } catch (e) {
+      toast.error("Asset persistence failed. Check backend connectivity.");
+    } finally {
+      setIsUpdatingAssets(false);
     }
   };
 
@@ -2179,10 +2215,7 @@ export default function AlphaAgentOps() {
     if (!researchTopic) return;
     setIsResearching(true);
     try {
-      const response = await fetch(
-        `/api/v1/agent-ops/intelligence/research?topic=${encodeURIComponent(researchTopic)}`
-      );
-      const data = await response.json();
+      const data = await extendedApi.agents.intelligence.research(researchTopic);
       setResearchResult(data);
       toast.success("Paperclip research complete!");
     } catch (error) {
@@ -2196,12 +2229,7 @@ export default function AlphaAgentOps() {
     if (!strategyPrompt) return;
     setIsGeneratingStrategy(true);
     try {
-      const response = await fetch("/api/v1/agent-ops/intelligence/strategy", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: strategyPrompt }),
-      });
-      const data = await response.json();
+      const data = await extendedApi.agents.intelligence.strategy(strategyPrompt);
       setStrategyResult(data);
       toast.success("Hermes strategy generated!");
     } catch (error) {
@@ -2964,12 +2992,17 @@ export default function AlphaAgentOps() {
             </TabsContent>
 
             <TabsContent value="overview">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"
+              >
                 <MetricCard
                   title="Total Agents"
                   value={`${activeAgents}/${totalAgents}`}
                   icon={Brain}
-                  color="bg-blue-500/10 text-blue-500"
+                  color="bg-primary/10 text-primary"
                 />
                 <MetricCard
                   title="Daily Spend"
@@ -2983,7 +3016,7 @@ export default function AlphaAgentOps() {
                   value={(loopsPrevented || 0).toString()}
                   change={0}
                   icon={ShieldAlert}
-                  color="bg-purple-500/10 text-purple-500"
+                  color="bg-accent/10 text-accent"
                 />
                 <MetricCard
                   title="Cost Saved"
@@ -2992,15 +3025,7 @@ export default function AlphaAgentOps() {
                   icon={TrendingDown}
                   color="bg-emerald-500/10 text-emerald-500"
                 />
-                <MetricCard
-                  title="ROI Forecast (Net)"
-                  value={`${roiMetrics?.[0]?.value || 0}x`}
-                  change={0}
-                  icon={LineChart}
-                  color="bg-indigo-500/10 text-indigo-400"
-                  footer="Projected annual savings vs compute"
-                />
-              </div>
+              </motion.div>
 
               <div className="grid gap-4 md:grid-cols-2 mt-6">
                 {/* Budget Overview */}
@@ -3898,10 +3923,12 @@ export default function AlphaAgentOps() {
                             </div>
                           ))
                         ) : (
-                          <div className="text-center py-12 text-muted-foreground italic border rounded-lg border-dashed">
-                            <ShieldCheck className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                            No active vigilance alerts. System nominal.
-                          </div>
+                          <PremiumPlaceholder 
+                            title="System Nominal" 
+                            description="No active safety breaches or budget anomalies detected in current cycle."
+                            variant="empty"
+                            className="py-12 bg-emerald-500/5 border-emerald-500/10"
+                          />
                         )}
                       </div>
                     </CardContent>
@@ -3945,6 +3972,7 @@ export default function AlphaAgentOps() {
                             variant="outline"
                             size="sm"
                             className="h-9 gap-2 border-indigo-500/30 bg-indigo-500/5 text-[10px]"
+                            onClick={() => setLocation("/mobile")}
                           >
                             <Apple className="w-3.5 h-3.5" /> App Store
                           </Button>
@@ -3952,6 +3980,7 @@ export default function AlphaAgentOps() {
                             variant="outline"
                             size="sm"
                             className="h-9 gap-2 border-indigo-500/30 bg-indigo-500/5 text-[10px]"
+                            onClick={() => setLocation("/mobile")}
                           >
                             <Play className="w-3.5 h-3.5" /> Google Play
                           </Button>
@@ -4182,9 +4211,7 @@ export default function AlphaAgentOps() {
                       <Button
                         variant="outline"
                         className="h-16 flex-col gap-2"
-                        onClick={() =>
-                          handleDownloadPDF("agentops-sdk-v1.zip", sdkZip)
-                        }
+                        onClick={() => setLocation("/mobile")}
                       >
                         <Apple className="w-6 h-6" />
                         <span className="text-xs">Download SDK</span>
@@ -4192,9 +4219,7 @@ export default function AlphaAgentOps() {
                       <Button
                         variant="outline"
                         className="h-16 flex-col gap-2"
-                        onClick={() =>
-                          handleDownloadPDF("agentops-assistant.apk", sdkZip)
-                        }
+                        onClick={() => setLocation("/mobile")}
                       >
                         <Smartphone className="w-6 h-6" />
                         <span className="text-xs">Download App</span>
@@ -4545,23 +4570,61 @@ export default function AlphaAgentOps() {
                       </Button>
                     </div>
                     <div className="space-y-4">
-                      <Label>Custom Domain Mapping</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          placeholder="dashboard.youragency.com"
-                          readOnly
-                          className="bg-muted"
-                        />
-                        <Badge variant="outline" className="text-emerald-500">
-                          PROXIED
-                        </Badge>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Brand Name</Label>
+                          <Input 
+                            value={brandAssets.brand_name}
+                            onChange={(e) => setBrandAssets(prev => ({ ...prev, brand_name: e.target.value }))}
+                            placeholder="Agency Name"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Logo URL</Label>
+                          <Input 
+                            value={brandAssets.logo_url}
+                            onChange={(e) => setBrandAssets(prev => ({ ...prev, logo_url: e.target.value }))}
+                            placeholder="https://..."
+                          />
+                        </div>
                       </div>
-                      <Label>Primary Brand Color</Label>
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-blue-600 border shadow-inner" />
-                        <Button variant="ghost" size="sm">
-                          Update Assets
-                        </Button>
+                      <div className="space-y-2">
+                        <Label>Primary Brand Color</Label>
+                        <div className="flex items-center gap-4">
+                          <Input 
+                            type="color"
+                            className="w-12 h-10 p-1 bg-transparent"
+                            value={brandAssets.primary_color}
+                            onChange={(e) => setBrandAssets(prev => ({ ...prev, primary_color: e.target.value }))}
+                          />
+                          <Input 
+                            value={brandAssets.primary_color}
+                            onChange={(e) => setBrandAssets(prev => ({ ...prev, primary_color: e.target.value }))}
+                            placeholder="#000000"
+                            className="font-mono text-xs uppercase"
+                          />
+                          <Button 
+                            variant="secondary" 
+                            size="sm" 
+                            onClick={handleUpdateAssets}
+                            disabled={isUpdatingAssets}
+                          >
+                            {isUpdatingAssets ? "Updating..." : "Update Assets"}
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Custom Domain Mapping</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="dashboard.youragency.com"
+                            readOnly
+                            className="bg-muted"
+                          />
+                          <Badge variant="outline" className="text-emerald-500">
+                            PROXIED
+                          </Badge>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -6031,16 +6094,11 @@ export default function AlphaAgentOps() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="p-8 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center text-center opacity-40">
-                      <Brain className="w-12 h-12 mb-4" />
-                      <p className="text-sm font-bold uppercase tracking-widest">
-                        Model: Stratos-V1
-                      </p>
-                      <p className="text-[10px] mt-2 italic">
-                        Waiting for enough data points to generate next-quarter
-                        projections.
-                      </p>
-                    </div>
+                    <PremiumPlaceholder 
+                      title="Autonomous Strategy Engine" 
+                      description="Waiting for enough context points to generate recursive next-quarter projections (Model: Stratos-V1)."
+                      variant="coming-soon"
+                    />
                   </CardContent>
                 </Card>
               </div>

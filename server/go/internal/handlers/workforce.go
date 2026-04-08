@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"regexp"
 	"sync"
@@ -16,17 +17,137 @@ import (
 
 var uuidRegex = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
 
-// WorkforceHandler handles digital workforce and Sovereign operations
+const (
+	RateLimitBurst  = 10
+	RateLimitRefill = 100 // per second
+)
+
+type rateLimiter struct {
+	mu     sync.RWMutex
+	tokens map[string]*userRateLimit
+}
+
+type userRateLimit struct {
+	tokens    int
+	lastCheck time.Time
+}
+
+func newRateLimiter() *rateLimiter {
+	return &rateLimiter{
+		tokens: make(map[string]*userRateLimit),
+	}
+}
+
+func (r *rateLimiter) allow(userID string) bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	now := time.Now()
+	limit, exists := r.tokens[userID]
+
+	if !exists {
+		r.tokens[userID] = &userRateLimit{
+			tokens:    RateLimitBurst - 1,
+			lastCheck: now,
+		}
+		return true
+	}
+
+	elapsed := now.Sub(limit.lastCheck).Seconds()
+	refill := int(elapsed * float64(RateLimitRefill))
+	limit.tokens = min(RateLimitBurst, limit.tokens+refill)
+	limit.lastCheck = now
+
+	if limit.tokens > 0 {
+		limit.tokens--
+		return true
+	}
+	return false
+}
+
 type WorkforceHandler struct {
-	proxy *services.ProxyService
-	repo  *repository.WorkforceRepository
-	cache *workforceCache
+	proxy     *services.ProxyService
+	repo      *repository.WorkforceRepository
+	cache     *workforceCache
+	rateLimit *rateLimiter
+	enricher  *requestEnricher
+}
+
+type requestEnricher struct {
+	mu         sync.RWMutex
+	commonKeys map[string]string
+}
+
+func newRequestEnricher() *requestEnricher {
+	return &requestEnricher{
+		commonKeys: map[string]string{
+			"source":            "go-gateway",
+			"gateway_version":   "2.0.0",
+			"request_id_prefix": "wfh",
+		},
+	}
+}
+
+func (e *requestEnricher) enrich(req map[string]interface{}, userID string) map[string]interface{} {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+
+	enriched := make(map[string]interface{}, len(req)+5)
+	for k, v := range req {
+		enriched[k] = v
+	}
+
+	for k, v := range e.commonKeys {
+		enriched[k] = v
+	}
+
+	enriched["user_id"] = userID
+	enriched["gateway_timestamp"] = time.Now().UTC().Unix()
+	enriched["request_id"] = fmt.Sprintf("%s-%d-%s",
+		e.commonKeys["request_id_prefix"],
+		time.Now().Unix(),
+		userID[:8])
+
+	return enriched
+}
+
+func (e *requestEnricher) transformResponse(data []byte, endpoint string) ([]byte, error) {
+	var raw interface{}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return data, err
+	}
+
+	transformed := e.addResponseMetadata(raw)
+	return json.Marshal(transformed)
+}
+
+func (e *requestEnricher) addResponseMetadata(raw interface{}) interface{} {
+	switch v := raw.(type) {
+	case map[string]interface{}:
+		v["_gateway_metadata"] = map[string]interface{}{
+			"transformed_at":   time.Now().UTC().Unix(),
+			"gateway_version":  "2.0.0",
+			"response_version": "2.0",
+		}
+		return v
+	case []interface{}:
+		for i, item := range v {
+			if m, ok := item.(map[string]interface{}); ok {
+				m["_item_index"] = i
+			}
+		}
+		return v
+	default:
+		return raw
+	}
 }
 
 type workforceCache struct {
 	mu         sync.RWMutex
 	status     cacheItem
 	skills     cacheItem
+	ventures   cacheItem
+	decisions  cacheItem
 	lastUpdate time.Time
 }
 
@@ -39,6 +160,8 @@ func newWorkforceCache() *workforceCache {
 	return &workforceCache{
 		status:     cacheItem{expiresAt: time.Now()},
 		skills:     cacheItem{expiresAt: time.Now()},
+		ventures:   cacheItem{expiresAt: time.Now()},
+		decisions:  cacheItem{expiresAt: time.Now()},
 		lastUpdate: time.Now(),
 	}
 }
@@ -53,6 +176,10 @@ func (c *workforceCache) get(key string) ([]byte, bool) {
 		entry = c.status
 	case "skills":
 		entry = c.skills
+	case "ventures":
+		entry = c.ventures
+	case "decisions":
+		entry = c.decisions
 	}
 
 	if time.Now().After(entry.expiresAt) {
@@ -74,14 +201,34 @@ func (c *workforceCache) set(key string, data []byte, ttl time.Duration) {
 		c.status = entry
 	case "skills":
 		c.skills = entry
+	case "ventures":
+		c.ventures = entry
+	case "decisions":
+		c.decisions = entry
+	}
+}
+
+func (c *workforceCache) invalidate(key string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	switch key {
+	case "status":
+		c.status = cacheItem{expiresAt: time.Now()}
+	case "ventures":
+		c.ventures = cacheItem{expiresAt: time.Now()}
+	case "decisions":
+		c.decisions = cacheItem{expiresAt: time.Now()}
 	}
 }
 
 func NewWorkforceHandler(proxy *services.ProxyService, repo *repository.WorkforceRepository) *WorkforceHandler {
 	return &WorkforceHandler{
-		proxy: proxy,
-		repo:  repo,
-		cache: newWorkforceCache(),
+		proxy:     proxy,
+		repo:      repo,
+		cache:     newWorkforceCache(),
+		rateLimit: newRateLimiter(),
+		enricher:  newRequestEnricher(),
 	}
 }
 
@@ -100,7 +247,17 @@ func (h *WorkforceHandler) validateCampaignRequest(c *gin.Context) error {
 	if len(req.Topic) > 200 {
 		return errors.New("topic exceeds maximum length of 200 characters")
 	}
+	// Additional validation: sanitize inputs
+	req.Topic = sanitizeInput(req.Topic)
+	req.Audience = sanitizeInput(req.Audience)
 	return nil
+}
+
+func sanitizeInput(input string) string {
+	// Basic XSS prevention
+	input = regexp.MustCompile(`<[^>]*>`).ReplaceAllString(input, "")
+	input = regexp.MustCompile(`javascript:`).ReplaceAllString(input, "")
+	return input
 }
 
 // validateLeadCriteria validates lead sourcing criteria
@@ -112,16 +269,59 @@ func (h *WorkforceHandler) validateLeadCriteria(c *gin.Context) error {
 	return nil
 }
 
+// checkRateLimit applies rate limiting to endpoint
+func (h *WorkforceHandler) checkRateLimit(c *gin.Context) bool {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		userID = c.ClientIP()
+	}
+	return h.rateLimit.allow(userID)
+}
+
+// enrichRequest adds gateway metadata to requests
+func (h *WorkforceHandler) enrichRequest(c *gin.Context, reqData map[string]interface{}) map[string]interface{} {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		userID = "anonymous"
+	}
+	return h.enricher.enrich(reqData, userID)
+}
+
+// transformResponse adds metadata to API responses
+func (h *WorkforceHandler) transformResponse(data []byte, endpoint string) ([]byte, error) {
+	return h.enricher.transformResponse(data, endpoint)
+}
+
 // GetStatus returns the current status of the digital workforce
 // GET /api/v1/workforce/status
 func (h *WorkforceHandler) GetStatus(c *gin.Context) {
+	// Rate limiting
+	if !h.checkRateLimit(c) {
+		c.JSON(http.StatusTooManyRequests, models.ErrorResponse{
+			Error:   "Rate limit exceeded",
+			Details: "Too many requests. Please try again later.",
+		})
+		return
+	}
+
 	// Try cache first (TTL: 30 seconds)
 	if cached, ok := h.cache.get("status"); ok {
+		// Transform cached response
+		transformed, err := h.transformResponse(cached, "/workforce/status")
+		if err == nil {
+			c.Data(http.StatusOK, "application/json", transformed)
+			return
+		}
 		c.Data(http.StatusOK, "application/json", cached)
 		return
 	}
 
-	resp, err := h.proxy.Forward("GET", "/workforce/status", nil)
+	userID := c.GetString("user_id")
+	enrichedReq := h.enrichRequest(c, map[string]interface{}{
+		"endpoint": "workforce_status",
+	})
+
+	resp, err := h.proxy.Forward("GET", "/workforce/status", enrichedReq)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch workforce status", Details: err.Error()})
 		return
@@ -130,7 +330,23 @@ func (h *WorkforceHandler) GetStatus(c *gin.Context) {
 	// Cache the response
 	h.cache.set("status", resp, 30*time.Second)
 
-	c.Data(http.StatusOK, "application/json", resp)
+	// Transform and return
+	transformed, err := h.transformResponse(resp, "/workforce/status")
+	if err != nil {
+		c.Data(http.StatusOK, "application/json", resp)
+		return
+	}
+	c.Data(http.StatusOK, "application/json", transformed)
+
+	// Log to local database for audit
+	if userID != "" {
+		go h.repo.CreateGovernanceDecision(c.Request.Context(), &models.GovernanceDecision{
+			UserID:   userID,
+			Stage:    0,
+			Decision: "STATUS_CHECK",
+			Status:   "completed",
+		})
+	}
 }
 
 // ListDecisions returns historical governance decisions
@@ -248,6 +464,15 @@ func (h *WorkforceHandler) RecoverRevenue(c *gin.Context) {
 
 // RunCampaign triggers a marketing trend research and deployment
 func (h *WorkforceHandler) RunCampaign(c *gin.Context) {
+	// Rate limiting
+	if !h.checkRateLimit(c) {
+		c.JSON(http.StatusTooManyRequests, models.ErrorResponse{
+			Error:   "Rate limit exceeded",
+			Details: "Too many requests for campaign execution. Please try again later.",
+		})
+		return
+	}
+
 	if err := h.validateCampaignRequest(c); err != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid campaign request", Details: err.Error()})
 		return
@@ -262,16 +487,32 @@ func (h *WorkforceHandler) RunCampaign(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.proxy.Forward("POST", "/workforce/campaigns/run", req)
+	// Enrich request with gateway metadata
+	userID := c.GetString("user_id")
+	enrichedReq := h.enrichRequest(c, map[string]interface{}{
+		"topic":         req.Topic,
+		"audience":      req.Audience,
+		"campaign_type": "marketing",
+		"triggered_by":  userID,
+	})
+
+	// Transform response to add metadata
+	resp, err := h.proxy.Forward("POST", "/workforce/campaigns/run", enrichedReq)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to run campaign", Details: err.Error()})
 		return
 	}
 
 	// Invalidate cache since new campaign was created
-	h.cache.set("status", nil, 0)
+	h.cache.invalidate("status")
 
-	c.Data(http.StatusOK, "application/json", resp)
+	// Transform response
+	transformed, err := h.transformResponse(resp, "/workforce/campaigns/run")
+	if err != nil {
+		c.Data(http.StatusOK, "application/json", resp)
+		return
+	}
+	c.Data(http.StatusOK, "application/json", transformed)
 }
 
 // SourceLeads handles lead generation scraping
@@ -436,6 +677,15 @@ func (h *WorkforceHandler) GetOutreachDrafts(c *gin.Context) {
 
 // ApproveOutreach finalizes and sends an outreach message
 func (h *WorkforceHandler) ApproveOutreach(c *gin.Context) {
+	// Rate limiting for write operations
+	if !h.checkRateLimit(c) {
+		c.JSON(http.StatusTooManyRequests, models.ErrorResponse{
+			Error:   "Rate limit exceeded",
+			Details: "Too many outreach approvals. Please try again later.",
+		})
+		return
+	}
+
 	id := c.Param("id")
 	if id == "" {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Outreach ID is required"})
@@ -448,16 +698,40 @@ func (h *WorkforceHandler) ApproveOutreach(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.proxy.Forward("POST", "/workforce/outreach/"+id+"/approve", nil)
+	// Enrich request
+	userID := c.GetString("user_id")
+	enrichedReq := h.enrichRequest(c, map[string]interface{}{
+		"outreach_id":     id,
+		"approved_by":     userID,
+		"approval_action": "send",
+	})
+
+	resp, err := h.proxy.Forward("POST", "/workforce/outreach/"+id+"/approve", enrichedReq)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to approve outreach", Details: err.Error()})
 		return
 	}
 
 	// Invalidate cache after approval
-	h.cache.set("status", nil, 0)
+	h.cache.invalidate("status")
 
-	c.Data(http.StatusOK, "application/json", resp)
+	// Log the approval decision locally
+	if userID != "" {
+		go h.repo.CreateGovernanceDecision(c.Request.Context(), &models.GovernanceDecision{
+			UserID:   userID,
+			Stage:    3,
+			Decision: "OUTREACH_APPROVED",
+			Status:   "completed",
+		})
+	}
+
+	// Transform response
+	transformed, err := h.transformResponse(resp, "/workforce/outreach/approve")
+	if err != nil {
+		c.Data(http.StatusOK, "application/json", resp)
+		return
+	}
+	c.Data(http.StatusOK, "application/json", transformed)
 }
 
 // GetInvoices returns workforce-specific financial records

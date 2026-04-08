@@ -41,22 +41,27 @@ export default function OnPremManager() {
 
   const fetchDeployments = async () => {
     try {
-      const data = await extendedApi.onPrem.checklist();
-      setDeployments(
-        data
-          ? [
-              {
-                id: "1",
-                deployment_name: "Default",
-                kubernetes_version: "1.28",
-                node_count: 3,
-                status: "pending",
-              },
-            ]
-          : []
-      );
+      const data = await extendedApi.edge.deployments();
+      setDeployments(data || []);
     } catch {
       setDeployments([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeploy = async () => {
+    try {
+      setIsLoading(true);
+      const res = await extendedApi.onPrem.deploy({
+        name: "alpha-on-prem-" + Date.now().toString().slice(-4),
+        type: "kubernetes",
+        nodes: 3
+      });
+      toast.success(res.message || "Deployment handshake initiated");
+      await fetchDeployments();
+    } catch (err: any) {
+      toast.error(err.message || "Deployment handshake failed");
     } finally {
       setIsLoading(false);
     }
@@ -124,7 +129,7 @@ export default function OnPremManager() {
               <h2 className="text-xl font-semibold">Active Deployments</h2>
               <Button
                 className="bg-blue-600 hover:bg-blue-700"
-                onClick={generateManifest}
+                onClick={handleDeploy}
               >
                 <Plus className="w-4 h-4 mr-2" />
                 New Deployment
@@ -144,9 +149,9 @@ export default function OnPremManager() {
                   </p>
                   <Button
                     className="mt-4 bg-blue-600 hover:bg-blue-700"
-                    onClick={generateManifest}
+                    onClick={handleDeploy}
                   >
-                    Generate Deployment Manifest
+                    Initiate Production Handshake
                   </Button>
                 </CardContent>
               </Card>
@@ -158,11 +163,10 @@ export default function OnPremManager() {
                       <div className="flex items-center justify-between">
                         <div>
                           <h3 className="font-semibold text-white">
-                            {dep.deployment_name}
+                            {dep.name}
                           </h3>
                           <p className="text-sm text-slate-400">
-                            K8s {dep.kubernetes_version} · {dep.node_count}{" "}
-                            nodes
+                            {dep.location} · {dep.model_version}
                           </p>
                         </div>
                         <Badge

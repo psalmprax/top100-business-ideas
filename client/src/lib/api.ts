@@ -106,6 +106,24 @@ export const setSimulationListener = (cb: (endpoint: string) => void) => {
   onSimulationTriggered = cb;
 };
 
+/**
+ * Higher-order function for resilient data fetching.
+ * Wraps an API call and returns fallback data if the call fails.
+ */
+export async function withFallback<T>(
+  apiCall: () => Promise<T>,
+  fallbackData: T
+): Promise<T> {
+  try {
+    return await apiCall();
+  } catch (err: any) {
+    console.warn(
+      `[API_FALLBACK] Service unavailable, using shadow data. Error: ${err.message}`
+    );
+    return fallbackData;
+  }
+}
+
 // Helper for API requests
 async function apiRequest<T>(
   endpoint: string,
@@ -120,10 +138,14 @@ async function apiRequest<T>(
 
   console.log(`[API_DEBUG] ${method} ${endpoint}, strict: ${strict}`);
 
-  const headers: HeadersInit = {
-    "Content-Type": "application/json",
-    ...options.headers,
+  const headers: Record<string, string> = {
+    ...((options.headers as Record<string, string>) || {}),
   };
+
+  // Only set Content-Type to JSON if the body is NOT FormData
+  if (!(options.body instanceof FormData) && !headers["Content-Type"]) {
+    headers["Content-Type"] = "application/json";
+  }
 
   if (token) {
     (headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
@@ -536,6 +558,21 @@ export const complianceApi = {
     }>("/api/v1/compliance/check-document", {
       method: "POST",
       body: JSON.stringify({ document, regulations }),
+    }),
+
+  getChecklists: (category?: string, section?: string) => {
+    let url = "/api/v1/compliance/checklists";
+    const params = new URLSearchParams();
+    if (category) params.append("category", category);
+    if (section) params.append("section", section);
+    if (params.toString()) url += `?${params.toString()}`;
+    return apiRequest<any[]>(url);
+  },
+
+  updateChecklistItem: (id: string, assessment: any) =>
+    apiRequest<any>(`/api/v1/compliance/checklists/${id}`, {
+      method: "POST",
+      body: JSON.stringify(assessment),
     }),
 };
 
@@ -1232,6 +1269,8 @@ export const extendedApi = {
 
   // Compliance Integration (EU AI Act articles)
   compliance: {
+    getChecklists: complianceApi.getChecklists,
+    updateChecklistItem: complianceApi.updateChecklistItem,
     getStats: () => apiRequest<any>("/api/v1/compliance/stats"),
     listModels: () => apiRequest<any[]>("/api/v1/compliance/models"),
     registerModel: (modelData: any) =>
@@ -1248,8 +1287,9 @@ export const extendedApi = {
         body: JSON.stringify({ modelId }),
         strict: true,
       }),
-    generateDocumentation: (modelId: string) =>
+    generateDocumentation: (modelId: string, options: ApiOptions = {}) =>
       apiRequest<any>(`/api/v1/compliance/documentation/${modelId}`, {
+        ...options,
         method: "POST",
         strict: true,
       }),
@@ -1301,10 +1341,10 @@ export const extendedApi = {
         : "/api/v1/compliance/scans";
       return apiRequest<any[]>(url);
     },
-    redTeamAudit: (article_id: string) =>
+    redTeamAudit: (target_id: string) =>
       apiRequest<any>("/api/v1/compliance/red-team", {
         method: "POST",
-        body: JSON.stringify({ article_id }),
+        body: JSON.stringify({ target_id }),
         strict: true,
       }),
     euRegister: (modelId: string) =>
@@ -1342,14 +1382,37 @@ export const extendedApi = {
       apiRequest<any[]>("/api/v1/compliance/regional-reports"),
     getFinancialMetrics: () =>
       apiRequest<any>("/api/v1/compliance/financial-metrics"),
-    exportReport: (modelId?: string, reportType?: string) => {
+    deleteModel: (id: string) =>
+      apiRequest<{ message: string }>(`/api/v1/compliance/models/${id}`, {
+        method: "DELETE",
+        strict: true,
+      }),
+    exportPackage: (id: string) =>
+      apiRequest<{ url: string; message: string }>(`/api/v1/compliance/models/${id}/export-package`, {
+        method: "POST",
+        strict: true,
+      }),
+    exportReport: (
+      modelId?: string,
+      reportTypeOrOptions?: string | (ApiOptions & { report_type?: string })
+    ) => {
       let url = "/api/v1/compliance/reports/export";
       const params = new URLSearchParams();
       if (modelId) params.append("model_id", modelId);
-      if (reportType) params.append("report_type", reportType);
+
+      let options: ApiOptions = {};
+      if (typeof reportTypeOrOptions === "string") {
+        params.append("report_type", reportTypeOrOptions);
+      } else if (reportTypeOrOptions) {
+        options = reportTypeOrOptions;
+        if (reportTypeOrOptions.report_type) {
+          params.append("report_type", reportTypeOrOptions.report_type);
+        }
+      }
+
       const queryString = params.toString();
       if (queryString) url += `?${queryString}`;
-      return apiRequest<any>(url);
+      return apiRequest<any>(url, options);
     },
     getAuditLogs: (agentId?: string, query?: string, outcome?: string) => {
       const params = new URLSearchParams();
@@ -1624,6 +1687,15 @@ export const extendedApi = {
       }),
     checklist: () =>
       apiRequest<{ checklist: string[] }>("/api/v1/on-prem/checklist"),
+    deploy: (config: any) =>
+      apiRequest<{ message: string; deployment_id: string }>(
+        "/api/v1/on-prem/deploy",
+        {
+          method: "POST",
+          body: JSON.stringify(config),
+          strict: true,
+        }
+      ),
   },
 
   // Deepfake Verification (Deepfake UC 1, 4, 6)
@@ -1753,7 +1825,6 @@ export const extendedApi = {
       }>(`/api/v1/compliance/regional/rules?jurisdiction=${jurisdiction}`),
   },
 
-  // Agent Ops & Sentinel Governance
   agentOps: {
     integrateSlack: (channel: string) =>
       apiRequest<{ status: string; message: string }>(
@@ -2192,6 +2263,7 @@ export const extendedApi = {
       apiRequest<any>(`/api/v1/workforce/export?format=${format}`, {
         method: "GET",
       }),
+    getSkills: () => apiRequest<any[]>("/api/v1/workforce/skills"),
   },
 
   sentinel: {
@@ -2270,6 +2342,19 @@ export const extendedApi = {
         method: "DELETE",
         strict: true,
       }),
+    intelligence: {
+      research: (topic: string) =>
+        apiRequest<any>(
+          `/api/v1/agent-ops/intelligence/research?topic=${encodeURIComponent(
+            topic
+          )}`
+        ),
+      strategy: (name: string) =>
+        apiRequest<any>("/api/v1/agent-ops/intelligence/strategy", {
+          method: "POST",
+          body: JSON.stringify({ name }),
+        }),
+    },
   },
   deepfake: {
     listAnalyses: () => apiRequest<any[]>("/api/v1/deepfake/analyses"),
@@ -2327,6 +2412,15 @@ export const extendedApi = {
         method: "POST",
         strict: true,
       }),
+    upload: (file: File) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      return apiRequest<any>("/api/v1/deepfake/upload", {
+        method: "POST",
+        body: formData,
+        strict: true,
+      });
+    },
     deployModel: (model: any) =>
       apiRequest<any>("/api/v1/deepfake/models", {
         method: "POST",
@@ -2335,7 +2429,7 @@ export const extendedApi = {
       }),
     listBiometrics: () => apiRequest<any[]>("/api/v1/deepfake/biometrics"),
     revokeBiometric: (id: string) =>
-      apiRequest<any>(`/api/v1/deepfake/biometrics/${id}`, {
+      apiRequest<any>(`/api/v1/deepfake/biometrics/${id}/revoke`, {
         method: "DELETE",
         strict: true,
       }),
@@ -2423,6 +2517,18 @@ export const extendedApi = {
         apiRequest<any>("/agent-ops/governance/settings", {
           method: "POST",
           body: JSON.stringify(settings),
+        }),
+      batchUpdate: (settings: Record<string, any>) =>
+        apiRequest<any>("/api/v1/agent-ops/governance/settings/batch", {
+          method: "POST",
+          body: JSON.stringify(settings),
+        }),
+    },
+    assets: {
+      update: (data: Record<string, any>) =>
+        apiRequest<any>("/api/v1/agent-ops/governance/assets/update", {
+          method: "POST",
+          body: JSON.stringify(data),
         }),
     },
     onPrem: {

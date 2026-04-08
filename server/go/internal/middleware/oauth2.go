@@ -171,7 +171,7 @@ func ValidateOIDCToken(config *OAuth2Config) gin.HandlerFunc {
 
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"error": "Token validation failed",
+				"error":   "Token validation failed",
 				"details": err.Error(),
 			})
 			return

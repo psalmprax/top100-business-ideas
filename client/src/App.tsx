@@ -7,7 +7,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import AlphaAI from "./pages/AlphaAI";
 import AlphaAgentOpsPage from "./pages/AlphaAgentOps";
-import AlphaAIActCompliancePage from "./pages/AlphaAIActCompliance";
+import AlphaAIActCompliancePage from "./pages/Compliance";
 import AlphaDeepfakeDefensePage from "./pages/AlphaDeepfakeDefense";
 import AlphaWorkforcePage from "./pages/AlphaWorkforce";
 import DenialDefensePage from "./pages/DenialDefense";
@@ -26,7 +26,10 @@ import RegionalCompliancePage from "./pages/RegionalCompliance";
 import BiometricEnrollmentPage from "./pages/BiometricEnrollment";
 import VentureDetailPage from "./pages/VentureUniversalTemplate";
 import SkillMarketplacePage from "./pages/SkillMarketplace";
+import MobileLandingPage from "./pages/MobileLanding";
 
+import { PerspectiveProvider, usePerspective } from "./contexts/PerspectiveContext";
+import { PerspectiveSwitcher } from "./components/PerspectiveSwitcher";
 import { useAuth } from "./contexts/AuthContext";
 import { Redirect } from "wouter";
 
@@ -131,6 +134,7 @@ function Router() {
       <Route path={"/webhooks"} component={WebhookHistoryPage} />
       <Route path={"/regional-compliance"} component={RegionalCompliancePage} />
       <Route path={"/biometrics"} component={BiometricEnrollmentPage} />
+      <Route path={"/mobile"} component={MobileLandingPage} />
 
       {/* Legacy routes redirect to products */}
       <Route path={"/ventures/alpha-agent-ops"}>
@@ -192,6 +196,16 @@ function Router() {
 //   to keep consistent foreground/background color across components
 // - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
 
+function PerspectiveWrapper({ children }: { children: React.ReactNode }) {
+  const { perspective } = usePerspective();
+  return (
+    <div className={`perspective-${perspective} min-h-screen`}>
+      {children}
+      <PerspectiveSwitcher />
+    </div>
+  );
+}
+
 function App() {
   return (
     <ErrorBoundary>
@@ -200,10 +214,14 @@ function App() {
         // switchable
       >
         <TooltipProvider>
-          <AuthProvider>
-            <Toaster />
-            <Router />
-          </AuthProvider>
+          <PerspectiveProvider>
+            <AuthProvider>
+              <PerspectiveWrapper>
+                <Toaster />
+                <Router />
+              </PerspectiveWrapper>
+            </AuthProvider>
+          </PerspectiveProvider>
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

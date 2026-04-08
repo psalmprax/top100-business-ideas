@@ -22,7 +22,7 @@ func (r *WorkforceRepository) ListGovernanceDecisions(ctx context.Context, userI
 
 	query := `SELECT id, user_id, stage, decision, status, timestamp 
 	          FROM governance_decisions WHERE user_id = $1 ORDER BY timestamp DESC`
-	
+
 	rows, err := database.Pool.Query(ctx, query, userID)
 	if err != nil {
 		return nil, err
@@ -44,7 +44,7 @@ func (r *WorkforceRepository) ListGovernanceDecisions(ctx context.Context, userI
 func (r *WorkforceRepository) CreateGovernanceDecision(ctx context.Context, d *models.GovernanceDecision) error {
 	query := `INSERT INTO governance_decisions (user_id, stage, decision, status) 
 	          VALUES ($1, $2, $3, $4) RETURNING id, timestamp`
-	
+
 	return database.Pool.QueryRow(ctx, query, d.UserID, d.Stage, d.Decision, d.Status).Scan(&d.ID, &d.Timestamp)
 }
 
@@ -52,7 +52,7 @@ func (r *WorkforceRepository) CreateGovernanceDecision(ctx context.Context, d *m
 func (r *WorkforceRepository) ListCampaigns(ctx context.Context, userID string) ([]models.WorkforceCampaign, error) {
 	query := `SELECT id, user_id, name, target_audience, status, created_at 
 	          FROM workforce_campaigns WHERE user_id = $1 ORDER BY created_at DESC`
-	
+
 	rows, err := database.Pool.Query(ctx, query, userID)
 	if err != nil {
 		return nil, err
@@ -74,7 +74,7 @@ func (r *WorkforceRepository) ListCampaigns(ctx context.Context, userID string) 
 func (r *WorkforceRepository) CreateCampaign(ctx context.Context, c *models.WorkforceCampaign) error {
 	query := `INSERT INTO workforce_campaigns (user_id, name, target_audience, status) 
 	          VALUES ($1, $2, $3, $4) RETURNING id, created_at`
-	
+
 	return database.Pool.QueryRow(ctx, query, c.UserID, c.Name, c.TargetAudience, c.Status).Scan(&c.ID, &c.CreatedAt)
 }
 
@@ -82,7 +82,7 @@ func (r *WorkforceRepository) CreateCampaign(ctx context.Context, c *models.Work
 func (r *WorkforceRepository) ListForensicTraces(ctx context.Context, userID string) ([]models.ForensicTrace, error) {
 	query := `SELECT id, user_id, agent_id, action, details, timestamp 
 	          FROM forensic_traces WHERE user_id = $1 ORDER BY timestamp DESC`
-	
+
 	rows, err := database.Pool.Query(ctx, query, userID)
 	if err != nil {
 		return nil, err
@@ -104,7 +104,7 @@ func (r *WorkforceRepository) ListForensicTraces(ctx context.Context, userID str
 func (r *WorkforceRepository) CreateForensicTrace(ctx context.Context, t *models.ForensicTrace) error {
 	query := `INSERT INTO forensic_traces (user_id, agent_id, action, details) 
 	          VALUES ($1, $2, $3, $4) RETURNING id, timestamp`
-	
+
 	return database.Pool.QueryRow(ctx, query, t.UserID, t.AgentID, t.Action, t.Details).Scan(&t.ID, &t.Timestamp)
 }
 
@@ -116,7 +116,7 @@ func (r *WorkforceRepository) GetLatestRevenueRecovery(ctx context.Context, user
 
 	query := `SELECT id, user_id, status, recovered_amount, actions_taken, confidence_score, interaction_id, timestamp 
 	          FROM revenue_recoveries WHERE user_id = $1 ORDER BY timestamp DESC LIMIT 1`
-	
+
 	var rr models.RevenueRecovery
 	err := database.Pool.QueryRow(ctx, query, userID).Scan(
 		&rr.ID, &rr.UserID, &rr.Status, &rr.RecoveredAmount, &rr.ActionsTaken, &rr.ConfidenceScore, &rr.InteractionID, &rr.Timestamp,
@@ -134,6 +134,6 @@ func (r *WorkforceRepository) CreateRevenueRecovery(ctx context.Context, rr *mod
 
 	query := `INSERT INTO revenue_recoveries (user_id, status, recovered_amount, actions_taken, confidence_score, interaction_id) 
 	          VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, timestamp`
-	
+
 	return database.Pool.QueryRow(ctx, query, rr.UserID, rr.Status, rr.RecoveredAmount, rr.ActionsTaken, rr.ConfidenceScore, rr.InteractionID).Scan(&rr.ID, &rr.Timestamp)
 }

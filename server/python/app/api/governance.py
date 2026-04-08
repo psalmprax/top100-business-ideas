@@ -1,13 +1,17 @@
 """Governance and advanced features endpoints"""
 
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, HTTPException, Depends
 from sqlmodel import Session, select
 from datetime import datetime, timedelta
 import random
+import logging
+
+logger = logging.getLogger(__name__)
 
 from app.core.models import (
     ComplianceArticle,
+    ComplianceChecklistItem,
     SLAAgreement,
     SLAMetric,
     PartnerIntegration,
@@ -81,7 +85,7 @@ async def get_compliance_dashboard(session: Session = Depends(get_session)):
             ],
         }
     except Exception as e:
-        print(f"Compliance Dashboard Error: {e}")
+        logger.error(f"Compliance Dashboard Error: {e}")
         raise HTTPException(
             status_code=500,
             detail="Database integrity failure in compliance dashboard.",
@@ -118,6 +122,15 @@ async def list_compliance_articles(session: Session = Depends(get_session)):
                     status="pending",
                 ),
                 ComplianceArticle(
+                    article="Article 11",
+                    title="Technical Documentation",
+                    description="Automated documentation generation for high-risk systems",
+                    risk="high",
+                    status="compliant",
+                    integration_type="docs",
+                    scan_type="Conformity Audit"
+                ),
+                ComplianceArticle(
                     article="Article 14",
                     title="Accuracy, Robustness and Cybersecurity",
                     description="Technical robustness requirements",
@@ -146,7 +159,7 @@ async def list_compliance_articles(session: Session = Depends(get_session)):
 
         return articles
     except Exception as e:
-        print(f"Compliance Articles Error: {e}")
+        logger.error(f"Compliance Articles Error: {e}")
         raise HTTPException(
             status_code=500,
             detail="Failed to retrieve compliance articles from database.",
@@ -180,7 +193,9 @@ async def assess_compliance_article(
 
 
 # ============================================================================
-# SLA Management
+
+# ============================================================================
+# SLA Dashboard
 # ============================================================================
 
 
@@ -242,7 +257,7 @@ async def get_sla_dashboard(session: Session = Depends(get_session)):
             else "breached",
         }
     except Exception as e:
-        print(f"SLA Dashboard Error: {e}")
+        logger.error(f"SLA Dashboard Error: {e}")
         raise HTTPException(
             status_code=500, detail="Database failure while retrieving SLA status."
         )
@@ -257,7 +272,7 @@ async def get_sla_metrics(session: Session = Depends(get_session)):
         ).all()
         return metrics
     except Exception as e:
-        print(f"SLA Metrics Error: {e}")
+        logger.error(f"SLA Metrics Error: {e}")
         raise HTTPException(status_code=500, detail="Failed to retrieve SLA history.")
 
 
@@ -297,7 +312,7 @@ async def list_partners(session: Session = Depends(get_session)):
 
         return partners
     except Exception as e:
-        print(f"Partners list Error: {e}")
+        logger.error(f"Partners list Error: {e}")
         raise HTTPException(
             status_code=500, detail="Database failure in partner portal."
         )
@@ -370,7 +385,7 @@ async def get_usage_forecast(session: Session = Depends(get_session)):
 
         return forecasts
     except Exception as e:
-        print(f"Forecast Error: {e}")
+        logger.error(f"Forecast Error: {e}")
         return []
 
 
@@ -417,7 +432,7 @@ async def get_roi_analytics(session: Session = Depends(get_session)):
 
         return roi_metrics
     except Exception as e:
-        print(f"ROI Analytics Error: {e}")
+        logger.error(f"ROI Analytics Error: {e}")
         return []
 
 
@@ -463,7 +478,7 @@ async def get_localization_configs(session: Session = Depends(get_session)):
 
         return configs
     except Exception as e:
-        print(f"Localization Configs Error: {e}")
+        logger.error(f"Localization Configs Error: {e}")
         raise HTTPException(
             status_code=500,
             detail="Failed to retrieve regional localization configurations.",
@@ -505,7 +520,7 @@ async def get_healing_configs(session: Session = Depends(get_session)):
 
         return configs
     except Exception as e:
-        print(f"Healing Configs Error: {e}")
+        logger.error(f"Healing Configs Error: {e}")
         raise HTTPException(
             status_code=500, detail="Database failure in self-healing module."
         )
@@ -523,7 +538,7 @@ async def get_strategic_insights(session: Session = Depends(get_session)):
         # Use the centralized ROI service for real insights
         return roi_service.generate_strategic_insights(session)
     except Exception as e:
-        print(f"Strategic Insights Error: {e}")
+        logger.error(f"Strategic Insights Error: {e}")
         return []
 
 
@@ -576,7 +591,7 @@ async def get_system_settings(session: Session = Depends(get_session)):
 
         return settings
     except Exception as e:
-        print(f"Settings retrieval Error: {e}")
+        logger.error(f"Settings retrieval Error: {e}")
         raise HTTPException(
             status_code=500, detail="Failed to retrieve system settings."
         )
@@ -603,6 +618,72 @@ async def update_system_setting(
         return {"message": "Setting updated", "value": value}
 
 
+@router.post("/settings/batch")
+async def batch_update_system_settings(
+    settings_data: Dict[str, Any], session: Session = Depends(get_session)
+):
+    """Update multiple system settings at once"""
+    try:
+        updated_count = 0
+        for key, value in settings_data.items():
+            statement = select(SystemSetting).where(SystemSetting.setting_key == key)
+            setting = session.exec(statement).first()
+            if setting:
+                setting.setting_value = str(value)
+                setting.updated_at = datetime.utcnow()
+                session.add(setting)
+                updated_count += 1
+            else:
+                # Create new setting if it doesn't exist
+                new_setting = SystemSetting(
+                    category="custom",
+                    setting_key=key,
+                    setting_value=str(value),
+                    setting_type="string"
+                )
+                session.add(new_setting)
+                updated_count += 1
+
+        session.commit()
+        return {"message": f"Updated {updated_count} settings successfully"}
+    except Exception as e:
+        logger.error(f"Batch Settings Update Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/assets/update")
+async def update_brand_assets(
+    asset_data: Dict[str, Any], session: Session = Depends(get_session)
+):
+    """
+    Persistently update brand assets (Logo URL, Primary Color, Home URL).
+    Stored in SystemSetting for real-first persistence.
+    """
+    try:
+        updated = []
+        for key in ["logo_url", "primary_color", "home_url", "brand_name"]:
+            if key in asset_data:
+                statement = select(SystemSetting).where(SystemSetting.setting_key == key)
+                setting = session.exec(statement).first()
+                if setting:
+                    setting.setting_value = asset_data[key]
+                else:
+                    setting = SystemSetting(
+                        category="branding",
+                        setting_key=key,
+                        setting_value=asset_data[key],
+                        setting_type="string"
+                    )
+                session.add(setting)
+                updated.append(key)
+        
+        session.commit()
+        return {"status": "success", "updated_assets": updated}
+    except Exception as e:
+        logger.error(f"Asset Update Error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to persist brand assets.")
+
+
 # ============================================================================
 # On-Prem Deployment
 # ============================================================================
@@ -627,7 +708,7 @@ async def list_onprem_deployments(session: Session = Depends(get_session)):
 
         return deployments
     except Exception as e:
-        print(f"On-Prem deployments Error: {e}")
+        logger.error(f"On-Prem deployments Error: {e}")
         raise HTTPException(
             status_code=500, detail="Database failure in deployment manager."
         )

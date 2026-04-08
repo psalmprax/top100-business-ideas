@@ -15,8 +15,7 @@ from unittest.mock import MagicMock
 
 # Configure logging early
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -29,13 +28,28 @@ for mod in ["numpy", "torch", "transformers", "cv2", "PIL"]:
         DEPENDENCY_STATUS[mod] = "INSTALLED"
     except ImportError:
         DEPENDENCY_STATUS[mod] = "MISSING"
-        # We only mock if strictly necessary for the server to BOOT, 
+        # We only mock if strictly necessary for the server to BOOT,
         # but we log the technical debt.
-        logger.warning(f"Technical Debt Detected: AI/ML library '{mod}' is MISSION CRITICAL but MISSING.")
+        logger.warning(
+            f"Technical Debt Detected: AI/ML library '{mod}' is MISSION CRITICAL but MISSING."
+        )
 
-from app.api import agents, compliance, deepfake, health, auth_verify, extended, enterprise, governance, venture, security, alerts, intelligence
+from app.api import (
+    agents,
+    compliance,
+    deepfake,
+    health,
+    auth_verify,
+    extended,
+    enterprise,
+    governance,
+    venture,
+    security,
+    alerts,
+    intelligence,
+)
 from app.core.config import settings
-from app.services.billing_service import billing_service 
+from app.services.billing_service import billing_service
 
 
 @asynccontextmanager
@@ -43,16 +57,17 @@ async def lifespan(app: FastAPI):
     """Lifespan context manager for startup and shutdown events"""
     logger.info("Starting Python AI/ML Backend...")
     logger.info(f"Environment: {settings.ENVIRONMENT}")
-    
+
     # Initialize database
     try:
         from app.core.database import init_db
+
         init_db()
         logger.info("Database initialized successfully")
     except Exception as e:
         logger.error(f"Database initialization failed: {e}")
-        # In development, we might want to continue, but in production this is fatal
-    
+        raise  # Database initialization is critical for the application
+
     # Start background services
     try:
         billing_service.start_budget_enforcement_loop()
@@ -61,7 +76,7 @@ async def lifespan(app: FastAPI):
         logger.error(f"Failed to start background services: {e}")
 
     yield
-    
+
     logger.info("Shutting down Python AI/ML Backend...")
 
 
@@ -76,19 +91,22 @@ app = FastAPI(
 )
 
 # Configure CORS
+allowed_origins = (
+    os.getenv("ALLOWED_ORIGINS", "").split(",") if os.getenv("ALLOWED_ORIGINS") else []
+)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
 # Starlette SessionMiddleware for OAuth State
-app.add_middleware(
-    SessionMiddleware, 
-    secret_key=os.getenv("SESSION_SECRET_KEY", "sentinel-super-secret-sso-key")
-)
+session_secret = os.getenv("SESSION_SECRET_KEY")
+if not session_secret:
+    raise ValueError("SESSION_SECRET_KEY environment variable is required")
+app.add_middleware(SessionMiddleware, secret_key=session_secret)
 
 # Include routers
 app.include_router(health.router, prefix="/health", tags=["Health"])
@@ -96,9 +114,13 @@ app.include_router(agents.router, prefix="/agents", tags=["Agents"])
 app.include_router(compliance.router, prefix="/compliance", tags=["Compliance"])
 app.include_router(deepfake.router, prefix="/deepfake", tags=["Deepfake"])
 app.include_router(enterprise.router, tags=["Enterprise"])
-app.include_router(auth_verify.router, prefix="/auth/verify", tags=["Liveness Authentication"])
+app.include_router(
+    auth_verify.router, prefix="/auth/verify", tags=["Liveness Authentication"]
+)
 app.include_router(extended.router, tags=["Extended API - Full Sync"])
-app.include_router(governance.router, prefix="/governance", tags=["Governance & Advanced Features"])
+app.include_router(
+    governance.router, prefix="/governance", tags=["Governance & Advanced Features"]
+)
 app.include_router(venture.router, prefix="/venture", tags=["Venture"])
 app.include_router(security.router, prefix="/security", tags=["Security"])
 app.include_router(alerts.router, prefix="/agents", tags=["Alerts & Rules"])
@@ -111,15 +133,12 @@ from app.core.database import init_db
 @app.get("/")
 async def root():
     """Root endpoint"""
-    return {
-        "service": "ai-ml-backend",
-        "version": "1.0.0",
-        "status": "running"
-    }
+    return {"service": "ai-ml-backend", "version": "1.0.0", "status": "running"}
 
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(
         "main:app",
         host=settings.HOST,

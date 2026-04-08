@@ -7,18 +7,19 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, text
 import logging
 
-from app.core.database import get_session
+from app.core.database import AsyncSessionLocal
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
 @router.get("")
-async def health(session: Session = Depends(get_session)):
+async def health():
     """Comprehensive health check endpoint"""
     try:
         # Check database connectivity
-        db_healthy = await check_database_health(session)
+        async with AsyncSessionLocal() as session:
+            db_healthy = await check_database_health(session)
 
         # Check system resources
         system_health = check_system_health()
@@ -54,12 +55,13 @@ async def health(session: Session = Depends(get_session)):
         raise HTTPException(status_code=503, detail=f"Health check failed: {str(e)}")
 
 
-async def check_database_health(session: Session) -> Dict[str, Any]:
+async def check_database_health(session) -> Dict[str, Any]:
     """Check database connectivity and basic query"""
     try:
         # Simple query to test connectivity
-        result = session.exec(text("SELECT 1 as test")).first()
-        if result and result.test == 1:
+        result = await session.execute(text("SELECT 1 as test"))
+        row = result.first()
+        if row and row.test == 1:
             return {"status": "healthy", "message": "Database connection successful"}
         else:
             return {"status": "unhealthy", "message": "Database query failed"}

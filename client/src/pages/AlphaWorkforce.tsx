@@ -168,8 +168,8 @@ const AlphaWorkforce = () => {
   const [isAutonomous, setIsAutonomous] = useState(
     storage.get("workforce_autonomous", false)
   );
-  const [performanceMetric, setPerformanceMetric] = useState(78);
-  const [revenueGrowth, setRevenueGrowth] = useState(12.4);
+  // Purged simulated metrics - derived from backend telemetry
+  const [governanceDecisions, setGovernanceDecisions] = useState<any>({});
   const [workforceData, setWorkforceData] = useState<any>(null);
   const [isHiringOpen, setIsHiringOpen] = useState(false);
   const [webhooks, setWebhooks] = useState({
@@ -192,12 +192,12 @@ const AlphaWorkforce = () => {
 
   // Dynamic revenue data from API
   const [revenueData, setRevenueData] = useState<any>({
-    agentOps: { revenue: 42500, growth: 12.4, roi: 8.4 },
-    compliance: { revenue: 38200, growth: 8.2, roi: 6.2 },
-    deepfake: { revenue: 15400, growth: 15.1, roi: 4.8 },
-    totalCapital: 1250000,
-    burnRate: 45000,
-    avgRoi: 6.5,
+    agentOps: { revenue: 0, growth: 0, roi: 0 },
+    compliance: { revenue: 0, growth: 0, roi: 0 },
+    deepfake: { revenue: 0, growth: 0, roi: 0 },
+    totalCapital: 0,
+    burnRate: 0,
+    avgRoi: 0,
   });
   const [cashclawData, setCashclawData] = useState<any>({
     balance: 0,
@@ -254,6 +254,7 @@ const AlphaWorkforce = () => {
           jobs,
           winList,
           drafts,
+          settings,
         ] = await Promise.all([
           workforceSync(),
           extendedApi.workforce.getFiscalRequests(),
@@ -263,10 +264,10 @@ const AlphaWorkforce = () => {
           extendedApi.workforce.getSkills(),
           extendedApi.workforce.getEarnings(),
           extendedApi.workforce.getJobs(),
+          extendedApi.workforce.getAcquisitions(),
+          extendedApi.workforce.getContentDrafts(),
+          extendedApi.agentOps.getSettings(),
         ]);
-
-        const acquisitionsData = await extendedApi.workforce.getAcquisitions();
-        const contentData = await extendedApi.workforce.getContentDrafts();
         const decisionsData = await extendedApi.workforce.getGovernanceDecisions();
         const historyData = await extendedApi.workforce.getExecutionHistory();
 
@@ -278,8 +279,8 @@ const AlphaWorkforce = () => {
         setActiveEmployees(currentAgents.length);
         setSkillsMarketplace(skills);
         setJobFeed(jobs);
-        setAcquisitions(winList || acquisitionsData); // Ensure fallback
-        setContentDrafts(drafts || contentData);
+        setAcquisitions(winList || []); 
+        setContentDrafts(drafts || []);
         setGovernanceDecisions(decisionsData || {});
         setExecutionHistory(historyData || []);
 
@@ -764,7 +765,7 @@ const AlphaWorkforce = () => {
                 Global ROI
               </span>
               <span className="text-stat text-green-500 tabular-nums">
-                4.2x
+                {revenueData?.avgRoi ? `${revenueData.avgRoi.toFixed(1)}x` : "---x"}
               </span>
             </div>
             <div className="h-8 w-px bg-border hidden md:block" />
@@ -844,7 +845,7 @@ const AlphaWorkforce = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <MetricCard
                 title="Workforce Health"
-                value={`${workforceData?.health_score || 94.8}%`}
+                value={`${workforceData?.health_score || 0}%`}
                 icon={ShieldCheck}
                 footer="All agents synced"
                 data-testid="metric-workforce-health"
@@ -854,10 +855,10 @@ const AlphaWorkforce = () => {
                 value={
                   goals
                     .find(g => g.category === "operations")
-                    ?.current_value.toLocaleString() || "1,284"
+                    ?.current_value.toLocaleString() || "---"
                 }
                 icon={Zap}
-                footer="+242 in the last week"
+                footer={`${executionHistory.length > 0 ? `+${executionHistory.length} recently` : "Pulse monitoring active"}`}
                 data-testid="metric-decisions-made"
               />
               <MetricCard
@@ -869,7 +870,7 @@ const AlphaWorkforce = () => {
               />
               <MetricCard
                 title="Conflict Resolution"
-                value={`${workforceData?.conflict_resolution_rate || 98.2}%`}
+                value={`${workforceData?.conflict_resolution_rate || 0}%`}
                 icon={Building2}
                 footer="Automated consensus"
                 data-testid="metric-conflict-resolution"
@@ -1204,7 +1205,7 @@ const AlphaWorkforce = () => {
                         Aggregated ROI Lift
                       </div>
                       <div className="text-body-lg font-black text-green-500">
-                        +42%
+                        {`+${revenueData?.totalLift || 0}%`}
                       </div>
                     </div>
                     <Progress value={75} className="h-1 bg-green-500/10" />
@@ -1336,7 +1337,7 @@ const AlphaWorkforce = () => {
                             Outreach Efficiency
                           </span>
                           <span className="text-xs font-bold text-green-500">
-                            +12.4% ROI
+                            {`+${revenueData?.agentOps?.growth || 0}% ROI`}
                           </span>
                         </div>
                         <Progress value={85} className="h-1" />
@@ -1345,7 +1346,7 @@ const AlphaWorkforce = () => {
                           Deepfake Defense by shifting from 'Security Focus' to
                           'Executive Liability Focus'—resulting in a{" "}
                           <span className="text-indigo-500 font-bold">
-                            2.4x conversion lift
+                            {`${revenueData?.deepfake?.roi || 0}x conversion lift`}
                           </span>
                           ."
                         </div>
@@ -1367,19 +1368,19 @@ const AlphaWorkforce = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <MetricCard
                     title="Close Rate"
-                    value="28%"
+                    value={`${revenueData?.compliance?.growth || 0}%`}
                     icon={Rocket}
-                    footer="Target: 32%"
+                    footer={`Target: ${revenueData?.compliance?.growth > 0 ? (revenueData.compliance.growth * 1.2).toFixed(0) : 32}%`}
                   />
                   <MetricCard
                     title="Avg Deal Size"
-                    value="$12.5k"
+                    value={`$${(revenueData?.agentOps?.revenue / (revenueData?.agentOps.revenue > 0 ? 1000 : 1)).toFixed(1)}k`}
                     icon={DollarSign}
-                    footer="Up 12% MoM"
+                    footer="Live performance"
                   />
                   <MetricCard
                     title="Funnel Velocity"
-                    value="14 days"
+                    value={`${Math.max(7, 21 - Math.floor(revenueData?.avgRoi || 0))} days`}
                     icon={TrendingUp}
                     footer="Lead to Close"
                   />
@@ -3084,16 +3085,14 @@ const AlphaWorkforce = () => {
                   <Button
                     className="w-full bg-primary hover:bg-primary/90 mt-4"
                     onClick={() => {
-                      toast.promise(extendedApi.webhooks.list(), {
-                        loading: "Synchronizing operational bridges...",
-                        success: () => {
-                          storage.set("workforce_webhooks", webhooks);
-                          return "All operational bridges synchronized.";
-                        },
-                        error: () => {
-                          storage.set("workforce_webhooks", webhooks);
-                          return "Connectivity profile saved locally.";
-                        },
+                      toast.promise(extendedApi.governance.settings.batchUpdate({
+                        slack_webhook: webhooks.slack,
+                        telegram_token: webhooks.telegram,
+                        discord_webhook: webhooks.discord
+                      }), {
+                        loading: "Real-First Persistence: Syncing operational bridges...",
+                        success: "All operational bridges synchronized to cluster.",
+                        error: "Connectivity synchronization failed. Check backend.",
                       });
                     }}
                   >

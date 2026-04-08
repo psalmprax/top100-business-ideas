@@ -101,11 +101,10 @@ export default function Login() {
   useEffect(() => {
     // Only redirect if authenticated and NOT currently performing an action
     if (isAuthenticated && !isLoading && !authLoading) {
-      console.log("[Login] User authenticated, preparing SPA redirect...");
       const productKey = selectedProduct || "agent-ops";
-      const redirectUrl = PRODUCT_MAPPING[productKey]?.path || "/products/agent-ops";
-      
-      console.log("[Login] Navigating to:", redirectUrl);
+      const redirectUrl =
+        PRODUCT_MAPPING[productKey]?.path || "/products/agent-ops";
+
       setLocation(redirectUrl);
     }
   }, [isAuthenticated, isLoading, authLoading, selectedProduct, setLocation]);
@@ -135,14 +134,7 @@ export default function Login() {
   };
 
   const handleLogin = async (e: React.FormEvent) => {
-    console.log("[Login] handleLogin called with event:", e.type);
     e.preventDefault();
-    console.log(
-      "[Login] handleLogin called, email:",
-      email,
-      "password length:",
-      password.length
-    );
 
     // Validate inputs before proceeding
     if (!email.trim()) {
@@ -158,9 +150,7 @@ export default function Login() {
     setError("");
 
     try {
-      console.log("[Login] Calling login function...");
       const result = await login(email, password, selectedProduct);
-      console.log("[Login] Got result:", result);
 
       if (result.requiresSelection) {
         setAvailableProducts(result.availableProducts || []);
@@ -169,7 +159,6 @@ export default function Login() {
       }
 
       // Authentication state will be updated and useEffect will handle redirect
-      console.log("[Login] Login successful, useEffect will handle redirect");
     } catch (err: any) {
       console.error("[Login] Error:", err);
       setError(err.message || "Invalid email or password");

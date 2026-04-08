@@ -447,6 +447,44 @@ func (h *ComplianceHandler) GetFinancialMetrics(c *gin.Context) {
 	c.Data(http.StatusOK, "application/json", response)
 }
 
+func (h *ComplianceHandler) ListChecklists(c *gin.Context) {
+	category := c.Query("category")
+	section := c.Query("section")
+
+	path := "/compliance/checklists"
+	if category != "" {
+		path = fmt.Sprintf("%s?category=%s", path, category)
+		if section != "" {
+			path = fmt.Sprintf("%s&section=%s", path, section)
+		}
+	} else if section != "" {
+		path = fmt.Sprintf("%s?section=%s", path, section)
+	}
+
+	response, err := h.proxyService.Forward("GET", path, nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch compliance checklists", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+func (h *ComplianceHandler) UpdateChecklistItem(c *gin.Context) {
+	id := c.Param("id")
+	var req interface{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request body"})
+		return
+	}
+
+	response, err := h.proxyService.Forward("POST", fmt.Sprintf("/compliance/checklists/%s", id), req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to update checklist item", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
+}
+
 // ListAuditLogs proxies to agent-ops audit logs
 func (h *ComplianceHandler) ListAuditLogs(c *gin.Context) {
 	agentID := c.Query("agentId")

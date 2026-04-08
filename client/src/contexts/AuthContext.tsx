@@ -31,40 +31,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Debug user state changes
-  const debugSetUser = (newUser: User | null) => {
-    console.log("[Auth] setUser called:", newUser?.email || "null");
-    setUser(newUser);
-  };
-
   useEffect(() => {
     checkAuth();
   }, []);
 
   const checkAuth = async () => {
     const token = localStorage.getItem("auth_token");
-    console.log("[Auth] checkAuth - token found:", !!token);
 
     if (!token) {
-      console.log("[Auth] checkAuth - no token, user remains null");
       setIsLoading(false);
       return;
     }
 
     try {
-      console.log("[Auth] checkAuth - calling /me API with token");
       const userData = await authApi.me();
-      console.log("[Auth] checkAuth - user loaded successfully:", userData.email);
-      debugSetUser(userData);
+      setUser(userData);
     } catch (error: any) {
       console.error("[Auth] checkAuth failed:", error.message);
       // Only clear if it's a real 401, not a network failure
-      if (error.message.includes("401") || error.message.includes("Unauthorized") || error.message.includes("not found")) {
-        console.log("[Auth] checkAuth - removing invalid/expired token");
+      if (
+        error.message.includes("401") ||
+        error.message.includes("Unauthorized") ||
+        error.message.includes("not found")
+      ) {
         localStorage.removeItem("auth_token");
         setUser(null);
-      } else {
-        console.log("[Auth] checkAuth - potential network error, keeping token for retry");
       }
     } finally {
       setIsLoading(false);
@@ -72,13 +63,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const login = async (email: string, password: string, productId?: string) => {
-    console.log("[Auth] login attempt for:", email);
     try {
       const data = await authApi.login(email, password, productId);
-      console.log("[Auth] login API success, user:", data.user?.email);
 
       if (data.requiresProductSelection) {
-        console.log("[Auth] product selection required, returning available products");
         return {
           requiresSelection: true,
           availableProducts: data.availableProducts,
@@ -87,19 +75,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const token = data.accessToken || data.access_token;
       if (token && data.user) {
-        console.log("[Auth] token and user confirmed, saving to localStorage");
         localStorage.setItem("auth_token", token);
-        debugSetUser(data.user);
-      } else {
-        console.warn("[Auth] login response missing token or user data:", {
-          hasToken: !!token,
-          hasUser: !!data.user,
-        });
+        setUser(data.user);
       }
       return {};
     } catch (error: any) {
-      console.error("[Auth] login function failed:", error.message);
-      throw new Error(error.message || "Login failed");
+      console.error("[Auth] login failed:", error.message);
+      // Only clear token if it's an authentication error (401), not network or other errors
+      if (
+        error.message.includes("401") ||
+        error.message.includes("Unauthorized")
+      ) {
+        localStorage.removeItem("auth_token");
+        setUser(null);
+      }
     }
   };
 
@@ -126,7 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("Logout error:", error);
     } finally {
       localStorage.removeItem("auth_token");
-      debugSetUser(null);
+      setUser(null);
     }
   };
 

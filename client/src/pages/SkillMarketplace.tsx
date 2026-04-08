@@ -3,7 +3,7 @@
  * Showcases AI Agent skills powering the 100 business ventures.
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
 import {
@@ -31,102 +31,46 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { agentsApi } from "@/lib/api";
+import { agentsApi, extendedApi } from "@/lib/api";
+
+const ICON_MAP: Record<string, any> = {
+  HardHat: HardHat,
+  Stethoscope: Stethoscope,
+  Shield: Shield,
+  Globe: Globe,
+  Briefcase: Briefcase,
+  Zap: Zap,
+  Lock: Lock,
+  Bot: Bot,
+  Brain: Brain,
+};
 
 const categories = ["All", "Fintech", "Healthcare", "Construction", "ESG", "Creator", "Legal"];
 
-const skills = [
-  {
-    id: "construction-estimate",
-    name: "Open Construction Estimate",
-    provider: "ClawHub",
-    description: "Accesses standardized unit price databases (55k+ items) for BIM and cost calculation.",
-    category: "Construction",
-    powers: ["v001", "v004"],
-    icon: HardHat,
-    color: "bg-orange-500",
-    repoUrl: "https://clawhub.ai/skills/construction-estimate",
-    isProprietary: false,
-  },
-  {
-    id: "medical-billing",
-    name: "Medical Billing Optimizer",
-    provider: "Alpha Proprietary",
-    description: "Autonomously scans clinical notes to detect revenue leaks and optimize claim submissions.",
-    marketingDescription: "Expert AI coding and optimization engine to maximize healthcare revenue cycle efficiency.",
-    category: "Healthcare",
-    powers: ["v061"],
-    icon: Stethoscope,
-    color: "bg-rose-500",
-    isProprietary: true,
-  },
-  {
-    id: "payment-guard",
-    name: "Payment Guard",
-    provider: "ClawHub",
-    description: "Real-time verification of beneficiaries and intent before a transaction is signed.",
-    category: "Fintech",
-    powers: ["v002", "v108"],
-    icon: Shield,
-    color: "bg-blue-500",
-    repoUrl: "https://clawhub.ai/skills/payment-guard",
-    isProprietary: false,
-  },
-  {
-    id: "carbon-calc",
-    name: "Lifecycle Carbon Calculator",
-    provider: "ClawHub",
-    description: "Calculates embodied carbon for construction and manufacturing materials in real-time.",
-    category: "ESG",
-    powers: ["v064", "v104"],
-    icon: Globe,
-    color: "bg-emerald-500",
-    repoUrl: "https://clawhub.ai/skills/carbon-calc",
-    isProprietary: false,
-  },
-  {
-    id: "contract-analyzer",
-    name: "AfrexAI Contract Analyzer",
-    provider: "Alpha Proprietary",
-    description: "Identifies risky clauses, unusual terms, and missing legal protections in enterprise contracts.",
-    marketingDescription: "Advanced risk intelligence engine for automated legal document audit and protection.",
-    category: "Legal",
-    powers: ["v105", "v115"],
-    icon: Briefcase,
-    color: "bg-purple-500",
-    isProprietary: true,
-  },
-  {
-    id: "content-repurpose",
-    name: "Blog to Social Media",
-    provider: "GitHub",
-    description: "Transforms long-form content into targeted X threads and LinkedIn carousels autonomously.",
-    category: "Creator",
-    powers: ["v114"],
-    icon: Zap,
-    color: "bg-amber-500",
-    repoUrl: "https://github.com/openclaw/blog-to-social",
-    isProprietary: false,
-  },
-  {
-    id: "mema-vault",
-    name: "A2A & Mema Vault",
-    provider: "GitHub",
-    description: "Zero-knowledge, AES-256 encrypted credential and secrets management for digital estates.",
-    category: "Legal",
-    powers: ["v120"],
-    icon: Lock,
-    color: "bg-indigo-500",
-    repoUrl: "https://github.com/mema/vault-skill",
-    isProprietary: false,
-  },
-];
+// Dynamic skills loaded from backend
 
 export default function SkillMarketplace() {
   const { isManagement } = useAuth();
+  const [skills, setSkills] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [isInstalling, setIsInstalling] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchSkills = async () => {
+      try {
+        const data = await extendedApi.workforce.getSkills();
+        setSkills(data || []);
+      } catch (error) {
+        console.error("Failed to fetch skills:", error);
+        toast.error("Marketplace data offline");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchSkills();
+  }, []);
 
   const filteredSkills = skills.filter((skill) => {
     const matchesSearch = skill.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -239,37 +183,40 @@ export default function SkillMarketplace() {
                 <CardHeader>
                   <div className="flex items-center justify-between mb-4">
                     <div className={`p-3 rounded-xl ${skill.color}/10 group-hover:scale-110 transition-transform duration-300`}>
-                      <skill.icon className={`h-6 w-6 ${skill.color.replace('bg-', 'text-')}`} />
+                      {(() => {
+                        const IconComp = ICON_MAP[skill.icon] || Zap;
+                        return <IconComp className={`h-6 w-6 ${skill.color.replace('bg-', 'text-')}`} />;
+                      })()}
                     </div>
-                    <Badge variant="secondary" className={`bg-muted/50 border-border/50 text-[10px] uppercase tracking-wider h-fit ${skill.isProprietary ? 'text-indigo-400 border-indigo-500/20' : ''}`}>
-                      {skill.isProprietary ? 'Proprietary' : skill.provider}
+                    <Badge variant="secondary" className={`bg-muted/50 border-border/50 text-[10px] uppercase tracking-wider h-fit ${skill.is_proprietary ? 'text-indigo-400 border-indigo-500/20' : ''}`}>
+                      {skill.is_proprietary ? 'Proprietary' : skill.provider}
                     </Badge>
                   </div>
                   <CardTitle className="text-xl group-hover:text-primary transition-colors">{skill.name}</CardTitle>
                   <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
                      <span className="font-semibold text-primary/80 uppercase">{skill.category}</span>
-                     {!skill.isProprietary && (
+                     {!skill.is_proprietary && (
                         <>
                            <span>•</span>
-                           <Link href={skill.repoUrl || "#"} target="_blank" className="hover:text-foreground flex items-center gap-1 underline underline-offset-2">
-                              View Repository <ExternalLink className="h-3 w-3" />
-                           </Link>
+                            <Link href={skill.repo_url || "#"} target="_blank" className="hover:text-foreground flex items-center gap-1 underline underline-offset-2">
+                                View Repository <ExternalLink className="h-3 w-3" />
+                            </Link>
                         </>
                      )}
                   </div>
                 </CardHeader>
                 
                 <CardContent className="flex-grow">
-                  <p className="text-sm text-balance leading-relaxed mb-6">
-                    {(skill.isProprietary && !isManagement) ? skill.marketingDescription : skill.description}
-                  </p>
+                    <p className="text-sm text-balance leading-relaxed mb-6">
+                      {(skill.is_proprietary && !isManagement) ? skill.marketing_description : skill.description}
+                    </p>
                   
                   <div className="space-y-3">
                      <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                         Powers Ventures
                      </div>
                      <div className="flex flex-wrap gap-2">
-                        {skill.powers.map(vId => (
+                        {(skill.powers_json || []).map((vId: string) => (
                            <Link key={vId} href={`/ventures/${vId}`}>
                               <span className="px-2 py-1 rounded bg-indigo-500/10 text-indigo-400 text-xs font-medium border border-indigo-500/20 hover:bg-indigo-500/20 transition-colors cursor-pointer">
                                  {vId}

@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"strings"
 
-
 	"github.com/top100-business-ideas/api/internal/models"
 	"github.com/top100-business-ideas/api/internal/services"
 
@@ -252,6 +251,7 @@ func (h *AgentOpsHandler) GetForecast(c *gin.Context) {
 
 	c.Data(status, "application/json", response)
 }
+
 // CloneConfig handles agent configuration duplication
 // POST /api/v1/agents/:id/clone
 func (h *AgentOpsHandler) CloneConfig(c *gin.Context) {
@@ -314,7 +314,7 @@ func (h *AgentOpsHandler) ProxyToPython(c *gin.Context) {
 	if strings.HasPrefix(path, "/agent-ops") {
 		// subPath is everything after "/agent-ops"
 		subPath := strings.TrimPrefix(path, "/agent-ops")
-		
+
 		if subPath == "" || subPath == "/" {
 			path = "/"
 		} else if strings.HasPrefix(subPath, "/bulk/") {

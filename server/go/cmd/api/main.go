@@ -7,6 +7,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -242,6 +244,8 @@ func main() {
 				compliance.GET("/regional-reports", complianceHandler.GetRegionalReports)
 				compliance.GET("/financial-metrics", complianceHandler.GetFinancialMetrics)
 				compliance.GET("/audit", complianceHandler.ListAuditLogs)
+				compliance.GET("/checklists", complianceHandler.ListChecklists)
+				compliance.POST("/checklists/:id", complianceHandler.UpdateChecklistItem)
 				compliance.GET("/checks", complianceHandler.ListChecks)
 				compliance.GET("/checks/:id", complianceHandler.GetCheck)
 				compliance.POST("/checks/run", complianceHandler.RunCheck)
@@ -587,29 +591,6 @@ func main() {
 		}
 	}
 
-	// Start WebSocket hub in background
-	go wsHub.Run()
-
-	// Start Compliance Metrics Broadcast Loop (Real-First bridging)
-	go func() {
-		ticker := time.NewTicker(10 * time.Second)
-		defer ticker.Stop()
-		for range ticker.C {
-			if wsHub.GetClientCount() > 0 {
-				metrics, err := proxyService.Forward("GET", "/compliance/live-metrics", nil)
-				if err == nil {
-					var m map[string]interface{}
-					if err := json.Unmarshal(metrics, &m); err == nil {
-						wsHub.Broadcast(map[string]interface{}{
-							"type":    "compliance_metrics",
-							"payload": m,
-						})
-					}
-				}
-			}
-		}
-	}()
-
 	// Start server
 	logger.Info().
 		Str("host", cfg.Host).
@@ -624,6 +605,47 @@ func main() {
 		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
+
+	// Setup signal handling for graceful shutdown
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-sigCh
+		logger.Info().Msg("Shutting down server...")
+		cancel()
+		_ = srv.Shutdown(context.Background())
+	}()
+
+	// Start WebSocket hub in background
+	go wsHub.Run()
+
+	// Start Compliance Metrics Broadcast Loop (Real-First bridging)
+	go func() {
+		ticker := time.NewTicker(10 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				if wsHub.GetClientCount() > 0 {
+					metrics, err := proxyService.Forward("GET", "/compliance/live-metrics", nil)
+					if err == nil {
+						var m map[string]interface{}
+						if err := json.Unmarshal(metrics, &m); err == nil {
+							wsHub.Broadcast(map[string]interface{}{
+								"type":    "compliance_metrics",
+								"payload": m,
+							})
+						}
+					}
+				}
+			}
+		}
+	}()
 
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		logger.Fatal().Err(err).Msg("Failed to start server")

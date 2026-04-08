@@ -4,16 +4,16 @@ import "time"
 
 // User represents a registered user
 type User struct {
-	ID        string    `json:"id" db:"id"`
-	Email     string    `json:"email" db:"email"`
-	Name      string    `json:"name" db:"name"`
-	Password  string    `json:"-" db:"password_hash"`
-	Role              string    `json:"role" db:"role"`
-	SubscriptionTier  string    `json:"subscription_tier" db:"subscription_tier"`
+	ID                 string    `json:"id" db:"id"`
+	Email              string    `json:"email" db:"email"`
+	Name               string    `json:"name" db:"name"`
+	Password           string    `json:"-" db:"password_hash"`
+	Role               string    `json:"role" db:"role"`
+	SubscriptionTier   string    `json:"subscription_tier" db:"subscription_tier"`
 	SubscriptionStatus string    `json:"subscription_status" db:"subscription_status"`
-	AllowedProducts   []string  `json:"allowed_products" db:"allowed_products"`
-	CreatedAt         time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt         time.Time `json:"updated_at" db:"updated_at"`
+	AllowedProducts    []string  `json:"allowed_products" db:"allowed_products"`
+	CreatedAt          time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // Agent represents an AI agent
@@ -138,11 +138,11 @@ type RegisterRequest struct {
 }
 
 type AuthResponse struct {
-	AccessToken              string `json:"access_token,omitempty"`
-	RefreshToken             string `json:"refresh_token,omitempty"`
-	ExpiresIn                int    `json:"expires_in,omitempty"`
-	User                     *User  `json:"user,omitempty"`
-	RequiresProductSelection bool   `json:"requires_product_selection,omitempty"`
+	AccessToken              string   `json:"access_token,omitempty"`
+	RefreshToken             string   `json:"refresh_token,omitempty"`
+	ExpiresIn                int      `json:"expires_in,omitempty"`
+	User                     *User    `json:"user,omitempty"`
+	RequiresProductSelection bool     `json:"requires_product_selection,omitempty"`
 	AvailableProducts        []string `json:"available_products,omitempty"`
 }
 
@@ -443,20 +443,20 @@ type Vendor struct {
 
 // WorkforceStatus represents the status of the digital workforce
 type WorkforceStatus struct {
-	TotalAgents     int            `json:"total_agents"`
-	ActiveAgents    int            `json:"active_agents"`
-	TotalROI        float64        `json:"total_roi"`
-	MonthlyBurn     float64        `json:"monthly_burn"`
-	AutonomyLevel   string         `json:"autonomy_level"` // partial, full
+	TotalAgents     int              `json:"total_agents"`
+	ActiveAgents    int              `json:"active_agents"`
+	TotalROI        float64          `json:"total_roi"`
+	MonthlyBurn     float64          `json:"monthly_burn"`
+	AutonomyLevel   string           `json:"autonomy_level"` // partial, full
 	SovereignStages []SovereignStage `json:"sovereign_stages"`
-	LastSync        time.Time      `json:"last_sync"`
+	LastSync        time.Time        `json:"last_sync"`
 }
 
 // SovereignStage represents a stage in the Sovereign Autonomy Matrix
 type SovereignStage struct {
 	ID          string `json:"id"`
 	Name        string `json:"name"`
-	Level       string `json:"level"` // review_required, fully_autonomous
+	Level       string `json:"level"`  // review_required, fully_autonomous
 	Status      string `json:"status"` // healthy, pending_review, alert
 	Description string `json:"description"`
 }
@@ -477,14 +477,14 @@ type SovereignRequest struct {
 
 // Task represents a freelancer task
 type Task struct {
-	ID        string    `json:"id" db:"id"`
-	UserID    string    `json:"user_id" db:"user_id"`
-	Title     string    `json:"title" db:"title"`
-	Status    string    `json:"status" db:"status"` // todo, in_progress, completed
-	Priority  string    `json:"priority" db:"priority"` // low, medium, high
+	ID        string     `json:"id" db:"id"`
+	UserID    string     `json:"user_id" db:"user_id"`
+	Title     string     `json:"title" db:"title"`
+	Status    string     `json:"status" db:"status"`     // todo, in_progress, completed
+	Priority  string     `json:"priority" db:"priority"` // low, medium, high
 	DueDate   *time.Time `json:"due_date,omitempty" db:"due_date"`
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+	CreatedAt time.Time  `json:"created_at" db:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at" db:"updated_at"`
 }
 
 // Client represents a freelancer client

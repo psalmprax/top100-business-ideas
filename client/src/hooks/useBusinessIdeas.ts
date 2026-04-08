@@ -6,9 +6,10 @@ import {
 } from "@/lib/api";
 import { useShortlist } from "@/hooks/useShortlist";
 
-export type LayoutMode = "alpha" | "sigma" | "omega";
+import { usePerspective, type LayoutPerspective } from "@/contexts/PerspectiveContext";
 
 export function useBusinessIdeas() {
+  const { perspective: layoutMode, setPerspective: setLayoutMode } = usePerspective();
   const [selectedIdea, setSelectedIdea] = useState<BusinessIdea | null>(null);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedMarket, setSelectedMarket] = useState("all");
@@ -18,7 +19,6 @@ export function useBusinessIdeas() {
   const [visibleCount, setVisibleCount] = useState(24);
   const [comparisonIdeas, setComparisonIdeas] = useState<BusinessIdea[]>([]);
   const [showShortlistOnly, setShowShortlistOnly] = useState(false);
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>("alpha");
 
   // REAL-FIRST: Fetch live venture insights from Go/Python backend
   const { data: remoteIdeas, isLoading } = useQuery({

@@ -267,10 +267,12 @@ function LeadGenDialog({
 }
 
 import { useAuth } from "@/contexts/AuthContext";
+import { usePerspective } from "@/contexts/PerspectiveContext";
 
 export default function AlphaAI() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isManagement, hasProductAccess, isAuthenticated } = useAuth();
+  const { perspective } = usePerspective();
 
   const publicProducts = products.filter(
     p => p.id !== "alpha-workforce" && p.id !== "market-intelligence"
@@ -464,15 +466,27 @@ export default function AlphaAI() {
           aria-hidden
         >
           <div
-            className="absolute top-0 left-1/4 w-72 h-72 bg-blue-500/15 rounded-full blur-[120px] animate-pulse"
+            className={`absolute top-0 left-1/4 w-72 h-72 rounded-full blur-[120px] animate-pulse transition-colors duration-1000 ${
+              perspective === "alpha" ? "bg-blue-500/15" : 
+              perspective === "sigma" ? "bg-purple-500/15" : 
+              perspective === "omega" ? "bg-emerald-500/15" : "bg-blue-500/15"
+            }`}
             style={{ animationDuration: "4s" }}
           />
           <div
-            className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-[140px] animate-pulse"
+            className={`absolute bottom-0 right-1/4 w-96 h-96 rounded-full blur-[140px] animate-pulse transition-colors duration-1000 ${
+              perspective === "alpha" ? "bg-purple-600/10" : 
+              perspective === "sigma" ? "bg-blue-600/10" : 
+              perspective === "omega" ? "bg-indigo-600/10" : "bg-purple-600/10"
+            }`}
             style={{ animationDuration: "6s", animationDelay: "1s" }}
           />
           <div
-            className="absolute top-1/3 right-1/3 w-64 h-64 bg-emerald-500/8 rounded-full blur-[100px] animate-pulse"
+            className={`absolute top-1/3 right-1/3 w-64 h-64 rounded-full blur-[100px] animate-pulse transition-colors duration-1000 ${
+              perspective === "alpha" ? "bg-emerald-500/8" : 
+              perspective === "sigma" ? "bg-amber-500/8" : 
+              perspective === "omega" ? "bg-red-500/8" : "bg-emerald-500/8"
+            }`}
             style={{ animationDuration: "5s", animationDelay: "2s" }}
           />
         </div>
@@ -491,7 +505,11 @@ export default function AlphaAI() {
         />
         <div className="container mx-auto relative z-10">
           <div className="text-center max-w-4xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 text-blue-500 text-kicker mb-8 border border-blue-500/20 backdrop-blur-sm">
+            <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-kicker mb-8 border backdrop-blur-sm transition-all duration-500 ${
+              perspective === "alpha" ? "bg-blue-500/10 text-blue-500 border-blue-500/20" : 
+              perspective === "sigma" ? "bg-purple-500/10 text-purple-500 border-purple-500/20" : 
+              perspective === "omega" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-blue-500/10 text-blue-500 border-blue-500/20"
+            }`}>
               <Zap className="h-4 w-4" />
               Now available: Enterprise tier with custom SLAs
             </div>

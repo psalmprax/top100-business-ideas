@@ -22,7 +22,7 @@ func (r *FreelancerRepository) ListTasks(ctx context.Context, userID string) ([]
 
 	query := `SELECT id, user_id, title, status, priority, due_date, created_at, updated_at 
 	          FROM tasks WHERE user_id = $1 ORDER BY created_at DESC`
-	
+
 	rows, err := database.Pool.Query(ctx, query, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list tasks: %w", err)
@@ -45,8 +45,8 @@ func (r *FreelancerRepository) ListTasks(ctx context.Context, userID string) ([]
 func (r *FreelancerRepository) CreateTask(ctx context.Context, task *models.Task) error {
 	query := `INSERT INTO tasks (user_id, title, status, priority, due_date) 
 	          VALUES ($1, $2, $3, $4, $5) RETURNING id, created_at, updated_at`
-	
-	return database.Pool.QueryRow(ctx, query, 
+
+	return database.Pool.QueryRow(ctx, query,
 		task.UserID, task.Title, task.Status, task.Priority, task.DueDate,
 	).Scan(&task.ID, &task.CreatedAt, &task.UpdatedAt)
 }
@@ -55,7 +55,7 @@ func (r *FreelancerRepository) CreateTask(ctx context.Context, task *models.Task
 func (r *FreelancerRepository) ListClients(ctx context.Context, userID string) ([]models.Client, error) {
 	query := `SELECT id, user_id, name, email, company, status, created_at, updated_at 
 	          FROM clients WHERE user_id = $1 ORDER BY name ASC`
-	
+
 	rows, err := database.Pool.Query(ctx, query, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list clients: %w", err)
@@ -77,8 +77,8 @@ func (r *FreelancerRepository) ListClients(ctx context.Context, userID string) (
 func (r *FreelancerRepository) CreateClient(ctx context.Context, client *models.Client) error {
 	query := `INSERT INTO clients (user_id, name, email, company, status) 
 	          VALUES ($1, $2, $3, $4, $5) RETURNING id, created_at, updated_at`
-	
-	return database.Pool.QueryRow(ctx, query, 
+
+	return database.Pool.QueryRow(ctx, query,
 		client.UserID, client.Name, client.Email, client.Company, client.Status,
 	).Scan(&client.ID, &client.CreatedAt, &client.UpdatedAt)
 }
@@ -87,7 +87,7 @@ func (r *FreelancerRepository) CreateClient(ctx context.Context, client *models.
 func (r *FreelancerRepository) ListEvents(ctx context.Context, userID string) ([]models.CalendarEvent, error) {
 	query := `SELECT id, user_id, title, start_time, end_time, description, created_at 
 	          FROM calendar_events WHERE user_id = $1 ORDER BY start_time ASC`
-	
+
 	rows, err := database.Pool.Query(ctx, query, userID)
 	if err != nil {
 		return nil, err
@@ -109,8 +109,8 @@ func (r *FreelancerRepository) ListEvents(ctx context.Context, userID string) ([
 func (r *FreelancerRepository) CreateEvent(ctx context.Context, event *models.CalendarEvent) error {
 	query := `INSERT INTO calendar_events (user_id, title, start_time, end_time, description) 
 	          VALUES ($1, $2, $3, $4, $5) RETURNING id, created_at`
-	
-	return database.Pool.QueryRow(ctx, query, 
+
+	return database.Pool.QueryRow(ctx, query,
 		event.UserID, event.Title, event.StartTime, event.EndTime, event.Description,
 	).Scan(&event.ID, &event.CreatedAt)
 }
@@ -118,7 +118,7 @@ func (r *FreelancerRepository) CreateEvent(ctx context.Context, event *models.Ca
 // Notes
 func (r *FreelancerRepository) ListNotes(ctx context.Context, userID string) ([]models.AuditNote, error) {
 	query := `SELECT id, user_id, content, created_at FROM audit_notes WHERE user_id = $1 ORDER BY created_at DESC`
-	
+
 	rows, err := database.Pool.Query(ctx, query, userID)
 	if err != nil {
 		return nil, err

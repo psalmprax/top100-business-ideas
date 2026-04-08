@@ -43,8 +43,12 @@ import {
 import { toast } from "sonner";
 import { storage } from "@/lib/storage";
 import { mlApi, billingApi, denialDefenseApi, type Claim } from "@/lib/api";
+import { usePerspective } from "@/contexts/PerspectiveContext";
+import { motion, AnimatePresence } from "framer-motion";
+import { PremiumPlaceholder } from "@/components/skeletons/PremiumPlaceholder";
 
 export default function DenialDefense() {
+  const { perspective } = usePerspective();
   const [activeClaims, setActiveClaims] = useState<Claim[]>([]);
   const [newClaim, setNewClaim] = useState({ id: "", payer: "", amount: "" });
   const [isScrubbing, setIsScrubbing] = useState(false);
@@ -256,7 +260,7 @@ export default function DenialDefense() {
                 Recovery Rate
               </div>
               <div
-                className="text-stat text-white tabular-nums"
+                className="text-stat text-white tabular-nums tracking-tighter"
                 data-testid="stat-recovery-rate"
               >
                 {recoveryRate.toFixed(1)}%
@@ -437,8 +441,12 @@ export default function DenialDefense() {
                         </TableRow>
                       ) : activeClaims.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                            No active claims in queue.
+                          <TableCell colSpan={5} className="py-12">
+                            <PremiumPlaceholder 
+                              title="Engine Queue Clear" 
+                              description="No claims currently pending AI denial defense layers. The engine is ready."
+                              variant="empty"
+                            />
                           </TableCell>
                         </TableRow>
                       ) : (

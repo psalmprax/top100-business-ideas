@@ -1,0 +1,110 @@
+# ================================
+# Optimized Python Backend Dockerfile
+# ================================
+
+# Stage 1: Base dependencies (fast layer caching)
+FROM python:3.11-slim AS base
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    git \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Stage 2: Core dependencies (cached separately)
+FROM base AS core-deps
+
+WORKDIR /app
+
+# Copy requirements and install core dependencies first
+COPY requirements.txt .
+RUN pip install --no-deps \
+    fastapi==0.109.0 \
+    uvicorn[standard]==0.27.0 \
+    pydantic==2.5.3 \
+    pydantic-settings==2.1.0 \
+    sqlmodel==0.0.14 \
+    psycopg2-binary==2.9.9 \
+    python-multipart==0.0.6 \
+    aiofiles==23.2.1 \
+    httpx==0.26.0 \
+    python-dotenv==1.0.0 \
+    numpy==1.26.3 \
+    pillow==10.2.0 \
+    opencv-python-headless==4.9.0.80 \
+    python-jose[cryptography]==3.3.0 \
+    passlib[bcrypt]==1.7.4 \
+    cryptography==42.0.0 \
+    Authlib==1.3.0 \
+    stripe==11.4.0
+
+# Stage 3: ML dependencies (separate layer for faster rebuilds)
+FROM core-deps AS ml-deps
+
+# Install heavy ML dependencies
+RUN pip install --no-deps \
+    torch==2.2.0 \
+    torchvision==0.16.2 \
+    transformers==4.36.2 \
+    librosa==0.10.0
+
+# Stage 4: Agent dependencies (optional)
+FROM ml-deps AS agent-deps
+
+# Install agent frameworks
+RUN pip install --no-deps \
+    crewai==0.83.0 \
+    langchain-community==0.3.10
+
+# Install external search and reporting
+RUN pip install --no-deps \
+    duckduckgo-search==6.3.3 \
+    ddgs==2.1.7 \
+    reportlab==4.0.0
+
+# Install external Git dependency (pinned for security)
+RUN pip install --no-deps \
+    git+https://github.com/NousResearch/hermes-agent.git@v1.0.0#egg=hermes-agent
+
+# Stage 5: Final production image
+FROM core-deps AS production
+
+# Copy ML dependencies (but make them optional via lazy loading)
+COPY --from=ml-deps /usr/local/lib/python3.11/site-packages/torch* /usr/local/lib/python3.11/site-packages/
+COPY --from=ml-deps /usr/local/lib/python3.11/site-packages/torchvision* /usr/local/lib/python3.11/site-packages/
+COPY --from=ml-deps /usr/local/lib/python3.11/site-packages/transformers* /usr/local/lib/python3.11/site-packages/
+COPY --from=ml-deps /usr/local/lib/python3.11/site-packages/librosa* /usr/local/lib/python3.11/site-packages/
+
+# Copy agent dependencies (optional)
+COPY --from=agent-deps /usr/local/lib/python3.11/site-packages/crewai* /usr/local/lib/python3.11/site-packages/
+COPY --from=agent-deps /usr/local/lib/python3.11/site-packages/langchain* /usr/local/lib/python3.11/site-packages/
+COPY --from=agent-deps /usr/local/lib/python3.11/site-packages/hermes_agent* /usr/local/lib/python3.11/site-packages/
+
+# Copy application code
+COPY . .
+
+# Create logs directory
+RUN mkdir -p /app/logs && chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+EXPOSE 8000
+
+# Use exec form for proper signal handling
+CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]

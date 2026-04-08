@@ -81,7 +81,34 @@
   --sidebar-accent: oklch(0.16 0.02 265);
   --sidebar-accent-foreground: oklch(0.95 0.005 265);
   --sidebar-border: oklch(0.22 0.02 265);
+  --sidebar-border: oklch(0.22 0.02 265);
   --sidebar-ring: oklch(0.65 0.2 250);
+}
+
+/* Perspective: ALPHA (V1) - Enterprise Compliance */
+:root.perspective-alpha {
+  --primary: oklch(0.65 0.2 250); /* Blue */
+  --accent: oklch(0.75 0.18 75); /* Orange/Amber */
+  --ring: oklch(0.65 0.2 250);
+  --radius: 0.5rem;
+}
+
+/* Perspective: SIGMA (V2) - SaaS Bento Platform */
+:root.perspective-sigma {
+  --primary: oklch(0.6 0.25 300); /* Purple/Amethyst */
+  --accent: oklch(0.8 0.2 190); /* Electric Cyan */
+  --ring: oklch(0.6 0.25 300);
+  --radius: 1rem;
+  --background: oklch(0.05 0.01 280);
+}
+
+/* Perspective: OMEGA (V3) - Agentic Terminal */
+:root.perspective-omega {
+  --primary: oklch(0.72 0.18 145); /* Matrix Green */
+  --accent: oklch(0.65 0.22 320); /* Indigo/Neon */
+  --ring: oklch(0.72 0.18 145);
+  --radius: 0.25rem;
+  --background: oklch(0.04 0 0); /* Pure Black */
 }
 
 @layer base {
@@ -100,6 +127,20 @@
     text-rendering: optimizeLegibility;
     font-feature-settings:
       "cv02", "cv03", "cv04", "cv11";
+    transition: background-color 0.8s cubic-bezier(0.4, 0, 0.2, 1), 
+                color 0.5s ease;
+  }
+
+  /* Smooth Perspective Transitions */
+  [class*="perspective-"] {
+    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  [class*="perspective-"] * {
+    transition: border-radius 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+                background-color 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.8s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   h1,

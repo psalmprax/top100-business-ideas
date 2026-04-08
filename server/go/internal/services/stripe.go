@@ -88,7 +88,7 @@ func (s *StripeService) doRequest(method, endpoint string, body io.Reader) ([]by
 		return nil, err
 	}
 
-	req.SetBasicAuth(s.APIKey, "")
+	req.Header.Set("Authorization", "Bearer "+s.APIKey)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	client := &http.Client{Timeout: 30 * time.Second}

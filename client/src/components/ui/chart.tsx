@@ -3,6 +3,19 @@ import * as RechartsPrimitive from "recharts";
 
 import { cn } from "../../lib/utils";
 
+// Sanitize CSS color values to prevent XSS
+function sanitizeColor(color: string | undefined): string | null {
+  if (!color) return null;
+
+  // Only allow hex colors, rgb/rgba, hsl/hsla, or named colors
+  const colorRegex =
+    /^#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}|[A-Fa-f0-9]{8})|rgb\([^)]+\)|rgba\([^)]+\)|hsl\([^)]+\)|hsla\([^)]+\)|[a-zA-Z]+$/;
+  if (colorRegex.test(color.trim())) {
+    return color.trim();
+  }
+  return null;
+}
+
 // Format: { THEME_NAME: CSS_SELECTOR }
 const THEMES = { light: "", dark: ".dark" } as const;
 
@@ -88,8 +101,10 @@ ${colorConfig
     const color =
       itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
       itemConfig.color;
-    return color ? `  --color-${key}: ${color};` : null;
+    const safeColor = sanitizeColor(color);
+    return safeColor ? `  --color-${key}: ${safeColor};` : null;
   })
+  .filter(Boolean)
   .join("\n")}
 }
 `

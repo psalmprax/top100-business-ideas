@@ -2224,7 +2224,7 @@ async def generate_on_prem_manifest_endpoint(
         try:
             body = await request.json()
             format = body.get("format") or body.get("type") or "docker-compose"
-        except:
+        except (ValueError, TypeError):
             format = "docker-compose"
 
     if not format:
@@ -2678,8 +2678,10 @@ async def recover_workforce_revenue(request: Dict[str, Any]):
 
 
 @router.post("/workforce/referral/activate")
-async def activate_referral_program(request: Dict[str, Any] = {}):
+async def activate_referral_program(request: Optional[Dict[str, Any]] = None):
     """Activate referral program and generate unique referral code"""
+    if request is None:
+        request = {}
     referral_code = request.get("referral_code")
     import uuid
 

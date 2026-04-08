@@ -8,7 +8,9 @@ import (
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
+	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/top100-business-ideas/api/internal/models"
@@ -30,6 +32,155 @@ type DeepfakeHandler struct {
 	uploadHandler    *services.FileUploadHandler
 	httpClient       *http.Client
 	pythonServiceURL string
+	cache            *deepfakeCache
+	rateLimiter      *dfRateLimiter
+	enricher         *dfRequestEnricher
+}
+
+type deepfakeCache struct {
+	mu       sync.RWMutex
+	analyses map[string]deepfakeCacheEntry
+}
+
+type deepfakeCacheEntry struct {
+	data      []byte
+	expiresAt time.Time
+}
+
+func newDeepfakeCache() *deepfakeCache {
+	return &deepfakeCache{
+		analyses: make(map[string]deepfakeCacheEntry),
+	}
+}
+
+func (c *deepfakeCache) get(key string) ([]byte, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	entry, ok := c.analyses[key]
+	if !ok || time.Now().After(entry.expiresAt) {
+		return nil, false
+	}
+	return entry.data, true
+}
+
+func (c *deepfakeCache) set(key string, data []byte, ttl time.Duration) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.analyses[key] = deepfakeCacheEntry{
+		data:      data,
+		expiresAt: time.Now().Add(ttl),
+	}
+}
+
+type dfRateLimiter struct {
+	mu     sync.RWMutex
+	tokens map[string]*dfUserLimit
+}
+
+type dfUserLimit struct {
+	tokens    int
+	lastCheck time.Time
+}
+
+const (
+	dfRateBurst  = 20
+	dfRateRefill = 50 // per minute
+)
+
+func newDFRateLimiter() *dfRateLimiter {
+	return &dfRateLimiter{
+		tokens: make(map[string]*dfUserLimit),
+	}
+}
+
+func (r *dfRateLimiter) allow(userID string) bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	now := time.Now()
+	limit, exists := r.tokens[userID]
+
+	if !exists {
+		r.tokens[userID] = &dfUserLimit{
+			tokens:    dfRateBurst - 1,
+			lastCheck: now,
+		}
+		return true
+	}
+
+	elapsed := now.Sub(limit.lastCheck).Minutes()
+	refill := int(elapsed * float64(dfRateRefill))
+	limit.tokens = min(dfRateBurst, limit.tokens+refill)
+	limit.lastCheck = now
+
+	if limit.tokens > 0 {
+		limit.tokens--
+		return true
+	}
+	return false
+}
+
+type dfRequestEnricher struct {
+	mu         sync.RWMutex
+	commonMeta map[string]string
+}
+
+func newDFRequestEnricher() *dfRequestEnricher {
+	return &dfRequestEnricher{
+		commonMeta: map[string]string{
+			"gateway":        "deepfake-shield",
+			"version":        "2.0.0",
+			"df_api_version": "v2",
+		},
+	}
+}
+
+func (e *dfRequestEnricher) enrich(req map[string]interface{}, userID string) map[string]interface{} {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+
+	enriched := make(map[string]interface{}, len(req)+8)
+	for k, v := range req {
+		enriched[k] = v
+	}
+
+	for k, v := range e.commonMeta {
+		enriched[k] = v
+	}
+
+	enriched["client_id"] = userID
+	enriched["request_time"] = time.Now().UTC().Unix()
+	enriched["request_id"] = fmt.Sprintf("df-%d-%s", time.Now().Unix(), userID[:min(8, len(userID))])
+	enriched["client_ip"] = "redacted" // Privacy first
+
+	return enriched
+}
+
+func (e *dfRequestEnricher) transformResponse(data []byte) ([]byte, error) {
+	var raw interface{}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return data, err
+	}
+
+	switch v := raw.(type) {
+	case map[string]interface{}:
+		v["_gateway_meta"] = map[string]interface{}{
+			"processed_at": time.Now().UTC().Unix(),
+			"gateway":      "deepfake-shield",
+			"version":      "2.0.0",
+		}
+		return json.Marshal(v)
+	case []interface{}:
+		return json.Marshal(map[string]interface{}{
+			"results": v,
+			"_gateway_meta": map[string]interface{}{
+				"processed_at": time.Now().UTC().Unix(),
+				"count":        len(v),
+			},
+		})
+	default:
+		return data, nil
+	}
 }
 
 func NewDeepfakeHandler(proxyService *services.ProxyService, uploadHandler *services.FileUploadHandler) *DeepfakeHandler {
@@ -39,7 +190,10 @@ func NewDeepfakeHandler(proxyService *services.ProxyService, uploadHandler *serv
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
-		pythonServiceURL: "http://localhost:8000", // Python service URL
+		pythonServiceURL: "http://localhost:8000",
+		cache:            newDeepfakeCache(),
+		rateLimiter:      newDFRateLimiter(),
+		enricher:         newDFRequestEnricher(),
 	}
 }
 
@@ -102,6 +256,23 @@ func (h *DeepfakeHandler) validateFile(file *multipart.FileHeader, mediaType str
 	}
 
 	return nil
+}
+
+// sanitizeMediaURL sanitizes and validates media URL
+func (h *DeepfakeHandler) sanitizeMediaURL(url string) string {
+	// Remove potentially dangerous patterns
+	url = regexp.MustCompile(`javascript:`).ReplaceAllString(url, "")
+	url = regexp.MustCompile(`data:`).ReplaceAllString(url, "")
+	return url
+}
+
+// checkRateLimit applies rate limiting for analysis requests
+func (h *DeepfakeHandler) checkRateLimit(c *gin.Context) bool {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		userID = c.ClientIP()
+	}
+	return h.rateLimiter.allow(userID)
 }
 
 // callPythonService makes HTTP call to Python deepfake detection service
@@ -178,17 +349,39 @@ func (h *DeepfakeHandler) Upload(c *gin.Context) {
 }
 
 func (h *DeepfakeHandler) Analyze(c *gin.Context) {
+	// Rate limiting
+	if !h.checkRateLimit(c) {
+		c.JSON(http.StatusTooManyRequests, models.ErrorResponse{
+			Error:   "Rate limit exceeded",
+			Details: "Too many deepfake analysis requests. Please try again later.",
+		})
+		return
+	}
+
 	var req models.AnalyzeDeepfakeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request", Details: err.Error()})
 		return
 	}
 
+	// Sanitize media URL
+	req.MediaURL = h.sanitizeMediaURL(req.MediaURL)
+
+	// Enrich request with gateway metadata
+	userID := c.GetString("user_id")
+	if userID == "" {
+		userID = "anonymous"
+	}
+	enrichedReq := h.enricher.enrich(map[string]interface{}{
+		"media_url":  req.MediaURL,
+		"media_type": req.MediaType,
+	}, userID)
+
 	// Perform actual detection by calling Python service
 	analysis, err := h.callPythonService(req.MediaURL, req.MediaType)
 	if err != nil {
 		// Fallback to proxy service if Python service is unavailable
-		response, proxyErr := h.proxyService.AnalyzeDeepfake(req)
+		response, proxyErr := h.proxyService.AnalyzeDeepfake(enrichedReq)
 		if proxyErr != nil {
 			c.JSON(http.StatusBadGateway, models.ErrorResponse{
 				Error:   "Failed to analyze media",
@@ -207,10 +400,30 @@ func (h *DeepfakeHandler) Analyze(c *gin.Context) {
 	analysis.AnalysisAt = time.Now()
 	analysis.CreatedAt = time.Now()
 
-	c.JSON(http.StatusAccepted, analysis)
+	// Add gateway metadata to response
+	responseData, _ := json.Marshal(analysis)
+	transformed, err := h.enricher.transformResponse(responseData)
+	if err != nil {
+		c.JSON(http.StatusAccepted, analysis)
+		return
+	}
+
+	c.Data(http.StatusAccepted, "application/json", transformed)
 }
 
 func (h *DeepfakeHandler) ListAnalyses(c *gin.Context) {
+	// Check cache first
+	cacheKey := "analyses_list"
+	if cached, ok := h.cache.get(cacheKey); ok {
+		transformed, err := h.enricher.transformResponse(cached)
+		if err == nil {
+			c.Data(http.StatusOK, "application/json", transformed)
+			return
+		}
+		c.Data(http.StatusOK, "application/json", cached)
+		return
+	}
+
 	response, err := h.proxyService.ListDeepfakeAnalyses()
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch analyses", Details: err.Error()})
@@ -223,7 +436,16 @@ func (h *DeepfakeHandler) ListAnalyses(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, analyses)
+	// Cache the response (5 minutes)
+	h.cache.set(cacheKey, response, 5*time.Minute)
+
+	// Transform and return
+	transformed, err := h.enricher.transformResponse(response)
+	if err != nil {
+		c.JSON(http.StatusOK, analyses)
+		return
+	}
+	c.Data(http.StatusOK, "application/json", transformed)
 }
 
 func (h *DeepfakeHandler) GetAnalysis(c *gin.Context) {
