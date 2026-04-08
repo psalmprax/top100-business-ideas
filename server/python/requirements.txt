@@ -22,7 +22,7 @@ python-multipart==0.0.6
 aiofiles==23.2.1
 
 # HTTP client
-httpx==0.26.0
+httpx>=0.28.1
 
 # Environment and utilities
 python-dotenv>=1.2.1
