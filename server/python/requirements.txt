@@ -55,5 +55,5 @@ ddgs==2.1.7
 # Reporting (optional)
 reportlab==4.0.0
 
-# External Git dependency - pinned to specific commit for security
-hermes-agent @ git+https://github.com/NousResearch/hermes-agent.git@v1.0.0#egg=hermes-agent
+# External Git dependency - pinned to specific release for stability
+hermes-agent @ git+https://github.com/NousResearch/hermes-agent.git@v2026.4.8#egg=hermes-agent
