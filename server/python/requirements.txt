@@ -25,7 +25,7 @@ aiofiles==23.2.1
 httpx==0.26.0
 
 # Environment and utilities
-python-dotenv==1.0.0
+python-dotenv>=1.2.1
 itsdangerous==2.1.2
 
 # Business logic dependencies
@@ -38,7 +38,7 @@ opencv-python-headless==4.9.0.80
 
 # Heavy ML dependencies - moved to optional extras for lazy loading
 torch==2.2.0
-torchvision==0.16.2
+torchvision>=0.17.0
 transformers==4.36.2
 librosa==0.10.0
 
@@ -50,7 +50,7 @@ langchain-community==0.3.10
 
 # Search and data collection (optional)
 duckduckgo-search==6.3.3
-ddgs==2.1.7
+ddgs>=9.0.0
 
 # Reporting (optional)
 reportlab==4.0.0

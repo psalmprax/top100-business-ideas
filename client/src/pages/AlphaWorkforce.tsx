@@ -169,7 +169,6 @@ const AlphaWorkforce = () => {
     storage.get("workforce_autonomous", false)
   );
   // Purged simulated metrics - derived from backend telemetry
-  const [governanceDecisions, setGovernanceDecisions] = useState<any>({});
   const [workforceData, setWorkforceData] = useState<any>(null);
   const [isHiringOpen, setIsHiringOpen] = useState(false);
   const [webhooks, setWebhooks] = useState({
