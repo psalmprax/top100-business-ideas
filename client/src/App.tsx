@@ -1,5 +1,6 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -28,7 +29,10 @@ import VentureDetailPage from "./pages/VentureUniversalTemplate";
 import SkillMarketplacePage from "./pages/SkillMarketplace";
 import MobileLandingPage from "./pages/MobileLanding";
 
-import { PerspectiveProvider, usePerspective } from "./contexts/PerspectiveContext";
+import {
+  PerspectiveProvider,
+  usePerspective,
+} from "./contexts/PerspectiveContext";
 import { PerspectiveSwitcher } from "./components/PerspectiveSwitcher";
 import { useAuth } from "./contexts/AuthContext";
 import { Redirect } from "wouter";
@@ -206,24 +210,28 @@ function PerspectiveWrapper({ children }: { children: React.ReactNode }) {
   );
 }
 
+const queryClient = new QueryClient();
+
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider
-        defaultTheme="dark"
-        // switchable
-      >
-        <TooltipProvider>
-          <PerspectiveProvider>
-            <AuthProvider>
-              <PerspectiveWrapper>
-                <Toaster />
-                <Router />
-              </PerspectiveWrapper>
-            </AuthProvider>
-          </PerspectiveProvider>
-        </TooltipProvider>
-      </ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider
+          defaultTheme="dark"
+          // switchable
+        >
+          <TooltipProvider>
+            <PerspectiveProvider>
+              <AuthProvider>
+                <PerspectiveWrapper>
+                  <Toaster />
+                  <Router />
+                </PerspectiveWrapper>
+              </AuthProvider>
+            </PerspectiveProvider>
+          </TooltipProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 }

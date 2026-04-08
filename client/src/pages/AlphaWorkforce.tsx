@@ -212,7 +212,9 @@ const AlphaWorkforce = () => {
   const [executionHistory, setExecutionHistory] = useState<any[]>([]);
   const [outreachDrafts, setOutreachDrafts] = useState<any[]>([]);
   const [isAutosearching, setIsAutosearching] = useState(false);
-  const [autosearchNiche, setAutosearchNiche] = useState("AI Compliance for Mid-Market");
+  const [autosearchNiche, setAutosearchNiche] = useState(
+    "AI Compliance for Mid-Market"
+  );
   const [targetProfile, setTargetProfile] = useState("enterprise");
 
   // Chat / Console State
@@ -262,13 +264,14 @@ const AlphaWorkforce = () => {
           extendedApi.workforce.getVentures(),
           extendedApi.agents.list(),
           extendedApi.workforce.getSkills(),
-          extendedApi.workforce.getEarnings(),
+          extendedApi.workforce.getEarningsData(),
           extendedApi.workforce.getJobs(),
           extendedApi.workforce.getAcquisitions(),
           extendedApi.workforce.getContentDrafts(),
           extendedApi.agentOps.getSettings(),
         ]);
-        const decisionsData = await extendedApi.workforce.getGovernanceDecisions();
+        const decisionsData =
+          await extendedApi.workforce.getGovernanceDecisions();
         const historyData = await extendedApi.workforce.getExecutionHistory();
 
         setWorkforceData(syncData);
@@ -279,7 +282,7 @@ const AlphaWorkforce = () => {
         setActiveEmployees(currentAgents.length);
         setSkillsMarketplace(skills);
         setJobFeed(jobs);
-        setAcquisitions(winList || []); 
+        setAcquisitions(winList || []);
         setContentDrafts(drafts || []);
         setGovernanceDecisions(decisionsData || {});
         setExecutionHistory(historyData || []);
@@ -291,9 +294,21 @@ const AlphaWorkforce = () => {
         // Map earnings to revenueData with real backend distribution
         if (earnings) {
           setRevenueData({
-            agentOps: earnings.segments?.agentOps || { revenue: 0, growth: 0, roi: 0 },
-            compliance: earnings.segments?.compliance || { revenue: 0, growth: 0, roi: 0 },
-            deepfake: earnings.segments?.deepfake || { revenue: 0, growth: 0, roi: 0 },
+            agentOps: earnings.segments?.agentOps || {
+              revenue: 0,
+              growth: 0,
+              roi: 0,
+            },
+            compliance: earnings.segments?.compliance || {
+              revenue: 0,
+              growth: 0,
+              roi: 0,
+            },
+            deepfake: earnings.segments?.deepfake || {
+              revenue: 0,
+              growth: 0,
+              roi: 0,
+            },
             totalCapital: earnings.total_capital || 0,
             burnRate: earnings.burn_rate || 0,
             avgRoi: earnings.avg_roi || 0,
@@ -312,26 +327,30 @@ const AlphaWorkforce = () => {
     };
 
     // Real-First Simulation Listener
-    setSimulationListener((endpoint) => {
-      toast.warning(`RECOVERY-FIRST: Workforce service "${endpoint}" reported a connection drop. Activating local-first autonomous simulation.`, {
-        description: "Your Alpha Workforce agents are continuing work in autonomous sandbox mode.",
-        duration: 8000
-      });
+    setSimulationListener(endpoint => {
+      toast.warning(
+        `RECOVERY-FIRST: Workforce service "${endpoint}" reported a connection drop. Activating local-first autonomous simulation.`,
+        {
+          description:
+            "Your Alpha Workforce agents are continuing work in autonomous sandbox mode.",
+          duration: 8000,
+        }
+      );
     });
 
     fetchAllData();
     fetchChatHistory();
     fetchAgents();
-    
+
     // Workforce Data Refresh Listener (Real-First Policy)
     const handleRefresh = () => fetchAllData();
-    window.addEventListener('workforce_data_refresh', handleRefresh);
+    window.addEventListener("workforce_data_refresh", handleRefresh);
 
     // Polling for chat updates (Simulating real-time for now)
     const chatInterval = setInterval(fetchChatHistory, 5000);
     const interval = setInterval(fetchAllData, 15000);
     return () => {
-      window.removeEventListener('workforce_data_refresh', handleRefresh);
+      window.removeEventListener("workforce_data_refresh", handleRefresh);
       clearInterval(interval);
       clearInterval(chatInterval);
     };
@@ -339,33 +358,41 @@ const AlphaWorkforce = () => {
 
   const handleSendChat = async () => {
     if (!chatInput.trim() || isSendingChat) return;
-    
+
     const msg = chatInput;
     setChatInput("");
     setIsSendingChat(true);
-    
+
     // Optimistic update
     const tempId = `temp-${Date.now()}`;
-    setChatMessages(prev => [...prev, {
-      id: tempId,
-      sender: "user",
-      recipient: selectedRecipient,
-      content: msg,
-      created_at: new Date().toISOString(),
-      is_group_chat: selectedRecipient === "all"
-    } as any]);
+    setChatMessages(prev => [
+      ...prev,
+      {
+        id: tempId,
+        sender: "user",
+        recipient: selectedRecipient,
+        content: msg,
+        created_at: new Date().toISOString(),
+        is_group_chat: selectedRecipient === "all",
+      } as any,
+    ]);
 
     try {
-      const response = await extendedApi.workforce.sendMessage(msg, selectedRecipient);
+      const response = await extendedApi.workforce.sendMessage(
+        msg,
+        selectedRecipient
+      );
       // Replace optimistic message with real one
-      setChatMessages(prev => prev.map(m => m.id === tempId ? response : m));
-      
+      setChatMessages(prev => prev.map(m => (m.id === tempId ? response : m)));
+
       // Refresh agents list in case of new deployments/status changes
       fetchAgents();
-      
+
       toast.success(response.sender + " is responding", {
-        description: response.reasoning_path ? "Multi-agent cross-reasoning logic derived." : "Agent response synthesized.",
-        icon: <MessageSquare className="w-4 h-4 text-emerald-400" />
+        description: response.reasoning_path
+          ? "Multi-agent cross-reasoning logic derived."
+          : "Agent response synthesized.",
+        icon: <MessageSquare className="w-4 h-4 text-emerald-400" />,
       });
     } catch (e) {
       console.error("Chat dispatch failed", e);
@@ -535,13 +562,17 @@ const AlphaWorkforce = () => {
 
   const handleRunAutosearch = async () => {
     setIsAutosearching(true);
-    toast.info(`Autosearch Engine: Targeting ${targetProfile} in ${autosearchNiche}...`, {
-      icon: <Target className="w-4 h-4 text-indigo-500" />,
-    });
+    toast.info(
+      `Autosearch Engine: Targeting ${targetProfile} in ${autosearchNiche}...`,
+      {
+        icon: <Target className="w-4 h-4 text-indigo-500" />,
+      }
+    );
     try {
       await extendedApi.workforce.runAutosearch(autosearchNiche, targetProfile);
       toast.success("Autosearch Cycle Initiated", {
-        description: "Agents are researching prospects and drafting personalized outreach.",
+        description:
+          "Agents are researching prospects and drafting personalized outreach.",
       });
 
       // Refresh drafts immediately upon backend confirmation
@@ -634,10 +665,10 @@ const AlphaWorkforce = () => {
       const req = fiscalRequests.find(r => r.id === id);
       if (decision === "APPROVED") {
         toast.success(`Fund Disbursement Authorized: ${req?.amount}`, {
-          icon: <DollarSign className="w-4 h-4 text-emerald-500" />
+          icon: <DollarSign className="w-4 h-4 text-emerald-500" />,
         });
         // Real-First Policy: Immediate global state sync to reflect capital shift
-        window.dispatchEvent(new CustomEvent('workforce_data_refresh'));
+        window.dispatchEvent(new CustomEvent("workforce_data_refresh"));
       } else {
         toast.error(`Expenditure Denied: ${req?.purpose}`);
       }
@@ -726,7 +757,9 @@ const AlphaWorkforce = () => {
               <Building2 className="w-8 h-8 text-white" />
             </div>
             <div>
-              <h1 className="text-product-title text-xl">Alpha <span>Workforce</span></h1>
+              <h1 className="text-product-title text-xl">
+                Alpha <span>Workforce</span>
+              </h1>
               <p className="text-feature flex items-center gap-1">
                 <Activity className="w-3 h-3 text-green-500" /> Autonomous
                 Corporate Management System
@@ -765,7 +798,9 @@ const AlphaWorkforce = () => {
                 Global ROI
               </span>
               <span className="text-stat text-green-500 tabular-nums">
-                {revenueData?.avgRoi ? `${revenueData.avgRoi.toFixed(1)}x` : "---x"}
+                {revenueData?.avgRoi
+                  ? `${revenueData.avgRoi.toFixed(1)}x`
+                  : "---x"}
               </span>
             </div>
             <div className="h-8 w-px bg-border hidden md:block" />
@@ -1549,7 +1584,10 @@ const AlphaWorkforce = () => {
                           <Rocket className="w-5 h-5" />
                           Autosearch Engine
                         </CardTitle>
-                        <Badge variant="outline" className="bg-indigo-500/10 text-indigo-400 border-indigo-500/20 text-[9px] flex items-center gap-1">
+                        <Badge
+                          variant="outline"
+                          className="bg-indigo-500/10 text-indigo-400 border-indigo-500/20 text-[9px] flex items-center gap-1"
+                        >
                           <Brain className="w-2 h-2" /> POWERED BY PAPERCLIP
                         </Badge>
                       </div>
@@ -1559,56 +1597,90 @@ const AlphaWorkforce = () => {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="space-y-2">
-                        <Label className="text-[10px] uppercase text-muted-foreground">Campaign Niche</Label>
-                        <Input 
-                          value={autosearchNiche} 
-                          onChange={(e) => setAutosearchNiche(e.target.value)}
+                        <Label className="text-[10px] uppercase text-muted-foreground">
+                          Campaign Niche
+                        </Label>
+                        <Input
+                          value={autosearchNiche}
+                          onChange={e => setAutosearchNiche(e.target.value)}
                           placeholder="e.g. AI Compliance for Fintech"
                           className="h-8 text-xs border-indigo-500/10 focus-visible:ring-indigo-500/20"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-[10px] uppercase text-muted-foreground">Target Profile</Label>
-                        <Select value={targetProfile} onValueChange={setTargetProfile}>
+                        <Label className="text-[10px] uppercase text-muted-foreground">
+                          Target Profile
+                        </Label>
+                        <Select
+                          value={targetProfile}
+                          onValueChange={setTargetProfile}
+                        >
                           <SelectTrigger className="h-8 text-xs border-indigo-500/10">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="enterprise">Enterprise (F500/Global)</SelectItem>
-                            <SelectItem value="mid-market">Mid-Market ($10M-$100M)</SelectItem>
-                            <SelectItem value="startups">High-Growth Startups</SelectItem>
-                            <SelectItem value="government">Government & Public Sector</SelectItem>
+                            <SelectItem value="enterprise">
+                              Enterprise (F500/Global)
+                            </SelectItem>
+                            <SelectItem value="mid-market">
+                              Mid-Market ($10M-$100M)
+                            </SelectItem>
+                            <SelectItem value="startups">
+                              High-Growth Startups
+                            </SelectItem>
+                            <SelectItem value="government">
+                              Government & Public Sector
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="flex items-center justify-between p-3 rounded-lg bg-background border border-indigo-500/10">
                         <div className="flex flex-col">
-                          <span className="text-[10px] font-bold">Auto-Trigger</span>
-                          <span className="text-[9px] text-muted-foreground italic">Skip manual preview</span>
+                          <span className="text-[10px] font-bold">
+                            Auto-Trigger
+                          </span>
+                          <span className="text-[9px] text-muted-foreground italic">
+                            Skip manual preview
+                          </span>
                         </div>
                         <Switch className="data-[state=checked]:bg-indigo-500" />
                       </div>
-                      <Button 
+                      <Button
                         onClick={handleRunAutosearch}
                         disabled={isAutosearching}
                         className="w-full bg-indigo-600 hover:bg-indigo-700 h-9 text-xs"
                       >
-                        {isAutosearching ? <RefreshCw className="w-3 h-3 mr-2 animate-spin" /> : <Play className="w-3 h-3 mr-2" />}
-                        {isAutosearching ? "Agents Researching..." : "KICK OFF AUTOSEARCH"}
+                        {isAutosearching ? (
+                          <RefreshCw className="w-3 h-3 mr-2 animate-spin" />
+                        ) : (
+                          <Play className="w-3 h-3 mr-2" />
+                        )}
+                        {isAutosearching
+                          ? "Agents Researching..."
+                          : "KICK OFF AUTOSEARCH"}
                       </Button>
-                      
+
                       <div className="pt-4 border-t border-indigo-500/10">
-                        <h4 className="text-[10px] font-bold text-muted-foreground uppercase mb-3 text-center">Engine Performance</h4>
+                        <h4 className="text-[10px] font-bold text-muted-foreground uppercase mb-3 text-center">
+                          Engine Performance
+                        </h4>
                         <div className="grid grid-cols-2 gap-2 text-center">
                           <div className="p-2 rounded bg-background border border-border">
-                            <div className="text-[10px] text-muted-foreground">Precision</div>
-                            <div className="text-sm font-bold text-indigo-500">92%</div>
+                            <div className="text-[10px] text-muted-foreground">
+                              Precision
+                            </div>
+                            <div className="text-sm font-bold text-indigo-500">
+                              92%
+                            </div>
                           </div>
                           <div className="p-2 rounded bg-background border border-border">
                             <div className="text-[10px] text-muted-foreground italic flex items-center justify-center gap-1">
-                              <Zap className="w-2 h-2 text-amber-500" /> Self-Optimizing
+                              <Zap className="w-2 h-2 text-amber-500" />{" "}
+                              Self-Optimizing
                             </div>
-                            <div className="text-xs font-bold text-indigo-400">ACTIVE</div>
+                            <div className="text-xs font-bold text-indigo-400">
+                              ACTIVE
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1624,10 +1696,14 @@ const AlphaWorkforce = () => {
                           Outreach Approval Queue
                         </CardTitle>
                         <CardDescription>
-                          {outreachDrafts.length} personalized messages pending review
+                          {outreachDrafts.length} personalized messages pending
+                          review
                         </CardDescription>
                       </div>
-                      <Badge variant="outline" className="text-indigo-500 border-indigo-500/20">
+                      <Badge
+                        variant="outline"
+                        className="text-indigo-500 border-indigo-500/20"
+                      >
                         HUMAN-IN-THE-LOOP
                       </Badge>
                     </CardHeader>
@@ -1635,77 +1711,119 @@ const AlphaWorkforce = () => {
                       <ScrollArea className="h-[500px]">
                         {outreachDrafts.length > 0 ? (
                           <div className="divide-y divide-border">
-                            {outreachDrafts.map((draft) => (
-                              <div key={draft.id} className="p-4 hover:bg-muted/30 transition-colors group">
+                            {outreachDrafts.map(draft => (
+                              <div
+                                key={draft.id}
+                                className="p-4 hover:bg-muted/30 transition-colors group"
+                              >
                                 <div className="flex items-start justify-between mb-3">
                                   <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
                                       {draft.recipient_name.charAt(0)}
                                     </div>
                                     <div>
-                                      <div className="text-sm font-bold leading-none mb-1">{draft.recipient_name}</div>
-                                      <div className="text-[10px] text-muted-foreground">{draft.recipient_role} @ {draft.recipient_company}</div>
+                                      <div className="text-sm font-bold leading-none mb-1">
+                                        {draft.recipient_name}
+                                      </div>
+                                      <div className="text-[10px] text-muted-foreground">
+                                        {draft.recipient_role} @{" "}
+                                        {draft.recipient_company}
+                                      </div>
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-2">
                                     <Badge className="bg-green-500/10 text-green-500 border-green-500/20 text-[9px]">
                                       SCORE: {draft.score}%
                                     </Badge>
-                                    <Badge variant="outline" className="text-[9px] uppercase">
+                                    <Badge
+                                      variant="outline"
+                                      className="text-[9px] uppercase"
+                                    >
                                       {draft.profile}
                                     </Badge>
                                   </div>
                                 </div>
                                 <div className="ml-13 pl-13 border-l-2 border-indigo-500/20 py-1 space-y-2">
-                                  <div className="text-[11px] font-bold text-indigo-400">Subject: {draft.subject}</div>
+                                  <div className="text-[11px] font-bold text-indigo-400">
+                                    Subject: {draft.subject}
+                                  </div>
                                   <div className="text-[11px] text-muted-foreground line-clamp-2 italic leading-relaxed">
                                     "{draft.body}"
                                   </div>
                                 </div>
                                 <div className="flex items-center justify-end gap-2 mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground hover:text-destructive">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 text-xs text-muted-foreground hover:text-destructive"
+                                  >
                                     <X className="w-3 h-3 mr-2" /> Discard
                                   </Button>
                                   <Dialog>
                                     <DialogTrigger asChild>
-                                      <Button variant="outline" size="sm" className="h-8 text-xs border-indigo-500/20">
-                                        <FileText className="w-3 h-3 mr-2" /> Preview & Edit
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-8 text-xs border-indigo-500/20"
+                                      >
+                                        <FileText className="w-3 h-3 mr-2" />{" "}
+                                        Preview & Edit
                                       </Button>
                                     </DialogTrigger>
                                     <DialogContent className="max-w-2xl">
                                       <DialogHeader>
-                                        <DialogTitle>Message Review: {draft.recipient_name}</DialogTitle>
-                                        <DialogDescription>Personalized for {draft.recipient_company} in the {draft.niche} niche.</DialogDescription>
+                                        <DialogTitle>
+                                          Message Review: {draft.recipient_name}
+                                        </DialogTitle>
+                                        <DialogDescription>
+                                          Personalized for{" "}
+                                          {draft.recipient_company} in the{" "}
+                                          {draft.niche} niche.
+                                        </DialogDescription>
                                       </DialogHeader>
                                       <div className="space-y-4 py-4">
                                         <div className="grid grid-cols-4 items-center gap-4">
-                                          <Label className="text-right">Subject</Label>
-                                          <Input value={draft.subject} className="col-span-3 h-9" readOnly />
+                                          <Label className="text-right">
+                                            Subject
+                                          </Label>
+                                          <Input
+                                            value={draft.subject}
+                                            className="col-span-3 h-9"
+                                            readOnly
+                                          />
                                         </div>
                                         <div className="grid grid-cols-4 items-start gap-4">
-                                          <Label className="text-right pt-2">Message</Label>
-                                          <textarea 
-                                            className="col-span-3 min-h-[250px] p-4 text-xs bg-muted/30 rounded-lg border border-border outline-none focus:ring-1 focus:ring-primary leading-loose" 
+                                          <Label className="text-right pt-2">
+                                            Message
+                                          </Label>
+                                          <textarea
+                                            className="col-span-3 min-h-[250px] p-4 text-xs bg-muted/30 rounded-lg border border-border outline-none focus:ring-1 focus:ring-primary leading-loose"
                                             defaultValue={draft.body}
                                           />
                                         </div>
                                       </div>
                                       <DialogFooter>
-                                        <Button 
-                                          className="bg-indigo-600 hover:bg-indigo-700" 
-                                          onClick={() => handleApproveOutreach(draft.id)}
+                                        <Button
+                                          className="bg-indigo-600 hover:bg-indigo-700"
+                                          onClick={() =>
+                                            handleApproveOutreach(draft.id)
+                                          }
                                         >
-                                          <Check className="w-4 h-4 mr-2" /> SEND NOW
+                                          <Check className="w-4 h-4 mr-2" />{" "}
+                                          SEND NOW
                                         </Button>
                                       </DialogFooter>
                                     </DialogContent>
                                   </Dialog>
-                                  <Button 
-                                    size="sm" 
+                                  <Button
+                                    size="sm"
                                     className="h-8 text-xs bg-green-600 hover:bg-green-700"
-                                    onClick={() => handleApproveOutreach(draft.id)}
+                                    onClick={() =>
+                                      handleApproveOutreach(draft.id)
+                                    }
                                   >
-                                    <Check className="w-3 h-3 mr-2" /> Quick Approve
+                                    <Check className="w-3 h-3 mr-2" /> Quick
+                                    Approve
                                   </Button>
                                 </div>
                               </div>
@@ -1717,12 +1835,20 @@ const AlphaWorkforce = () => {
                               <Search className="w-8 h-8 text-indigo-500 animate-pulse" />
                             </div>
                             <div>
-                              <h4 className="text-body-lg font-bold">No Outreach Drafts Yet</h4>
+                              <h4 className="text-body-lg font-bold">
+                                No Outreach Drafts Yet
+                              </h4>
                               <p className="text-caption-premium max-w-xs mx-auto">
-                                Kick off a new Autosearch cycle or source leads to generate personalized outreach messages.
+                                Kick off a new Autosearch cycle or source leads
+                                to generate personalized outreach messages.
                               </p>
                             </div>
-                            <Button variant="outline" size="sm" onClick={handleRunAutosearch} className="border-indigo-500/30 text-indigo-500">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handleRunAutosearch}
+                              className="border-indigo-500/30 text-indigo-500"
+                            >
                               Start Research Cycle
                             </Button>
                           </div>
@@ -2914,7 +3040,7 @@ const AlphaWorkforce = () => {
           </TabsContent>
 
           <TabsContent value="comms" className="space-y-6">
-            <ConversationMatrix 
+            <ConversationMatrix
               messages={chatMessages}
               agents={availableAgents}
               selectedRecipient={selectedRecipient}
@@ -3085,15 +3211,21 @@ const AlphaWorkforce = () => {
                   <Button
                     className="w-full bg-primary hover:bg-primary/90 mt-4"
                     onClick={() => {
-                      toast.promise(extendedApi.governance.settings.batchUpdate({
-                        slack_webhook: webhooks.slack,
-                        telegram_token: webhooks.telegram,
-                        discord_webhook: webhooks.discord
-                      }), {
-                        loading: "Real-First Persistence: Syncing operational bridges...",
-                        success: "All operational bridges synchronized to cluster.",
-                        error: "Connectivity synchronization failed. Check backend.",
-                      });
+                      toast.promise(
+                        extendedApi.governance.settings.batchUpdate({
+                          slack_webhook: webhooks.slack,
+                          telegram_token: webhooks.telegram,
+                          discord_webhook: webhooks.discord,
+                        }),
+                        {
+                          loading:
+                            "Real-First Persistence: Syncing operational bridges...",
+                          success:
+                            "All operational bridges synchronized to cluster.",
+                          error:
+                            "Connectivity synchronization failed. Check backend.",
+                        }
+                      );
                     }}
                   >
                     <Save className="w-4 h-4 mr-2" /> Save Connectivity Profile
@@ -3605,18 +3737,18 @@ const AgentMessage = ({
   );
 };
 
-const ConversationMatrix = ({ 
-  messages, 
-  agents, 
-  selectedRecipient, 
-  onRecipientChange, 
-  onSendMessage, 
-  inputValue, 
+const ConversationMatrix = ({
+  messages,
+  agents,
+  selectedRecipient,
+  onRecipientChange,
+  onSendMessage,
+  inputValue,
   onInputChange,
-  isSending
+  isSending,
 }: any) => {
   const scrollRef = useRef<HTMLDivElement>(null);
-  
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -3639,19 +3771,27 @@ const ConversationMatrix = ({
                 key={agent.id}
                 onClick={() => onRecipientChange(agent.id)}
                 className={`w-full text-left px-3 py-2.5 rounded-lg text-[11px] transition-all flex flex-col gap-0.5 ${
-                  selectedRecipient === agent.id 
-                    ? "bg-indigo-500/20 text-indigo-100 border border-indigo-500/30" 
+                  selectedRecipient === agent.id
+                    ? "bg-indigo-500/20 text-indigo-100 border border-indigo-500/30"
                     : "hover:bg-primary/5 text-muted-foreground"
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <span className="font-bold flex items-center gap-1.5">
-                    {agent.id === 'all' ? <MessagesSquare className="w-3 h-3" /> : <Bot className="w-3 h-3" />}
+                    {agent.id === "all" ? (
+                      <MessagesSquare className="w-3 h-3" />
+                    ) : (
+                      <Bot className="w-3 h-3" />
+                    )}
                     {agent.name}
                   </span>
-                  {selectedRecipient === agent.id && <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full" />}
+                  {selectedRecipient === agent.id && (
+                    <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full" />
+                  )}
                 </div>
-                <span className="text-[9px] opacity-60 ml-4.5">{agent.role}</span>
+                <span className="text-[9px] opacity-60 ml-4.5">
+                  {agent.role}
+                </span>
               </button>
             ))}
           </div>
@@ -3662,76 +3802,102 @@ const ConversationMatrix = ({
       <Card className="md:col-span-3 border-primary/10 flex flex-col overflow-hidden bg-gradient-to-b from-card to-background">
         <CardHeader className="py-3 border-b border-primary/5 flex flex-row items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${selectedRecipient === 'all' ? 'bg-purple-500/10 text-purple-500' : 'bg-indigo-500/10 text-indigo-500'}`}>
-              {selectedRecipient === 'all' ? <MessagesSquare className="w-4 h-4" /> : <MessageSquare className="w-4 h-4" />}
+            <div
+              className={`w-8 h-8 rounded-lg flex items-center justify-center ${selectedRecipient === "all" ? "bg-purple-500/10 text-purple-500" : "bg-indigo-500/10 text-indigo-500"}`}
+            >
+              {selectedRecipient === "all" ? (
+                <MessagesSquare className="w-4 h-4" />
+              ) : (
+                <MessageSquare className="w-4 h-4" />
+              )}
             </div>
             <div>
               <CardTitle className="text-sm">
-                {agents.find((a: any) => a.id === selectedRecipient)?.name || "Collective Matrix"}
+                {agents.find((a: any) => a.id === selectedRecipient)?.name ||
+                  "Collective Matrix"}
               </CardTitle>
               <CardDescription className="text-[10px]">
-                {selectedRecipient === 'all' ? "Addressing the Workforce Council" : `Private Channel with ${selectedRecipient.toUpperCase()}`}
+                {selectedRecipient === "all"
+                  ? "Addressing the Workforce Council"
+                  : `Private Channel with ${selectedRecipient.toUpperCase()}`}
               </CardDescription>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-[9px] border-indigo-500/20 text-indigo-400">
+            <Badge
+              variant="outline"
+              className="text-[9px] border-indigo-500/20 text-indigo-400"
+            >
               REAL-TIME OPS
             </Badge>
           </div>
         </CardHeader>
 
         {/* Message List */}
-        <div 
+        <div
           ref={scrollRef}
           className="flex-grow overflow-y-auto p-6 space-y-6 scrollbar-thin scrollbar-thumb-primary/10"
         >
-          {messages.filter((m: any) => 
-            (selectedRecipient === 'all' && m.is_group_chat) || 
-            (m.recipient === selectedRecipient) || 
-            (m.sender.toLowerCase().includes(selectedRecipient.toLowerCase()))
-          ).map((msg: any) => (
-            <div 
-              key={msg.id} 
-              className={`flex flex-col ${msg.sender === "user" ? "items-end" : "items-start"}`}
-            >
-              <div className={`max-w-[85%] rounded-2xl p-4 text-xs leading-relaxed shadow-sm ${
-                msg.sender === "user" 
-                  ? "bg-indigo-600 text-white rounded-tr-none" 
-                  : "bg-muted/50 border border-primary/10 text-foreground rounded-tl-none"
-              }`}>
-                {msg.sender !== "user" && (
-                  <div className="flex items-center gap-2 mb-2 pb-1 border-b border-primary/5">
-                    <span className="font-black uppercase tracking-widest text-[9px] text-indigo-500">{msg.sender}</span>
-                    <Badge className="bg-emerald-500/10 text-emerald-500 border-none h-3.5 text-[8px]">AGENT RESPONSE</Badge>
-                  </div>
-                )}
-                <div className="whitespace-pre-wrap">{msg.content}</div>
-                
-                {msg.reasoning_path && (
-                  <div className="mt-3 pt-3 border-t border-primary/5">
-                    <details className="cursor-pointer group">
-                      <summary className="text-[10px] text-indigo-400/80 font-mono flex items-center gap-1.5 hover:text-indigo-400 transition-colors">
-                        <Terminal className="w-3 h-3" />
-                        VIEW CROSS-AGENT REASONING
-                      </summary>
-                      <div className="mt-2 p-3 rounded-lg bg-black/40 font-mono text-[9px] text-emerald-400/80 border border-emerald-500/10 leading-normal">
-                        {msg.reasoning_path}
-                      </div>
-                    </details>
-                  </div>
-                )}
+          {messages
+            .filter(
+              (m: any) =>
+                (selectedRecipient === "all" && m.is_group_chat) ||
+                m.recipient === selectedRecipient ||
+                m.sender.toLowerCase().includes(selectedRecipient.toLowerCase())
+            )
+            .map((msg: any) => (
+              <div
+                key={msg.id}
+                className={`flex flex-col ${msg.sender === "user" ? "items-end" : "items-start"}`}
+              >
+                <div
+                  className={`max-w-[85%] rounded-2xl p-4 text-xs leading-relaxed shadow-sm ${
+                    msg.sender === "user"
+                      ? "bg-indigo-600 text-white rounded-tr-none"
+                      : "bg-muted/50 border border-primary/10 text-foreground rounded-tl-none"
+                  }`}
+                >
+                  {msg.sender !== "user" && (
+                    <div className="flex items-center gap-2 mb-2 pb-1 border-b border-primary/5">
+                      <span className="font-black uppercase tracking-widest text-[9px] text-indigo-500">
+                        {msg.sender}
+                      </span>
+                      <Badge className="bg-emerald-500/10 text-emerald-500 border-none h-3.5 text-[8px]">
+                        AGENT RESPONSE
+                      </Badge>
+                    </div>
+                  )}
+                  <div className="whitespace-pre-wrap">{msg.content}</div>
+
+                  {msg.reasoning_path && (
+                    <div className="mt-3 pt-3 border-t border-primary/5">
+                      <details className="cursor-pointer group">
+                        <summary className="text-[10px] text-indigo-400/80 font-mono flex items-center gap-1.5 hover:text-indigo-400 transition-colors">
+                          <Terminal className="w-3 h-3" />
+                          VIEW CROSS-AGENT REASONING
+                        </summary>
+                        <div className="mt-2 p-3 rounded-lg bg-black/40 font-mono text-[9px] text-emerald-400/80 border border-emerald-500/10 leading-normal">
+                          {msg.reasoning_path}
+                        </div>
+                      </details>
+                    </div>
+                  )}
+                </div>
+                <span className="text-[8px] text-muted-foreground mt-1.5 font-mono uppercase tracking-tighter px-1">
+                  {msg.sender === "user" ? "Sent" : "Received"} •{" "}
+                  {new Date(msg.created_at).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
               </div>
-              <span className="text-[8px] text-muted-foreground mt-1.5 font-mono uppercase tracking-tighter px-1">
-                {msg.sender === "user" ? "Sent" : "Received"} • {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
-            </div>
-          ))}
+            ))}
           {messages.length === 0 && (
             <div className="h-full flex flex-col items-center justify-center text-muted-foreground/40 space-y-4">
               <Bot className="w-12 h-12 stroke-[1px] opacity-20" />
               <p className="text-[10px] font-mono leading-relaxed text-center max-w-[200px]">
-                INITIALIZING ENCRYPTED LINE...<br/>
+                INITIALIZING ENCRYPTED LINE...
+                <br />
                 READY FOR STRATEGIC INPUT.
               </p>
             </div>
@@ -3745,40 +3911,62 @@ const ConversationMatrix = ({
               <div className="flex-grow relative">
                 <Input
                   value={inputValue}
-                  onChange={(e) => onInputChange(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && onSendMessage()}
-                  placeholder={selectedRecipient === 'all' ? "Address the collective workforce council..." : `Message the ${selectedRecipient.toUpperCase()} directly...`}
+                  onChange={e => onInputChange(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && onSendMessage()}
+                  placeholder={
+                    selectedRecipient === "all"
+                      ? "Address the collective workforce council..."
+                      : `Message the ${selectedRecipient.toUpperCase()} directly...`
+                  }
                   className="bg-background border-primary/10 h-11 pr-12 focus-visible:ring-indigo-500/30"
                   disabled={isSending}
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                  <span className={`w-1.5 h-1.5 rounded-full ${isSending ? 'bg-amber-400 animate-pulse' : 'bg-green-500'}`} />
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${isSending ? "bg-amber-400 animate-pulse" : "bg-green-500"}`}
+                  />
                 </div>
               </div>
-              <Button 
+              <Button
                 onClick={onSendMessage}
                 disabled={isSending || !inputValue.trim()}
                 className="bg-indigo-600 hover:bg-indigo-700 h-11 px-6 shadow-indigo-500/20 shadow-lg"
               >
-                {isSending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                {isSending ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4" />
+                )}
               </Button>
             </div>
-            
+
             <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
-              <button 
-                onClick={() => onInputChange("What's the consensus on our current growth trajectory?")}
+              <button
+                onClick={() =>
+                  onInputChange(
+                    "What's the consensus on our current growth trajectory?"
+                  )
+                }
                 className="whitespace-nowrap px-2.5 py-1 rounded-full border border-primary/10 bg-background text-[9px] hover:bg-primary/5 transition-colors flex items-center gap-1.5 text-muted-foreground"
               >
                 <Users className="w-3 h-3" /> Collective Opinion
               </button>
-              <button 
-                onClick={() => onInputChange("Audit our current outreach strategy for conversion leaks.")}
+              <button
+                onClick={() =>
+                  onInputChange(
+                    "Audit our current outreach strategy for conversion leaks."
+                  )
+                }
                 className="whitespace-nowrap px-2.5 py-1 rounded-full border border-primary/10 bg-background text-[9px] hover:bg-primary/5 transition-colors flex items-center gap-1.5 text-muted-foreground"
               >
                 <Zap className="w-3 h-3" /> Strategy Audit
               </button>
-              <button 
-                onClick={() => onInputChange("Reason together: How can we reduce our CPA significantly?")}
+              <button
+                onClick={() =>
+                  onInputChange(
+                    "Reason together: How can we reduce our CPA significantly?"
+                  )
+                }
                 className="whitespace-nowrap px-2.5 py-1 rounded-full border border-primary/10 bg-background text-[9px] hover:bg-primary/5 transition-colors flex items-center gap-1.5 text-muted-foreground"
               >
                 <Brain className="w-3 h-3" /> Reasoning Session
