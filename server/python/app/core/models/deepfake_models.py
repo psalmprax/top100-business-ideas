@@ -27,14 +27,16 @@ class AnalysisResult(str, Enum):
 
 class DeepfakeAnalysis(SQLModel, table=True):
     """Deepfake analysis model with persistent storage"""
+    __tablename__ = "verification_sessions"
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    media_url: str
-    media_type: MediaType
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    user_id: Optional[uuid.UUID] = Field(default=None, foreign_key="users.id")
+    media_url: str = Field(default="")
+    media_type: MediaType = Field(default=MediaType.VIDEO)
     result: AnalysisResult = Field(default=AnalysisResult.UNCERTAIN)
-    confidence: int = Field(default=0)
-    details: Dict[str, Any] = Field(default={}, sa_column=Column(JSON))
-    analysis_at: datetime = Field(default_factory=datetime.utcnow)
+    confidence: float = Field(default=0.0)
+    details: Dict[str, Any] = Field(default={}, sa_column=Column("metadata_json", JSON))
+    verified_at: datetime = Field(default_factory=datetime.utcnow)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -57,8 +59,8 @@ class AuthenticationStatus(str, Enum):
 class HardwareChallenge(SQLModel, table=True):
     """FIDO2-style hardware challenge for active authentication"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    user_id: str
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    user_id: uuid.UUID
     challenge: str
     status: AuthenticationStatus = Field(default=AuthenticationStatus.PENDING)
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -68,10 +70,10 @@ class HardwareChallenge(SQLModel, table=True):
 class BiometricSignature(SQLModel, table=True):
     """Cryptographically signed proof of presence"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    challenge_id: str = Field(foreign_key="hardwarechallenge.id")
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    challenge_id: uuid.UUID = Field(foreign_key="hardwarechallenge.id")
     signature: str
-    hardware_id: str
+    hardware_id: uuid.UUID
     verified: bool = Field(default=False)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -88,7 +90,7 @@ class TrainingStatus(str, Enum):
 class TrainingJob(SQLModel, table=True):
     """Persistent Training Run"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     dataset_name: str
     dataset_file_path: str
     status: TrainingStatus = Field(default=TrainingStatus.QUEUED)
@@ -101,7 +103,7 @@ class TrainingJob(SQLModel, table=True):
 class CustomModel(SQLModel, table=True):
     """Persistent Custom Neural Model"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str
     base_architecture: str
     dataset_id: Optional[str] = None
@@ -114,12 +116,13 @@ class CustomModel(SQLModel, table=True):
 
 class DuressConfig(SQLModel, table=True):
     """Persistent Duress/Silent Alarm configuration"""
+    __tablename__ = "duress_configs"
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    user_id: str = Field(index=True, unique=True)
-    panic_phrase: str
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    user_id: uuid.UUID = Field(index=True, unique=True, foreign_key="users.id")
+    panic_phrase: str = Field(default="alaska")
     silent_mode: bool = Field(default=True)
-    trigger_action: str  # lock_account, alert_security, fake_data
+    trigger_action: str = Field(default="alert_security")  # lock_account, alert_security, fake_data
     enabled: bool = Field(default=True)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -127,8 +130,8 @@ class DuressConfig(SQLModel, table=True):
 class BiometricTemplate(SQLModel, table=True):
     """Enrolled biometric templates for liveness comparison"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    user_id: str = Field(index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    user_id: uuid.UUID = Field(index=True)
     type: str  # face, voice, fingerprint
     template_hash: str
     enrolled_at: datetime = Field(default_factory=datetime.utcnow)
@@ -139,8 +142,8 @@ class BiometricTemplate(SQLModel, table=True):
 class WearableDevice(SQLModel, table=True):
     """Registered wearable devices for hardware-backed liveness"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    user_id: str = Field(index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    user_id: uuid.UUID = Field(index=True)
     name: str
     device_type: str  # vision_pro, apple_watch, android_wear
     status: str = Field(default="active")
@@ -151,8 +154,8 @@ class WearableDevice(SQLModel, table=True):
 class CryptoWallet(SQLModel, table=True):
     """Protected cryptocurrency wallets requiring biometric consent"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    user_id: str = Field(index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    user_id: uuid.UUID = Field(index=True)
     name: str
     wallet_address: str
     blockchain: str  # ethereum, solana, bitcoin
@@ -164,7 +167,7 @@ class CryptoWallet(SQLModel, table=True):
 class DeepfakeThreat(SQLModel, table=True):
     """Deepfake threat model for alerting and tracking"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     type: str  # injection, bypass, spoofing, synthetic
     severity: str  # low, medium, high, critical
     description: str
@@ -177,7 +180,7 @@ class DeepfakeThreat(SQLModel, table=True):
 class TravelKiosk(SQLModel, table=True):
     """Registered Travel Kiosks for hardware-backed compliance"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     location: str
     status: str = Field(default="online")
     last_ping: datetime = Field(default_factory=datetime.utcnow)
@@ -187,7 +190,7 @@ class TravelKiosk(SQLModel, table=True):
 class KioskVerificationSession(SQLModel, table=True):
     """Persistent Kiosk Verification Sessions for border control"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     session_id: str = Field(index=True, unique=True)
     kiosk_id: str
     kiosk_location: Optional[str] = None

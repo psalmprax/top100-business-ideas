@@ -97,66 +97,6 @@ async def list_compliance_articles(session: Session = Depends(get_session)):
     """Get all compliance articles"""
     try:
         articles = session.exec(select(ComplianceArticle)).all()
-        if not articles:
-            # Seed with EU AI Act articles if none exist
-            seed_articles = [
-                ComplianceArticle(
-                    article="Article 5",
-                    title="Unacceptable Risk AI Systems",
-                    description="Prohibited AI systems",
-                    risk="unacceptable",
-                    status="compliant",
-                ),
-                ComplianceArticle(
-                    article="Article 9",
-                    title="Risk Management System",
-                    description="Requirements for risk management",
-                    risk="high",
-                    status="compliant",
-                ),
-                ComplianceArticle(
-                    article="Article 10",
-                    title="Data Governance",
-                    description="Data governance requirements",
-                    risk="high",
-                    status="pending",
-                ),
-                ComplianceArticle(
-                    article="Article 11",
-                    title="Technical Documentation",
-                    description="Automated documentation generation for high-risk systems",
-                    risk="high",
-                    status="compliant",
-                    integration_type="docs",
-                    scan_type="Conformity Audit"
-                ),
-                ComplianceArticle(
-                    article="Article 14",
-                    title="Accuracy, Robustness and Cybersecurity",
-                    description="Technical robustness requirements",
-                    risk="high",
-                    status="compliant",
-                ),
-                ComplianceArticle(
-                    article="Article 50",
-                    title="Transparency Obligations",
-                    description="Information to be provided",
-                    risk="limited",
-                    status="compliant",
-                ),
-                ComplianceArticle(
-                    article="Article 61",
-                    title="Post-Market Monitoring",
-                    description="Monitoring obligations",
-                    risk="high",
-                    status="non_compliant",
-                ),
-            ]
-            for article in seed_articles:
-                session.add(article)
-            session.commit()
-            articles = seed_articles
-
         return articles
     except Exception as e:
         logger.error(f"Compliance Articles Error: {e}")
@@ -208,16 +148,7 @@ async def get_sla_dashboard(session: Session = Depends(get_session)):
             select(SLAAgreement).where(SLAAgreement.active == True)
         ).first()
         if not current_sla:
-            # Create default SLA
-            current_sla = SLAAgreement(
-                name="Enterprise SLA",
-                tier="gold",
-                uptime_guarantee=99.9,
-                response_time_sla=300,
-                resolution_time_sla=24,
-            )
-            session.add(current_sla)
-            session.commit()
+            raise HTTPException(status_code=404, detail="No active SLA agreement found in Sentinel ledger.")
 
         # Calculate current metrics from real SLA metric records
         recent_metrics = session.exec(
@@ -233,20 +164,21 @@ async def get_sla_dashboard(session: Session = Depends(get_session)):
             )
             total_incidents = sum(m.incident_count for m in recent_metrics)
             total_breaches = sum(m.breach_count for m in recent_metrics)
+            status = "compliant" if avg_uptime >= current_sla.uptime_guarantee else "breached"
         else:
-            avg_uptime = 100.0
+            # REAL-FIRST: Default to 'pending' state instead of assuming 100%
+            avg_uptime = 0.0
             avg_response = 0
             total_incidents = 0
             total_breaches = 0
+            status = "pending"
 
         current_metrics = {
             "uptime_percentage": round(avg_uptime, 2),
             "avg_response_time": round(avg_response),
             "total_incidents": total_incidents,
             "breaches_count": total_breaches,
-            "status": "compliant"
-            if avg_uptime >= current_sla.uptime_guarantee
-            else "breached",
+            "status": status,
         }
 
         return {
@@ -286,30 +218,6 @@ async def list_partners(session: Session = Depends(get_session)):
     """List all partner integrations"""
     try:
         partners = session.exec(select(PartnerIntegration)).all()
-        if not partners:
-            # Seed with default partners
-            default_partners = [
-                PartnerIntegration(
-                    name="GitHub",
-                    partner_type="oauth",
-                    permissions=["repo:read", "code:scan"],
-                ),
-                PartnerIntegration(
-                    name="Slack",
-                    partner_type="webhook",
-                    webhook_url="https://hooks.slack.com/...",
-                ),
-                PartnerIntegration(
-                    name="AWS",
-                    partner_type="api",
-                    permissions=["ec2:describe", "s3:list"],
-                ),
-            ]
-            for partner in default_partners:
-                session.add(partner)
-            session.commit()
-            partners = default_partners
-
         return partners
     except Exception as e:
         logger.error(f"Partners list Error: {e}")
@@ -352,15 +260,14 @@ async def get_usage_forecast(session: Session = Depends(get_session)):
         ).all()
 
         if not forecasts:
-            # Calculate real baseline from audit logs
-            one_week_ago = datetime.utcnow() - timedelta(days=7)
-            logs = session.exec(
-                select(AgentAuditLog).where(AgentAuditLog.timestamp >= one_week_ago)
-            ).all()
-
-            total_tokens = sum([log.metadata_json.get("tokens", 0) for log in logs])
-            daily_avg_tokens = total_tokens / 7 if total_tokens > 0 else 5000
-            daily_avg_cost = daily_avg_tokens * 0.00002  # Baseline gpt-4o price
+            # REAL-FIRST: Fetch baselines from system settings
+            from app.core.models import SystemSetting
+            token_baseline_setting = session.exec(select(SystemSetting).where(SystemSetting.setting_key == "forecast_token_baseline")).first()
+            cost_baseline_setting = session.exec(select(SystemSetting).where(SystemSetting.setting_key == "forecast_cost_per_token")).first()
+            
+            daily_avg_tokens = float(token_baseline_setting.setting_value) if token_baseline_setting else 5000
+            per_token_cost = float(cost_baseline_setting.setting_value) if cost_baseline_setting else 0.00002
+            daily_avg_cost = daily_avg_tokens * per_token_cost
 
             forecasts = []
             for i in range(30):
@@ -404,11 +311,16 @@ async def get_roi_analytics(session: Session = Depends(get_session)):
                 select(AgentAuditLog).where(AgentAuditLog.timestamp >= one_month_ago)
             ).all()
 
+            # REAL-FIRST: Fetch labor savings from system settings
+            from app.core.models import SystemSetting
+            labor_savings_setting = session.exec(select(SystemSetting).where(SystemSetting.setting_key == "roi_labor_savings_per_task")).first()
+            labor_savings_per_task = float(labor_savings_setting.setting_value) if labor_savings_setting else 15.0
+            
             total_tasks = len(logs)
             model_cost = (
                 sum([log.metadata_json.get("tokens", 0) for log in logs]) * 0.00002
             )
-            labor_savings = total_tasks * 15.0  # $15 saved per automated task
+            labor_savings = total_tasks * labor_savings_per_task
 
             net_savings = labor_savings - model_cost
             roi_pct = (net_savings / model_cost * 100) if model_cost > 0 else 250.0
@@ -446,36 +358,6 @@ async def get_localization_configs(session: Session = Depends(get_session)):
     """Get localization configurations"""
     try:
         configs = session.exec(select(LocalizationConfig)).all()
-        if not configs:
-            # Seed with default configs
-            default_configs = [
-                LocalizationConfig(
-                    language_code="en",
-                    region_code="US",
-                    timezone="America/New_York",
-                    currency="USD",
-                    compliance_framework="CCPA",
-                ),
-                LocalizationConfig(
-                    language_code="de",
-                    region_code="EU",
-                    timezone="Europe/Berlin",
-                    currency="EUR",
-                    compliance_framework="GDPR",
-                ),
-                LocalizationConfig(
-                    language_code="jp",
-                    region_code="APAC",
-                    timezone="Asia/Tokyo",
-                    currency="JPY",
-                    compliance_framework="APPI",
-                ),
-            ]
-            for config in default_configs:
-                session.add(config)
-            session.commit()
-            configs = default_configs
-
         return configs
     except Exception as e:
         logger.error(f"Localization Configs Error: {e}")
@@ -495,29 +377,6 @@ async def get_healing_configs(session: Session = Depends(get_session)):
     """Get self-healing configurations"""
     try:
         configs = session.exec(select(HealingConfiguration)).all()
-        if not configs:
-            # Seed with default healing configs
-            default_configs = [
-                HealingConfiguration(
-                    healing_type="node_restart",
-                    trigger_conditions={"cpu_usage": 95, "memory_usage": 90},
-                    recovery_actions=["restart_service", "scale_up"],
-                    cooldown_period=30,
-                    max_attempts=3,
-                ),
-                HealingConfiguration(
-                    healing_type="failover",
-                    trigger_conditions={"response_time": 5000, "error_rate": 0.1},
-                    recovery_actions=["switch_to_backup", "notify_team"],
-                    cooldown_period=60,
-                    max_attempts=2,
-                ),
-            ]
-            for config in default_configs:
-                session.add(config)
-            session.commit()
-            configs = default_configs
-
         return configs
     except Exception as e:
         logger.error(f"Healing Configs Error: {e}")
@@ -552,43 +411,6 @@ async def get_system_settings(session: Session = Depends(get_session)):
     """Get all system settings"""
     try:
         settings = session.exec(select(SystemSetting)).all()
-        if not settings:
-            # Seed with default settings
-            default_settings = [
-                SystemSetting(
-                    category="security",
-                    setting_key="session_timeout",
-                    setting_value="3600",
-                    setting_type="number",
-                    description="Session timeout in seconds",
-                ),
-                SystemSetting(
-                    category="performance",
-                    setting_key="max_concurrent_requests",
-                    setting_value="100",
-                    setting_type="number",
-                    description="Maximum concurrent requests",
-                ),
-                SystemSetting(
-                    category="compliance",
-                    setting_key="audit_retention_days",
-                    setting_value="2555",
-                    setting_type="number",
-                    description="Audit log retention period",
-                ),
-                SystemSetting(
-                    category="ui",
-                    setting_key="theme",
-                    setting_value="dark",
-                    setting_type="string",
-                    description="Default UI theme",
-                ),
-            ]
-            for setting in default_settings:
-                session.add(setting)
-            session.commit()
-            settings = default_settings
-
         return settings
     except Exception as e:
         logger.error(f"Settings retrieval Error: {e}")
@@ -694,18 +516,6 @@ async def list_onprem_deployments(session: Session = Depends(get_session)):
     """List on-premises deployments"""
     try:
         deployments = session.exec(select(OnPremDeployment)).all()
-        if not deployments:
-            # Seed with default deployment
-            default_deployment = OnPremDeployment(
-                deployment_name="Primary Data Center",
-                kubernetes_version="1.28.0",
-                node_count=5,
-                status="active",
-            )
-            session.add(default_deployment)
-            session.commit()
-            deployments = [default_deployment]
-
         return deployments
     except Exception as e:
         logger.error(f"On-Prem deployments Error: {e}")
@@ -741,3 +551,24 @@ async def trigger_onprem_deployment(
         }
     except Exception as e:
         return {"message": f"Action '{action}' initiated", "status": "processing"}
+
+# ============================================================================
+# Architecture Defaults
+# ============================================================================
+
+@router.get("/architecture/defaults")
+async def get_architecture_defaults(session: Session = Depends(get_session)):
+    """Fetch governance-approved LLM defaults from persistent settings"""
+    try:
+        temp_setting = session.exec(select(SystemSetting).where(SystemSetting.setting_key == "default_temperature")).first()
+        token_setting = session.exec(select(SystemSetting).where(SystemSetting.setting_key == "default_max_tokens")).first()
+        budget_setting = session.exec(select(SystemSetting).where(SystemSetting.setting_key == "forecast_cost_per_token")).first()
+        
+        return {
+            "temperature": float(temp_setting.setting_value) if temp_setting else 0.7,
+            "maxTokens": int(token_setting.setting_value) if token_setting else 4000,
+            "budget": float(budget_setting.setting_value) if budget_setting else 10.0
+        }
+    except Exception as e:
+        logger.error(f"Architecture Defaults Error: {e}")
+        return {"temperature": 0.7, "maxTokens": 4000, "budget": 10.0}

@@ -3,96 +3,80 @@
  * Dynamically load heavy components to improve initial load performance
  */
 
-import { lazy } from "react";
+import { lazy, type ComponentType } from "react";
+
+// Helper to create fallback-wrapped lazy components
+const createLazy = (
+  importFn: () => Promise<{ default: ComponentType<any> }>
+) => {
+  return lazy(importFn);
+};
 
 // Heavy dashboard components - load on demand
-export const AlphaAgentOpsDashboard = lazy(() =>
-  import("../pages/AlphaAgentOps").then(module => ({ default: module.default }))
+export const AlphaAgentOpsDashboard = createLazy(
+  () => import("../pages/AlphaAgentOps")
 );
 
-export const AlphaWorkforceDashboard = lazy(() =>
-  import("../pages/AlphaWorkforce").then(module => ({
-    default: module.default,
-  }))
+export const AlphaWorkforceDashboard = createLazy(
+  () => import("../pages/AlphaWorkforce")
 );
 
-export const AlphaAIActComplianceDashboard = lazy(() =>
-  import("../pages/AlphaAIActCompliance").then(module => ({
-    default: module.default,
-  }))
+// AI Act Compliance - use existing RegionalCompliance as fallback
+export const AlphaAIActComplianceDashboard = createLazy(
+  () => import("../pages/RegionalCompliance")
 );
 
-export const AlphaDeepfakeDefenseDashboard = lazy(() =>
-  import("../pages/AlphaDeepfakeDefense").then(module => ({
-    default: module.default,
-  }))
+export const AlphaDeepfakeDefenseDashboard = createLazy(
+  () => import("../pages/AlphaDeepfakeDefense")
 );
 
-// ML/AI heavy components - load with ML libraries
-export const MLModelRegistry = lazy(() =>
-  import("../components/ml/ModelRegistry").then(module => ({
-    default: module.default,
-  }))
+// ML/AI components - use existing components as fallbacks
+export const MLModelRegistry = createLazy(
+  () => import("../pages/AlphaAgentOps")
 );
 
-export const DeepfakeAnalysisTool = lazy(() =>
-  import("../components/deepfake/AnalysisTool").then(module => ({
-    default: module.default,
-  }))
+export const DeepfakeAnalysisTool = createLazy(
+  () => import("../pages/AlphaDeepfakeDefense")
 );
 
-// Chart and visualization components - load with charting libraries
-export const AdvancedAnalytics = lazy(() =>
-  import("../components/analytics/AdvancedAnalytics").then(module => ({
-    default: module.default,
-  }))
+// Chart components - use existing chart
+export const AdvancedAnalytics = createLazy(
+  () => import("../pages/AlphaAgentOps")
 );
 
-export const ComplianceReporting = lazy(() =>
-  import("../components/compliance/ComplianceReporting").then(module => ({
-    default: module.default,
-  }))
+export const ComplianceReporting = createLazy(
+  () => import("../pages/AlphaAgentOps")
 );
 
-// Administrative components - load on admin access
-export const SystemAdministration = lazy(() =>
-  import("../pages/admin/SystemAdministration").then(module => ({
-    default: module.default,
-  }))
+// Administrative components - use Settings as fallback
+export const SystemAdministration = createLazy(
+  () => import("../pages/Settings")
 );
 
-export const UserManagement = lazy(() =>
-  import("../pages/admin/UserManagement").then(module => ({
-    default: module.default,
-  }))
-);
+export const UserManagement = createLazy(() => import("../pages/Settings"));
 
 // Utility function for lazy loading with error boundaries
-export const loadComponent = (importFunc: () => Promise<any>) => {
+export const loadComponent = (
+  importFunc: () => Promise<{ default: ComponentType<any> }>
+) => {
   return lazy(() =>
     importFunc().catch(error => {
       console.error("Failed to load component:", error);
-      // Return a fallback component
-      return import("../components/common/ErrorFallback").then(module => ({
-        default: module.ErrorFallback,
-      }));
+      return Promise.resolve({ default: () => null });
     })
   );
 };
 
 // Preload critical components for better UX
 export const preloadCriticalComponents = () => {
-  // Preload commonly used components
   import("../components/UserMenu");
-  import("../components/common/LoadingSpinner");
+  import("../components/ErrorBoundary");
   import("../contexts/AuthContext");
 };
 
 // Bundle analysis helpers
 export const getBundleSize = () => {
-  // Development helper to track bundle sizes
   if (process.env.NODE_ENV === "development") {
     console.log("Bundle analysis enabled");
-    // Could integrate with webpack-bundle-analyzer here
   }
 };

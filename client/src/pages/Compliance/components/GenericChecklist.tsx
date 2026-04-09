@@ -1,27 +1,29 @@
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle, 
-  CardDescription 
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { 
-  CheckCircle2, 
-  Circle, 
-  Clock, 
+import {
+  CheckCircle2,
+  Circle,
+  Clock,
   AlertCircle,
-  Loader2
+  Loader2,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 interface GenericChecklistProps {
-  title: string;
-  description: string;
+  title?: string;
+  description?: string;
+  category?: string;
   items: any[];
   loading: boolean;
-  onUpdateStatus: (id: string, status: string) => void;
+  onUpdateStatus?: (id: string, status: string) => void;
+  onUpdate?: (id: string, assessment: any) => Promise<void>;
 }
 
 export const GenericChecklist = ({
@@ -29,7 +31,7 @@ export const GenericChecklist = ({
   description,
   items,
   loading,
-  onUpdateStatus
+  onUpdateStatus,
 }: GenericChecklistProps) => {
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -46,17 +48,26 @@ export const GenericChecklist = ({
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "compliant":
-        return <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">Compliant</Badge>;
+        return (
+          <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
+            Compliant
+          </Badge>
+        );
       case "non_compliant":
         return <Badge variant="destructive">Non-Compliant</Badge>;
       case "pending":
       default:
-        return <Badge variant="outline" className="text-zinc-500">Pending</Badge>;
+        return (
+          <Badge variant="outline" className="text-zinc-500">
+            Pending
+          </Badge>
+        );
     }
   };
 
   const compliantCount = items.filter(i => i.status === "compliant").length;
-  const progress = items.length > 0 ? Math.round((compliantCount / items.length) * 100) : 0;
+  const progress =
+    items.length > 0 ? Math.round((compliantCount / items.length) * 100) : 0;
 
   if (loading) {
     return (
@@ -80,7 +91,9 @@ export const GenericChecklist = ({
             </div>
             <div className="text-right">
               <div className="text-2xl font-bold text-primary">{progress}%</div>
-              <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Readiness</div>
+              <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
+                Readiness
+              </div>
             </div>
           </div>
           <Progress value={progress} className="h-1.5 mt-4" />
@@ -92,34 +105,38 @@ export const GenericChecklist = ({
                 No checklist items found for this section.
               </div>
             ) : (
-              items.map((item) => (
-                <div 
-                  key={item.id} 
+              items.map(item => (
+                <div
+                  key={item.id}
                   className="flex items-start gap-4 p-4 rounded-lg border border-border/50 bg-background/50 hover:bg-muted/30 transition-all group"
                 >
                   <div className="mt-1">{getStatusIcon(item.status)}</div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-1">
-                      <h4 className="font-semibold text-sm group-hover:text-primary transition-colors">{item.title}</h4>
+                      <h4 className="font-semibold text-sm group-hover:text-primary transition-colors">
+                        {item.title}
+                      </h4>
                       {getStatusBadge(item.status)}
                     </div>
                     <p className="text-xs text-muted-foreground leading-relaxed italic mb-3">
                       {item.description}
                     </p>
                     <div className="flex items-center gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className={`text-[10px] h-7 ${item.status === 'compliant' ? 'bg-emerald-500/10 border-emerald-500/30' : ''}`}
-                        onClick={() => onUpdateStatus(item.id, "compliant")}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={`text-[10px] h-7 ${item.status === "compliant" ? "bg-emerald-500/10 border-emerald-500/30" : ""}`}
+                        onClick={() => onUpdateStatus?.(item.id, "compliant")}
                       >
                         Pass Assessment
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className={`text-[10px] h-7 ${item.status === 'non_compliant' ? 'bg-red-500/10 border-red-500/30' : ''}`}
-                        onClick={() => onUpdateStatus(item.id, "non_compliant")}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={`text-[10px] h-7 ${item.status === "non_compliant" ? "bg-red-500/10 border-red-500/30" : ""}`}
+                        onClick={() =>
+                          onUpdateStatus?.(item.id, "non_compliant")
+                        }
                       >
                         Flag Violation
                       </Button>
@@ -127,7 +144,8 @@ export const GenericChecklist = ({
                       {item.last_checked && (
                         <div className="flex items-center gap-1 text-[9px] text-muted-foreground opacity-50">
                           <Clock className="w-3 h-3" />
-                          Last sync: {new Date(item.last_checked).toLocaleTimeString()}
+                          Last sync:{" "}
+                          {new Date(item.last_checked).toLocaleTimeString()}
                         </div>
                       )}
                     </div>
@@ -138,13 +156,16 @@ export const GenericChecklist = ({
           </div>
         </CardContent>
       </Card>
-      
+
       {/* Footer Info */}
       <div className="p-4 rounded-xl border border-primary/20 bg-primary/5 flex items-center gap-3">
         <AlertCircle className="w-5 h-5 text-primary" />
         <div className="text-xs text-muted-foreground">
-          <span className="font-bold text-primary mr-1">REAL-FIRST PROTECTION:</span> 
-          All selections are persisted to the production database and reflected in the aggregate compliance score.
+          <span className="font-bold text-primary mr-1">
+            REAL-FIRST PROTECTION:
+          </span>
+          All selections are persisted to the production database and reflected
+          in the aggregate compliance score.
         </div>
       </div>
     </div>

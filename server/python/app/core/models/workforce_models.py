@@ -20,13 +20,14 @@ class InteractionStatus(str, Enum):
 
 class WorkforceInteraction(SQLModel, table=True):
     """Persistent storage for Workforce Agent interactions for learning"""
+    __tablename__ = "workforce_interactions"
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    agent_role: str
-    task_description: str
-    output_content: str
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    agent_role: str = Field(index=True)
+    task_description: str = Field(default="")
+    output_content: str = Field(default="")
     user_feedback: InteractionStatus = Field(default=InteractionStatus.PENDING)
-    feedback_notes: Optional[str] = None
+    feedback_notes: Optional[str] = Field(default=None)
     metadata_json: Dict[str, Any] = Field(default={}, sa_column=Column(JSON))
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
@@ -43,19 +44,20 @@ class OutreachStatus(str, Enum):
 
 class WorkforceOutreach(SQLModel, table=True):
     """Persistent storage for Outreach message previews for human-in-the-loop approval"""
+    __tablename__ = "workforce_outreach"
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    recipient_name: str
-    recipient_company: str
-    recipient_role: Optional[str] = None
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    recipient_name: str = Field(default="")
+    recipient_company: str = Field(default="")
+    recipient_role: Optional[str] = Field(default=None)
     subject: str
     body: str
     status: OutreachStatus = Field(default=OutreachStatus.PENDING_APPROVAL)
     niche: str = Field(index=True)
     profile: str = Field(default="enterprise")
     score: float = Field(default=0.0)
-    interaction_id: Optional[str] = Field(
-        default=None, foreign_key="workforceinteraction.id"
+    interaction_id: Optional[uuid.UUID] = Field(
+        default=None, foreign_key="workforce_interactions.id"
     )
     is_auto_trigger: bool = Field(default=False)
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -64,31 +66,33 @@ class WorkforceOutreach(SQLModel, table=True):
 
 class WorkforceMessage(SQLModel, table=True):
     """Persistent storage for multi-agent and user-to-agent dialogue"""
+    __tablename__ = "workforce_messages"
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     sender: str  # "user" or agent role (e.g., "Prospector")
     recipient: str = Field(default="all")  # "all" (group) or specific agent role
     content: str
     reasoning_path: Optional[str] = None  # Agent's internal dialogue/cross-reasoning
     is_group_chat: bool = Field(default=True)
-    interaction_id: Optional[str] = Field(
-        default=None, foreign_key="workforceinteraction.id"
+    interaction_id: Optional[uuid.UUID] = Field(
+        default=None, foreign_key="workforce_interactions.id"
     )
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class WorkforceSkill(SQLModel, table=True):
     """Persistent storage for the Workforce Skills Marketplace"""
+    __tablename__ = "workforce_skills"
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str
     provider: str = Field(default="Alpha Proprietary")
     description: str
-    marketing_description: Optional[str] = None
-    powers_json: List[str] = Field(default=[], sa_column=Column(JSON))
+    marketing_description: Optional[str] = Field(default=None)
+    powers: List[str] = Field(default=[], sa_column=Column("powers_json", JSON))
     icon: str = Field(default="Zap")
     color: str = Field(default="bg-blue-500")
-    repo_url: Optional[str] = None
+    repo_url: Optional[str] = Field(default=None)
     is_proprietary: bool = Field(default=True)
     price: str = Field(default="$0")
     jobs_completed: int = Field(default=0)
@@ -99,8 +103,9 @@ class WorkforceSkill(SQLModel, table=True):
 
 class WorkforceJob(SQLModel, table=True):
     """Persistent storage for the Live Job Feed"""
+    __tablename__ = "workforce_jobs"
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     title: str
     client: str
     price: str
@@ -112,7 +117,7 @@ class WorkforceJob(SQLModel, table=True):
 class WorkforceAcquisition(SQLModel, table=True):
     """Persistent storage for Growth Acquisition Wins"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     client: str
     value: str
     source: str
@@ -122,7 +127,7 @@ class WorkforceAcquisition(SQLModel, table=True):
 class WorkforceContent(SQLModel, table=True):
     """Persistent storage for Content Factory drafts"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     title: str
     type: str  # Blog, Case Study, LinkedIn
     status: str = Field(default="Ready")
@@ -132,8 +137,9 @@ class WorkforceContent(SQLModel, table=True):
 
 class WorkforceVenture(SQLModel, table=True):
     """Persistent Business Unit / Venture performance tracking"""
+    __tablename__ = "workforce_ventures"
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str
     sector: str
     roi: float = Field(default=0.0)
@@ -144,8 +150,9 @@ class WorkforceVenture(SQLModel, table=True):
 
 class FiscalRequest(SQLModel, table=True):
     """Persistent spending approval request"""
+    __tablename__ = "fiscal_requests"
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     purpose: str
     amount: str
     priority: str = Field(default="MEDIUM")  # LOW, MEDIUM, HIGH
@@ -156,7 +163,7 @@ class FiscalRequest(SQLModel, table=True):
 class WorkforceGoal(SQLModel, table=True):
     """Persistent Board Directives and KPIs"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str
     current_value: float
     target_value: float
@@ -168,7 +175,7 @@ class WorkforceGoal(SQLModel, table=True):
 class MarketResearch(SQLModel, table=True):
     """Persistent Market Research from Paperclip Agent"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     topic: str = Field(index=True)
     confidence_score: int = Field(default=0)
     market_temperature: str = Field(default="Stable")
@@ -181,7 +188,7 @@ class MarketResearch(SQLModel, table=True):
 class ProductStrategy(SQLModel, table=True):
     """Persistent Product Strategy from Hermes Agent"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     project: str = Field(index=True)
     strategy_score: int = Field(default=0)
     roadmap: List[Dict[str, Any]] = Field(default=[], sa_column=Column(JSON))
@@ -193,7 +200,7 @@ class ProductStrategy(SQLModel, table=True):
 class Task(SQLModel, table=True):
     """Task management for workflow bot"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     title: str
     status: str  # pending, in_progress, completed, cancelled
     priority: str  # low, medium, high
@@ -208,7 +215,7 @@ class Task(SQLModel, table=True):
 class Client(SQLModel, table=True):
     """Client CRM for workflow bot"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str
     email: str
     phone: Optional[str] = None
@@ -224,7 +231,7 @@ class Client(SQLModel, table=True):
 class ScheduleEvent(SQLModel, table=True):
     """Scheduled events and calendar for workflow bot"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     title: str
     description: Optional[str] = None
     start_time: datetime
@@ -240,7 +247,7 @@ class ScheduleEvent(SQLModel, table=True):
 class Integration(SQLModel, table=True):
     """Third-party integrations for workflow bot"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str
     service: str  # stripe, slack, github, notion, calendly, zapier
     status: str  # disconnected, connecting, connected, error
@@ -253,11 +260,22 @@ class Integration(SQLModel, table=True):
 class BotSetting(SQLModel, table=True):
     """Workflow bot configuration settings"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    user_id: str
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    user_id: uuid.UUID
     setting_key: str
     setting_value: Any = Field(sa_column=Column(JSON))
     setting_type: str  # boolean, string, number, json
     description: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+class RevenueRecovery(SQLModel, table=True):
+    """Persistent storage for revenue recovery events (CashClaw)"""
+    __tablename__ = "revenue_recoveries"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    amount: float = Field(default=0.0)
+    source: str = Field(default="Unknown")
+    status: str = Field(default="pending")  # recovered, pending, failed
+    metadata_json: Dict[str, Any] = Field(default={}, sa_column=Column(JSON))
+    created_at: datetime = Field(default_factory=datetime.utcnow)

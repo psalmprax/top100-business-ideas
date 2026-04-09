@@ -28,8 +28,9 @@ class ComplianceStatus(str, Enum):
 
 class ComplianceCheck(SQLModel, table=True):
     """Compliance check model with persistent storage"""
+    __tablename__ = "compliance_checks"
 
-    id: str = Field(primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     type: ComplianceCheckType
     status: ComplianceStatus = Field(default=ComplianceStatus.PENDING)
     score: int = Field(default=0)
@@ -40,8 +41,9 @@ class ComplianceCheck(SQLModel, table=True):
 
 class ComplianceCategory(SQLModel, table=True):
     """Compliance category model with persistent storage"""
+    __tablename__ = "compliance_categories"
 
-    id: str = Field(primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str
     color: str
     description: str
@@ -76,7 +78,7 @@ class ConnectionType(str, Enum):
 class SystemConnection(SQLModel, table=True):
     """System connection model for compliance automation"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     article_id: str  # e.g., "Article 5"
     connection_type: ConnectionType
     status: str = Field(default="connected")
@@ -88,7 +90,7 @@ class SystemConnection(SQLModel, table=True):
 class ArticleScan(SQLModel, table=True):
     """Results of a compliance scan"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     article_id: str
     scan_type: str
     status: str = Field(default="completed")
@@ -99,7 +101,9 @@ class ArticleScan(SQLModel, table=True):
 class ComplianceArticle(SQLModel, table=True):
     """EU AI Act compliance article definition"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    __tablename__ = "compliance_articles"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     article: str  # e.g., "Article 5"
     title: str
     description: str
@@ -116,8 +120,9 @@ class ComplianceArticle(SQLModel, table=True):
 
 
 class ArticleStatus(SQLModel, table=True):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    modelId: str = Field(foreign_key="aimodel.id")
+    __tablename__ = "articlestatus"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    model_id: uuid.UUID = Field(foreign_key="ai_models.id")
     article: str
     title: str
     status: str
@@ -126,11 +131,12 @@ class ArticleStatus(SQLModel, table=True):
 
 
 class BiasReport(SQLModel, table=True):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    modelId: str = Field(foreign_key="aimodel.id")
-    biasCategory: str
-    disparateImpact: float
-    statisticalSignificance: float
+    __tablename__ = "bias_reports"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    model_id: uuid.UUID = Field(foreign_key="ai_models.id")
+    bias_category: str = Field(default="demographic")
+    disparate_impact: float = Field(default=0.0)
+    statistical_significance: float = Field(default=0.0)
     status: str
     details: str
 
@@ -139,9 +145,10 @@ class BiasReport(SQLModel, table=True):
 
 class ComplianceAuditLog(SQLModel, table=True):
     """Persistent audit logs for HIPAA/SOX/GDPR compliance"""
+    __tablename__ = "compliance_audit_logs"
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    user_id: str = Field(index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    user_id: uuid.UUID = Field(index=True)
     action: str
     resource: str
     status: str = Field(default="verified")
@@ -154,11 +161,11 @@ class ForensicTrace(SQLModel, table=True):
     """Execution traces from the digital workforce"""
 
     __tablename__ = "forensic_traces"
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    user_id: str = Field(index=True)
-    agent_id: str
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    user_id: uuid.UUID = Field(index=True)
+    agent_id: uuid.UUID
     action: str
-    details: str
+    details: dict = Field(default={}, sa_column=Column(JSON))
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -166,8 +173,8 @@ class GovernanceDecision(SQLModel, table=True):
     """Sovereign governance decisions / sign-offs"""
 
     __tablename__ = "governance_decisions"
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    user_id: str = Field(index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    user_id: uuid.UUID = Field(index=True)
     stage: int
     decision: str  # e.g., "Human override", "Autonomous"
     status: str = Field(default="REVIEW_REQUIRED")
@@ -177,7 +184,7 @@ class GovernanceDecision(SQLModel, table=True):
 class SLAAgreement(SQLModel, table=True):
     """Service Level Agreement configuration"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str
     tier: str  # bronze, silver, gold, platinum
     uptime_guarantee: float  # percentage, e.g., 99.9
@@ -191,8 +198,8 @@ class SLAAgreement(SQLModel, table=True):
 class SLAMetric(SQLModel, table=True):
     """SLA performance metrics"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    sla_id: str = Field(foreign_key="slaagreement.id")
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    sla_id: uuid.UUID = Field(foreign_key="slaagreement.id")
     period_start: datetime
     period_end: datetime
     actual_uptime: float
@@ -206,7 +213,7 @@ class SLAMetric(SQLModel, table=True):
 class PartnerIntegration(SQLModel, table=True):
     """External partner integrations"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str
     partner_type: str  # api, webhook, oauth, sso
     api_key: Optional[str] = None
@@ -221,7 +228,7 @@ class PartnerIntegration(SQLModel, table=True):
 class UsageForecast(SQLModel, table=True):
     """AI usage forecasting data"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     agent_id: Optional[str] = None
     forecast_period: str  # daily, weekly, monthly
     predicted_tokens: int
@@ -237,7 +244,7 @@ class UsageForecast(SQLModel, table=True):
 class ROIMetric(SQLModel, table=True):
     """Return on Investment calculations"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     period: str  # monthly, quarterly, yearly
     period_start: datetime
     period_end: datetime
@@ -253,7 +260,7 @@ class ROIMetric(SQLModel, table=True):
 class LocalizationConfig(SQLModel, table=True):
     """Multi-language and regional configuration"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     language_code: str  # en, es, fr, de, etc.
     region_code: str  # US, EU, APAC, etc.
     timezone: str
@@ -266,7 +273,7 @@ class LocalizationConfig(SQLModel, table=True):
 class HealingConfiguration(SQLModel, table=True):
     """Self-healing system configuration"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     healing_type: str  # node_restart, failover, rollback, etc.
     trigger_conditions: Dict[str, Any] = Field(default={}, sa_column=Column(JSON))
     recovery_actions: List[str] = Field(default=[], sa_column=Column(JSON))
@@ -279,7 +286,7 @@ class HealingConfiguration(SQLModel, table=True):
 class StrategicInsight(SQLModel, table=True):
     """Business intelligence and strategic insights"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     insight_type: str  # market_trend, competitive_analysis, opportunity, risk
     title: str
     description: str
@@ -293,7 +300,7 @@ class StrategicInsight(SQLModel, table=True):
 class SystemSetting(SQLModel, table=True):
     """Global system configuration settings"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     category: str  # security, performance, compliance, ui
     setting_key: str
     setting_value: str
@@ -308,7 +315,7 @@ class ComplianceChecklistItem(SQLModel, table=True):
     """Specific checklist items for compliance sections"""
 
     __tablename__ = "compliance_checklist_items"
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     category: str  # gov, reg, tech, ops, infra, fin
     section: str  # monitoring, audits, sla, risk, regional, etc.
     title: str
@@ -316,3 +323,33 @@ class ComplianceChecklistItem(SQLModel, table=True):
     status: str = Field(default="pending")  # pending, compliant, non_compliant
     evidence: Optional[str] = None
     last_checked: datetime = Field(default_factory=datetime.utcnow)
+
+
+class ComplianceIncident(SQLModel, table=True):
+    """Reported compliance, forensic or bias incidents (Art 61/62)"""
+
+    __tablename__ = "compliance_incidents"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    title: str
+    description: str
+    severity: str = Field(default="medium")  # low, medium, high, critical
+    incident_type: str = Field(default="security")  # security, compliance, bias, forensic
+    status: str = Field(default="open")  # open, investigating, resolved, closed
+    reported_by: str
+    affected_systems: List[str] = Field(default=[], sa_column=Column(JSON))
+    reported_at: datetime = Field(default_factory=datetime.utcnow)
+    resolved_at: Optional[datetime] = None
+
+
+class Vendor(SQLModel, table=True):
+    """AI supply chain vendor model (EU AI Act Supply Chain Governance)"""
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    name: str
+    category: str = Field(default="software")
+    risk_level: str = Field(default="low")
+    status: str = Field(default="vetted")
+    contact_email: Optional[str] = None
+    website: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)

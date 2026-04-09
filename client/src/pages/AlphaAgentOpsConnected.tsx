@@ -29,7 +29,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Skeleton } from "@/components/ui/loading";
+import { Skeleton } from "@/components/ui/skeleton";
+import { NewAgentDialog } from "@/components/AgentOps/Modals";
 import {
   agentsApi,
   rulesApi,
@@ -70,6 +71,7 @@ export default function AlphaAgentOpsConnected() {
   const [rules, setRules] = useState<Rule[]>([]);
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [agentsLoading, setAgentsLoading] = useState(true);
+  const [isNewAgentDialogOpen, setIsNewAgentDialogOpen] = useState(false);
   const [rulesLoading, setRulesLoading] = useState(true);
   const [metricsLoading, setMetricsLoading] = useState(true);
   const [agentsError, setAgentsError] = useState<string | null>(null);
@@ -181,23 +183,39 @@ export default function AlphaAgentOpsConnected() {
     }
   };
 
-  // Handle create agent
-  const handleCreateAgent = async () => {
+  // Handle create agent dialog open
+  const handleCreateAgentRequest = () => {
+    setIsNewAgentDialogOpen(true);
+  };
+
+  // Handle actual agent creation from dialog
+  const submitCreateAgent = async (data: any) => {
+    setIsNewAgentDialogOpen(false);
     try {
-      const agentName = window.prompt("Enter agent name:");
-      if (!agentName) return;
+      toast.loading(`Deploying agent "${data.name}"...`);
       await agentsApi.create({
-        name: agentName,
-        type: "openai",
-        model: "gpt-4",
-        budget: 50,
+        name: data.name,
+        type: data.type,
+        model: data.model,
+        provider: data.provider,
+        budget: data.budget,
+        tier: data.tier,
+        persistent_memory: data.persistent_memory,
+        environment: data.environment,
         status: "active",
+        config: {
+          temperature: data.temperature,
+          maxTokens: data.maxTokens
+        }
       });
-      const data = await agentsApi.list();
-      setAgents(data);
-      toast.success(`Agent "${agentName}" created successfully`);
+      const updatedAgents = await agentsApi.list();
+      setAgents(updatedAgents);
+      toast.dismiss();
+      toast.success(`Sentinel Node "${data.name}" deployed successfully`);
     } catch (err) {
-      toast.error("Failed to create agent");
+      toast.dismiss();
+      toast.error("Failed to deploy sentinel node");
+      console.error("Create agent error:", err);
     }
   };
 
@@ -272,7 +290,7 @@ export default function AlphaAgentOpsConnected() {
           <Button
             size="sm"
             className="bg-blue-600 hover:bg-blue-700"
-            onClick={handleCreateAgent}
+            onClick={handleCreateAgentRequest}
           >
             <Plus className="w-4 h-4 mr-2" />
             New Agent
@@ -422,7 +440,7 @@ export default function AlphaAgentOpsConnected() {
                   <Button
                     size="sm"
                     className="mt-4 bg-blue-600"
-                    onClick={handleCreateAgent}
+                    onClick={handleCreateAgentRequest}
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Create Agent
@@ -501,7 +519,7 @@ export default function AlphaAgentOpsConnected() {
               <Button
                 size="sm"
                 className="bg-blue-600"
-                onClick={handleCreateAgent}
+                onClick={handleCreateAgentRequest}
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Agent
@@ -660,6 +678,12 @@ export default function AlphaAgentOpsConnected() {
           </CardContent>
         </Card>
       )}
+      {/* Dialogs */}
+      <NewAgentDialog 
+        open={isNewAgentDialogOpen} 
+        onOpenChange={setIsNewAgentDialogOpen}
+        onSave={submitCreateAgent}
+      />
     </div>
   );
 }

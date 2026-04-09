@@ -1,6 +1,7 @@
 """
 Training Modules Service for ReguLens
 Interactive compliance training and certification tracking.
+Uses database persistence - loads from DB, no demo data on startup.
 """
 
 from typing import Dict, Any, List, Optional
@@ -9,6 +10,11 @@ from enum import Enum
 import uuid
 import logging
 import os
+import json
+from sqlmodel import Session, select
+from app.core.database import engine
+from app.core.models.ai_models import TrainingModule as DBTrainingModule
+from app.core.models.ai_models import TrainingProgress as DBTrainingProgress
 
 logger = logging.getLogger(__name__)
 
@@ -29,339 +35,329 @@ class ModuleType(str, Enum):
     AUDIT = "audit"
 
 
-class TrainingModule:
-    """Represents a training module."""
-
-    def __init__(
-        self,
-        module_id: str,
-        title: str,
-        description: str,
-        module_type: ModuleType,
-        duration_minutes: int,
-        content: Dict[str, Any],
-    ):
-        self.module_id = module_id
-        self.title = title
-        self.description = description
-        self.module_type = module_type
-        self.duration_minutes = duration_minutes
-        self.content = content
-        self.created_at = datetime.utcnow()
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "module_id": self.module_id,
-            "title": self.title,
-            "description": self.description,
-            "type": self.module_type.value,
-            "duration_minutes": self.duration_minutes,
-            "created_at": self.created_at.isoformat(),
-        }
-
-
-class TrainingProgress:
-    """Tracks user progress through a training module."""
-
-    def __init__(
-        self,
-        progress_id: str,
-        user_id: str,
-        module_id: str,
-    ):
-        self.progress_id = progress_id
-        self.user_id = user_id
-        self.module_id = module_id
-        self.status = ModuleStatus.NOT_STARTED
-        self.progress_percent = 0
-        self.quiz_score = None
-        self.started_at = None
-        self.completed_at = None
-        self.certified_at = None
-        self.certificate_id = None
-
-
 class TrainingService:
-    """
-    Training and certification service for AI Act compliance.
-    Provides interactive modules and tracks completion.
-    """
+    """Training service using database persistence."""
 
-    def __init__(self):
-        self.modules: Dict[str, TrainingModule] = {}
-        self.user_progress: Dict[str, TrainingProgress] = {}
-        self.certifications: Dict[str, Dict[str, Any]] = {}
+    def list_modules(self, category: Optional[str] = None) -> List[Dict[str, Any]]:
+        """List all training modules from database."""
+        with Session(engine) as session:
+            query = select(DBTrainingModule)
 
-        # Initialize demo modules
-        self._init_modules()
+            if category:
+                query = query.where(DBTrainingModule.category == category)
 
-    def _init_modules(self):
-        """Initialize training modules."""
-
-        modules = [
-            TrainingModule(
-                module_id="mod-001",
-                title="EU AI Act Fundamentals",
-                description="Introduction to the EU Artificial Intelligence Act and its requirements.",
-                module_type=ModuleType.VIDEO,
-                duration_minutes=30,
-                content={
-                    "video_url": os.getenv("TRAINING_VIDEO_BASE_URL", "")
-                    + "/ai-act-fundamentals",
-                    "transcript": "...",
-                    "chapters": [
-                        {"time": 0, "title": "Introduction"},
-                        {"time": 300, "title": "Risk Categories"},
-                        {"time": 900, "title": "Compliance Requirements"},
-                        {"time": 1500, "title": "Conclusion"},
-                    ],
-                },
-            ),
-            TrainingModule(
-                module_id="mod-002",
-                title="High-Risk AI Systems",
-                description="Understanding requirements for high-risk AI systems under the AI Act.",
-                module_type=ModuleType.INTERACTIVE,
-                duration_minutes=45,
-                content={
-                    "sections": [
-                        {"title": "Annex III Categories", "type": "content"},
-                        {"title": "Conformity Assessment", "type": "interactive"},
-                        {"title": "Technical Documentation", "type": "interactive"},
-                    ],
-                },
-            ),
-            TrainingModule(
-                module_id="mod-003",
-                title="Data Governance & Bias Detection",
-                description="Learn to identify and mitigate bias in AI training data.",
-                module_type=ModuleType.QUIZ,
-                duration_minutes=25,
-                content={
-                    "questions": [
-                        {
-                            "id": "q1",
-                            "question": "What is disparate impact?",
-                            "options": [
-                                "A measure of discrimination",
-                                "A type of algorithm",
-                                "A data format",
-                            ],
-                            "correct": 0,
-                        },
-                        {
-                            "id": "q2",
-                            "question": "Which Article covers data governance?",
-                            "options": ["Article 10", "Article 5", "Article 14"],
-                            "correct": 0,
-                        },
-                    ],
-                },
-            ),
-            TrainingModule(
-                module_id="mod-004",
-                title="Technical Documentation Workshop",
-                description="Hands-on workshop for creating AI Act technical documentation.",
-                module_type=ModuleType.CASE_STUDY,
-                duration_minutes=60,
-                content={
-                    "case_study": "A company deploying an AI-powered hiring system",
-                    "tasks": [
-                        "Identify risk category",
-                        "Create model card",
-                        "Document training data",
-                        "Plan conformity assessment",
-                    ],
-                },
-            ),
-            TrainingModule(
-                module_id="mod-005",
-                title="Compliance Audit Simulation",
-                description="Practice conducting a compliance audit.",
-                module_type=ModuleType.AUDIT,
-                duration_minutes=90,
-                content={
-                    "scenario": "Audit of an AI recruitment system",
-                    "checklist": [
-                        "Verify registration in EU database",
-                        "Check technical documentation",
-                        "Review data governance measures",
-                        "Assess transparency requirements",
-                    ],
-                },
-            ),
-        ]
-
-        for module in modules:
-            self.modules[module.module_id] = module
-
-    def list_modules(
-        self,
-        module_type: Optional[ModuleType] = None,
-    ) -> List[Dict[str, Any]]:
-        """List all available training modules."""
-
-        modules = list(self.modules.values())
-
-        if module_type:
-            modules = [m for m in modules if m.module_type == module_type]
-
-        return [m.to_dict() for m in modules]
+            modules = session.exec(query).all()
+            return [self._module_to_dict(m) for m in modules]
 
     def get_module(self, module_id: str) -> Optional[Dict[str, Any]]:
-        """Get a specific module with full content."""
+        """Get a module by ID."""
+        with Session(engine) as session:
+            try:
+                module_uuid = uuid.UUID(module_id)
+                module = session.exec(
+                    select(DBTrainingModule).where(DBTrainingModule.id == module_uuid)
+                ).first()
 
-        module = self.modules.get(module_id)
-        if not module:
+                if module:
+                    return self._module_to_dict(module)
+            except ValueError:
+                # Try finding by string match on title
+                module = session.exec(
+                    select(DBTrainingModule).where(
+                        DBTrainingModule.title.contains(module_id)
+                    )
+                ).first()
+
+                if module:
+                    return self._module_to_dict(module)
+
             return None
 
-        result = module.to_dict()
-        result["content"] = module.content
-
-        return result
-
-    def start_module(
+    def create_module(
         self,
-        user_id: str,
-        module_id: str,
+        title: str,
+        description: str,
+        category: str,
+        duration_minutes: int,
+        content: str = "",
+        quiz_questions: List[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
-        """Start a training module for a user."""
+        """Create a new training module."""
+        with Session(engine) as session:
+            module = DBTrainingModule(
+                title=title,
+                description=description,
+                category=category,
+                duration_minutes=duration_minutes,
+                content=content,
+                quiz_questions=quiz_questions or [],
+            )
+            session.add(module)
+            session.commit()
+            session.refresh(module)
 
-        module = self.modules.get(module_id)
-        if not module:
-            return {"error": "Module not found"}
+            logger.info(f"Created training module: {module.id}")
+            return self._module_to_dict(module)
 
-        # Create progress record
-        progress_id = str(uuid.uuid4())
-        progress = TrainingProgress(progress_id, user_id, module_id)
-        progress.status = ModuleStatus.IN_PROGRESS
-        progress.started_at = datetime.utcnow()
+    def update_module(
+        self,
+        module_id: str,
+        updates: Dict[str, Any],
+    ) -> Optional[Dict[str, Any]]:
+        """Update a module."""
+        with Session(engine) as session:
+            try:
+                module_uuid = uuid.UUID(module_id)
+                module = session.exec(
+                    select(DBTrainingModule).where(DBTrainingModule.id == module_uuid)
+                ).first()
+            except ValueError:
+                return None
 
-        self.user_progress[progress_id] = progress
+            if not module:
+                return None
 
-        return {
-            "progress_id": progress_id,
-            "module_id": module_id,
-            "status": progress.status.value,
-            "started_at": progress.started_at.isoformat(),
-            "content": module.content,
-        }
+            if "title" in updates:
+                module.title = updates["title"]
+            if "description" in updates:
+                module.description = updates["description"]
+            if "category" in updates:
+                module.category = updates["category"]
+            if "duration_minutes" in updates:
+                module.duration_minutes = updates["duration_minutes"]
+            if "content" in updates:
+                module.content = updates["content"]
+            if "quiz_questions" in updates:
+                module.quiz_questions = updates["quiz_questions"]
+
+            session.commit()
+            session.refresh(module)
+
+            return self._module_to_dict(module)
+
+    def delete_module(self, module_id: str) -> bool:
+        """Delete a module."""
+        with Session(engine) as session:
+            try:
+                module_uuid = uuid.UUID(module_id)
+                module = session.exec(
+                    select(DBTrainingModule).where(DBTrainingModule.id == module_uuid)
+                ).first()
+
+                if module:
+                    session.delete(module)
+                    session.commit()
+                    return True
+            except ValueError:
+                pass
+
+            return False
+
+    def get_user_progress(
+        self, user_id: str, module_id: str
+    ) -> Optional[Dict[str, Any]]:
+        """Get user progress for a specific module."""
+        with Session(engine) as session:
+            try:
+                user_uuid = uuid.UUID(user_id)
+                module_uuid = uuid.UUID(module_id)
+
+                progress = session.exec(
+                    select(DBTrainingProgress).where(
+                        DBTrainingProgress.user_id == user_uuid,
+                        DBTrainingProgress.module_id == module_uuid,
+                    )
+                ).first()
+
+                if progress:
+                    return self._progress_to_dict(progress)
+            except ValueError:
+                pass
+
+            return None
+
+    def get_user_all_progress(self, user_id: str) -> List[Dict[str, Any]]:
+        """Get all progress for a user."""
+        with Session(engine) as session:
+            try:
+                user_uuid = uuid.UUID(user_id)
+                progress_list = session.exec(
+                    select(DBTrainingProgress).where(
+                        DBTrainingProgress.user_id == user_uuid
+                    )
+                ).all()
+
+                return [self._progress_to_dict(p) for p in progress_list]
+            except ValueError:
+                return []
+
+    def start_module(self, user_id: str, module_id: str) -> Dict[str, Any]:
+        """Start a module for a user."""
+        with Session(engine) as session:
+            try:
+                user_uuid = uuid.UUID(user_id)
+                module_uuid = uuid.UUID(module_id)
+
+                # Check if progress exists
+                progress = session.exec(
+                    select(DBTrainingProgress).where(
+                        DBTrainingProgress.user_id == user_uuid,
+                        DBTrainingProgress.module_id == module_uuid,
+                    )
+                ).first()
+
+                if not progress:
+                    progress = DBTrainingProgress(
+                        user_id=user_uuid,
+                        module_id=module_uuid,
+                        status=ModuleStatus.IN_PROGRESS,
+                        progress_percent=0,
+                        started_at=datetime.utcnow(),
+                    )
+                    session.add(progress)
+                else:
+                    progress.status = ModuleStatus.IN_PROGRESS
+                    progress.started_at = datetime.utcnow()
+
+                session.commit()
+                session.refresh(progress)
+
+                return self._progress_to_dict(progress)
+            except ValueError as e:
+                logger.error(f"Invalid UUID: {e}")
+                return {"error": "Invalid user or module ID"}
 
     def update_progress(
         self,
-        progress_id: str,
+        user_id: str,
+        module_id: str,
         progress_percent: int,
-    ) -> Dict[str, Any]:
-        """Update progress through a module."""
+    ) -> Optional[Dict[str, Any]]:
+        """Update user progress for a module."""
+        with Session(engine) as session:
+            try:
+                user_uuid = uuid.UUID(user_id)
+                module_uuid = uuid.UUID(module_id)
 
-        progress = self.user_progress.get(progress_id)
-        if not progress:
-            return {"error": "Progress not found"}
+                progress = session.exec(
+                    select(DBTrainingProgress).where(
+                        DBTrainingProgress.user_id == user_uuid,
+                        DBTrainingProgress.module_id == module_uuid,
+                    )
+                ).first()
 
-        progress.progress_percent = progress_percent
+                if progress:
+                    progress.progress_percent = progress_percent
+                    if progress_percent >= 100:
+                        progress.status = ModuleStatus.COMPLETED
+                        progress.completed_at = datetime.utcnow()
+                    else:
+                        progress.status = ModuleStatus.IN_PROGRESS
 
-        if progress_percent >= 100:
-            progress.status = ModuleStatus.COMPLETED
-            progress.completed_at = datetime.utcnow()
+                    session.commit()
+                    session.refresh(progress)
 
-        return {
-            "progress_id": progress_id,
-            "progress_percent": progress_percent,
-            "status": progress.status.value,
-        }
+                    return self._progress_to_dict(progress)
+            except ValueError:
+                pass
 
-    def submit_quiz(
+            return None
+
+    def complete_module(
         self,
-        progress_id: str,
-        answers: Dict[str, int],
-    ) -> Dict[str, Any]:
-        """Submit quiz answers and get score."""
+        user_id: str,
+        module_id: str,
+        quiz_score: Optional[float] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """Mark a module as completed."""
+        with Session(engine) as session:
+            try:
+                user_uuid = uuid.UUID(user_id)
+                module_uuid = uuid.UUID(module_id)
 
-        progress = self.user_progress.get(progress_id)
-        if not progress:
-            return {"error": "Progress not found"}
+                progress = session.exec(
+                    select(DBTrainingProgress).where(
+                        DBTrainingProgress.user_id == user_uuid,
+                        DBTrainingProgress.module_id == module_uuid,
+                    )
+                ).first()
 
-        module = self.modules.get(progress.module_id)
-        if not module or module.module_type != ModuleType.QUIZ:
-            return {"error": "Module is not a quiz"}
+                if progress:
+                    progress.status = ModuleStatus.COMPLETED
+                    progress.progress_percent = 100
+                    progress.completed_at = datetime.utcnow()
+                    progress.quiz_score = quiz_score
 
-        # Calculate score
-        content = module.content
-        questions = content.get("questions", [])
+                    if quiz_score and quiz_score >= 70:
+                        progress.status = ModuleStatus.CERTIFIED
+                        progress.certified_at = datetime.utcnow()
+                        progress.certificate_id = str(uuid.uuid4())[:8]
 
-        correct = 0
-        total = len(questions)
+                    session.commit()
+                    session.refresh(progress)
 
-        for question in questions:
-            qid = question["id"]
-            if qid in answers and answers[qid] == question["correct"]:
-                correct += 1
+                    return self._progress_to_dict(progress)
+            except ValueError:
+                pass
 
-        score = (correct / total * 100) if total > 0 else 0
-        passed = score >= 70  # 70% to pass
+            return None
 
-        progress.quiz_score = score
-        progress.status = ModuleStatus.COMPLETED if passed else ModuleStatus.IN_PROGRESS
-        progress.completed_at = datetime.utcnow()
+    def get_stats(self) -> Dict[str, Any]:
+        """Get training statistics."""
+        with Session(engine) as session:
+            total_modules = session.exec(select(DBTrainingModule)).count()
+            total_progress = session.exec(select(DBTrainingProgress)).count()
+            completed = session.exec(
+                select(DBTrainingProgress).where(
+                    DBTrainingProgress.status == ModuleStatus.COMPLETED
+                )
+            ).count()
+            certified = session.exec(
+                select(DBTrainingProgress).where(
+                    DBTrainingProgress.status == ModuleStatus.CERTIFIED
+                )
+            ).count()
 
-        # Generate certificate if passed
-        if passed:
-            progress.status = ModuleStatus.CERTIFIED
-            progress.certified_at = datetime.utcnow()
-            progress.certificate_id = str(uuid.uuid4())[:8]
-
-            # Store certification
-            self.certifications[progress.certificate_id] = {
-                "certificate_id": progress.certificate_id,
-                "user_id": progress.user_id,
-                "module_id": progress.module_id,
-                "score": score,
-                "issued_at": progress.certified_at.isoformat(),
+            return {
+                "total_modules": total_modules,
+                "total_enrollments": total_progress,
+                "completed": completed,
+                "certified": certified,
+                "completion_rate": round(completed / total_progress * 100, 1)
+                if total_progress > 0
+                else 0,
             }
 
+    def _module_to_dict(self, module: DBTrainingModule) -> Dict[str, Any]:
         return {
-            "progress_id": progress_id,
-            "score": score,
-            "passed": passed,
-            "correct_answers": correct,
-            "total_questions": total,
-            "certificate_id": progress.certificate_id if passed else None,
+            "id": str(module.id),
+            "title": module.title,
+            "description": module.description,
+            "category": module.category,
+            "duration_minutes": module.duration_minutes,
+            "content": module.content,
+            "quiz_questions": module.quiz_questions or [],
+            "created_at": module.created_at.isoformat() if module.created_at else None,
         }
 
-    def get_user_certifications(self, user_id: str) -> List[Dict[str, Any]]:
-        """Get all certifications for a user."""
-
-        user_certs = [
-            cert for cert in self.certifications.values() if cert["user_id"] == user_id
-        ]
-
-        return user_certs
-
-    def verify_certificate(self, certificate_id: str) -> Optional[Dict[str, Any]]:
-        """Verify a certificate by ID."""
-
-        return self.certifications.get(certificate_id)
-
-    def get_training_stats(self) -> Dict[str, Any]:
-        """Get overall training statistics."""
-
-        total_modules = len(self.modules)
-        total_users = len(set(p.user_id for p in self.user_progress.values()))
-        total_completions = sum(
-            1
-            for p in self.user_progress.values()
-            if p.status in [ModuleStatus.COMPLETED, ModuleStatus.CERTIFIED]
-        )
-        total_certs = len(self.certifications)
-
+    def _progress_to_dict(self, progress: DBTrainingProgress) -> Dict[str, Any]:
         return {
-            "total_modules": total_modules,
-            "total_enrolled": total_users,
-            "total_completions": total_completions,
-            "total_certifications": total_certs,
-            "completion_rate": (total_completions / total_users * 100)
-            if total_users > 0
-            else 0,
+            "id": str(progress.id),
+            "user_id": str(progress.user_id),
+            "module_id": str(progress.module_id),
+            "status": progress.status,
+            "progress_percent": progress.progress_percent,
+            "quiz_score": progress.quiz_score,
+            "started_at": progress.started_at.isoformat()
+            if progress.started_at
+            else None,
+            "completed_at": progress.completed_at.isoformat()
+            if progress.completed_at
+            else None,
+            "certified_at": progress.certified_at.isoformat()
+            if progress.certified_at
+            else None,
+            "certificate_id": progress.certificate_id,
         }
 
 

@@ -39,6 +39,13 @@ func ProductAccess(requiredProduct string) gin.HandlerFunc {
 			return
 		}
 
+		// Admin bypass for product access
+		role, _ := c.Get("user_role")
+		if role.(string) == "admin" {
+			c.Next()
+			return
+		}
+
 		// Simple slice check
 		products := allowedProducts.([]string)
 		found := false

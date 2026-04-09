@@ -176,12 +176,13 @@ const AlphaWorkforce = () => {
     telegram: "",
     discord: "",
   });
-  const [governanceDecisions, setGovernanceDecisions] = useState<
+  const [platformDecisions, setPlatformDecisions] = useState<
     Record<number, string>
   >({});
   const [agentRoster, setAgentRoster] = useState<any[]>([]);
   const [activeEmployees, setActiveEmployees] = useState(0);
   const [fiscalRequests, setFiscalRequests] = useState<FiscalRequest[]>([]);
+  const [integrations, setIntegrations] = useState<any[]>([]);
 
   const [isRunningMarketing, setIsRunningMarketing] = useState(false);
   const [isSourcingLeads, setIsSourcingLeads] = useState(false);
@@ -256,6 +257,7 @@ const AlphaWorkforce = () => {
           winList,
           drafts,
           settings,
+          fetchedIntegrations,
         ] = await Promise.all([
           workforceSync(),
           extendedApi.workforce.getFiscalRequests(),
@@ -268,6 +270,7 @@ const AlphaWorkforce = () => {
           extendedApi.workforce.getAcquisitions(),
           extendedApi.workforce.getContentDrafts(),
           extendedApi.agentOps.getSettings(),
+          extendedApi.workforce.getIntegrations(),
         ]);
         const decisionsData =
           await extendedApi.workforce.getGovernanceDecisions();
@@ -283,8 +286,16 @@ const AlphaWorkforce = () => {
         setJobFeed(jobs);
         setAcquisitions(winList || []);
         setContentDrafts(drafts || []);
-        setGovernanceDecisions(decisionsData || {});
+        setPlatformDecisions(decisionsData || {});
         setExecutionHistory(historyData || []);
+        
+        if (Array.isArray(fetchedIntegrations)) {
+          setIntegrations(fetchedIntegrations);
+          const slack = fetchedIntegrations.find((i: any) => i.type === "slack")?.url || "";
+          const telegram = fetchedIntegrations.find((i: any) => i.type === "telegram")?.url || "";
+          const discord = fetchedIntegrations.find((i: any) => i.type === "discord")?.url || "";
+          setWebhooks({ slack, telegram, discord });
+        }
 
         // Fetch outreach drafts
         const draftsData = await extendedApi.workforce.getOutreachDrafts();
@@ -599,7 +610,9 @@ const AlphaWorkforce = () => {
   const handleToggleAutonomy = async () => {
     const nextState = !isAutonomous;
     try {
-      await extendedApi.workforce.toggleAutonomy(nextState ? "full" : "partial");
+      await extendedApi.workforce.toggleAutonomy(
+        nextState ? "full" : "partial"
+      );
       setIsAutonomous(nextState);
       storage.set("workforce_autonomous", nextState);
       if (nextState) {
@@ -621,8 +634,8 @@ const AlphaWorkforce = () => {
   };
 
   const handleGovernanceDecision = async (stage: number, decision: string) => {
-    const updatedDecisions = { ...governanceDecisions, [stage]: decision };
-    setGovernanceDecisions(updatedDecisions);
+    const updatedDecisions = { ...platformDecisions, [stage]: decision };
+    setPlatformDecisions(updatedDecisions);
 
     try {
       if (fiscalRequests.length > 0 && stage <= fiscalRequests.length) {
@@ -1090,7 +1103,7 @@ const AlphaWorkforce = () => {
                   description="AI suggests; Human signs off on Slack."
                   isAutonomous={false}
                   onDecision={handleGovernanceDecision}
-                  currentDecision={governanceDecisions[1]}
+                  currentDecision={platformDecisions[1]}
                 />
                 <SovereignStageItem
                   stage={2}
@@ -1099,7 +1112,7 @@ const AlphaWorkforce = () => {
                   description="AI negotiates; Human executes signature."
                   isAutonomous={false}
                   onDecision={handleGovernanceDecision}
-                  currentDecision={governanceDecisions[2]}
+                  currentDecision={platformDecisions[2]}
                 />
                 <SovereignStageItem
                   stage={3}
@@ -1122,7 +1135,7 @@ const AlphaWorkforce = () => {
                   description="Human override for moral boundary cases."
                   isAutonomous={false}
                   onDecision={handleGovernanceDecision}
-                  currentDecision={governanceDecisions[5]}
+                  currentDecision={platformDecisions[5]}
                 />
                 <div className="pt-4 mt-4 border-t border-indigo-500/20">
                   <div className="flex items-center justify-between text-caption-premium text-indigo-400/80 mb-3">
@@ -3006,7 +3019,7 @@ const AlphaWorkforce = () => {
                     description="AI suggests; Human signs off on Slack."
                     isAutonomous={false}
                     onDecision={handleGovernanceDecision}
-                    currentDecision={governanceDecisions[1]}
+                    currentDecision={platformDecisions[1]}
                   />
                   <SovereignStageItem
                     stage={2}
@@ -3015,7 +3028,7 @@ const AlphaWorkforce = () => {
                     description="AI negotiates; Human executes signature."
                     isAutonomous={false}
                     onDecision={handleGovernanceDecision}
-                    currentDecision={governanceDecisions[2]}
+                    currentDecision={platformDecisions[2]}
                   />
                   <SovereignStageItem
                     stage={3}
@@ -3038,7 +3051,7 @@ const AlphaWorkforce = () => {
                     description="Human override for moral boundary cases."
                     isAutonomous={false}
                     onDecision={handleGovernanceDecision}
-                    currentDecision={governanceDecisions[5]}
+                    currentDecision={platformDecisions[5]}
                   />
                 </CardContent>
               </Card>
@@ -3097,23 +3110,20 @@ const AlphaWorkforce = () => {
                         variant="outline"
                         size="icon"
                         onClick={() => {
+                          const slackIntegration = integrations.find((i: any) => i.type === "slack");
                           if (!webhooks.slack) {
                             toast.error("Enter Slack webhook URL first");
                             return;
                           }
-                          toast.promise(
-                            extendedApi.webhooks.create({
-                              name: "Slack Bridge",
-                              url: webhooks.slack,
-                              events: ["all"],
-                              enabled: true,
-                            } as any),
-                            {
-                              loading: "Initializing Slack Bridge...",
-                              success: () => "Slack Bridge Initialized",
-                              error: () => "Slack Bridge registered locally",
-                            }
-                          );
+                          const action = slackIntegration 
+                            ? extendedApi.workforce.updateIntegration(slackIntegration.id, { url: webhooks.slack })
+                            : extendedApi.workforce.createIntegration({ type: "slack", name: "Slack Bridge", url: webhooks.slack, enabled: true });
+                          
+                          toast.promise(action, {
+                            loading: "Syncing Slack Bridge...",
+                            success: () => "Slack Bridge Synchronized",
+                            error: () => "Slack Bridge registered locally",
+                          });
                         }}
                       >
                         <CheckCircle2 className="w-4 h-4 text-green-500" />
@@ -3144,23 +3154,20 @@ const AlphaWorkforce = () => {
                         variant="outline"
                         size="icon"
                         onClick={() => {
+                          const tgIntegration = integrations.find((i: any) => i.type === "telegram");
                           if (!webhooks.telegram) {
                             toast.error("Enter Telegram bot token first");
                             return;
                           }
-                          toast.promise(
-                            extendedApi.webhooks.create({
-                              name: "Telegram Bridge",
-                              url: webhooks.telegram,
-                              events: ["all"],
-                              enabled: true,
-                            } as any),
-                            {
-                              loading: "Initializing Telegram Bridge...",
-                              success: () => "Telegram Bridge Initialized",
-                              error: () => "Telegram Bridge registered locally",
-                            }
-                          );
+                          const action = tgIntegration
+                            ? extendedApi.workforce.updateIntegration(tgIntegration.id, { url: webhooks.telegram })
+                            : extendedApi.workforce.createIntegration({ type: "telegram", name: "Telegram Bridge", url: webhooks.telegram, enabled: true });
+
+                          toast.promise(action, {
+                            loading: "Syncing Telegram Bridge...",
+                            success: () => "Telegram Bridge Synchronized",
+                            error: () => "Telegram Bridge registered locally",
+                          });
                         }}
                       >
                         <CheckCircle2 className="w-4 h-4 text-green-500" />
@@ -3191,23 +3198,20 @@ const AlphaWorkforce = () => {
                         variant="outline"
                         size="icon"
                         onClick={() => {
+                          const discordIntegration = integrations.find((i: any) => i.type === "discord");
                           if (!webhooks.discord) {
                             toast.error("Enter Discord webhook URL first");
                             return;
                           }
-                          toast.promise(
-                            extendedApi.webhooks.create({
-                              name: "Discord Bridge",
-                              url: webhooks.discord,
-                              events: ["all"],
-                              enabled: true,
-                            } as any),
-                            {
-                              loading: "Initializing Discord Bridge...",
-                              success: () => "Discord Bridge Initialized",
-                              error: () => "Discord Bridge registered locally",
-                            }
-                          );
+                          const action = discordIntegration
+                            ? extendedApi.workforce.updateIntegration(discordIntegration.id, { url: webhooks.discord })
+                            : extendedApi.workforce.createIntegration({ type: "discord", name: "Discord Bridge", url: webhooks.discord, enabled: true });
+
+                          toast.promise(action, {
+                            loading: "Syncing Discord Bridge...",
+                            success: () => "Discord Bridge Synchronized",
+                            error: () => "Discord Bridge registered locally",
+                          });
                         }}
                       >
                         <CheckCircle2 className="w-4 h-4 text-green-500" />

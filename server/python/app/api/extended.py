@@ -65,7 +65,7 @@ from app.services.compliance_service import compliance_service
 from app.services.roi_service import roi_service
 from app.services.edge_sidecar import edge_compliance_sidecar as edge_sidecar_service
 from app.services.mobile_sdk import mobile_sdk
-from app.services.whitelabel_portal import whitelabel_portal
+from app.services.whitelabel_portal import white_label_service as whitelabel_portal
 from app.services.duress_detection import duress_detection_service
 from app.services.sovereign_service import sovereign_service
 from app.services.compliance_integration import compliance_integration_service
@@ -1409,7 +1409,9 @@ async def list_bias_reports(model_id: str, session: Session = Depends(get_sessio
     return reports
 
 
-@router.get("/compliance/models/{model_id}/handshakes", response_model=List[SystemConnection])
+@router.get(
+    "/compliance/models/{model_id}/handshakes", response_model=List[SystemConnection]
+)
 async def get_model_handshakes(model_id: str, session: Session = Depends(get_session)):
     """Retrieve all technical handshakes connected to a specific model's AI Act Articles"""
     # 1. Resolve articles associated with this model

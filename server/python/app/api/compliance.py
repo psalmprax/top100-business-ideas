@@ -399,6 +399,29 @@ async def register_ai_system(
         "message": "AI System successfully registered in the EU High-Risk Database."
     }
 
+@router.get("/status")
+async def get_compliance_status(session: Session = Depends(get_session)):
+    """Get aggregated compliance status (HIPAA, SOX, GDPR) derived from real audit logs"""
+    status_map = {}
+    for c_type in ["HIPAA", "SOX", "GDPR"]:
+        latest = session.exec(
+            select(ComplianceAuditLog)
+            .where(ComplianceAuditLog.compliance_type == c_type)
+            .order_by(ComplianceAuditLog.timestamp.desc())
+        ).first()
+        
+        if latest:
+            # Normalize status to frontend-expected values (e.g., PASSING, COMPLIANT)
+            raw_status = latest.status.upper()
+            if raw_status == "COMPLIANT" or raw_status == "VERIFIED":
+                status_map[c_type.lower()] = "PASSING" if c_type == "HIPAA" else "COMPLIANT"
+            else:
+                status_map[c_type.lower()] = "NON_COMPLIANT"
+        else:
+            status_map[c_type.lower()] = "PENDING"
+            
+    return status_map
+
 # ============================================================================
 # Compliance Checklists (Real-First Hardening)
 # ============================================================================

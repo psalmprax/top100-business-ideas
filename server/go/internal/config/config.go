@@ -35,6 +35,9 @@ type Config struct {
 	PayPalSecret        string
 	PayPalAppID         string
 	PayPalMode          string // "sandbox" or "live"
+
+	// Security Hardening
+	AdminSecret string
 }
 
 func Load() *Config {
@@ -54,10 +57,17 @@ func Load() *Config {
 		PayPalSecret:        getEnv("PAYPAL_SECRET", ""),
 		PayPalAppID:         getEnv("PAYPAL_APP_ID", ""),
 		PayPalMode:          getEnv("PAYPAL_MODE", "sandbox"),
+		AdminSecret:         getEnv("ADMIN_SECRET", ""),
 	}
 
 	if cfg.JWTSecret == "" {
-		fmt.Println("WARNING: JWT_SECRET environment variable is not set. Authentication will fail.")
+		fmt.Println("FATAL: JWT_SECRET environment variable is not set. System exiting for security.")
+		os.Exit(1)
+	}
+
+	if cfg.AdminSecret == "" {
+		fmt.Println("FATAL: ADMIN_SECRET environment variable is not set. System exiting for security.")
+		os.Exit(1)
 	}
 
 	return cfg

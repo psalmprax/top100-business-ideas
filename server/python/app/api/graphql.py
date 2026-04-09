@@ -262,42 +262,112 @@ class GraphQLResolver:
             }
 
     async def _resolve_create_agent(self, selection: Dict[str, Any]) -> Dict[str, Any]:
-        """Resolve create agent mutation."""
+        """Resolve create agent mutation with real database persistence."""
+        from sqlmodel import Session
+        from app.core.models import Agent, AgentStatus, AgentType
+
         name = selection.get("name", "New Agent")
-        agent_type = selection.get("type", "ANALYSIS")
+        agent_type_str = selection.get("type", "ANALYSIS")
         budget = selection.get("budget", 50.0)
 
-        new_agent = {
-            "id": str(uuid.uuid4()),
-            "name": name,
-            "type": agent_type,
-            "status": "STOPPED",
-            "budget": budget,
-            "daily_spend": 0.0,
-            "metrics": {"totalRequests": 0, "loopsPrevented": 0, "costSaved": 0.0},
-            "createdAt": datetime.utcnow().isoformat() + "Z",
-        }
+        try:
+            # Map string to Enum if needed
+            if isinstance(agent_type_str, str):
+                try:
+                    agent_type = AgentType[agent_type_str]
+                except KeyError:
+                    agent_type = AgentType.ANALYSIS
+            else:
+                agent_type = agent_type_str
 
-        return new_agent
+            new_agent = Agent(
+                id=str(uuid.uuid4()),
+                name=name,
+                type=agent_type,
+                status=AgentStatus.STOPPED,
+                budget=budget,
+                daily_spend=0.0,
+                metrics={"totalRequests": 0, "loopsPrevented": 0, "costSaved": 0.0},
+                created_at=datetime.utcnow(),
+            )
+
+            with Session(self.engine) as session:
+                session.add(new_agent)
+                session.commit()
+                session.refresh(new_agent)
+
+            return {
+                "id": new_agent.id,
+                "name": new_agent.name,
+                "type": new_agent.type.value if hasattr(new_agent.type, "value") else str(new_agent.type),
+                "status": new_agent.status.value if hasattr(new_agent.status, "value") else str(new_agent.status),
+                "budget": new_agent.budget,
+                "daily_spend": new_agent.daily_spend,
+                "createdAt": new_agent.created_at.isoformat() + "Z",
+            }
+        except Exception as e:
+            logger.error(f"GraphQL createAgent error: {e}")
+            return {"errors": [{"message": str(e)}]}
 
     async def _resolve_update_agent(self, selection: Dict[str, Any]) -> Dict[str, Any]:
-        """Resolve update agent mutation."""
+        """Resolve update agent mutation with real database persistence."""
+        from sqlmodel import Session
+        from app.core.models import Agent
+
         agent_id = selection.get("id")
-        return {
-            "id": agent_id,
-            "name": selection.get("name", "Updated Agent"),
-            "status": "RUNNING",
-            "updatedAt": datetime.utcnow().isoformat() + "Z",
-        }
+        if not agent_id:
+            return {"errors": [{"message": "Agent ID required"}]}
+
+        with Session(self.engine) as session:
+            agent = session.get(Agent, agent_id)
+            if not agent:
+                return {"errors": [{"message": "Agent not found"}]}
+
+            if "name" in selection:
+                agent.name = selection.get("name")
+            if "budget" in selection:
+                agent.budget = selection.get("budget")
+            if "status" in selection:
+                agent.status = selection.get("status")
+
+            agent.updated_at = datetime.utcnow()
+            session.add(agent)
+            session.commit()
+            session.refresh(agent)
+
+            return {
+                "id": agent.id,
+                "name": agent.name,
+                "status": agent.status.value if hasattr(agent.status, "value") else str(agent.status),
+                "updatedAt": agent.updated_at.isoformat() + "Z",
+            }
 
     async def _resolve_pause_agent(self, selection: Dict[str, Any]) -> Dict[str, Any]:
-        """Resolve pause agent mutation."""
+        """Resolve pause agent mutation with real database persistence."""
+        from sqlmodel import Session
+        from app.core.models import Agent, AgentStatus
+
         agent_id = selection.get("id")
-        return {
-            "id": agent_id,
-            "status": "STOPPED",
-            "pausedAt": datetime.utcnow().isoformat() + "Z",
-        }
+        if not agent_id:
+            return {"errors": [{"message": "Agent ID required"}]}
+
+        with Session(self.engine) as session:
+            agent = session.get(Agent, agent_id)
+            if not agent:
+                return {"errors": [{"message": "Agent not found"}]}
+
+            agent.status = AgentStatus.STOPPED
+            agent.updated_at = datetime.utcnow()
+            
+            session.add(agent)
+            session.commit()
+            session.refresh(agent)
+
+            return {
+                "id": agent.id,
+                "status": agent.status.value if hasattr(agent.status, "value") else str(agent.status),
+                "pausedAt": agent.updated_at.isoformat() + "Z",
+            }
 
     # ========== Compliance Resolvers ==========
 
@@ -357,14 +427,45 @@ class GraphQLResolver:
     async def _resolve_run_compliance_check(
         self, selection: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Resolve run compliance check mutation."""
-        check_type = selection.get("type", "AI_ACT")
-        return {
-            "id": str(uuid.uuid4()),
-            "type": check_type,
-            "status": "RUNNING",
-            "startedAt": datetime.utcnow().isoformat() + "Z",
-        }
+        """Resolve run compliance check mutation with real database persistence."""
+        from sqlmodel import Session
+        from app.core.models import ComplianceCheck, ComplianceStatus, ComplianceCheckType
+
+        check_type_str = selection.get("type", "AI_ACT")
+        
+        try:
+            if isinstance(check_type_str, str):
+                try:
+                    check_type = ComplianceCheckType[check_type_str]
+                except KeyError:
+                    check_type = ComplianceCheckType.AI_ACT
+            else:
+                check_type = check_type_str
+
+            check = ComplianceCheck(
+                id=str(uuid.uuid4()),
+                type=check_type,
+                status=ComplianceStatus.PENDING,
+                score=0.0,
+                findings=[],
+                checked_at=datetime.utcnow(),
+                created_at=datetime.utcnow(),
+            )
+
+            with Session(self.engine) as session:
+                session.add(check)
+                session.commit()
+                session.refresh(check)
+
+            return {
+                "id": check.id,
+                "type": check.type.value if hasattr(check.type, "value") else str(check.type),
+                "status": check.status.value if hasattr(check.status, "value") else str(check.status),
+                "startedAt": check.created_at.isoformat() + "Z",
+            }
+        except Exception as e:
+            logger.error(f"GraphQL runComplianceCheck error: {e}")
+            return {"errors": [{"message": str(e)}]}
 
     # ========== Deepfake Resolvers ==========
 
@@ -446,7 +547,7 @@ class GraphQLResolver:
         media_type = selection.get("mediaType", "IMAGE")
 
         try:
-            result = deepfake_service.analyze_media(media_url, media_type)
+            result = deepfake_service.analyze_media(media_url, media_type, "system")
             return {
                 "id": result.id,
                 "mediaUrl": result.media_url,
@@ -466,16 +567,37 @@ class GraphQLResolver:
     async def _resolve_create_challenge(
         self, selection: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Resolve create biometric challenge mutation."""
-        user_id = selection.get("userId")
+        """Resolve create biometric challenge mutation with real database persistence."""
+        from sqlmodel import Session
+        from app.core.models import HardwareChallenge
+        
+        user_id = selection.get("userId", "anonymous")
 
-        return {
-            "id": str(uuid.uuid4()),
-            "userId": user_id,
-            "type": "FIDO2_CHALLENGE",
-            "status": "PENDING",
-            "expiresAt": datetime.utcnow().isoformat() + "Z",
-        }
+        try:
+            challenge = HardwareChallenge(
+                id=str(uuid.uuid4()),
+                userId=user_id,
+                challenge=uuid.uuid4().hex,
+                status="pending",
+                expiresAt=datetime.utcnow() + timedelta(minutes=5),
+                created_at=datetime.utcnow(),
+            )
+
+            with Session(self.engine) as session:
+                session.add(challenge)
+                session.commit()
+                session.refresh(challenge)
+
+            return {
+                "id": challenge.id,
+                "userId": challenge.userId,
+                "type": "FIDO2_CHALLENGE",
+                "status": "PENDING",
+                "expiresAt": challenge.expiresAt.isoformat() + "Z",
+            }
+        except Exception as e:
+            logger.error(f"GraphQL createChallenge error: {e}")
+            return {"errors": [{"message": str(e)}]}
 
 
 class GraphQLGateway:

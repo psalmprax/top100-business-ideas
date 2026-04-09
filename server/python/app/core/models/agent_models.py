@@ -38,8 +38,8 @@ class AgentType(str, Enum):
 class Agent(SQLModel, table=True):
     """Agent model with persistent storage"""
 
-    __tablename__ = "sentinel_agents"
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    __tablename__ = "agents"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str
     type: AgentType
     environment: str = Field(default="production")
@@ -98,7 +98,7 @@ class AgentUpdate(SQLModel):
 class SkillInstall(SQLModel):
     """Marketplace skill installation request"""
 
-    skill_id: str
+    skill_id: uuid.UUID
     metadata: Optional[Dict[str, Any]] = {}
 
 
@@ -108,7 +108,7 @@ class SkillInstall(SQLModel):
 class WebhookConfig(SQLModel, table=True):
     """Persistent Webhook Subscription"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str
     url: str
     events: list[str] = Field(sa_column=Column(JSON))
@@ -123,8 +123,8 @@ class WebhookConfig(SQLModel, table=True):
 class WebhookExecution(SQLModel, table=True):
     """Execution history for webhooks"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    webhook_id: str = Field(index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    webhook_id: uuid.UUID = Field(index=True)
     event_type: str
     payload: Dict[str, Any] = Field(sa_column=Column(JSON))
     status: str  # success, error, timeout
@@ -137,7 +137,7 @@ class WebhookExecution(SQLModel, table=True):
 class AlertConfig(SQLModel, table=True):
     """Persistent AI Alert rules"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str
     alert_type: str  # budget, failure, rate_limit, bias
     threshold: float
@@ -169,7 +169,7 @@ class SovereignStage(str, Enum):
 class SovereignRequest(SQLModel, table=True):
     """Human-in-the-loop approval request"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     stage: str  # finance, legal, crisis, etc.
     action: str
     reasoning: str
@@ -189,8 +189,8 @@ class MultiCloudStatus(SQLModel):
 class SelfHealingEvent(SQLModel, table=True):
     """Automated self-healing event log"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    agent_id: str
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    agent_id: uuid.UUID
     event_type: str
     severity: str
     description: str
@@ -202,8 +202,10 @@ class SelfHealingEvent(SQLModel, table=True):
 class AgentAuditLog(SQLModel, table=True):
     """Comprehensive audit trail for agent actions"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    agent_id: str = Field(index=True)
+    __tablename__ = "audit_logs"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    agent_id: uuid.UUID = Field(index=True)
     action: str
     intent: str
     outcome: str
@@ -216,7 +218,7 @@ class AgentAuditLog(SQLModel, table=True):
 class AgentVigilanceAlert(SQLModel, table=True):
     """Persistent security and budget alerts for AgentOps"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     agent_id: Optional[str] = Field(default=None, index=True)
     type: str  # budget_breach, loop_detected, unauthorized_access, tool_failure
     severity: str  # low, medium, high, critical
@@ -229,9 +231,21 @@ class AgentVigilanceAlert(SQLModel, table=True):
 class AgentMemorySegment(SQLModel, table=True):
     """Persistent memory segments for agents"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    agent_id: str = Field(index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    agent_id: uuid.UUID = Field(index=True)
     content: str
     importance: float = Field(default=1.0)
     context_type: str = Field(default="short_term")  # short_term, long_term, semantic
     timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+
+class OnPremDeployment(SQLModel, table=True):
+    """On-premises deployment management"""
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    deployment_name: str
+    kubernetes_version: str
+    node_count: int = Field(default=1)
+    status: str = Field(default="active")  # active, maintenance, offline
+    last_health_check: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=datetime.utcnow)

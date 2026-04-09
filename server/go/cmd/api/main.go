@@ -117,6 +117,7 @@ func main() {
 	denialDefenseRepo := repository.NewDenialDefenseRepository()
 	denialDefenseHandler := handlers.NewDenialDefenseHandler(denialDefenseRepo)
 	userHandler := handlers.NewUserHandler(userRepo, authService)
+	panicHandler := handlers.NewPanicHandler(cfg.AdminSecret)
 
 	// Setup Gin router
 	if cfg.Environment == "production" {
@@ -129,6 +130,7 @@ func main() {
 	router.Use(middleware.Logger(&logger))
 	router.Use(middleware.Recovery())
 	router.Use(middleware.CORS())
+	router.Use(middleware.SystemLock())
 
 	// Health check (no auth required)
 	router.GET("/health", healthHandler.Health)
@@ -143,6 +145,13 @@ func main() {
 	// API v1 routes
 	v1 := router.Group("/api/v1")
 	{
+		// Panic routes (Administrative)
+		panicGroup := v1.Group("/panic")
+		{
+			panicGroup.POST("/lock", panicHandler.Lock)
+			panicGroup.POST("/reset", panicHandler.Reset)
+		}
+
 		// Auth routes (no auth required)
 		auth := v1.Group("/auth")
 		{
@@ -279,6 +288,7 @@ func main() {
 			denialDefense := protected.Group("/denial-defense")
 			{
 				denialDefense.GET("/claims", denialDefenseHandler.ListClaims)
+				denialDefense.GET("/stats", denialDefenseHandler.GetStats)
 				denialDefense.POST("/claims", denialDefenseHandler.CreateClaim)
 				denialDefense.PUT("/claims", denialDefenseHandler.UpdateClaim)
 			}

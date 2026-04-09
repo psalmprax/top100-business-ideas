@@ -1,6 +1,6 @@
 # Codebase Concerns
 
-**Analysis Date:** 2026-04-08
+**Analysis Date:** 2026-04-09
 
 ## Tech Debt
 
@@ -13,37 +13,80 @@
 
 **Mixed backend languages:**
 
-- Issue: Node.js proxy, Go backend (binary only), Python backend (binary only)
+- Issue: Node.js proxy, Go backend, Python backend with binary distribution only
 - Files: `server/index.ts`, `server/go/main`, `server/python/app`
 - Impact: Inconsistent development experience, harder debugging
 - Fix approach: Standardize on one backend language or provide source code for all backends
 
+**Large monolithic page components:**
+
+- Issue: Several page components have grown extremely large, making maintenance difficult
+- Files:
+  - `client/src/pages/AlphaDeepfakeDefense.tsx` (5719 lines)
+  - `client/src/pages/AlphaWorkforce.tsx` (3990 lines)
+  - `client/src/test/e2e-functional.spec.ts` (3406 lines)
+  - `client/src/lib/api.ts` (2740 lines)
+  - `client/src/test/e2e.spec.ts` (2722 lines)
+- Impact: Editor performance issues, difficult to debug, high risk of introducing bugs
+- Fix approach: Split into smaller sub-components, implement feature-based code splitting
+
+**Duplicate identifier in AlphaAgentOps.tsx:**
+
+- Issue: Build fails due to duplicate 'Copy' import declaration at line 90
+- Files: `client/src/pages/AlphaAgentOps.tsx:90`
+- Impact: Frontend build fails, development server cannot start
+- Fix approach: Remove duplicate import, consolidate icon imports
+
 ## Known Bugs
 
-**No known bugs identified in current codebase**
+**Frontend build failure (AlphaAgentOps.tsx):**
+
+- Symptoms: `Identifier 'Copy' has already been declared` error during Vite build
+- Files: `client/src/pages/AlphaAgentOps.tsx:90`
+- Trigger: Running `npm run dev` or `npm run build`
+- Workaround: Remove duplicate import statement
 
 ## Security Considerations
 
-**CORS configuration:**
+**Hardcoded placeholder credentials in constants:**
 
-- Risk: Wildcard CORS origin allows any domain to make requests
-- Files: `server/index.ts`
+- Risk: Production-like credentials and API keys embedded in source code
+- Files: `client/src/pages/Compliance/constants.ts`
+- Current values:
+  - GitHub token: `"YOUR_GITHUB_TOKEN_HERE"`
+  - AWS secret: `"YOUR_AWS_SECRET_ACCESS_KEY_HERE"`
+  - Auth0 client secret: `"YOUR_AUTH0_CLIENT_SECRET_HERE"`
+  - AWS subscription ID: `"7283-XXXX-9281"`
+  - OpenAI API key: `"sk-proj-xxxxxxxxxxxx"`
+- Recommendations: Remove all placeholder credentials, use environment variables only
+
+**CORS configuration (Python backend):**
+
+- Risk: CORS allows all origins if ALLOWED_ORIGINS environment variable contains "\*"
+- Files: `server/python/app/main.py:94-96`
 - Current mitigation: Can be overridden with env var, but defaults to insecure
-- Recommendations: Set specific allowed origins in production, validate env var
+- Recommendations: Validate and restrict allowed origins to specific domains in production
 
-**Rate limiting:**
+**CORS configuration (Node.js proxy):**
 
-- Risk: Low limits (100 req/15min for API, 20 for ML) may not protect against abuse
-- Files: `server/index.ts`
-- Current mitigation: Basic rate limiting implemented
-- Recommendations: Implement more granular limits, add IP-based blocking
+- Risk: Wildcard CORS origin allows any domain to make requests in development
+- Files: `server/index.ts:44-46`
+- Current mitigation: Production mode uses specific origin, dev mode uses "\*"
+- Recommendations: Ensure production CORS_ORIGIN is set correctly
 
 **No authentication on proxy:**
 
-- Risk: All routes proxy without checking authentication
-- Files: `server/index.ts`
+- Risk: All routes proxy without checking authentication (relies on backends)
+- Files: `server/index.ts:114`
 - Current mitigation: Assumes backends handle auth
-- Recommendations: Add JWT validation or API key checks at proxy level
+- Recommendations: Add JWT validation at proxy level for defense in depth
+
+**Admin reset uses prompt for secret:**
+
+- Risk: Administrative reset accepts secret via window.prompt, susceptible to interception
+- Files: `client/src/hooks/useAgentOps.ts:316-320`
+- Current mitigation: None visible
+- Recommendations: Use secure form input instead of prompt
 
 ## Performance Bottlenecks
 
@@ -61,10 +104,17 @@
 - Cause: All requests proxied without caching layer
 - Improvement path: Add Redis or in-memory caching for frequently accessed data
 
+**Misleading agent metrics calculations:**
+
+- Problem: CPU and memory usage calculations are not based on real system metrics but on arbitrary formulas
+- Files: `server/python/app/api/agents.py:99-114`
+- Cause: Using total requests and tokens to calculate CPU/memory instead of actual system monitoring
+- Improvement path: Implement real system monitoring using psutil or similar, or clearly document as placeholder metrics
+
 **Static file serving:**
 
 - Problem: Static files served from Express without optimization
-- Files: `server/index.ts`
+- Files: `server/index.ts:121-127`
 - Cause: Basic static middleware without CDN or advanced caching
 - Improvement path: Use CDN for static assets, implement proper cache headers
 
@@ -90,6 +140,73 @@
 - Why fragile: Empty directories, no code - may indicate incomplete implementation
 - Safe modification: Implement ventures or remove stubs
 - Test coverage: None
+
+## Silent Error Swallowing
+
+**Empty catch blocks throughout codebase:**
+
+- Risk: Errors are caught but silently ignored, hiding failures from developers and users
+- Files:
+  - `client/src/hooks/useAgentOps.ts:164` - SSO config fetch silently fails
+  - `client/src/pages/Compliance/hooks/useCompliance.ts:187-269` - Multiple API calls silently fail (12+ catch blocks)
+  - `client/src/lib/api.ts:119,212,253` - API errors swallowed
+  - `client/src/utils/codeSplitting.ts:73` - Dynamic import failures ignored
+  - `client/src/hooks/useApi.ts:34,80,120,186` - Hook-level errors ignored
+  - `packages/agentops-sdk/src/index.ts:33,199` - SDK errors ignored
+- Impact: Users see no feedback when operations fail, making debugging impossible
+- Fix approach: Add user-facing error toasts, log errors properly, or implement retry logic
+
+## Production Code Logging
+
+**Console.log statements in production:**
+
+- Risk: Excessive console.log statements leak to production, create noise in logs
+- Files:
+  - `server/index.ts:298,302,307,311,388` - Socket.io connection logs
+  - `client/src/lib/api.ts:139,201` - API debug logging
+  - `client/src/utils/codeSplitting.ts:95` - Bundle analysis logs
+  - `client/src/tests/login.spec.ts:24-174` - Test debugging logs
+- Impact: Makes production debugging harder, potential information leakage
+- Fix approach: Use proper logging library with environment-based levels, remove debug logs from production
+
+## Test Coverage Gaps
+
+**E2E tests incomplete:**
+
+- What's not tested: Functionality tests are marked TODO, only visibility tests exist
+- Files:
+  - `client/src/test/e2e.spec.ts:681` - "TODO: Add functionality tests - these only verify visibility"
+  - `client/src/test/e2e.spec.ts:928` - "TODO: Add functionality tests - visibility-only test"
+- Risk: Functional bugs undetected
+- Priority: High
+
+**Unit tests:**
+
+- What's not tested: Business logic in hooks, utils, API functions
+- Files: `client/src/hooks/`, `client/src/lib/`
+- Risk: Logic bugs undetected
+- Priority: High
+
+**Integration tests:**
+
+- What's not tested: API integrations, backend communication
+- Files: `client/src/lib/api.ts`
+- Risk: Integration failures in production
+- Priority: Medium
+
+**Backend tests:**
+
+- What's not tested: Proxy logic, error handling
+- Files: `server/index.ts`
+- Risk: Server failures undetected
+- Priority: High
+
+**Long database seeding function:**
+
+- What's not tested: seed_business_ideas function is lengthy with hardcoded data for 100+ ideas
+- Files: `server/python/app/core/database.py:667-859`
+- Risk: Maintainability issues, potential bugs when modifying test data
+- Priority: Low
 
 ## Scaling Limits
 
@@ -148,29 +265,6 @@
 - Problem: Basic /api/status, no detailed health endpoints
 - Blocks: Load balancer health checks, monitoring
 
-## Test Coverage Gaps
-
-**Unit tests:**
-
-- What's not tested: Business logic in hooks, utils, API functions
-- Files: `client/src/hooks/`, `client/src/lib/`
-- Risk: Logic bugs undetected
-- Priority: High
-
-**Integration tests:**
-
-- What's not tested: API integrations, backend communication
-- Files: `client/src/lib/api.ts`
-- Risk: Integration failures in production
-- Priority: Medium
-
-**Backend tests:**
-
-- What's not tested: Proxy logic, error handling
-- Files: `server/index.ts`
-- Risk: Server failures undetected
-- Priority: High
-
 ---
 
-_Concerns audit: 2026-04-08_
+_Concerns audit: 2026-04-09_

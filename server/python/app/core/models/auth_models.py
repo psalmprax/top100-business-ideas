@@ -38,8 +38,9 @@ class UserCreate(UserBase):
 
 class User(UserBase, table=True):
     """User model with persistent storage"""
+    __tablename__ = "users"
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     password_hash: str = Field(alias="password_hash")
     company: Optional[str] = None
     role: str = Field(default="user")
@@ -53,9 +54,10 @@ class User(UserBase, table=True):
 
 class PasswordReset(SQLModel, table=True):
     """Password reset token storage"""
+    __tablename__ = "password_resets"
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    user_id: str = Field(index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    user_id: uuid.UUID = Field(index=True, foreign_key="users.id")
     token: str = Field(index=True, unique=True)
     expires_at: datetime
     used: bool = Field(default=False)
@@ -64,8 +66,9 @@ class PasswordReset(SQLModel, table=True):
 
 class SecurityKey(SQLModel, table=True):
     """Persistent rotated API keys and security credentials"""
+    __tablename__ = "security_keys"
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str  # "Main API Key", "Partner SDK", etc.
     key_hash: str
     prefix: str  # "sk_live_..."

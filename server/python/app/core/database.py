@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from typing import AsyncGenerator
 import os
 import logging
+import hashlib
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -37,14 +38,25 @@ from app.core.models import (
     WorkforceContent,
     ForensicTrace,
     GovernanceDecision,
+    User,
+    TrainingModule,
 )
+import uuid
+import datetime
 
 DATABASE_URL = settings.DATABASE_URL
 
 
 def get_sync_engine():
-    """Create synchronous engine for migrations and seeding"""
-    return create_engine(DATABASE_URL, echo=False)
+    """Create synchronous engine for migrations and seeding with connection pooling"""
+    return create_engine(
+        DATABASE_URL,
+        echo=False,
+        pool_size=20,
+        max_overflow=10,
+        pool_pre_ping=True,
+        pool_recycle=3600,
+    )
 
 
 engine = get_sync_engine()
@@ -63,12 +75,39 @@ def init_async_engine():
             async_url = async_url.replace("sqlite", "sqlite+aiosqlite")
         elif async_url.startswith("postgresql"):
             async_url = async_url.replace("postgresql", "postgresql+asyncpg")
-            
-        async_engine = create_async_engine(async_url, echo=False)
+
+        async_engine = create_async_engine(
+            async_url,
+            echo=False,
+            pool_size=20,
+            max_overflow=10,
+            pool_pre_ping=True,
+            pool_recycle=3600,
+        )
         AsyncSessionLocal = async_sessionmaker(
             async_engine, class_=AsyncSession, expire_on_commit=False
         )
 
+
+def seed_users():
+    """Seed the database with a system user for Sentinel operations"""
+    with SessionLocal() as session:
+        # Check if system user exists
+        system_user_id = uuid.UUID("00000000-0000-0000-0000-000000000000")
+        if session.query(User).filter(User.id == system_user_id).first():
+            return
+
+        system_user = User(
+            id=system_user_id,
+            email="sentinel@alpha-ai.io",
+            name="Sentinel System Agent",
+            password_hash=hashlib.sha256(f"sentinel-system-{uuid.uuid4().hex}".encode()).hexdigest(),
+            role="admin",
+            company="Alpha Sentinel Global",
+            subscription_tier="enterprise",
+        )
+        session.add(system_user)
+        session.commit()
 
 
 def init_db():
@@ -78,7 +117,6 @@ def init_db():
     init_async_engine()
     sync_engine = get_sync_engine()
 
-
     max_retries = 10
     retry_interval = 2
 
@@ -86,16 +124,21 @@ def init_db():
         try:
             SQLModel.metadata.create_all(sync_engine)
 
-            # Manual Migration block removed. Using Alembic for dialect-agnostic migrations.
-            # Refer to alembic/versions/a1b2c3d4e5f6_initial_agnostic_hardening.py
-
-            # Seed initial data only when explicitly requested
-            if os.getenv("SEED_DATABASE", "false").lower() == "true":
-                seed_compliance_articles()
-                seed_agents()
+            # REAL-FIRST: Centralized Seeding Engine
+            if os.getenv("SEED_DATABASE", "true").lower() == "true":
+                from app.core.seed import seed_all
+                with SessionLocal() as session:
+                    # SQLModel session wrapper
+                    from sqlmodel import Session as SQLModelSession
+                    seed_session = SQLModelSession(session.bind, session=session)
+                    seed_all(seed_session)
+                
+                logger.info("Hardened seeding completed successfully")
+                
+                # Optional: legacy seeds if not covered by seed_all
+                seed_users()
                 seed_deepfake_data()
                 seed_workforce_data()
-                seed_agent_ops_data()
                 seed_business_ideas()
                 seed_training_modules()
             return  # Success
@@ -111,8 +154,11 @@ def init_db():
 
 def get_session():
     """Dependency for getting database sessions"""
+    from sqlmodel import Session as SQLModelSession
+
     with SessionLocal() as session:
-        yield session
+        # Convert to SQLModel Session for .exec() method support
+        yield SQLModelSession(session.bind, session=session)
 
 
 def seed_compliance_articles():
@@ -214,6 +260,7 @@ def seed_agents():
         # Sample agents
         agents_data = [
             {
+                "id": "00000000-0000-4000-a000-000000000001",
                 "name": "Prospector",
                 "type": "analysis",
                 "environment": "production",
@@ -223,9 +270,10 @@ def seed_agents():
                 "daily_spend": 12.5,
                 "tier": "tactical",
                 "status": AgentStatus.RUNNING,
-                "config": {"role": "Market Intel"}
+                "config": {"role": "Market Intel"},
             },
             {
+                "id": "00000000-0000-4000-a000-000000000002",
                 "name": "Sales Closer",
                 "type": "automation",
                 "environment": "production",
@@ -235,9 +283,10 @@ def seed_agents():
                 "daily_spend": 45.0,
                 "tier": "strategic",
                 "status": AgentStatus.RUNNING,
-                "config": {"role": "Lead Conv."}
+                "config": {"role": "Lead Conv."},
             },
             {
+                "id": "00000000-0000-4000-a000-000000000003",
                 "name": "Marketing Strategist",
                 "type": "content_generation",
                 "environment": "production",
@@ -247,9 +296,10 @@ def seed_agents():
                 "daily_spend": 22.0,
                 "tier": "tactical",
                 "status": AgentStatus.RUNNING,
-                "config": {"role": "Growth Ops"}
+                "config": {"role": "Growth Ops"},
             },
             {
+                "id": "00000000-0000-4000-a000-000000000004",
                 "name": "Research Agent",
                 "type": "crewai",
                 "environment": "production",
@@ -259,7 +309,7 @@ def seed_agents():
                 "daily_spend": 4.2,
                 "tier": "strategic",
                 "status": AgentStatus.RUNNING,
-                "config": {"role": "Research"}
+                "config": {"role": "Research"},
             },
         ]
 
@@ -268,7 +318,6 @@ def seed_agents():
             session.add(agent)
 
         session.commit()
-
 
 
 def seed_deepfake_data():
@@ -350,7 +399,7 @@ def seed_deepfake_data():
         if session.query(DuressConfig).count() == 0:
             session.add(
                 DuressConfig(
-                    user_id="default_user",
+                    user_id="00000000-0000-0000-0000-000000000000",
                     panic_phrase="alaska",
                     silent_mode=True,
                     trigger_action="alert_security",
@@ -362,7 +411,7 @@ def seed_deepfake_data():
         if session.query(BiometricTemplate).count() == 0:
             session.add(
                 BiometricTemplate(
-                    user_id="default_user",
+                    user_id="00000000-0000-0000-0000-000000000000",
                     type="face",
                     template_hash="sha256:7f83b1...",
                     cancellable=True,
@@ -373,7 +422,7 @@ def seed_deepfake_data():
         if session.query(WearableDevice).count() == 0:
             session.add(
                 WearableDevice(
-                    user_id="default_user",
+                    user_id="00000000-0000-0000-0000-000000000000",
                     name="Vision Pro 1",
                     device_type="vision_pro",
                     status="active",
@@ -384,7 +433,7 @@ def seed_deepfake_data():
         if session.query(CryptoWallet).count() == 0:
             session.add(
                 CryptoWallet(
-                    user_id="default_user",
+                    user_id="00000000-0000-0000-0000-000000000000",
                     name="Alpha Vault",
                     wallet_address="0x71C765...d897",
                     blockchain="ethereum",
@@ -396,7 +445,7 @@ def seed_deepfake_data():
         if session.query(ComplianceAuditLog).count() == 0:
             session.add(
                 ComplianceAuditLog(
-                    user_id="admin_01",
+                    user_id="00000000-0000-0000-0000-000000000000",
                     action="Data Access",
                     resource="Biometric_DB_v4",
                     compliance_type="HIPAA",
@@ -507,22 +556,28 @@ def seed_workforce_data():
         if session.query(ForensicTrace).count() == 0:
             traces = [
                 {
-                    "user_id": "e8b5c731-15f7-4a00-9e96-e13768d57d00",
-                    "agent_id": "marketing-alpha",
+                    "user_id": "00000000-0000-0000-0000-000000000000",
+                    "agent_id": "00000000-0000-4000-a000-000000000001",
                     "action": "Market Intelligence Scan",
-                    "details": "High demand detected for 'Sovereign Compliance' services in EU.",
+                    "details": {
+                        "message": "High demand detected for 'Sovereign Compliance' services in EU."
+                    },
                 },
                 {
-                    "user_id": "e8b5c731-15f7-4a00-9e96-e13768d57d00",
-                    "agent_id": "sales-omega",
+                    "user_id": "00000000-0000-0000-0000-000000000000",
+                    "agent_id": "00000000-0000-4000-a000-000000000002",
                     "action": "Lead List Generation",
-                    "details": "120 high-intent leads generated from Sentinel network.",
+                    "details": {
+                        "message": "120 high-intent leads generated from Sentinel network."
+                    },
                 },
                 {
-                    "user_id": "e8b5c731-15f7-4a00-9e96-e13768d57d00",
-                    "agent_id": "legal-council",
+                    "user_id": "00000000-0000-0000-0000-000000000000",
+                    "agent_id": "00000000-0000-4000-a000-000000000003",
                     "action": "Contract Analysis",
-                    "details": "MiCA compliance risk identified in new partnership agreement.",
+                    "details": {
+                        "message": "MiCA compliance risk identified in new partnership agreement."
+                    },
                 },
             ]
             for t in traces:
@@ -532,19 +587,19 @@ def seed_workforce_data():
         if session.query(GovernanceDecision).count() == 0:
             decisions = [
                 {
-                    "user_id": "e8b5c731-15f7-4a00-9e96-e13768d57d00",
+                    "user_id": "00000000-0000-0000-0000-000000000000",
                     "stage": 1,
                     "decision": "Autonomous",
                     "status": "FULLY_AUTONOMOUS",
                 },
                 {
-                    "user_id": "e8b5c731-15f7-4a00-9e96-e13768d57d00",
+                    "user_id": "00000000-0000-0000-0000-000000000000",
                     "stage": 2,
                     "decision": "Human override",
                     "status": "REVIEW_REQUIRED",
                 },
                 {
-                    "user_id": "e8b5c731-15f7-4a00-9e96-e13768d57d00",
+                    "user_id": "00000000-0000-0000-0000-000000000000",
                     "stage": 5,
                     "decision": "Waiting for signature",
                     "status": "REVIEW_REQUIRED",
@@ -610,7 +665,10 @@ def seed_agent_ops_data():
                 "type": "budget_breach",
                 "severity": "critical",
                 "description": "Marketing Agent exceeded daily token budget by 15%",
-                "metadata_json": {"excess": 15.2, "agent_id": "marketing-01"},
+                "metadata_json": {
+                    "excess": 15.2,
+                    "agent_id": "00000000-0000-4000-9000-000000000001",
+                },
             },
             {
                 "type": "loop_detected",

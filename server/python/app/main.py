@@ -125,6 +125,8 @@ app.include_router(venture.router, prefix="/venture", tags=["Venture"])
 app.include_router(security.router, prefix="/security", tags=["Security"])
 app.include_router(alerts.router, prefix="/agents", tags=["Alerts & Rules"])
 app.include_router(intelligence.router, prefix="/intelligence", tags=["Intelligence"])
+from app.api import sentinel
+app.include_router(sentinel.router, prefix="/api/v1/sentinel", tags=["Sentinel"])
 
 
 from app.core.database import init_db

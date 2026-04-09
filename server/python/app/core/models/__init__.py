@@ -1,13 +1,24 @@
-# Import from domain-specific model files for better organization
-from .agent_models import *
 from .auth_models import *
+from .ai_models import *
+from .agent_models import *
 from .compliance_models import *
 from .deepfake_models import *
 from .workforce_models import *
-from .ai_models import *
+from .service_models import *
 
 # Re-export all models for backward compatibility
 __all__ = [
+    # Service models (Shadow AI, White Label, Edge)
+    "ShadowAIRiskLevel",
+    "ShadowAIStatus",
+    "ShadowAIDetection",
+    "WhiteLabelTier",
+    "WhiteLabelStatus",
+    "WhiteLabelTenant",
+    "EdgeDeviceStatus",
+    "EdgeDeviceType",
+    "EdgeDevice",
+    "EdgeAuditLog",
     # Agent models
     "AgentStatus",
     "AgentType",
@@ -26,6 +37,7 @@ __all__ = [
     "AgentAuditLog",
     "AgentVigilanceAlert",
     "AgentMemorySegment",
+    "OnPremDeployment",
     # Auth models
     "Token",
     "TokenData",
@@ -40,6 +52,7 @@ __all__ = [
     "ComplianceCheck",
     "ComplianceCategory",
     "RunComplianceCheckRequest",
+    "ComplianceIncident",
     "ConnectionType",
     "SystemConnection",
     "ArticleScan",
@@ -96,6 +109,8 @@ __all__ = [
     "ScheduleEvent",
     "Integration",
     "BotSetting",
+    "Vendor",
+    "RevenueRecovery",
     # AI models
     "AIModel",
     "AIModelCreate",

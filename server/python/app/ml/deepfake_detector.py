@@ -34,8 +34,12 @@ class DeepfakeDetector:
             "video_fake_threshold": 0.60,
         }
 
-        self.is_loaded = True
-        logger.info("Deepfake detector initialized with CV-based detection")
+        # REAL-FIRST: Determine load state based on model artifact presence
+        self.is_loaded = os.path.exists(model_path) and os.path.isdir(model_path)
+        if self.is_loaded:
+            logger.info("Deepfake detector initialized with CV-based detection")
+        else:
+            logger.warning(f"Deepfake detector models not found at {model_path}. Running in limited mode.")
 
     def analyze_image(self, image_path: str) -> Dict[str, Any]:
         """CV-based deepfake detection using multiple techniques"""

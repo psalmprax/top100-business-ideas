@@ -9,11 +9,11 @@ type User struct {
 	Name               string    `json:"name" db:"name"`
 	Password           string    `json:"-" db:"password_hash"`
 	Role               string    `json:"role" db:"role"`
-	SubscriptionTier   string    `json:"subscription_tier" db:"subscription_tier"`
-	SubscriptionStatus string    `json:"subscription_status" db:"subscription_status"`
-	AllowedProducts    []string  `json:"allowed_products" db:"allowed_products"`
-	CreatedAt          time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt          time.Time `json:"updated_at" db:"updated_at"`
+	SubscriptionTier   string    `json:"subscriptionTier" db:"subscription_tier"`
+	SubscriptionStatus string    `json:"subscriptionStatus" db:"subscription_status"`
+	AllowedProducts    []string  `json:"allowedProducts" db:"allowed_products"`
+	CreatedAt          time.Time `json:"createdAt" db:"created_at"`
+	UpdatedAt          time.Time `json:"updatedAt" db:"updated_at"`
 }
 
 // Agent represents an AI agent
@@ -26,14 +26,16 @@ type Agent struct {
 	Provider       string        `json:"provider" db:"provider"`
 	Model          string        `json:"model" db:"model"`
 	OrgID          string        `json:"org_id" db:"org_id"`
-	ControlWebhook string        `json:"control_webhook" db:"control_webhook"`
-	APISecret      string        `json:"api_secret" db:"api_secret"`
-	Config         string        `json:"config" db:"config"` // JSON string
-	Budget         float64       `json:"budget" db:"budget"`
-	MaxTokens      int           `json:"max_tokens" db:"max_tokens"`
-	Metrics        *AgentMetrics `json:"metrics"`
-	CreatedAt      time.Time     `json:"created_at" db:"created_at"`
-	UpdatedAt      time.Time     `json:"updated_at" db:"updated_at"`
+	ControlWebhook   string        `json:"control_webhook" db:"control_webhook"`
+	APISecret        string        `json:"api_secret" db:"api_secret"`
+	Config           string        `json:"config" db:"config"` // JSON string
+	Budget           float64       `json:"budget" db:"budget"`
+	MaxTokens        int           `json:"max_tokens" db:"max_tokens"`
+	Tier             string        `json:"tier" db:"tier"`
+	PersistentMemory bool          `json:"persistent_memory" db:"persistent_memory"`
+	Metrics          *AgentMetrics `json:"metrics"`
+	CreatedAt        time.Time     `json:"created_at" db:"created_at"`
+	UpdatedAt        time.Time     `json:"updated_at" db:"updated_at"`
 }
 
 // AgentMetrics represents agent performance metrics
@@ -154,9 +156,11 @@ type CreateAgentRequest struct {
 	Model          string  `json:"model"`
 	OrgID          string  `json:"org_id"`
 	ControlWebhook string  `json:"control_webhook"`
-	Budget         float64 `json:"budget"`
-	MaxTokens      int     `json:"max_tokens"`
-	Config         string  `json:"config"`
+	Budget           float64 `json:"budget"`
+	MaxTokens        int     `json:"max_tokens"`
+	Tier             string                 `json:"tier"`
+	PersistentMemory bool                   `json:"persistent_memory"`
+	Config           map[string]interface{} `json:"config"`
 }
 
 
@@ -165,8 +169,10 @@ type UpdateAgentRequest struct {
 	Type      string  `json:"type"`
 	Config    string  `json:"config"`
 	Status    string  `json:"status"`
-	Budget    float64 `json:"budget"`
-	MaxTokens int     `json:"max_tokens"`
+	Budget           float64 `json:"budget"`
+	MaxTokens        int     `json:"max_tokens"`
+	Tier             string  `json:"tier"`
+	PersistentMemory bool    `json:"persistent_memory"`
 }
 
 type RunComplianceCheckRequest struct {
@@ -562,6 +568,14 @@ type Claim struct {
 	Risk          string    `json:"risk" db:"risk"`     // low, medium, high
 	CreatedAt     time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at" db:"updated_at"`
+}
+
+// DenialStats represents summary statistics for medical claims
+type DenialStats struct {
+	RecoveryRate     float64 `json:"recovery_rate"`
+	TotalProcessed   int     `json:"total_processed"`
+	PendingDenials   int     `json:"pending_denials"`
+	RevenueRecovered float64 `json:"revenue_recovered"`
 }
 
 // RevenueRecovery represents a recovered amount from the workforce engine

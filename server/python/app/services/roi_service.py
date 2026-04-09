@@ -76,8 +76,10 @@ class ROIService:
         """
         Calculates risk-adjusted productivity ROI based on real logs.
         """
-        # Define baseline labor costs (Human replacement value)
-        labor_cost_per_action = 15.0  # Average human cost per task
+        from app.core.models import SystemSetting
+        # REAL-FIRST: Fetch labor savings from system settings
+        labor_setting = session.exec(select(SystemSetting).where(SystemSetting.setting_key == "roi_labor_savings_per_task")).first()
+        labor_cost_per_action = float(labor_setting.setting_value) if labor_setting else 15.0
 
         metrics = ROIService.get_real_metrics(session, agent.id)
         total_actions = metrics["total_actions"]
@@ -113,6 +115,52 @@ class ROIService:
             "roi_multiple": round(roi_multiple, 1),
             "status": "elite" if roi_multiple > 10 else "optimized",
             "audit_trail_verified": True,
+        }
+
+    @staticmethod
+    def get_deepfake_roi(session: Session) -> Dict[str, Any]:
+        """
+        Calculates financial ROI for deepfake defense specifically.
+        """
+        from app.core.models import DeepfakeAnalysis, AnalysisResult, SystemSetting
+        
+        total_scans = session.exec(select(func.count(DeepfakeAnalysis.id))).one()
+        fakes_detected = session.exec(
+            select(func.count(DeepfakeAnalysis.id)).where(
+                DeepfakeAnalysis.result == AnalysisResult.FAKE
+            )
+        ).one()
+
+        # REAL-FIRST: Fetch baseline costs from system settings
+        hr_setting = session.exec(select(SystemSetting).where(SystemSetting.setting_key == "roi_human_review_cost")).first()
+        ai_setting = session.exec(select(SystemSetting).where(SystemSetting.setting_key == "roi_ai_detection_cost")).first()
+        fraud_setting = session.exec(select(SystemSetting).where(SystemSetting.setting_key == "roi_fraud_loss_per_case")).first()
+
+        human_review_cost_per_unit = float(hr_setting.setting_value) if hr_setting else 45.00
+        ai_detection_cost_per_unit = float(ai_setting.setting_value) if ai_setting else 0.12
+        fraud_loss_per_case = float(fraud_setting.setting_value) if fraud_setting else 50000.00
+
+        total_human_cost = total_scans * human_review_cost_per_unit
+        total_ai_cost = total_scans * ai_detection_cost_per_unit
+        
+        # Savings from detection (prevented fraud)
+        prevented_loss = fakes_detected * fraud_loss_per_case
+        
+        # Operational savings (human vs ai)
+        operational_savings = total_human_cost - total_ai_cost
+        
+        total_savings = prevented_loss + operational_savings
+
+        return {
+            "human_unit_cost": human_review_cost_per_unit,
+            "ai_unit_cost": ai_detection_cost_per_unit,
+            "total_scans": total_scans,
+            "total_human_cost": round(total_human_cost, 2),
+            "total_ai_cost": round(total_ai_cost, 2),
+            "prevented_loss": round(prevented_loss, 2),
+            "total_savings": round(total_savings, 2),
+            "threats_blocked": fakes_detected,
+            "roi_percentage": round((total_savings / (total_ai_cost if total_ai_cost > 0 else 1)) * 100, 1)
         }
 
     @staticmethod

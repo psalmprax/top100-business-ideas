@@ -192,6 +192,36 @@ async def optimize_agent_memory(agent_id: str, session: Session = Depends(get_se
     }
 
 
+@router.patch("/{agent_id}/hint")
+async def inject_agent_hint(
+    agent_id: str, hint: dict, session: Session = Depends(get_session)
+):
+    """Inject a governance hint/instruction into an agent's operational context"""
+    from app.core.models import AgentAuditLog
+
+    db_agent = session.get(Agent, agent_id)
+    if not db_agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    hint_text = hint.get("hint", "")
+    
+    # Record the injection in the audit log
+    audit_entry = AgentAuditLog(
+        agent_id=agent_id,
+        action="GOVERNANCE_HINT_INJECTION",
+        intent="administrative_override",
+        outcome="success",
+        reasoning=f"Manual hint injected: {hint_text}",
+        risk_score=0.1,
+        metadata_json={"hint": hint_text, "timestamp": datetime.utcnow().isoformat()}
+    )
+    
+    session.add(audit_entry)
+    session.commit()
+    
+    return {"status": "success", "hint": hint_text, "logged_at": datetime.utcnow().isoformat()}
+
+
 @router.post("/{agent_id}/roi")
 async def get_agent_roi(agent_id: str, session: Session = Depends(get_session)):
     """Get calculated ROI and Downtime-to-Dollar loss for an agent"""

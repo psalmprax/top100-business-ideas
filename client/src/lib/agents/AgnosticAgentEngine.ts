@@ -1,4 +1,5 @@
 import { nanoid } from 'nanoid';
+import { hermesApi } from '../api';
 
 export type AgentRole = 'Logistics' | 'Compliance' | 'Marketing' | 'Auditor' | 'Researcher';
 
@@ -28,24 +29,23 @@ export interface LLMProvider {
 }
 
 /**
- * Mock Provider for local-first testing and development.
+ * HermesCloudProvider - REAL-FIRST implementation
+ * Connects the Agnostic Agent Engine to the persistent Hermes service.
  */
-export class MockProvider implements LLMProvider {
-  name = 'Mock-Alpha-Sentinel';
+export class HermesCloudProvider implements LLMProvider {
+  name = 'Hermes-Cloud (Sentinel Core)';
 
   async generateResponse(prompt: string, context: any): Promise<string> {
-    const delay = Math.random() * 1500 + 1000;
-    await new Promise(r => setTimeout(r, delay));
-    
-    if (prompt.includes('audit')) {
-      return JSON.stringify({
-        summary: "Audit completed successfully. Found 0 critical failures.",
-        riskLevel: "low",
-        recommendations: ["Update data retention policy", "Verify PII masking"]
-      });
+    try {
+      // Step 1: Call real Hermes backend service via the authenticated api layer
+      const result = await hermesApi.chat(prompt, `You are acting as a ${context.role} agent in our enterprise cluster.`);
+      
+      // Step 2: Return real response from orchestrator
+      return result.response;
+    } catch (error) {
+      console.error('[HermesCloudProvider] Failed to generate response from backend:', error);
+      throw new Error(`Hermes Cloud unreachable: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-    
-    return `[Mock response for: ${prompt.substring(0, 30)}...]`;
   }
 }
 
@@ -59,8 +59,13 @@ export class AgnosticAgentEngine {
   private tasks: Map<string, AgentTask> = new Map();
   private listeners: Set<(state: { agents: Agent[], tasks: AgentTask[] }) => void> = new Set();
 
-  constructor(provider: LLMProvider = new MockProvider()) {
-    this.provider = provider;
+  constructor(provider?: LLMProvider) {
+    // REAL-FIRST: Default to HermesCloudProvider instead of a mock
+    this.provider = provider || new HermesCloudProvider();
+    
+    if (this.provider instanceof HermesCloudProvider) {
+      console.info('[AgnosticAgentEngine] Initialized with HermesCloudProvider (Production Mode)');
+    }
   }
 
   public registerAgent(name: string, role: AgentRole): Agent {

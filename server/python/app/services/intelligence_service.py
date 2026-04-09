@@ -120,8 +120,8 @@ class IntelligenceService:
         from app.core.models import Agent, AgentAuditLog
         from app.core.database import engine
 
-        with Session(engine) as db_session:
-            agents = db_session.exec(select(Agent)).all()
+            # REAL-FIRST: Determine project complexity based on agent density
+            complexity_factor = len(agents) / 5 if agents else 1.0
             total_cost = sum(a.metrics.get("totalCost", 0) for a in agents if a.metrics)
             total_saved = sum(
                 a.metrics.get("costSaved", 0) for a in agents if a.metrics
@@ -129,33 +129,33 @@ class IntelligenceService:
 
             roadmap = [
                 {
-                    "phase": "Foundation",
-                    "duration": "2 weeks",
-                    "goal": f"Core API & DB ({len(agents)} agents configured)",
+                    "phase": "Foundation & Bridging",
+                    "duration": f"{max(1, int(1 * complexity_factor))} weeks",
+                    "goal": f"Sync {len(agents)} active agents with Sentinel core services.",
                 },
                 {
-                    "phase": "Optimization",
-                    "duration": "4 weeks",
-                    "goal": f"Cost optimization (current: ${total_cost:.2f}, saved: ${total_saved:.2f})",
+                    "phase": "Operational Hardening",
+                    "duration": f"{max(2, int(3 * complexity_factor))} weeks",
+                    "goal": f"Optimize cost profile. Current burn: ${total_cost:.2f}, Savings realized: ${total_saved:.2f}",
                 },
                 {
-                    "phase": "Scaling",
-                    "duration": "3 weeks",
-                    "goal": "Horizontal scaling and multi-region deployment",
+                    "phase": "Strategic Scaling",
+                    "duration": f"{max(2, int(4 * complexity_factor))} weeks",
+                    "goal": f"Deploy specialized {project} logic across the validated agent mesh.",
                 },
             ]
 
             ux_blueprint = {
-                "navigation": ["Agent Dashboard", "Audit Trail", "Alert Center"],
+                "navigation": ["Unified Dashboard", "Intelligence Hub", "Security Mesh"],
                 "core_components": [
-                    "ROI Calculator",
-                    "Budget Manager",
-                    "Agent Monitor",
+                    "ROI Analytics",
+                    "Policy Guardrails",
+                    "Agent Orchestrator",
                 ],
-                "aesthetic": "Glassmorphism, High-contrast Metrics, Dark Mode",
+                "aesthetic": "Sentinel Dark Mode (Premium), Glassmorphism, Dynamic Transitions",
             }
 
-            recommendation = f"Proceed with V1 focusing on {project}. Current {len(agents)} agents with ${total_saved:.2f} in realized savings."
+            recommendation = f"Initiate scaling for '{project}'. Current infrastructure has proved efficient with ${total_saved:.2f} in realized ROI via {len(agents)} autonomous agents."
 
         # 3. Persistence
         new_strategy = ProductStrategy(

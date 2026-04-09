@@ -60,5 +60,22 @@ class GrowthTools:
                 signals.append(trigger)
         return signals
 
+    @staticmethod
+    def extract_prospects_from_ai(text: str) -> List[str]:
+        """Extract valid URLs from AI generated text using robust regex"""
+        import re
+        # Robust URL regex
+        url_pattern = r'https?://[^\s<>"]+|www\.[^\s<>"]+'
+        urls = re.findall(url_pattern, text)
+        
+        # Clean and filter duplicates
+        cleaned_urls = []
+        for url in urls:
+            u = url.strip().strip('.').strip(',').strip(')')
+            if '.' in u and len(u) > 3:
+                cleaned_urls.append(u)
+        
+        return sorted(list(set(cleaned_urls)))
+
 # Instances for tools
 growth_tools = GrowthTools()

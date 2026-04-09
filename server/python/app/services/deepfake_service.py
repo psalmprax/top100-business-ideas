@@ -178,12 +178,18 @@ class DeepfakeService:
             else:
                 accuracy = 0.0
 
+            # Include real financial ROI metrics
+            from app.services.roi_service import roi_service
+
+            roi_data = roi_service.get_deepfake_roi(session)
+
             return {
                 "total_scans": total_scans,
                 "fakes_detected": fakes_detected,
                 "active_threats": active_threats,
                 "accuracy": accuracy,
                 "last_run": datetime.utcnow().isoformat(),
+                "roi": roi_data,
             }
 
 

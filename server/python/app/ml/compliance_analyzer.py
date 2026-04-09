@@ -14,8 +14,10 @@ class ComplianceAnalyzer:
     """
     
     def __init__(self, model_path: str = "/models/compliance"):
+        import os
         self.model_path = model_path
-        self.is_loaded = True # Mock loading for now
+        # REAL-FIRST: Determine load state based on model artifact presence
+        self.is_loaded = os.path.exists(model_path) and os.path.isdir(model_path)
         
     def _calculate_score(self, evidence: List[Dict[str, Any]], check_type: str) -> int:
         """Calculates a deterministic score based on evidence findings"""

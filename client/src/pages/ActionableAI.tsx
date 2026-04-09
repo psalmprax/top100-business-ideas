@@ -133,7 +133,7 @@ export default function ActionableAI() {
     setIsExecuting(newState);
     storage.set("actionable_ai_executing", newState);
     try {
-      await extendedApi.workforce.toggleAutonomy(newState);
+      await extendedApi.workforce.toggleAutonomy(newState ? "full" : "partial");
       toast.success(newState ? "Engine resumed" : "Engine paused");
     } catch (error: any) {
       toast.error(
@@ -144,7 +144,7 @@ export default function ActionableAI() {
 
   const handleTerminateAll = async () => {
     setIsTerminating(true);
-    toast.promise(extendedApi.workforce.toggleAutonomy(false), {
+    toast.promise(extendedApi.workforce.toggleAutonomy("partial"), {
       loading: "Sending SIGTERM to all active agent swarms...",
       success: () => {
         setIsTerminating(false);
@@ -262,7 +262,9 @@ export default function ActionableAI() {
               <div className="text-stat text-white tabular-nums">
                 {successRate !== null ? `${successRate}%` : "---%"}
               </div>
-              <div className="text-body-sm mt-2 opacity-60">Task resolution accuracy</div>
+              <div className="text-body-sm mt-2 opacity-60">
+                Task resolution accuracy
+              </div>
             </CardContent>
           </Card>
           <Card className="bg-black/40 border-white/5 backdrop-blur-sm">
@@ -308,7 +310,9 @@ export default function ActionableAI() {
             <div className="absolute inset-0 bg-gradient-to-tr from-orange-500/5 via-transparent to-transparent pointer-events-none" />
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle className="text-card-title text-white">Mission Control</CardTitle>
+                <CardTitle className="text-card-title text-white">
+                  Mission Control
+                </CardTitle>
                 <CardDescription>
                   Direct execution and orchestration logs
                 </CardDescription>

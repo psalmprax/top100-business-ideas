@@ -5,31 +5,37 @@ import (
 	"fmt"
 	"log"
 	"net/smtp"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 )
 
-// EmailService handles sending emails
-// Note: In production, use a proper email service like SendGrid, Mailgun, or AWS SES
-type EmailService struct {
-	SMTPHost  string
-	SMTPPort  int
-	Username  string
-	Password  string
-	FromEmail string
-	FromName  string
+// ...
+
+// NewEmailService creates a new email service with environment variable support
+func NewEmailService() *EmailService {
+	portStr := getEnv("SMTP_PORT", "587")
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		port = 587
+	}
+
+	return &EmailService{
+		SMTPHost:  getEnv("SMTP_HOST", "smtp.gmail.com"),
+		SMTPPort:  port,
+		Username:  os.Getenv("SMTP_USER"),
+		Password:  os.Getenv("SMTP_PASS"),
+		FromEmail: getEnv("SMTP_FROM", "noreply@alphaai.com"),
+		FromName:  getEnv("SMTP_NAME", "AlphaAI"),
+	}
 }
 
-// NewEmailService creates a new email service
-func NewEmailService() *EmailService {
-	return &EmailService{
-		SMTPHost:  "smtp.gmail.com",
-		SMTPPort:  587,
-		Username:  "",
-		Password:  "",
-		FromEmail: "noreply@alphaai.com",
-		FromName:  "AlphaAI",
+func getEnv(key, defaultValue string) string {
+	if value, exists := os.LookupEnv(key); exists {
+		return value
 	}
+	return defaultValue
 }
 
 // SendEmail sends an email via SMTP

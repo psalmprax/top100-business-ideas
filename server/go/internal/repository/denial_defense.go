@@ -54,3 +54,39 @@ func (r *DenialDefenseRepository) UpdateClaim(ctx context.Context, c *models.Cla
 	_, err := database.Pool.Exec(ctx, query, c.Status, c.Risk, c.ID, c.UserID)
 	return err
 }
+func (r *DenialDefenseRepository) GetStats(ctx context.Context, userID string) (*models.DenialStats, error) {
+	if database.Pool == nil {
+		return nil, fmt.Errorf("database pool not initialized")
+	}
+
+	// In a real production scenario, these would be complex aggregations.
+	// We'll calculate them from the claims table for this user.
+	var stats models.DenialStats
+
+	// Total Processed
+	err := database.Pool.QueryRow(ctx, "SELECT COUNT(*) FROM claims WHERE user_id = $1", userID).Scan(&stats.TotalProcessed)
+	if err != nil {
+		return nil, err
+	}
+
+	// Pending Denials
+	err = database.Pool.QueryRow(ctx, "SELECT COUNT(*) FROM claims WHERE user_id = $1 AND status != 'Scrubbed'", userID).Scan(&stats.PendingDenials)
+	if err != nil {
+		return nil, err
+	}
+
+	// Revenue Recovered (Sum of Scrubbed claims)
+	err = database.Pool.QueryRow(ctx, "SELECT COALESCE(SUM(amount), 0) FROM claims WHERE user_id = $1 AND status = 'Scrubbed'", userID).Scan(&stats.RevenueRecovered)
+	if err != nil {
+		return nil, err
+	}
+
+	// Calculate Recovery Rate
+	if stats.TotalProcessed > 0 {
+		stats.RecoveryRate = (float64(stats.TotalProcessed - stats.PendingDenials) / float64(stats.TotalProcessed)) * 100
+	} else {
+		stats.RecoveryRate = 0
+	}
+
+	return &stats, nil
+}

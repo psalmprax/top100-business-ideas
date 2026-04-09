@@ -1,0 +1,11 @@
+{
+  "workflow": "new-project",
+  "auto": true,
+  "initialized": "2026-04-08",
+  "preferences": {
+    "research": false,
+    "phases": 7,
+    "milestone": "Platform Hardening"
+  },
+  "lastUpdated": "2026-04-09T04:27"
+}

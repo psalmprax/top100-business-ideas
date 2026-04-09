@@ -1,30 +1,31 @@
 {
-    "name": "@livenesslink/sdk",
-    "version": "1.0.0",
-    "description": "LivenessLink Deepfake Defense SDK - Biometric Authentication & Fraud Prevention",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
-    "scripts": {
-        "build": "tsc",
-        "test": "jest"
-    },
-    "keywords": [
-        "livenesslink",
-        "deepfake",
-        "biometric",
-        "authentication",
-        "liveness-detection",
-        "face-verification"
-    ],
-    "license": "MIT",
-    "peerDependencies": {
-        "react": ">=16.8.0"
-    },
-    "dependencies": {
-        "axios": "^1.6.0"
-    },
-    "devDependencies": {
-        "@types/node": "^20.0.0",
-        "typescript": "^5.0.0"
-    }
+  "name": "@livenesslink/sdk",
+  "version": "1.0.0",
+  "description": "LivenessLink Deepfake Defense SDK - Biometric Authentication & Fraud Prevention",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest"
+  },
+  "keywords": [
+    "livenesslink",
+    "deepfake",
+    "biometric",
+    "authentication",
+    "liveness-detection",
+    "face-verification"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "react": ">=16.8.0"
+  },
+  "dependencies": {
+    "axios": "^1.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/web Speech API": "*",
+    "typescript": "^5.0.0"
+  }
 }

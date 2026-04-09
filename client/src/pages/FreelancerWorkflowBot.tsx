@@ -469,7 +469,23 @@ export default function FreelancerWorkflowBot() {
     ],
   };
 
-  const handleDownloadPDF = (filename: string, content: string) => {
+  const handleDownloadPDF = async (filename: string, content: string) => {
+    // REAL-FIRST: If it's a mobile SDK/App request, use the proper API handler
+    if (filename.includes("sdk") || filename.includes("app")) {
+      const platform = filename.includes("app") ? "ios" : "universal";
+      toast.info(`Fetching latest ${platform.toUpperCase()} binary from Secure Enclave...`);
+      try {
+        const data = await extendedApi.mobileSDK.download(platform);
+        if (data.download_url) {
+          window.open(data.download_url, "_blank");
+          toast.success(`${filename} download initiated.`);
+          return;
+        }
+      } catch (e) {
+        console.error("SDK fetch failed, using local fallback", e);
+      }
+    }
+
     if (filename.toLowerCase().endsWith(".pdf")) {
       // @ts-ignore - jsPDF is imported
       const doc = new jsPDF();

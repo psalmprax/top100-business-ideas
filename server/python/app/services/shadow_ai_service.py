@@ -1,100 +1,204 @@
 """
 Shadow AI Detection & Remediation Service
 Monitors and identifies unsanctioned AI tool usage across the enterprise.
+Uses database persistence - no demo data on startup.
 """
 
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 import uuid
 import logging
+from sqlmodel import Session, select, func
+from app.core.database import engine
+from app.core.models.service_models import (
+    ShadowAIDetection,
+    ShadowAIRiskLevel,
+    ShadowAIStatus,
+)
 
 logger = logging.getLogger(__name__)
 
-class ShadowAIDetection:
-    """Represents a detected instance of unsanctioned AI usage."""
-    def __init__(
+
+class ShadowAIService:
+    """Manages detection and remediation of Shadow AI with database persistence."""
+
+    def list_detections(
+        self, risk_level: Optional[str] = None, status: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """List all detections, optionally filtered by risk level or status."""
+        with Session(engine) as session:
+            query = select(ShadowAIDetection)
+
+            if risk_level:
+                query = query.where(ShadowAIDetection.risk_level == risk_level)
+            if status:
+                query = query.where(ShadowAIDetection.status == status)
+
+            detections = session.exec(query).all()
+            return [d.to_dict() for d in detections]
+
+    def add_detection(
         self,
-        detection_id: str,
         tool_name: str,
         vendor: str,
         department: str,
-        risk_level: str,  # "low", "medium", "high", "critical"
-        user_count: int = 1
-    ):
-        self.detection_id = detection_id
-        self.tool_name = tool_name
-        self.vendor = vendor
-        self.department = department
-        self.risk_level = risk_level
-        self.user_count = user_count
-        self.detected_at = datetime.utcnow()
-        self.status = "detected"  # "detected", "investigating", "remediated", "approved"
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "id": self.detection_id,
-            "tool_name": self.tool_name,
-            "vendor": self.vendor,
-            "department": self.department,
-            "risk_level": self.risk_level,
-            "user_count": self.user_count,
-            "detected_at": self.detected_at.isoformat(),
-            "status": self.status
-        }
-
-class ShadowAIService:
-    """Manages detection and remediation of Shadow AI."""
-    def __init__(self):
-        self.detections: Dict[str, ShadowAIDetection] = {}
-        self._init_demo_data()
-
-    def _init_demo_data(self):
-        """Initialize with some realistic detections."""
-        demo_detections = [
-            ShadowAIDetection(str(uuid.uuid4()), "ChatGPT (Personal)", "OpenAI", "Marketing", "medium", 14),
-            ShadowAIDetection(str(uuid.uuid4()), "Midjourney", "Midjourney Inc", "Design", "low", 5),
-            ShadowAIDetection(str(uuid.uuid4()), "Unsanctioned Copilot", "GitHub", "Engineering (Team B)", "high", 3),
-            ShadowAIDetection(str(uuid.uuid4()), "Clearview AI", "Clearview", "Legal", "critical", 1)
-        ]
-        for d in demo_detections:
-            self.detections[d.detection_id] = d
-
-    def list_detections(self, risk_level: Optional[str] = None, status: Optional[str] = None) -> List[Dict[str, Any]]:
-        results = list(self.detections.values())
-        if risk_level:
-            results = [d for d in results if d.risk_level == risk_level]
-        if status:
-            results = [d for d in results if d.status == status]
-        return [d.to_dict() for d in results]
-
-    def add_detection(self, tool_name: str, vendor: str, department: str, risk_level: str) -> Dict[str, Any]:
+        risk_level: str,
+        user_count: int = 1,
+    ) -> Dict[str, Any]:
+        """Add a new detection to the database."""
         detection_id = str(uuid.uuid4())
-        detection = ShadowAIDetection(detection_id, tool_name, vendor, department, risk_level)
-        self.detections[detection_id] = detection
-        return detection.to_dict()
+
+        with Session(engine) as session:
+            detection = ShadowAIDetection(
+                detection_id=detection_id,
+                tool_name=tool_name,
+                vendor=vendor,
+                department=department,
+                risk_level=risk_level,
+                user_count=user_count,
+                status=ShadowAIStatus.DETECTED,
+            )
+            session.add(detection)
+            session.commit()
+
+            logger.info(f"Added shadow AI detection: {detection_id} - {tool_name}")
+            return detection.to_dict()
 
     def remediate(self, detection_id: str) -> Optional[Dict[str, Any]]:
-        if detection_id in self.detections:
-            self.detections[detection_id].status = "remediated"
-            return self.detections[detection_id].to_dict()
-        return None
+        """Mark a detection as remediated."""
+        with Session(engine) as session:
+            detection = session.exec(
+                select(ShadowAIDetection).where(
+                    ShadowAIDetection.detection_id == detection_id
+                )
+            ).first()
+
+            if detection:
+                detection.status = ShadowAIStatus.REMEDIATED
+                detection.remediated_at = datetime.utcnow()
+                session.commit()
+                return detection.to_dict()
+
+            return None
+
+    def get_detection(self, detection_id: str) -> Optional[Dict[str, Any]]:
+        """Get a single detection by ID."""
+        with Session(engine) as session:
+            detection = session.exec(
+                select(ShadowAIDetection).where(
+                    ShadowAIDetection.detection_id == detection_id
+                )
+            ).first()
+
+            if detection:
+                return detection.to_dict()
+            return None
+
+    def update_detection_status(
+        self, detection_id: str, status: str
+    ) -> Optional[Dict[str, Any]]:
+        """Update detection status."""
+        with Session(engine) as session:
+            detection = session.exec(
+                select(ShadowAIDetection).where(
+                    ShadowAIDetection.detection_id == detection_id
+                )
+            ).first()
+
+            if detection:
+                detection.status = status
+                if status == ShadowAIStatus.REMEDIATED:
+                    detection.remediated_at = datetime.utcnow()
+                session.commit()
+                return detection.to_dict()
+
+            return None
 
     def get_stats(self) -> Dict[str, Any]:
-        all_detections = list(self.detections.values())
-        return {
-            "total_detections": len(all_detections),
-            "by_risk_level": {
-                "critical": len([d for d in all_detections if d.risk_level == "critical"]),
-                "high": len([d for d in all_detections if d.risk_level == "high"]),
-                "medium": len([d for d in all_detections if d.risk_level == "medium"]),
-                "low": len([d for d in all_detections if d.risk_level == "low"])
-            },
-            "by_status": {
-                "detected": len([d for d in all_detections if d.status == "detected"]),
-                "investigating": len([d for d in all_detections if d.status == "investigating"]),
-                "remediated": len([d for d in all_detections if d.status == "remediated"])
+        """Get aggregated statistics from database."""
+        with Session(engine) as session:
+            all_detections = session.exec(select(ShadowAIDetection)).all()
+
+            return {
+                "total_detections": len(all_detections),
+                "by_risk_level": {
+                    "critical": len(
+                        [
+                            d
+                            for d in all_detections
+                            if d.risk_level == ShadowAIRiskLevel.CRITICAL
+                        ]
+                    ),
+                    "high": len(
+                        [
+                            d
+                            for d in all_detections
+                            if d.risk_level == ShadowAIRiskLevel.HIGH
+                        ]
+                    ),
+                    "medium": len(
+                        [
+                            d
+                            for d in all_detections
+                            if d.risk_level == ShadowAIRiskLevel.MEDIUM
+                        ]
+                    ),
+                    "low": len(
+                        [
+                            d
+                            for d in all_detections
+                            if d.risk_level == ShadowAIRiskLevel.LOW
+                        ]
+                    ),
+                },
+                "by_status": {
+                    "detected": len(
+                        [
+                            d
+                            for d in all_detections
+                            if d.status == ShadowAIStatus.DETECTED
+                        ]
+                    ),
+                    "investigating": len(
+                        [
+                            d
+                            for d in all_detections
+                            if d.status == ShadowAIStatus.INVESTIGATING
+                        ]
+                    ),
+                    "remediated": len(
+                        [
+                            d
+                            for d in all_detections
+                            if d.status == ShadowAIStatus.REMEDIATED
+                        ]
+                    ),
+                    "approved": len(
+                        [
+                            d
+                            for d in all_detections
+                            if d.status == ShadowAIStatus.APPROVED
+                        ]
+                    ),
+                },
             }
-        }
+
+    def delete_detection(self, detection_id: str) -> bool:
+        """Delete a detection."""
+        with Session(engine) as session:
+            detection = session.exec(
+                select(ShadowAIDetection).where(
+                    ShadowAIDetection.detection_id == detection_id
+                )
+            ).first()
+
+            if detection:
+                session.delete(detection)
+                session.commit()
+                return True
+
+            return False
+
 
 # Singleton instance
 shadow_ai_service = ShadowAIService()

@@ -9,6 +9,7 @@ import uuid
 import logging
 import hashlib
 from sqlmodel import Session, select
+from sqlalchemy import desc as sql_desc
 from app.core.models import (
     AIModel,
     BiasReport,
@@ -16,6 +17,7 @@ from app.core.models import (
     ComplianceAuditLog,
     AgentAuditLog,
     AlertConfig,
+    ComplianceArticle,
 )
 
 logger = logging.getLogger(__name__)
@@ -288,6 +290,34 @@ class ComplianceService:
             # In a real system, this would call AgentOpsService.pause_agent()
 
         session.commit()
+
+    def get_articles(self, session: Optional[Session] = None) -> List[Dict[str, Any]]:
+        """
+        Retrieve all EU AI Act compliance articles from the database.
+        Returns a list of article dictionaries.
+        """
+        from app.core.database import get_session
+
+        # If no session provided, get one
+        if session is None:
+            session = next(get_session())
+
+        articles = session.exec(select(ComplianceArticle)).all()
+        return [
+            {
+                "id": str(a.id),
+                "article": a.article,
+                "title": a.title,
+                "description": a.description,
+                "risk": a.risk,
+                "status": a.status,
+                "evidence": a.evidence,
+                "remediation": a.remediation,
+                "integration_type": a.integration_type,
+                "scan_type": a.scan_type,
+            }
+            for a in articles
+        ]
 
 
 # Singleton

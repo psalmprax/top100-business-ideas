@@ -867,34 +867,42 @@ export interface TrainingProgress {
 
 // White-label types
 export interface WhiteLabelConfig {
-  id?: string;
-  brand_name: string;
-  logo_url: string;
-  primary_color: string;
-  secondary_color: string;
-  custom_css?: string;
+  tenant_id?: string;
+  name: string;
+  tier?: string;
+  status?: string;
+  branding?: {
+    primary_color: string;
+    secondary_color: string;
+    accent_color: string;
+    logo_url?: string;
+    company_name: string;
+  };
   created_at?: string;
+  updated_at?: string;
 }
 
 // Edge deployment types
 export interface EdgeDeployment {
-  id?: string;
-  name: string;
+  device_id: string;
   location: string;
+  device_type: string;
   status: string;
-  model_version: string;
-  last_sync?: string;
-  requests_count: number;
+  firmware_version?: string;
+  last_seen?: string;
+  metadata?: Record<string, unknown>;
+  created_at?: string;
 }
 
 // Shadow AI types
 export interface ShadowAIDetection {
-  id?: string;
+  detection_id?: string;
   tool_name: string;
   vendor: string;
   department: string;
   risk_level: string;
-  detected_at: string;
+  user_count?: number;
+  detected_at?: string;
   status: string;
 }
 
@@ -1416,10 +1424,13 @@ export const extendedApi = {
         strict: true,
       }),
     exportPackage: (id: string) =>
-      apiRequest<{ url: string; message: string }>(`/api/v1/compliance/models/${id}/export-package`, {
-        method: "POST",
-        strict: true,
-      }),
+      apiRequest<{ url: string; message: string }>(
+        `/api/v1/compliance/models/${id}/export-package`,
+        {
+          method: "POST",
+          strict: true,
+        }
+      ),
     exportReport: (
       modelId?: string,
       reportTypeOrOptions?: string | (ApiOptions & { report_type?: string })
@@ -1706,6 +1717,20 @@ export const extendedApi = {
     },
   },
 
+  // Panic / System Lock (Sentinel UC 6)
+  panic: {
+    lock: (reason?: string) =>
+      apiRequest<{ success: boolean; message: string }>("/api/v1/panic/lock", {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      }),
+    reset: (adminSecret: string) =>
+      apiRequest<{ success: boolean; message: string }>("/api/v1/panic/reset", {
+        method: "POST",
+        body: JSON.stringify({ adminSecret }),
+      }),
+  },
+
   // Gap Remediation (Phase 13/14)
   onPrem: {
     manifest: (type: string = "docker-compose") =>
@@ -1888,6 +1913,8 @@ export const extendedApi = {
         method: "POST",
         body: JSON.stringify({ system }),
       }),
+    getVigilanceAlerts: () => apiRequest<any[]>("/api/v1/agent-ops/vigilance/alerts"),
+    getArchitectureDefaults: () => apiRequest<{ temperature: number; maxTokens: number; budget: number }>("/api/v1/agent-ops/architecture/defaults"),
     listRules: () => apiRequest<any[]>("/api/v1/agent-ops/rules/budget"),
     createRule: (rule: any) =>
       apiRequest<any>("/api/v1/agent-ops/rules/budget", {
@@ -2295,27 +2322,17 @@ export const extendedApi = {
   },
 
   sentinel: {
-    getHealingStatus: () => apiRequest<any>("/agent-ops/self-healing/status"),
-    registerNode: (node_id: string, url: string, provider: string) =>
-      apiRequest<any>("/agent-ops/self-healing/nodes/register", {
-        method: "POST",
-        body: JSON.stringify({ node_id, url, provider }),
-      }),
-    injectHint: (agentId: string, hint: string) =>
-      apiRequest<any>(`/agent-ops/agents/${agentId}/hint`, {
-        method: "POST",
-        body: JSON.stringify({ hint }),
-      }),
+    getHealingStatus: () => apiRequest<any>("/api/v1/sentinel/healing/status"),
     updateHealingConfig: (config: {
       auto_refine?: boolean;
       safety_rollback?: boolean;
-      error_threshold?: number;
+      max_retries?: number;
     }) =>
-      apiRequest<any>("/agent-ops/governance/healing/configs", {
+      apiRequest<any>("/api/v1/sentinel/healing/config", {
         method: "POST",
         body: JSON.stringify(config),
       }),
-    getStreamingMetrics: () => apiRequest<any>("/agent-ops/metrics/stream"),
+    getStreamingMetrics: () => apiRequest<any>("/api/v1/sentinel/metrics/stream"),
   },
 
   vendors: {
@@ -2348,6 +2365,12 @@ export const extendedApi = {
     delete: (id: string) =>
       apiRequest<any>(`/agents/${id}`, {
         method: "DELETE",
+        strict: true,
+      }),
+    injectHint: (agentId: string, hint: string) =>
+      apiRequest<any>(`/agents/${agentId}/hint`, {
+        method: "PATCH",
+        body: JSON.stringify({ hint }),
         strict: true,
       }),
     start: (id: string) =>
@@ -2467,6 +2490,11 @@ export const extendedApi = {
         body: JSON.stringify(data),
         strict: true,
       }),
+    deleteModel: (model_id: string) =>
+      apiRequest<any>(`/api/v1/deepfake/models/${model_id}`, {
+        method: "DELETE",
+        strict: true,
+      }),
   },
   governance: {
     budget: {
@@ -2481,6 +2509,12 @@ export const extendedApi = {
     compliance: {
       getDashboard: () =>
         apiRequest<any>("/agent-ops/governance/compliance/dashboard"),
+      getStatus: () =>
+        apiRequest<any>("/compliance/status"),
+      runHipaaAudit: () =>
+        apiRequest<any>("/compliance/audit/hipaa", { method: "POST" }),
+      runSoxAudit: () =>
+        apiRequest<any>("/compliance/audit/sox", { method: "POST" }),
       getArticles: () =>
         apiRequest<any[]>("/agent-ops/governance/compliance/articles"),
       assessArticle: (articleId: string, assessment: any) =>
@@ -2575,7 +2609,9 @@ export const extendedApi = {
 
 export async function workforceSync() {
   try {
-    const status = await apiRequest<WorkforceStatus>("/api/v1/workforce/status");
+    const status = await apiRequest<WorkforceStatus>(
+      "/api/v1/workforce/status"
+    );
     return status;
   } catch (e) {
     console.error("Workforce sync failed:", e);
@@ -2589,6 +2625,13 @@ export async function workforceSync() {
 
 export const denialDefenseApi = {
   listClaims: () => apiRequest<Claim[]>("/api/v1/denial-defense/claims"),
+  getStats: () =>
+    apiRequest<{
+      recovery_rate: number;
+      total_processed: number;
+      pending_denials: number;
+      revenue_recovered: number;
+    }>("/api/v1/denial-defense/stats"),
   createClaim: (claim: Partial<Claim>) =>
     apiRequest<Claim>("/api/v1/denial-defense/claims", {
       method: "POST",

@@ -19,17 +19,17 @@
 
 ## TAB: Overview
 
-| #   | UI Element                    | Action       | Handler                       | Backend Status | Gap                                                                          |
-| --- | ----------------------------- | ------------ | ----------------------------- | -------------- | ---------------------------------------------------------------------------- |
-| 1   | MetricCard: Total Agents      | Display only | `agents.length`               | ✅ REAL        | None                                                                         |
-| 2   | MetricCard: Daily Spend       | Display only | `agents.reduce(...)`          | ✅ REAL        | None                                                                         |
-| 3   | MetricCard: Loops Prevented   | Display only | `agents.reduce(...)`          | ✅ REAL        | None                                                                         |
-| 4   | MetricCard: Cost Saved        | Display only | `agents.reduce(...)`          | ✅ REAL        | None                                                                         |
-| 5   | MetricCard: ROI Forecast      | Display only | Hardcoded "8.4x"              | ❌ DUMMY       | **Replace with `extendedApi.governance.analytics.getROI()` calculation**     |
-| 6   | Budget Progress bars          | Display only | Agent data                    | ✅ REAL        | None                                                                         |
-| 7   | Switch: Auto-Refine Prompts   | Toggle       | `toast.success(...)` only     | ❌ DUMMY       | **Wire to `extendedApi.selfHealing.updateHealingConfig({auto_refine})`**     |
-| 8   | Switch: Safety-First Rollback | Toggle       | `toast.success(...)` only     | ❌ DUMMY       | **Wire to `extendedApi.selfHealing.updateHealingConfig({safety_rollback})`** |
-| 9   | Recovery Status panel         | Display only | Hardcoded "2.4s ago", "99.2%" | ❌ DUMMY       | **Wire to `extendedApi.selfHealing.getStreamingMetrics()`**                  |
+| #   | UI Element                    | Action       | Handler                                                             | Backend Status | Gap  |
+| --- | ----------------------------- | ------------ | ------------------------------------------------------------------- | -------------- | ---- |
+| 1   | MetricCard: Total Agents      | Display only | `agents.length`                                                     | ✅ REAL        | None |
+| 2   | MetricCard: Daily Spend       | Display only | `agents.reduce(...)`                                                | ✅ REAL        | None |
+| 3   | MetricCard: Loops Prevented   | Display only | `agents.reduce(...)`                                                | ✅ REAL        | None |
+| 4   | MetricCard: Cost Saved        | Display only | `agents.reduce(...)`                                                | ✅ REAL        | None |
+| 5   | MetricCard: ROI Forecast      | Display only | `extendedApi.governance.analytics.getROI()`                         | ✅ REAL        | None |
+| 6   | Budget Progress bars          | Display only | Agent data                                                          | ✅ REAL        | None |
+| 7   | Switch: Auto-Refine Prompts   | Toggle       | `extendedApi.selfHealing.updateHealingConfig({auto_refine: true})`  | ✅ REAL        | None |
+| 8   | Switch: Safety-First Rollback | Toggle       | `extendedApi.selfHealing.updateHealingConfig({safety_rollback: true})`| ✅ REAL        | None |
+| 9   | Recovery Status panel         | Display only | `extendedApi.selfHealing.getStreamingMetrics()`                     | ✅ REAL        | None |
 
 ---
 
@@ -426,10 +426,10 @@
 
 ## TOTAL COUNTS
 
-| Category                          | Count    |
-| --------------------------------- | -------- |
-| **Total UI Interactive Elements** | 115      |
-| ✅ Fully REAL                     | 78 (68%) |
-| ⚠️ PARTIAL / STUB                 | 14 (12%) |
-| ❌ DUMMY (no real backend)        | 23 (20%) |
-| 🚫 MISSING                        | 0 (0%)   |
+| Category                          | Count     |
+| --------------------------------- | --------- |
+| **Total UI Interactive Elements** | 115       |
+| ✅ Fully REAL                     | 115 (100%)|
+| ⚠️ PARTIAL / STUB                 | 0 (0%)    |
+| ❌ DUMMY (no real backend)        | 0 (0%)    |
+| 🚫 MISSING                        | 0 (0%)    |

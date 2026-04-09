@@ -54,15 +54,30 @@ export default function DenialDefense() {
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [isSavingConfig, setIsSavingConfig] = useState(false);
-  const [recoveryRate, setRecoveryRate] = useState(94.2);
-  const [revenueRecovered, setRevenueRecovered] = useState(2.4);
+  const [recoveryRate, setRecoveryRate] = useState(0);
+  const [revenueRecovered, setRevenueRecovered] = useState(0);
+  const [totalProcessed, setTotalProcessed] = useState(0);
+  const [pendingDenials, setPendingDenials] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+
+  const fetchStats = async () => {
+    try {
+      const stats = await denialDefenseApi.getStats();
+      setRecoveryRate(stats.recovery_rate);
+      setRevenueRecovered(stats.revenue_recovered);
+      setTotalProcessed(stats.total_processed);
+      setPendingDenials(stats.pending_denials);
+    } catch (err) {
+      console.error("Failed to fetch denial stats", err);
+    }
+  };
 
   const fetchClaims = async () => {
     setIsLoading(true);
     try {
       const claims = await denialDefenseApi.listClaims();
       setActiveClaims(claims);
+      await fetchStats();
     } catch (err) {
       console.error("Failed to fetch claims", err);
       // Fallback only for visual structure if DB is truly unreachable, 
@@ -145,6 +160,7 @@ export default function DenialDefense() {
             setActiveClaims(prev => prev.map(c => c.id === id ? updated : c));
             setIsScrubbing(false);
             setRecoveryRate(prev => Math.min(99.9, prev + 0.1));
+            await fetchStats();
             return `Scrubbing complete: ${data?.classification || "No CCI edits found."}`;
           } catch (e) {
             setIsScrubbing(false);
@@ -172,8 +188,7 @@ export default function DenialDefense() {
         success: (data: any) => {
           setIsScanning(false);
           setRevenueRecovered(prev => prev + 0.012);
-          return `Global scan complete: ${data?.suggestions?.[0] || "$12,450 in lift identified."}`;
-        },
+          return `Global scan complete: ${data?.suggestions?.[0] || "Scan finished. Review claims for potential optimization."}`;        },
         error: () => {
           setIsScanning(false);
           return "Global scan failed. Service unavailable.";
@@ -267,7 +282,7 @@ export default function DenialDefense() {
               </div>
               <div className="flex items-center gap-1 text-[10px] text-emerald-400 mt-2">
                 <TrendingUp className="w-3 h-3" />
-                +12.4% vs industry avg
+                Live from ledger
               </div>
             </CardContent>
           </Card>
@@ -280,9 +295,9 @@ export default function DenialDefense() {
                 className="text-stat text-white tabular-nums"
                 data-testid="stat-claims-processed"
               >
-                12.5K
+                {totalProcessed.toLocaleString()}
               </div>
-              <div className="text-caption-premium mt-2">Last 30 days</div>
+              <div className="text-caption-premium mt-2">Historical count</div>
             </CardContent>
           </Card>
           <Card className="bg-black/40 border-white/5 backdrop-blur-sm">
@@ -294,7 +309,7 @@ export default function DenialDefense() {
                 className="text-stat text-white tabular-nums"
                 data-testid="stat-pending-denials"
               >
-                84
+                {pendingDenials}
               </div>
               <div className="text-[10px] text-orange-400/60 mt-2">
                 Requires AI Intervention
@@ -310,9 +325,9 @@ export default function DenialDefense() {
                 className="text-stat text-white tabular-nums"
                 data-testid="stat-revenue-recovered"
               >
-                ${revenueRecovered.toFixed(1)}M
+                ${revenueRecovered.toLocaleString()}
               </div>
-              <Progress value={78} className="h-1 mt-3 bg-white/5" />
+              <Progress value={Math.min(100, (revenueRecovered / 1000000) * 100)} className="h-1 mt-3 bg-white/5" />
             </CardContent>
           </Card>
         </div>
@@ -527,10 +542,10 @@ export default function DenialDefense() {
                         Optimization Lift
                       </span>
                       <span className="text-xs text-emerald-400">
-                        +$12,450 projected
+                        +${revenueRecovered.toLocaleString()} recovered
                       </span>
                     </div>
-                    <Progress value={65} className="h-2 bg-white/5" />
+                    <Progress value={Math.min(100, totalProcessed > 0 ? ((totalProcessed - pendingDenials) / totalProcessed) * 100 : 0)} className="h-2 bg-white/5" />
                   </div>
                   <Button
                     className="w-full variant-outline border-purple-500/30 text-purple-400 hover:bg-purple-500/10"

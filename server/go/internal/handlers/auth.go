@@ -314,7 +314,7 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 	user.UpdatedAt = time.Now()
 	if database.Pool != nil {
 		_, err = database.Pool.Exec(c.Request.Context(),
-			`UPDATE "user" SET password = $1, updated_at = $2 WHERE id = $3`,
+			`UPDATE "users" SET password = $1, updated_at = $2 WHERE id = $3`,
 			hashedPassword, user.UpdatedAt, user.ID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to update password", Details: err.Error()})

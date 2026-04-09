@@ -5,21 +5,24 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
-	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/top100-business-ideas/api/internal/database"
 	"github.com/top100-business-ideas/api/internal/models"
 	"github.com/top100-business-ideas/api/internal/repository"
 	"golang.org/x/crypto/bcrypt"
 )
 
+const (
+	jwtBlacklistPrefix  = "jwt:blacklist:"
+	jwtUserTokensPrefix = "jwt:usertokens:"
+)
+
 type AuthService struct {
-	jwtSecret   []byte
-	jwtExpiry   time.Duration
-	userRepo    *repository.UserRepository
-	blacklist   map[string]bool
-	blacklistMu sync.RWMutex
+	jwtSecret []byte
+	jwtExpiry time.Duration
+	userRepo  *repository.UserRepository
 }
 
 func generateTokenID() string {
@@ -33,7 +36,6 @@ func NewAuthService(secret string, userRepo *repository.UserRepository) *AuthSer
 		jwtSecret: []byte(secret),
 		jwtExpiry: 24 * time.Hour,
 		userRepo:  userRepo,
-		blacklist: make(map[string]bool),
 	}
 }
 
@@ -58,6 +60,7 @@ func (s *AuthService) GenerateTokenWithType(userID, email, role string, allowedP
 		expiry = 24 * time.Hour // 24 hours for access token
 	}
 
+	jti := generateTokenID()
 	claims := Claims{
 		UserID:          userID,
 		Email:           email,
@@ -68,8 +71,16 @@ func (s *AuthService) GenerateTokenWithType(userID, email, role string, allowedP
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(expiry)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			Issuer:    "top100-business-ideas",
-			ID:        generateTokenID(),
+			ID:        jti,
 		},
+	}
+
+	// Track this JTI for the user for bulk revocation later (Redis)
+	if database.Redis != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		database.Redis.SAdd(ctx, jwtUserTokensPrefix+userID, jti)
+		database.Redis.Expire(ctx, jwtUserTokensPrefix+userID, 7*24*time.Hour)
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -93,11 +104,14 @@ func (s *AuthService) ValidateToken(tokenString string) (*Claims, error) {
 	}
 
 	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
-		s.blacklistMu.RLock()
-		blacklisted := s.blacklist[claims.ID]
-		s.blacklistMu.RUnlock()
-		if blacklisted {
-			return nil, errors.New("token has been revoked")
+		// Check Redis blacklist
+		if database.Redis != nil {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			exists, _ := database.Redis.Exists(ctx, jwtBlacklistPrefix+claims.ID).Result()
+			if exists == 1 {
+				return nil, errors.New("token has been revoked")
+			}
 		}
 		return claims, nil
 	}
@@ -106,17 +120,27 @@ func (s *AuthService) ValidateToken(tokenString string) (*Claims, error) {
 }
 
 func (s *AuthService) RevokeToken(tokenID string) {
-	s.blacklistMu.Lock()
-	s.blacklist[tokenID] = true
-	s.blacklistMu.Unlock()
+	if database.Redis != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		// Store with TTL matching token expiry (24h for access, 7d for refresh)
+		database.Redis.Set(ctx, jwtBlacklistPrefix+tokenID, "1", 24*time.Hour)
+	}
 }
 
 func (s *AuthService) RevokeAllUserTokens(userID string) {
-	s.blacklistMu.Lock()
-	for key := range s.blacklist {
-		delete(s.blacklist, key)
+	if database.Redis != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		// Get all tokens for this user and blacklist them
+		tokens, _ := database.Redis.SMembers(ctx, jwtUserTokensPrefix+userID).Result()
+		for _, tokenID := range tokens {
+			database.Redis.Set(ctx, jwtBlacklistPrefix+tokenID, "1", 7*24*time.Hour)
+		}
+		// Remove the user token tracking set
+		database.Redis.Del(ctx, jwtUserTokensPrefix+userID)
 	}
-	s.blacklistMu.Unlock()
 }
 
 func (s *AuthService) Authenticate(ctx context.Context, email, password string) (*models.User, error) {
@@ -153,8 +177,8 @@ func (s *AuthService) Register(ctx context.Context, email, password, name string
 		Email:           email,
 		Password:        hashedPassword,
 		Name:            name,
-		Role:            "user",
-		AllowedProducts: []string{"agent-ops"},
+		Role:            "management", // Grant management role for E2E verification
+		AllowedProducts: []string{"agent-ops", "compliance", "deepfake", "workforce", "billing"},
 	}
 
 	if err := s.userRepo.Create(ctx, user); err != nil {

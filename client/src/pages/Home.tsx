@@ -114,10 +114,7 @@ export default function Home() {
         {renderLayout()}
       </div>
 
-      <PerspectiveSwitcher 
-        currentMode={layoutMode} 
-        onModeChange={setLayoutMode} 
-      />
+      <PerspectiveSwitcher />
 
       {/* SHARED MODALS */}
       {selectedIdea && (

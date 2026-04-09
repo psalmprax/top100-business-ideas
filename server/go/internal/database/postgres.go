@@ -153,14 +153,20 @@ func RunMigrations(ctx context.Context) error {
 			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 			user_id UUID REFERENCES users(id) ON DELETE CASCADE,
 			name VARCHAR(255) NOT NULL,
-			agent_type VARCHAR(50) NOT NULL,
-			provider VARCHAR(50) NOT NULL,
-			model VARCHAR(100) NOT NULL,
-			status VARCHAR(50) DEFAULT 'active',
-			daily_budget DECIMAL(10, 2) DEFAULT 5.00,
-			daily_spend DECIMAL(10, 2) DEFAULT 0.00,
-			max_tokens INTEGER DEFAULT 4000,
-			temperature DECIMAL(3, 2) DEFAULT 0.7,
+			type VARCHAR(50) NOT NULL,
+			environment VARCHAR(50) DEFAULT 'production',
+			provider VARCHAR(50) DEFAULT 'openai',
+			model VARCHAR(100) DEFAULT 'gpt-4o',
+			org_id VARCHAR(255),
+			control_webhook VARCHAR(500),
+			persistent_memory BOOLEAN DEFAULT TRUE,
+			tier VARCHAR(50) DEFAULT 'industrial',
+			api_secret VARCHAR(255),
+			config JSONB DEFAULT '{}',
+			budget FLOAT DEFAULT 10.0,
+			daily_spend FLOAT DEFAULT 0.0,
+			metrics JSONB DEFAULT '{"costSaved": 0.0, "loopsPrevented": 0, "totalRequests": 0}',
+			status VARCHAR(50) DEFAULT 'STOPPED',
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`,
@@ -200,7 +206,9 @@ func RunMigrations(ctx context.Context) error {
 			outcome VARCHAR(50),
 			tokens INTEGER DEFAULT 0,
 			cost DECIMAL(10, 4) DEFAULT 0,
+			risk_score DECIMAL(5, 4) DEFAULT 0,
 			reasoning TEXT,
+			metadata_json JSONB DEFAULT '{}',
 			timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`,
 
@@ -215,6 +223,10 @@ func RunMigrations(ctx context.Context) error {
 			status VARCHAR(50) DEFAULT 'pending',
 			compliance_score DECIMAL(5, 2) DEFAULT 0,
 			last_audit TIMESTAMP,
+			next_audit TIMESTAMP,
+			active_bias_mitigation BOOLEAN DEFAULT false,
+			toxic_language_filter BOOLEAN DEFAULT false,
+			prompt_privacy_guard BOOLEAN DEFAULT false,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`,
@@ -225,8 +237,14 @@ func RunMigrations(ctx context.Context) error {
 			model_id UUID REFERENCES ai_models(id) ON DELETE CASCADE,
 			article VARCHAR(50) NOT NULL,
 			title VARCHAR(255) NOT NULL,
+			description TEXT,
+			risk VARCHAR(50),
 			status VARCHAR(50) DEFAULT 'pending',
 			evidence TEXT,
+			remediation TEXT,
+			integration_type VARCHAR(100),
+			scan_type VARCHAR(100),
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`,
 
@@ -255,10 +273,13 @@ func RunMigrations(ctx context.Context) error {
 		`CREATE TABLE IF NOT EXISTS verification_sessions (
 			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 			user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+			media_url VARCHAR(500),
 			media_type VARCHAR(50) NOT NULL,
 			result VARCHAR(50),
 			confidence DECIMAL(5, 2),
-			verified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			metadata_json JSONB DEFAULT '{}',
+			verified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`,
 
 		// Threat Reports
@@ -428,12 +449,139 @@ func RunMigrations(ctx context.Context) error {
 			used BOOLEAN DEFAULT false,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`,
+
+		// Compliance Audit Logs (HIPAA/SOX/GDPR)
+		`CREATE TABLE IF NOT EXISTS compliance_audit_logs (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+			action VARCHAR(255) NOT NULL,
+			resource VARCHAR(255) NOT NULL,
+			status VARCHAR(50) DEFAULT 'verified',
+			compliance_type VARCHAR(100) NOT NULL,
+			metadata_json JSONB DEFAULT '{}',
+			timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`,
+
+		// Sentinel Extensions - Deepfake Hardening
+		`CREATE TABLE IF NOT EXISTS duress_configs (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			user_id UUID REFERENCES users(id) ON DELETE CASCADE UNIQUE,
+			panic_phrase VARCHAR(255) NOT NULL,
+			silent_mode BOOLEAN DEFAULT true,
+			trigger_action VARCHAR(100) NOT NULL,
+			enabled BOOLEAN DEFAULT true,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`,
+
+		// Sentinel Extensions - Workforce Hardening
+		`CREATE TABLE IF NOT EXISTS workforce_interactions (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			agent_role VARCHAR(100) NOT NULL,
+			task_description TEXT NOT NULL,
+			output_content TEXT NOT NULL,
+			user_feedback VARCHAR(50) DEFAULT 'pending',
+			feedback_notes TEXT,
+			metadata_json JSONB DEFAULT '{}',
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`,
+
+		`CREATE TABLE IF NOT EXISTS workforce_outreach (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			recipient_name VARCHAR(255) NOT NULL,
+			recipient_company VARCHAR(255) NOT NULL,
+			subject VARCHAR(255) NOT NULL,
+			body TEXT NOT NULL,
+			status VARCHAR(50) DEFAULT 'PENDING_APPROVAL',
+			niche VARCHAR(100),
+			score DECIMAL(5, 2) DEFAULT 0.0,
+			interaction_id UUID REFERENCES workforce_interactions(id) ON DELETE SET NULL,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`,
+
+		`CREATE TABLE IF NOT EXISTS workforce_skills (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			name VARCHAR(255) NOT NULL,
+			provider VARCHAR(255) DEFAULT 'Alpha Proprietary',
+			description TEXT NOT NULL,
+			powers_json JSONB DEFAULT '[]',
+			is_proprietary BOOLEAN DEFAULT true,
+			price VARCHAR(50) DEFAULT '$0',
+			status VARCHAR(50) DEFAULT 'active',
+			category VARCHAR(100) DEFAULT 'general',
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`,
+
+		`CREATE TABLE IF NOT EXISTS workforce_ventures (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			name VARCHAR(255) NOT NULL,
+			sector VARCHAR(100) NOT NULL,
+			roi DECIMAL(10, 2) DEFAULT 0.0,
+			status VARCHAR(50) DEFAULT 'BETA',
+			trend VARCHAR(20) DEFAULT 'up',
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`,
+
+		`CREATE TABLE IF NOT EXISTS fiscal_requests (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			purpose VARCHAR(255) NOT NULL,
+			amount VARCHAR(50) NOT NULL,
+			priority VARCHAR(20) DEFAULT 'MEDIUM',
+			status VARCHAR(20) DEFAULT 'PENDING',
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`,
 	}
 
-	for _, migration := range migrations {
-		if _, err := tx.Exec(ctx, migration); err != nil {
+	for _, m := range migrations {
+		if _, err := tx.Exec(ctx, m); err != nil {
 			return fmt.Errorf("migration failed: %w", err)
 		}
+	}
+
+	indexes := []string{
+		"CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)",
+		"CREATE INDEX IF NOT EXISTS idx_agents_user_id ON agents(user_id)",
+		"CREATE INDEX IF NOT EXISTS idx_agents_status ON agents(status)",
+		"CREATE INDEX IF NOT EXISTS idx_api_keys_user_id ON api_keys(user_id)",
+		"CREATE INDEX IF NOT EXISTS idx_api_keys_key_hash ON api_keys(key_hash)",
+		"CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id)",
+		"CREATE INDEX IF NOT EXISTS idx_audit_logs_agent_id ON audit_logs(agent_id)",
+		"CREATE INDEX IF NOT EXISTS idx_audit_logs_timestamp ON audit_logs(timestamp DESC)",
+		"CREATE INDEX IF NOT EXISTS idx_ai_models_user_id ON ai_models(user_id)",
+		"CREATE INDEX IF NOT EXISTS idx_compliance_articles_model_id ON compliance_articles(model_id)",
+		"CREATE INDEX IF NOT EXISTS idx_budget_rules_agent_id ON budget_rules(agent_id)",
+		"CREATE INDEX IF NOT EXISTS idx_agent_metrics_agent_id ON agent_metrics(agent_id)",
+		"CREATE INDEX IF NOT EXISTS idx_agent_metrics_recorded_at ON agent_metrics(recorded_at DESC)",
+		"CREATE INDEX IF NOT EXISTS idx_verification_sessions_user_id ON verification_sessions(user_id)",
+		"CREATE INDEX IF NOT EXISTS idx_biometric_enrollments_user_id ON biometric_enrollments(user_id)",
+		"CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions(user_id)",
+		"CREATE INDEX IF NOT EXISTS idx_api_usage_api_key_id ON api_usage(api_key_id)",
+		"CREATE INDEX IF NOT EXISTS idx_api_usage_recorded_at ON api_usage(recorded_at DESC)",
+		"CREATE INDEX IF NOT EXISTS idx_webhooks_user_id ON webhooks(user_id)",
+		"CREATE INDEX IF NOT EXISTS idx_password_resets_token ON password_resets(token)",
+		"CREATE INDEX IF NOT EXISTS idx_compliance_audit_logs_user_id ON compliance_audit_logs(user_id)",
+		"CREATE INDEX IF NOT EXISTS idx_compliance_audit_logs_timestamp ON compliance_audit_logs(timestamp DESC)",
+		"CREATE INDEX IF NOT EXISTS idx_duress_configs_user_id ON duress_configs(user_id)",
+		"CREATE INDEX IF NOT EXISTS idx_claims_user_id ON claims(user_id)",
+		"CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON tasks(user_id)",
+		"CREATE INDEX IF NOT EXISTS idx_clients_user_id ON clients(user_id)",
+		"CREATE INDEX IF NOT EXISTS idx_forensic_traces_agent_id ON forensic_traces(agent_id)",
+		"CREATE INDEX IF NOT EXISTS idx_forensic_traces_timestamp ON forensic_traces(timestamp DESC)",
+	}
+
+	for _, idx := range indexes {
+		if _, err := tx.Exec(ctx, idx); err != nil {
+			return fmt.Errorf("index creation failed: %w", err)
+		}
+	}
+
+	// Seed Admin User
+	adminSeed := "INSERT INTO users (email, password_hash, name, role, allowed_products) " +
+		"VALUES ('admin@alpha.ai', '$2a$12$N9qo8uLOickgx2ZMRZoMyeIjZAgNIvUUE9q47Vz9.YvXpT3KIdQ2O', 'Alpha Admin', 'admin', '[\"*\"]') " +
+		"ON CONFLICT (email) DO UPDATE SET role = 'admin', allowed_products = '[\"*\"]'"
+	if _, err := tx.Exec(ctx, adminSeed); err != nil {
+		return fmt.Errorf("seeding admin failed: %w", err)
 	}
 
 	if err := tx.Commit(ctx); err != nil {

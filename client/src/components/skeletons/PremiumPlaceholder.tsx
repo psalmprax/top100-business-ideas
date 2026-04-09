@@ -6,6 +6,7 @@ interface PremiumPlaceholderProps {
   description?: string;
   variant?: "coming-soon" | "locked" | "empty";
   className?: string;
+  eta?: string;
 }
 
 export function PremiumPlaceholder({
@@ -13,6 +14,7 @@ export function PremiumPlaceholder({
   description,
   variant = "coming-soon",
   className = "",
+  eta = "IN PIPELINE",
 }: PremiumPlaceholderProps) {
   return (
     <div
@@ -55,7 +57,7 @@ export function PremiumPlaceholder({
 
       {variant === "coming-soon" && (
         <div className="mt-6 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white/60 tracking-[0.2em] uppercase">
-          Roadmap Item: Q3 2026
+          Roadmap Item: {eta}
         </div>
       )}
     </div>

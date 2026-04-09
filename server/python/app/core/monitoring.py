@@ -185,9 +185,7 @@ class HealthCheckManager:
                     start_time = time.time()
                     response = await client.get(
                         url,
-                        headers={"Authorization": "Bearer dummy"}
-                        if "api." in url
-                        else {},
+                        headers={},
                     )
                     response_time = (time.time() - start_time) * 1000
 

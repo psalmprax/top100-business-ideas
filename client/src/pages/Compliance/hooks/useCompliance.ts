@@ -320,11 +320,26 @@ export const useCompliance = () => {
     }
   };
 
-  const handleDownload = (filename: string, content: string) => {
+  const handleDownload = async (filename: string, content: string) => {
     if (filename?.toLowerCase().endsWith(".pdf")) {
       const doc = new jsPDF();
       doc.text(content, 20, 20);
       doc.save(filename);
+    } else if (filename?.toLowerCase().endsWith(".zip") || filename?.toLowerCase().endsWith(".exe") || filename?.toLowerCase().endsWith(".ipa") || filename?.toLowerCase().endsWith(".apk")) {
+      toast.info(`Downloading binary: ${filename}...`, {
+        description: "Secure artifact retrieval from Sentinel backend."
+      });
+      try {
+        await extendedApi.mobileSDK.download(filename);
+      } catch (err) {
+        console.error("Binary download failed, falling back to local blob", err);
+        const blob = new Blob([content], { type: "application/octet-stream" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        link.click();
+      }
     } else {
       const blob = new Blob([content], { type: "text/plain" });
       const url = URL.createObjectURL(blob);

@@ -69,3 +69,17 @@ func (h *DenialDefenseHandler) UpdateClaim(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, claim)
 }
+func (h *DenialDefenseHandler) GetStats(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "Authentication required"})
+		return
+	}
+
+	stats, err := h.repo.GetStats(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch stats", Details: err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, stats)
+}

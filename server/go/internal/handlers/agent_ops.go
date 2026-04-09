@@ -364,8 +364,8 @@ func (h *AgentOpsHandler) ProxyToPython(c *gin.Context) {
 			path = "/cloud/failover"
 		} else if strings.HasPrefix(subPath, "/audit") {
 			path = "/compliance/dashboard"
-		} else if strings.HasPrefix(subPath, "/intelligence/") {
-			path = subPath
+		} else if subPath == "/architecture/defaults" {
+			path = "/governance/architecture/defaults"
 		} else {
 			path = subPath
 		}

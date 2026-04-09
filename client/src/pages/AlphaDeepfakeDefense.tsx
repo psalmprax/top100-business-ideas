@@ -798,6 +798,20 @@ export default function AlphaDeepfakeDefense() {
     }
   };
 
+  const handleDeleteModel = async (modelId: string) => {
+    if (!window.confirm("Are you sure you want to permanently delete this neutral model and its associated weights?")) {
+      return;
+    }
+
+    try {
+      await extendedApi.deepfake.deleteModel(modelId);
+      setCustomModels(prev => prev.filter(m => m.id !== modelId));
+      toast.success(`Model ${modelId} purged from neural enclave.`);
+    } catch (error) {
+      toast.error("Failed to delete model. Enclave access restricted.");
+    }
+  };
+
   const handleRunEnterpriseScan = async () => {
     setIsAnalyzing(true);
     setAdvancedResult(null);
@@ -1652,6 +1666,16 @@ export default function AlphaDeepfakeDefense() {
                           </TableCell>
                           <TableCell className="text-right text-xs text-muted-foreground">
                             {model.lastTrained.toLocaleDateString()}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                              onClick={() => handleDeleteModel(model.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -4001,7 +4025,9 @@ export default function AlphaDeepfakeDefense() {
                         <div className="text-caption-premium text-muted-foreground uppercase font-bold mb-1">
                           Human Review
                         </div>
-                        <div className="text-xl font-bold">$45/case</div>
+                        <div className="text-xl font-bold">
+                          ${stats?.roi?.human_unit_cost || "45.00"}/case
+                        </div>
                         <div className="text-[10px] text-red-400">
                           8-min Latency
                         </div>
@@ -4010,20 +4036,33 @@ export default function AlphaDeepfakeDefense() {
                         <div className="text-[10px] text-purple-500 uppercase font-bold mb-1">
                           LivenessLink
                         </div>
-                        <div className="text-xl font-bold">$0.12/case</div>
+                        <div className="text-xl font-bold">
+                          ${stats?.roi?.ai_unit_cost || "0.12"}/case
+                        </div>
                         <div className="text-[10px] text-emerald-400">
                           Real-time
                         </div>
                       </div>
                     </div>
                     <div className="h-6 w-full bg-muted/20 rounded-full overflow-hidden flex mt-2">
-                      <div className="w-[98%] bg-slate-500/20 h-full flex items-center px-4 text-[10px] font-bold text-slate-400">
-                        MANUAL COST: $45.00
+                      <div 
+                        className="bg-slate-500/20 h-full flex items-center px-4 text-[10px] font-bold text-slate-400 transition-all duration-1000"
+                        style={{ width: `${Math.max(2, 100 - (stats?.roi?.roi_percentage / 100 || 98))}%` }}
+                      >
+                        MANUAL: ${stats?.roi?.total_human_cost || "0.00"}
                       </div>
-                      <div className="w-[2%] bg-purple-600 h-full flex items-center px-4 text-[10px] font-bold text-white">
-                        AI: $0.12
+                      <div 
+                        className="bg-purple-600 h-full flex items-center px-4 text-[10px] font-bold text-white transition-all duration-1000"
+                        style={{ width: `${Math.min(98, stats?.roi?.roi_percentage / 100 || 2)}%` }}
+                      >
+                        AI: ${stats?.roi?.total_ai_cost || "0.00"}
                       </div>
                     </div>
+                    {stats?.roi && (
+                      <div className="text-[10px] text-center text-muted-foreground">
+                        Projected Savings: <span className="text-emerald-500 font-bold">${stats.roi.total_savings.toLocaleString()}</span> from {stats.roi.total_scans} scans
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 
@@ -4159,8 +4198,8 @@ export default function AlphaDeepfakeDefense() {
                           size="sm"
                           className="w-full mt-4"
                           onClick={() =>
-                            toast.success(
-                              "Budget rules committed to chain-of-custody log."
+                            toast.info(
+                              "Budget Governance Enforcement is an Enterprise Roadmap 2026 feature. Rule simulation enabled."
                             )
                           }
                         >
@@ -4179,26 +4218,30 @@ export default function AlphaDeepfakeDefense() {
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-body-sm font-medium">
-                      North Star
+                      Value Secured
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">$1B</div>
+                    <div className="text-2xl font-bold">
+                      ${stats?.roi?.total_savings ? (stats.roi.total_savings / 1000000).toFixed(2) : "0.00"}M
+                    </div>
                     <p className="text-xs text-muted-foreground">
-                      Value Secured/mo
+                      Real-time Protection Value
                     </p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-body-sm font-medium">
-                      Secondary
+                      Liveness Scans
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">5,000</div>
+                    <div className="text-2xl font-bold">
+                      {stats?.roi?.total_scans?.toLocaleString() || "0"}
+                    </div>
                     <p className="text-xs text-muted-foreground">
-                      Liveness Checks/mo
+                      Active Verifications
                     </p>
                   </CardContent>
                 </Card>
@@ -4666,15 +4709,16 @@ export default function AlphaDeepfakeDefense() {
                             </Button>
                             <Button
                               variant="outline"
-                              className="w-full border-blue-500/30 text-blue-400 h-8 rounded-xl text-[10px]"
+                              className="w-full border-blue-500/30 text-blue-400/50 h-8 rounded-xl text-[10px] cursor-not-allowed"
+                              disabled
+                              title="SDK binary distribution is an Enterprise Roadmap 2026 feature"
                               onClick={() =>
-                                handleDownload(
-                                  "Alpha_Liveness_SDK_v2.1.zip",
-                                  "STUB_SDK_BINARY_DATA"
+                                toast.info(
+                                  "SDK binary distribution is available via Enterprise onboarding. Contact sales@alpha-ai.io"
                                 )
                               }
                             >
-                              <Download className="w-3 h-3 mr-1" /> DOWNLOAD SDK
+                              <Download className="w-3 h-3 mr-1" /> SDK (Enterprise Only)
                             </Button>
                           </div>
                         </div>

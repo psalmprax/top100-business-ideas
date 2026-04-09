@@ -9,21 +9,22 @@ import uuid
 
 
 class AIModel(SQLModel, table=True):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    __tablename__ = "ai_models"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str
-    riskCategory: str
+    risk_category: str = Field(index=True)
     status: str = "pending"
-    complianceScore: float = 0.0
-    lastAudit: Optional[datetime] = None
-    nextAudit: Optional[datetime] = None
+    compliance_score: float = Field(default=0.0)
+    last_audit: Optional[datetime] = Field(default=None)
+    next_audit: Optional[datetime] = Field(default=None)
     provider: Optional[str] = None
-    endpointUrl: Optional[str] = None
-    apiKey: Optional[str] = None
+    endpoint_url: Optional[str] = Field(default=None, alias="endpointUrl")
+    api_key: Optional[str] = Field(default=None, alias="apiKey")
 
     # Ethical Guardrails Configuration
-    activeBiasMitigation: bool = Field(default=False)
-    toxicLanguageFilter: bool = Field(default=False)
-    promptPrivacyGuard: bool = Field(default=False)
+    active_bias_mitigation: bool = Field(default=False)
+    toxic_language_filter: bool = Field(default=False)
+    prompt_privacy_guard: bool = Field(default=False)
 
     articles: List["ArticleStatus"] = Relationship(
         back_populates="ai_model",
@@ -48,7 +49,7 @@ class AIModelCreate(SQLModel):
 class TrainingModule(SQLModel, table=True):
     """Educational training module for compliance and ethics"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     title: str
     description: str
     category: str  # ai-act, gdpr, security, ethics
@@ -61,9 +62,9 @@ class TrainingModule(SQLModel, table=True):
 class TrainingProgress(SQLModel, table=True):
     """User progress through a training module"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    user_id: str = Field(index=True)
-    module_id: str = Field(foreign_key="trainingmodule.id")
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    user_id: uuid.UUID = Field(index=True)
+    module_id: uuid.UUID = Field(foreign_key="trainingmodule.id")
     status: str = Field(
         default="not_started"
     )  # not_started, in_progress, completed, certified, expired
@@ -78,7 +79,7 @@ class TrainingProgress(SQLModel, table=True):
 class WhiteLabelConfig(SQLModel, table=True):
     """White-label configuration for branded deployments"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     brand_name: str
     logo_url: str
     primary_color: str
@@ -105,8 +106,8 @@ class BusinessIdea(SQLModel, table=True):
 class Subscription(SQLModel, table=True):
     """Persistent user subscription from Billing Engine"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    user_id: str = Field(index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    user_id: uuid.UUID = Field(index=True)
     stripe_subscription_id: Optional[str] = Field(default=None, index=True)
     plan: str  # professional, enterprise, starter
     status: str = Field(default="active")  # active, canceled, past_due
@@ -118,8 +119,8 @@ class Subscription(SQLModel, table=True):
 class Invoice(SQLModel, table=True):
     """Persistent billing invoice from Stripe/Engine"""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    user_id: str = Field(index=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    user_id: uuid.UUID = Field(index=True)
     stripe_invoice_id: Optional[str] = Field(default=None, index=True)
     invoice_number: str = Field(index=True)
     amount: float

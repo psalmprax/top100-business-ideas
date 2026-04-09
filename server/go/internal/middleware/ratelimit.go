@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -195,8 +196,36 @@ func APIKeyRateLimitMiddleware(getRateLimit func(apiKey string) int) gin.Handler
 // CORSMiddleware handles CORS
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		origin := c.GetHeader("Origin")
+		allowedOrigins := strings.Split(os.Getenv("ALLOWED_ORIGINS"), ",")
+
+		// Validate origin if provided
+		validOrigin := false
+		if origin != "" {
+			for _, ao := range allowedOrigins {
+				if strings.TrimSpace(ao) == origin || ao == "*" {
+					validOrigin = true
+					break
+				}
+			}
+		}
+
+		// If no origin or valid origin, set it
+		if validOrigin || (len(allowedOrigins) == 1 && strings.TrimSpace(allowedOrigins[0]) == "") {
+			if origin != "" && (len(allowedOrigins) > 0 && allowedOrigins[0] != "") {
+				c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+			} else {
+				c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+			}
+		} else {
+			c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		}
+
+		// Only allow credentials with specific origins, not wildcard
+		if c.Writer.Header().Get("Access-Control-Allow-Origin") != "*" {
+			c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		}
+
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-API-Key")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE, PATCH")
 

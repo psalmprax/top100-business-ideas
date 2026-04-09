@@ -13,6 +13,7 @@ services:
       - PORT=8080
       - ENVIRONMENT=development
       - JWT_SECRET=${JWT_SECRET:?JWT_SECRET must be set}
+      - ADMIN_SECRET=${ADMIN_SECRET:?ADMIN_SECRET must be set}
       - JWT_EXPIRY=24h
       - PYTHON_BACKEND_URL=http://python-backend:8000
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/alphaai
@@ -65,6 +66,7 @@ services:
       - SEED_DATABASE=${SEED_DATABASE:-false}
       - OIDC_GOOGLE_CLIENT_ID=${OIDC_GOOGLE_CLIENT_ID}
       - OIDC_GOOGLE_CLIENT_SECRET=${OIDC_GOOGLE_CLIENT_SECRET}
+      - SESSION_SECRET_KEY=${SESSION_SECRET_KEY:-test_session_secret_321}
     volumes:
       - ./models:/models
     networks:

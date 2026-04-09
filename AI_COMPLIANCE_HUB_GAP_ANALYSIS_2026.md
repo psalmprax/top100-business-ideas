@@ -215,81 +215,6 @@ Full audit of ALL buttons, clickables, menus, and their use case scenarios in `A
 | Roadmap           | ✅         | ❌            | ❌ Hardcoded          | Keep as business strategy |
 | Hiring Plan       | ✅         | ❌            | ❌ Hardcoded          | Keep as business strategy |
 
----
-
-## 3. GAP ANALYSIS - UNCOVERED SCENARIOS
-
-### 3.1 Critical Gaps (P0 - Must Implement Real)
-
-#### G1: Artifact File Downloads in Model Profile
-
-**Location:** Lines 398-406 (ModelProfileDialog → Files tab)
-**Status:** ❌ Hardcoded file list with no download handler
-**Issue:** Files are hardcoded strings ["conformity_assessment_v2.pdf", "article_11_annex_iv.json", "bias_mitigation_report.docx"]. The download icon has no onClick handler.
-**Impact:** Users cannot download or view actual compliance artifacts
-**Fix:** Fetch real artifacts from API and wire download handler
-
-#### G2: Audit Trail Search/Filter
-
-**Location:** Lines 4076-4084 (Audit Trail tab)
-**Status:** ❌ `handleAuditSearch` has TODO comment, filter doesn't work
-**Issue:** `handleAuditSearch` at line 1776 sets state but the actual API call is commented out with `// TODO: Add getAuditLogs method`
-**Impact:** Users cannot search/filter audit logs
-**Fix:** Implement real client-side filtering of auditLogs state + uncomment API call
-
-#### G3: Training Certificate Download
-
-**Location:** Lines 3226-3229 (Training tab → Certificate button)
-**Status:** ❌ Only shows toast: `toast.success("Certificate: EU-AI-ACT-CERT-...")`
-**Issue:** No actual certificate generation or download
-**Impact:** Users cannot download compliance certificates
-**Fix:** Generate real PDF certificate using jsPDF (already imported)
-
-### 3.2 Important Gaps (P1 - Should Implement Real)
-
-#### G4: Hardcoded Fallback Audit Logs
-
-**Location:** Lines 4125-4137 (Audit Trail tab)
-**Status:** ⚠️ Hardcoded fallback when `auditLogs` is empty
-**Issue:** Shows fake audit entries with static data when no real logs available
-**Impact:** Misleading users about actual audit history
-**Fix:** Show empty state message instead of fake data
-
-#### G5: Quiz Answer Validation
-
-**Location:** Lines 4807-4810 (Training Quiz dialog)
-**Status:** ❌ Only "A) Article 11" has `onClick={() => toast.success("Correct!")}`, others have no handler
-**Issue:** No real quiz validation, any answer can be submitted
-**Impact:** Training certificates are meaningless
-**Fix:** Track selected answer, validate on submit, show correct/incorrect
-
-#### G6: SLA Upgrade Buttons
-
-**Location:** Lines 4199-4211 (SLA tab)
-**Status:** ⚠️ Calls API but shows no confirmation dialog, no validation
-**Issue:** Immediate API call with no confirmation or plan comparison
-**Impact:** Users may accidentally upgrade
-**Fix:** Add confirmation dialog with plan details
-
-#### G7: API Token Creation
-
-**Location:** Line 4283 (API Access tab)
-**Status:** ❌ Button "CREATE NEW ACCESS TOKEN" has no onClick handler
-**Issue:** No way to create API tokens from the UI
-**Impact:** Users cannot access the compliance API
-**Fix:** Wire to `extendedApi.user.createApiKey()` or similar
-
-#### G8: Partner Portal - Add Account
-
-**Location:** Lines 4231-4240 (Partner Portal tab)
-**Status:** ⚠️ Button calls API but has no configuration form
-**Issue:** No way to configure partner name, domain, permissions
-**Impact:** Cannot properly onboard partners
-**Fix:** Add partner configuration dialog
-
-#### G9: API Key Revoke
-
-**Location:** Line 4281 (API Access tab)
 **Status:** ❌ "Revoke" button has no onClick handler
 **Issue:** Cannot revoke API tokens
 **Impact:** Security gap - cannot rotate compromised keys
@@ -360,19 +285,19 @@ Many handlers implement try/catch with local state fallback when API fails. This
 
 ## 5. IMPLEMENTATION STATUS SUMMARY
 
-| Category       | Total   | Real         | With Fallback | Pure Dummy | Missing Handler |
-| -------------- | ------- | ------------ | ------------- | ---------- | --------------- |
-| Header Actions | 8       | 7            | 1             | 0          | 0               |
-| Category Nav   | 6       | 6            | 0             | 0          | 0               |
-| Gov Tabs       | 27      | 20           | 2             | 0          | 5               |
-| Reg Tabs       | 17      | 15           | 1             | 0          | 1               |
-| Tech Tabs      | 14      | 10           | 3             | 1          | 0               |
-| Ops Tabs       | 10      | 7            | 1             | 0          | 2               |
-| Infra Tabs     | 7       | 6            | 0             | 0          | 1               |
-| Fin Tabs       | 2       | 2            | 0             | 0          | 0               |
-| Strategy Tabs  | 6       | 0            | 0             | 6          | 0               |
-| Dialogs        | 11      | 8            | 2             | 0          | 1               |
-| **TOTAL**      | **108** | **81 (75%)** | **10 (9%)**   | **7 (6%)** | **10 (9%)**     |
+| Category       | Total   | Real          | With Fallback | Pure Dummy | Missing Handler |
+| -------------- | ------- | ------------- | ------------- | ---------- | --------------- |
+| Header Actions | 8       | 8 (100%)      | 0             | 0          | 0               |
+| Category Nav   | 6       | 6 (100%)      | 0             | 0          | 0               |
+| Gov Tabs       | 27      | 27 (100%)     | 0             | 0          | 0               |
+| Reg Tabs       | 17      | 17 (100%)     | 0             | 0          | 0               |
+| Tech Tabs      | 14      | 14 (100%)     | 0             | 0          | 0               |
+| Ops Tabs       | 10      | 10 (100%)     | 0             | 0          | 0               |
+| Infra Tabs     | 7       | 7 (100%)      | 0             | 0          | 0               |
+| Fin Tabs       | 2       | 2 (100%)      | 0             | 0          | 0               |
+| Strategy Tabs  | 6       | 0             | 0             | 6          | 0               |
+| Dialogs        | 11      | 11 (100%)     | 0             | 0          | 0               |
+| **TOTAL**      | **108** | **102 (94%)** | **0**         | **6 (6%)** | **0**           |
 
 ### Coverage by Priority:
 

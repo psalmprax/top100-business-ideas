@@ -1,0 +1,105 @@
+version: "3.8"
+
+services:
+  # Unified Frontend & Gateway
+  frontend:
+    build:
+      context: .
+      dockerfile: client/Dockerfile.prod
+    ports:
+      - "7000:7000"
+    environment:
+      - NODE_ENV=production
+      - PORT=7000
+      - GO_BACKEND_URL=http://api-gateway:8080
+      - PYTHON_BACKEND_URL=http://python-backend:8000
+      - JWT_SECRET=${JWT_SECRET}
+      - ADMIN_SECRET=${ADMIN_SECRET}
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://149.104.110.122}
+    restart: always
+    depends_on:
+      - api-gateway
+      - python-backend
+    networks:
+      - app-network
+
+  # Go API Gateway
+  api-gateway:
+    build:
+      context: ./server/go
+      dockerfile: Dockerfile
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8080
+      - ENVIRONMENT=production
+      - JWT_SECRET=${JWT_SECRET}
+      - ADMIN_SECRET=${ADMIN_SECRET}
+      - PYTHON_BACKEND_URL=http://python-backend:8000
+      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      - REDIS_URL=redis://redis:6379
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # Python AI/ML Backend
+  python-backend:
+    build:
+      context: ./server/python
+      dockerfile: Dockerfile
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - ENVIRONMENT=production
+      - SECRET_KEY=${SECRET_KEY}
+      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      - REDIS_URL=redis://redis:6379
+      - SEED_DATABASE=false
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_prod_data:

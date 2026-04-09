@@ -510,12 +510,7 @@ class WorkforceService:
                 # 7. Scrape & Score (Using GrowthTools)
                 from app.services.growth_tools import growth_tools
                 
-                # Mock extraction logic from AI output for this implementation
-                # In a production environment, we'd use a parser to get URLs
-                prospects = []
-                # Simple regex or string split to 'find' URLs in AI response for demo purposes
-                import re
-                urls = re.findall(r'https?://[^\s<>"]+|www\.[^\s<>"]+', search_results)
+                urls = growth_tools.extract_prospects_from_ai(search_results)
                 
                 total_intensity_score = 0.0
                 
@@ -646,8 +641,11 @@ class WorkforceService:
                 # 2. Integrate with RevenueRecovery Model
                 from app.core.models import RevenueRecovery
 
-                # Mock a calculation based on agent findings for this demo-to-real transition
-                recovered_amount = len(leaked_interactions) * 125.50
+                # Dynamic calculation based on interaction metadata
+                recovered_amount = sum(
+                    li.metadata_json.get("estimated_opportunity_value", 125.50)
+                    for li in leaked_interactions
+                )
 
                 # Persist the recovery event to the database
                 recovery_event = RevenueRecovery(

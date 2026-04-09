@@ -31,7 +31,7 @@ COPY package.json pnpm-lock.yaml ./
 COPY patches ./patches
 
 # Install dependencies using pnpm
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 # Preserve directory structure for Vite/TS compatibility
 COPY client/ ./client/
