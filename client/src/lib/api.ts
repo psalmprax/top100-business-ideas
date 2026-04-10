@@ -1913,7 +1913,6 @@ export const extendedApi = {
         method: "POST",
         body: JSON.stringify({ system }),
       }),
-    getVigilanceAlerts: () => apiRequest<any[]>("/api/v1/agent-ops/vigilance/alerts"),
     getArchitectureDefaults: () => apiRequest<{ temperature: number; maxTokens: number; budget: number }>("/api/v1/agent-ops/architecture/defaults"),
     listRules: () => apiRequest<any[]>("/api/v1/agent-ops/rules/budget"),
     createRule: (rule: any) =>

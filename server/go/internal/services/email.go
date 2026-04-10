@@ -11,7 +11,15 @@ import (
 	"time"
 )
 
-// ...
+// EmailService handles sending emails
+type EmailService struct {
+	SMTPHost  string
+	SMTPPort  int
+	Username  string
+	Password  string
+	FromEmail string
+	FromName  string
+}
 
 // NewEmailService creates a new email service with environment variable support
 func NewEmailService() *EmailService {
