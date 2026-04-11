@@ -122,30 +122,45 @@ def init_db():
 
     for i in range(max_retries):
         try:
+            # We use checkfirst=True (default meta behavior) but Postgres can still throw 
+            # DuplicateTable errors if indices or constraints clash.
             SQLModel.metadata.create_all(sync_engine)
+            logger.info("SQLModel metadata synchronized with database")
 
             # REAL-FIRST: Centralized Seeding Engine
             if os.getenv("SEED_DATABASE", "true").lower() == "true":
-                from app.core.seed import seed_all
-                with SessionLocal() as seed_session:
-                    seed_all(seed_session)
-                
-                logger.info("Hardened seeding completed successfully")
+                try:
+                    from app.core.seed import seed_all
+                    with SessionLocal() as seed_session:
+                        seed_all(seed_session)
+                    logger.info("Hardened seeding completed successfully")
+                except Exception as seed_err:
+                    logger.warning(f"Seeding skipped or failed: {seed_err}")
                 
                 # Optional: legacy seeds if not covered by seed_all
-                seed_users()
-                seed_deepfake_data()
-                seed_workforce_data()
-                seed_business_ideas()
-                seed_training_modules()
+                try:
+                    seed_users()
+                    seed_deepfake_data()
+                    seed_workforce_data()
+                    seed_business_ideas()
+                    seed_training_modules()
+                except Exception as legacy_err:
+                    logger.warning(f"Legacy seeding partially failed: {legacy_err}")
             return  # Success
         except Exception as e:
+            # Check if it's a "table already exists" error which we can potentially ignore
+            error_str = str(e).lower()
+            if "already exists" in error_str or "duplicate" in error_str:
+                logger.warning(f"Database objects already exist, continuing: {e}")
+                return # Treat as success for the boot process
+            
             if i < max_retries - 1:
                 logger.warning(
                     f"Database not ready, retrying in {retry_interval}s... ({i + 1}/{max_retries}): {e}"
                 )
                 time.sleep(retry_interval)
             else:
+                logger.error(f"Final database initialization attempt failed: {e}")
                 raise e
 
 
