@@ -3,7 +3,7 @@ from typing import Dict, Any, List, Optional
 from uuid import UUID
 from datetime import datetime, timedelta
 from sqlmodel import Session, select, func
-from app.core.models.agent_models import Agent, LLMUsageLog, WorkforceInteraction, InteractionStatus, AgentAuditLog
+from app.core.models import Agent, LLMUsageLog, WorkforceInteraction, InteractionStatus, AgentAuditLog
 from app.core.database import engine
 
 logger = logging.getLogger(__name__)
