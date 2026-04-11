@@ -94,9 +94,28 @@ function Router() {
         productId="agent-ops"
       />
       <ProtectedRoute
+        path="/products/agent-ops/optimization"
+        component={import("./pages/OptimizationDashboard").default}
+        productId="agent-ops"
+      />
+      <ProtectedRoute
+        path="/products/agent-ops/governance"
+        component={import("./pages/GovernanceDashboard").default}
+        productId="agent-ops"
+      />
+      <ProtectedRoute
         path="/products/ai-compliance"
         component={AlphaAIActCompliancePage}
         productId="ai-compliance"
+      />
+      <ProtectedRoute
+        path="/products/ai-compliance/shadow-ai"
+        component={import("./pages/ShadowAIMonitor").default}
+        productId="ai-compliance"
+      />
+      <ProtectedRoute
+        path="/reports"
+        component={import("./pages/ReportingDashboard").default}
       />
       <ProtectedRoute
         path="/products/deepfake-defense"

@@ -1558,11 +1558,99 @@ export const extendedApi = {
       }>("/api/v1/edge/stats"),
   },
 
-  // Shadow AI (AI Compliance UC 15)
+  // Optimization Service (Agent Ops UC 18)
+  optimization: {
+    getWorkforceEfficiency: () => apiRequest<any>("/api/v1/telemetry/workforce/efficiency"),
+    getLLMPerformance: (agentId: string, days?: number) => 
+      apiRequest<any>(`/api/v1/telemetry/llm/performance/${agentId}${days ? `?days=${days}` : ""}`),
+    optimizeAgent: (agentId: string) => 
+      apiRequest<any>(`/api/v1/telemetry/workforce/optimize/${agentId}`, {
+        method: "POST",
+      }),
+    getWorkforceStatus: () => apiRequest<any>("/api/v1/telemetry/workforce/status"),
+  },
+
+  // Shadow AI Detection (AI Compliance UC 15)
   shadowAI: {
     detections: (riskLevel?: string, status?: string) => {
       let url = "/api/v1/shadow-ai/detections?";
       if (riskLevel) url += `risk_level=${riskLevel}&`;
+      if (status) url += `status=${status}`;
+      return apiRequest<any[]>(url);
+    },
+    getDetectionsStream: () => apiRequest<any>("/api/v1/shadow-ai/detections/stream"),
+    blockTool: (toolId: string) => 
+      apiRequest<any>(`/api/v1/shadow-ai/block/${toolId}`, {
+        method: "POST",
+      }),
+    allowTool: (toolId: string) => 
+      apiRequest<any>(`/api/v1/shadow-ai/allow/${toolId}`, {
+        method: "POST",
+      }),
+    getStats: () => apiRequest<any>("/api/v1/shadow-ai/stats"),
+  },
+
+  // Governance Service (Agent Ops UC 19)
+  governance: {
+    getAuditQuorum: () => apiRequest<any>("/api/v1/governance/audit/quorum"),
+    getAuditLogs: (agentId?: string, query?: string, outcome?: string) => {
+      const params = new URLSearchParams();
+      if (agentId) params.append("agentId", agentId);
+      if (query) params.append("search", query);
+      if (outcome) params.append("outcome", outcome);
+      const qs = params.toString();
+      return apiRequest<any[]>(`/api/v1/governance/audit${qs ? "?" + qs : ""}`);
+    },
+    createApprovalRequest: (data: any) => 
+      apiRequest<any>("/api/v1/governance/approval", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    processApproval: (requestId: string, approved: boolean, reasoning: string) => 
+      apiRequest<any>(`/api/v1/governance/approval/${requestId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ approved, reasoning }),
+      }),
+    getGovernanceStats: () => apiRequest<any>("/api/v1/governance/stats"),
+  },
+
+  // Agent Messaging (Hermes Service)
+  hermes: {
+    broadcastMessage: (agentIds: string[], message: string, priority: string) => 
+      apiRequest<any>("/api/v1/agents/message/broadcast", {
+        method: "POST",
+        body: JSON.stringify({ agent_ids: agentIds, message, priority }),
+      }),
+    getMessages: (agentId?: string) => 
+      apiRequest<any[]>(agentId ? `/api/v1/agents/message/receive?agent_id=${agentId}` : "/api/v1/agents/message/receive"),
+  },
+
+  // White-label Service
+  whitelabel: {
+    configs: () => apiRequest<any[]>("/api/v1/whitelabel/configs"),
+    create: (config: any) => 
+      apiRequest<any>("/api/v1/whitelabel/configs", {
+        method: "POST",
+        body: JSON.stringify(config),
+      }),
+    update: (id: string, config: any) => 
+      apiRequest<any>(`/api/v1/whitelabel/configs/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(config),
+      }),
+    preview: (id: string) => 
+      apiRequest<any>(`/api/v1/whitelabel/preview/${id}`),
+  },
+
+  // Regional Compliance
+  regionalCompliance: {
+    scanRegion: (region: string) => 
+      apiRequest<any>("/api/v1/compliance/regional/scan", {
+        method: "POST",
+        body: JSON.stringify({ region }),
+      }),
+    getRegionalReports: () => apiRequest<any[]>("/api/v1/compliance/regional-reports"),
+  },
       if (status) url += `status=${status}`;
       return apiRequest<ShadowAIDetection[]>(url);
     },

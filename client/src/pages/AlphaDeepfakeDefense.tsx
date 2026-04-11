@@ -404,7 +404,11 @@ export default function AlphaDeepfakeDefense() {
     gov: [
       { value: "incidents", label: "Incidents", icon: AlertTriangle },
       { value: "audit-trail", label: "Audit Trail", icon: History },
-      { value: "compliance-controls", label: "Compliance Controls", icon: ShieldCheck },
+      {
+        value: "compliance-controls",
+        label: "Compliance Controls",
+        icon: ShieldCheck,
+      },
       { value: "sla", label: "SLA Tiers", icon: CheckCircle2 },
       { value: "reports", label: "Reports", icon: FileText },
       { value: "vendors", label: "Vendors", icon: Users },
@@ -801,7 +805,11 @@ export default function AlphaDeepfakeDefense() {
   };
 
   const handleDeleteModel = async (modelId: string) => {
-    if (!window.confirm("Are you sure you want to permanently delete this neutral model and its associated weights?")) {
+    if (
+      !window.confirm(
+        "Are you sure you want to permanently delete this neutral model and its associated weights?"
+      )
+    ) {
       return;
     }
 
@@ -1484,7 +1492,7 @@ export default function AlphaDeepfakeDefense() {
 
             {/* Detectors Tab */}
             <TabsContent value="detectors">
-              <DetectorsSection 
+              <DetectorsSection
                 mediaType={mediaType}
                 setMediaType={setMediaType}
                 analyses={analyses}
@@ -1495,7 +1503,7 @@ export default function AlphaDeepfakeDefense() {
 
             {/* Models Tab */}
             <TabsContent value="models">
-              <ModelsSection 
+              <ModelsSection
                 customModels={customModels}
                 onShowDeployDialog={() => setShowDeployModelDialog(true)}
                 onDeleteModel={handleDeleteModel}
@@ -1504,19 +1512,21 @@ export default function AlphaDeepfakeDefense() {
 
             {/* Liveness Tab */}
             <TabsContent value="liveness">
-               <LivenessSection 
-                 sessions={sessions}
-                 isAnalyzing={isAnalyzing}
-                 setIsAnalyzing={setIsAnalyzing}
-                 scanStage={scanStage}
-                 setScanStage={setScanStage}
-                 scanProgress={scanProgress}
-                 setScanProgress={setScanProgress}
-                 advancedResult={advancedResult}
-                 setAdvancedResult={setAdvancedResult}
-                 onShowConfigureDialog={() => setShowConfigureLivenessDialog(true)}
-                 handleDownload={handleDownload}
-               />
+              <LivenessSection
+                sessions={sessions}
+                isAnalyzing={isAnalyzing}
+                setIsAnalyzing={setIsAnalyzing}
+                scanStage={scanStage}
+                setScanStage={setScanStage}
+                scanProgress={scanProgress}
+                setScanProgress={setScanProgress}
+                advancedResult={advancedResult}
+                setAdvancedResult={setAdvancedResult}
+                onShowConfigureDialog={() =>
+                  setShowConfigureLivenessDialog(true)
+                }
+                handleDownload={handleDownload}
+              />
             </TabsContent>
 
             {/* Training Tab */}
@@ -3694,22 +3704,30 @@ export default function AlphaDeepfakeDefense() {
                       </div>
                     </div>
                     <div className="h-6 w-full bg-muted/20 rounded-full overflow-hidden flex mt-2">
-                      <div 
+                      <div
                         className="bg-slate-500/20 h-full flex items-center px-4 text-[10px] font-bold text-slate-400 transition-all duration-1000"
-                        style={{ width: `${Math.max(2, 100 - (stats?.roi?.roi_percentage / 100 || 98))}%` }}
+                        style={{
+                          width: `${Math.max(2, 100 - (stats?.roi?.roi_percentage / 100 || 98))}%`,
+                        }}
                       >
                         MANUAL: ${stats?.roi?.total_human_cost || "0.00"}
                       </div>
-                      <div 
+                      <div
                         className="bg-purple-600 h-full flex items-center px-4 text-[10px] font-bold text-white transition-all duration-1000"
-                        style={{ width: `${Math.min(98, stats?.roi?.roi_percentage / 100 || 2)}%` }}
+                        style={{
+                          width: `${Math.min(98, stats?.roi?.roi_percentage / 100 || 2)}%`,
+                        }}
                       >
                         AI: ${stats?.roi?.total_ai_cost || "0.00"}
                       </div>
                     </div>
                     {stats?.roi && (
                       <div className="text-[10px] text-center text-muted-foreground">
-                        Projected Savings: <span className="text-emerald-500 font-bold">${stats.roi.total_savings.toLocaleString()}</span> from {stats.roi.total_scans} scans
+                        Projected Savings:{" "}
+                        <span className="text-emerald-500 font-bold">
+                          ${stats.roi.total_savings.toLocaleString()}
+                        </span>{" "}
+                        from {stats.roi.total_scans} scans
                       </div>
                     )}
                   </CardContent>
@@ -3872,7 +3890,11 @@ export default function AlphaDeepfakeDefense() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
-                      ${stats?.roi?.total_savings ? (stats.roi.total_savings / 1000000).toFixed(2) : "0.00"}M
+                      $
+                      {stats?.roi?.total_savings
+                        ? (stats.roi.total_savings / 1000000).toFixed(2)
+                        : "0.00"}
+                      M
                     </div>
                     <p className="text-xs text-muted-foreground">
                       Real-time Protection Value
@@ -4358,16 +4380,21 @@ export default function AlphaDeepfakeDefense() {
                             </Button>
                             <Button
                               variant="outline"
-                              className="w-full border-blue-500/30 text-blue-400/50 h-8 rounded-xl text-[10px] cursor-not-allowed"
-                              disabled
-                              title="SDK binary distribution is an Enterprise Roadmap 2026 feature"
-                              onClick={() =>
-                                toast.info(
-                                  "SDK binary distribution is available via Enterprise onboarding. Contact sales@alpha-ai.io"
-                                )
-                              }
+                              className="w-full border-blue-500/30 text-blue-400 h-8 rounded-xl text-[10px]"
+                              onClick={async () => {
+                                try {
+                                  const response =
+                                    await extendedApi.deepfake.getSdkDownload();
+                                  toast.success("SDK download link generated");
+                                  window.open(response.download_url, "_blank");
+                                } catch (err) {
+                                  toast.info(
+                                    "SDK binary distribution is available via Enterprise onboarding. Contact sales@alpha-ai.io"
+                                  );
+                                }
+                              }}
                             >
-                              <Download className="w-3 h-3 mr-1" /> SDK (Enterprise Only)
+                              <Download className="w-3 h-3 mr-1" /> Download SDK
                             </Button>
                           </div>
                         </div>
