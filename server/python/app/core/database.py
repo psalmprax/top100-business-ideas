@@ -113,6 +113,7 @@ def seed_users():
 def init_db():
     """Initialize database and create tables with retry logic"""
     import time
+    from sqlalchemy import inspect
 
     init_async_engine()
     sync_engine = get_sync_engine()
@@ -122,10 +123,15 @@ def init_db():
 
     for i in range(max_retries):
         try:
-            # We use checkfirst=True (default meta behavior) but Postgres can still throw 
-            # DuplicateTable errors if indices or constraints clash.
-            SQLModel.metadata.create_all(sync_engine)
-            logger.info("SQLModel metadata synchronized with database")
+            # checkfirst=True is the default, but we'll use inspector for extra safety on critical tables
+            inspector = inspect(sync_engine)
+            existing_tables = inspector.get_table_names()
+            
+            if "trainingprogress" in existing_tables:
+                logger.info("Database tables already exist (found 'trainingprogress'), skipping global create_all")
+            else:
+                SQLModel.metadata.create_all(sync_engine)
+                logger.info("SQLModel metadata synchronized with database")
 
             # REAL-FIRST: Centralized Seeding Engine
             if os.getenv("SEED_DATABASE", "true").lower() == "true":
@@ -148,9 +154,9 @@ def init_db():
                     logger.warning(f"Legacy seeding partially failed: {legacy_err}")
             return  # Success
         except Exception as e:
-            # Check if it's a "table already exists" error which we can potentially ignore
+            # Check if it's a "table already exists" error or specific PG code 42P07
             error_str = str(e).lower()
-            if "already exists" in error_str or "duplicate" in error_str:
+            if "already exists" in error_str or "duplicate" in error_str or "42p07" in error_str:
                 logger.warning(f"Database objects already exist, continuing: {e}")
                 return # Treat as success for the boot process
             

@@ -220,7 +220,7 @@ func (h *AgentOpsHandler) GetAuditLogs(c *gin.Context) {
 
 	status, response, err := h.proxyService.ForwardWithStatus("GET", path, nil, nil)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch audit logs", Details: err.Error()})
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch audit logs", Details: err.Error()})
 		return
 	}
 
@@ -231,7 +231,7 @@ func (h *AgentOpsHandler) GetAuditLogs(c *gin.Context) {
 func (h *AgentOpsHandler) ListLLMConfigs(c *gin.Context) {
 	status, response, err := h.proxyService.ForwardWithStatus("GET", "/ml/models", nil, nil)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch LLM configs", Details: err.Error()})
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch LLM configs", Details: err.Error()})
 		return
 	}
 
@@ -245,7 +245,7 @@ func (h *AgentOpsHandler) GetForecast(c *gin.Context) {
 
 	status, response, err := h.proxyService.ForwardWithStatus("GET", path, nil, nil)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch forecast", Details: err.Error()})
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch forecast", Details: err.Error()})
 		return
 	}
 

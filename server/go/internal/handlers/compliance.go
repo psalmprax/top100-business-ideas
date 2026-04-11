@@ -118,7 +118,7 @@ func (h *ComplianceHandler) GetStats(c *gin.Context) {
 
 	response, err := h.proxyService.Forward("GET", "/compliance/stats", nil)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch compliance stats", Details: err.Error()})
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch compliance stats", Details: err.Error()})
 		return
 	}
 
@@ -206,7 +206,7 @@ func (h *ComplianceHandler) RunCheck(c *gin.Context) {
 func (h *ComplianceHandler) GetCategories(c *gin.Context) {
 	response, err := h.proxyService.Forward("GET", "/compliance/categories", nil)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch categories", Details: err.Error()})
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch categories", Details: err.Error()})
 		return
 	}
 	c.Data(http.StatusOK, "application/json", response)
@@ -228,7 +228,7 @@ func (h *ComplianceHandler) ExportReport(c *gin.Context) {
 
 	response, err := h.proxyService.Forward("GET", path, nil)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to export report", Details: err.Error()})
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to export report", Details: err.Error()})
 		return
 	}
 	c.Data(http.StatusOK, "application/json", response)
@@ -237,7 +237,7 @@ func (h *ComplianceHandler) ExportReport(c *gin.Context) {
 func (h *ComplianceHandler) ListArticles(c *gin.Context) {
 	response, err := h.proxyService.Forward("GET", "/compliance/articles", nil)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch articles", Details: err.Error()})
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch articles", Details: err.Error()})
 		return
 	}
 	c.Data(http.StatusOK, "application/json", response)
@@ -246,7 +246,7 @@ func (h *ComplianceHandler) ListArticles(c *gin.Context) {
 func (h *ComplianceHandler) ListArtifacts(c *gin.Context) {
 	response, err := h.proxyService.Forward("GET", "/compliance/artifacts", nil)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch artifacts", Details: err.Error()})
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch artifacts", Details: err.Error()})
 		return
 	}
 	c.Data(http.StatusOK, "application/json", response)
@@ -367,7 +367,7 @@ func (h *ComplianceHandler) UploadArtifact(c *gin.Context) {
 func (h *ComplianceHandler) GetROIMetrics(c *gin.Context) {
 	response, err := h.proxyService.Forward("GET", "/compliance/roi", nil)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch ROI metrics", Details: err.Error()})
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch ROI metrics", Details: err.Error()})
 		return
 	}
 	c.Data(http.StatusOK, "application/json", response)
@@ -376,7 +376,7 @@ func (h *ComplianceHandler) GetROIMetrics(c *gin.Context) {
 func (h *ComplianceHandler) GetVelocityTrends(c *gin.Context) {
 	response, err := h.proxyService.Forward("GET", "/compliance/velocity", nil)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch velocity trends", Details: err.Error()})
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch velocity trends", Details: err.Error()})
 		return
 	}
 	c.Data(http.StatusOK, "application/json", response)
@@ -385,7 +385,7 @@ func (h *ComplianceHandler) GetVelocityTrends(c *gin.Context) {
 func (h *ComplianceHandler) GetDeadlines(c *gin.Context) {
 	response, err := h.proxyService.Forward("GET", "/compliance/deadlines", nil)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch compliance deadlines", Details: err.Error()})
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch compliance deadlines", Details: err.Error()})
 		return
 	}
 	c.Data(http.StatusOK, "application/json", response)
@@ -394,7 +394,7 @@ func (h *ComplianceHandler) GetDeadlines(c *gin.Context) {
 func (h *ComplianceHandler) GetEnterpriseAudits(c *gin.Context) {
 	response, err := h.proxyService.Forward("GET", "/compliance/enterprise-audits", nil)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch enterprise audits", Details: err.Error()})
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch enterprise audits", Details: err.Error()})
 		return
 	}
 	c.Data(http.StatusOK, "application/json", response)
@@ -404,7 +404,7 @@ func (h *ComplianceHandler) GetModelBreakdown(c *gin.Context) {
 	id := c.Param("id")
 	response, err := h.proxyService.Forward("GET", fmt.Sprintf("/compliance/models/%s/breakdown", id), nil)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch model breakdown", Details: err.Error()})
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch model breakdown", Details: err.Error()})
 		return
 	}
 	c.Data(http.StatusOK, "application/json", response)
@@ -414,7 +414,7 @@ func (h *ComplianceHandler) GetModelAudits(c *gin.Context) {
 	id := c.Param("id")
 	response, err := h.proxyService.Forward("GET", fmt.Sprintf("/compliance/models/%s/audits", id), nil)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch model audits", Details: err.Error()})
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch model audits", Details: err.Error()})
 		return
 	}
 	c.Data(http.StatusOK, "application/json", response)
@@ -424,7 +424,7 @@ func (h *ComplianceHandler) GetModelHandshakes(c *gin.Context) {
 	id := c.Param("id")
 	response, err := h.proxyService.Forward("GET", fmt.Sprintf("/compliance/models/%s/handshakes", id), nil)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch model handshakes", Details: err.Error()})
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch model handshakes", Details: err.Error()})
 		return
 	}
 	c.Data(http.StatusOK, "application/json", response)
@@ -432,7 +432,7 @@ func (h *ComplianceHandler) GetModelHandshakes(c *gin.Context) {
 func (h *ComplianceHandler) GetRegionalReports(c *gin.Context) {
 	response, err := h.proxyService.Forward("GET", "/compliance/regional-reports", nil)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch regional reports", Details: err.Error()})
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch regional reports", Details: err.Error()})
 		return
 	}
 	c.Data(http.StatusOK, "application/json", response)
@@ -441,7 +441,7 @@ func (h *ComplianceHandler) GetRegionalReports(c *gin.Context) {
 func (h *ComplianceHandler) GetFinancialMetrics(c *gin.Context) {
 	response, err := h.proxyService.Forward("GET", "/compliance/financial-metrics", nil)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch financial metrics", Details: err.Error()})
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch financial metrics", Details: err.Error()})
 		return
 	}
 	c.Data(http.StatusOK, "application/json", response)
@@ -463,7 +463,7 @@ func (h *ComplianceHandler) ListChecklists(c *gin.Context) {
 
 	response, err := h.proxyService.Forward("GET", path, nil)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch compliance checklists", Details: err.Error()})
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch compliance checklists", Details: err.Error()})
 		return
 	}
 	c.Data(http.StatusOK, "application/json", response)
@@ -479,7 +479,7 @@ func (h *ComplianceHandler) UpdateChecklistItem(c *gin.Context) {
 
 	response, err := h.proxyService.Forward("POST", fmt.Sprintf("/compliance/checklists/%s", id), req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to update checklist item", Details: err.Error()})
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to update checklist item", Details: err.Error()})
 		return
 	}
 	c.Data(http.StatusOK, "application/json", response)
@@ -509,7 +509,7 @@ func (h *ComplianceHandler) ListAuditLogs(c *gin.Context) {
 
 	response, err := h.proxyService.Forward("GET", path, nil)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch audit logs", Details: err.Error()})
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch audit logs", Details: err.Error()})
 		return
 	}
 
@@ -529,7 +529,7 @@ func (h *ComplianceHandler) UpdateIncidentStatus(c *gin.Context) {
 	path := fmt.Sprintf("/agent-ops/compliance/alerts/%s/resolve", id)
 	response, err := h.proxyService.Forward("PATCH", path, req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to update incident status", Details: err.Error()})
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to update incident status", Details: err.Error()})
 		return
 	}
 
@@ -541,7 +541,7 @@ func (h *ComplianceHandler) DeleteVendor(c *gin.Context) {
 	id := c.Param("id")
 	response, err := h.proxyService.Forward("DELETE", fmt.Sprintf("/vendors/%s", id), nil)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to delete vendor", Details: err.Error()})
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to delete vendor", Details: err.Error()})
 		return
 	}
 	c.Data(http.StatusOK, "application/json", response)
