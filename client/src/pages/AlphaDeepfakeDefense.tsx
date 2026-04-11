@@ -403,7 +403,8 @@ export default function AlphaDeepfakeDefense() {
     ],
     gov: [
       { value: "incidents", label: "Incidents", icon: AlertTriangle },
-      { value: "audits", label: "Compliance Audits", icon: ShieldCheck },
+      { value: "audit-trail", label: "Audit Trail", icon: History },
+      { value: "compliance-controls", label: "Compliance Controls", icon: ShieldCheck },
       { value: "sla", label: "SLA Tiers", icon: CheckCircle2 },
       { value: "reports", label: "Reports", icon: FileText },
       { value: "vendors", label: "Vendors", icon: Users },
@@ -1635,8 +1636,8 @@ export default function AlphaDeepfakeDefense() {
               </Card>
             </TabsContent>
 
-            {/* Audits Tab */}
-            <TabsContent value="audits">
+            {/* Audit Trail Tab */}
+            <TabsContent value="audit-trail">
               <Card>
                 <CardHeader>
                   <CardTitle>Compliance Audit Trail</CardTitle>
@@ -2495,8 +2496,8 @@ export default function AlphaDeepfakeDefense() {
               </Card>
             </TabsContent>
 
-            {/* Enterprise Compliance Audits Tab */}
-            <TabsContent value="audits">
+            {/* Compliance Controls Tab */}
+            <TabsContent value="compliance-controls">
               <div className="grid gap-6 md:grid-cols-2">
                 <Card className="border-blue-500/20 bg-blue-500/5">
                   <CardHeader>
