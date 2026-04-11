@@ -3,6 +3,7 @@
  * Register and manage biometric templates for identity verification
  */
 
+import * as React from "react";
 import { useState, useEffect } from "react";
 import {
   Card,

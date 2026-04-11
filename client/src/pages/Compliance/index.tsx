@@ -36,6 +36,10 @@ import { ModelProfileDialog } from "./components/ModelProfileDialog";
 import { DashboardSection } from "./sections/DashboardSection";
 import { ChecklistSection } from "./sections/ChecklistSection";
 import { ModelsSection } from "./sections/ModelsSection";
+import { AuditTrailSection } from "@/components/Compliance/sections/AuditTrailSection";
+import { RegionalComplianceSection } from "@/components/Compliance/sections/RegionalComplianceSection";
+import { RiskAssessmentSection } from "@/components/Compliance/sections/RiskAssessmentSection";
+import { GovernanceSection } from "@/components/Compliance/sections/GovernanceSection";
 import { GenericChecklist } from "./components/GenericChecklist";
 import { UploadArtifactDialog } from "./components/UploadArtifactDialog";
 
@@ -222,12 +226,34 @@ export default function ComplianceLayout() {
             />
           </TabsContent>
 
+          <TabsContent value="audit-trail">
+            <AuditTrailSection />
+          </TabsContent>
+
+          <TabsContent value="regional">
+            <RegionalComplianceSection />
+          </TabsContent>
+
+          <TabsContent value="risk">
+            <RiskAssessmentSection />
+          </TabsContent>
+
+          <TabsContent value="governance">
+            <GovernanceSection />
+          </TabsContent>
+
           {/* Fallback for other tabs */}
           <TabsContent value={activeTab}>
-             {activeTab !== "dashboard" && activeTab !== "compliance" && activeTab !== "models" && (
+             {activeTab !== "dashboard" && 
+              activeTab !== "compliance" && 
+              activeTab !== "models" && 
+              activeTab !== "audit-trail" && 
+              activeTab !== "regional" && 
+              activeTab !== "risk" && 
+              activeTab !== "governance" && (
                 <div className="space-y-6">
                   {/* REAL-FIRST: Categorizing tabs into functional clusters */}
-                  {["docs", "reports", "regional", "sla", "risk", "audit-trail"].includes(activeTab) ? (
+                  {["docs", "reports", "sla"].includes(activeTab) ? (
                     <GenericChecklist 
                       category={activeTab} 
                       items={checklists.filter(c => c.category === activeTab)} 

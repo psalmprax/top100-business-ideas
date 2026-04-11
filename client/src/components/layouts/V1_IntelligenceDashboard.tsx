@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { VentureCard } from "@/components/VentureCard";
+import * as React from "react";
 import { useState, useRef, useEffect } from "react";
 
 interface LayoutProps {

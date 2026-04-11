@@ -233,7 +233,9 @@ export function OverviewSection({
                     <span>Prevention Rate</span>
                     <span className="text-emerald-500 font-bold">{liveMetrics.status === "live" ? "ACTIVE" : "---"}</span>
                   </div>
-                  <p className="text-[10px] text-muted-foreground">System active. 14 potential hallucinations mitigated in last 6 hours.</p>
+                  <p className="text-[10px] text-muted-foreground italic">
+                    System active. {healingConfig.mitigations_count || 0} potential hallucinations mitigated {healingConfig.last_mitigation_time ? `since ${new Date(healingConfig.last_mitigation_time).toLocaleTimeString()}` : "recently"}.
+                  </p>
                 </div>
               </div>
             </div>

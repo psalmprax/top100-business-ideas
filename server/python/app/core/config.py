@@ -29,6 +29,10 @@ class Settings:
 
     # External Services
     OPENAI_API_KEY: Optional[str] = None
+    ANTHROPIC_API_KEY: Optional[str] = None
+    GROQ_API_KEY: Optional[str] = None
+    DEEPSEEK_API_KEY: Optional[str] = None
+    GOOGLE_API_KEY: Optional[str] = None
 
     def __init__(self):
         self.HOST = os.getenv("HOST", self.HOST)
@@ -40,6 +44,10 @@ class Settings:
         self.DATABASE_URL = os.getenv("DATABASE_URL", self.DATABASE_URL)
         self.REDIS_URL = os.getenv("REDIS_URL", self.REDIS_URL)
         self.OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", self.OPENAI_API_KEY)
+        self.ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", self.ANTHROPIC_API_KEY)
+        self.GROQ_API_KEY = os.getenv("GROQ_API_KEY", self.GROQ_API_KEY)
+        self.DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", self.DEEPSEEK_API_KEY)
+        self.GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", self.GOOGLE_API_KEY)
 
 
 settings = Settings()

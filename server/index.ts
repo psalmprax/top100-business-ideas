@@ -18,9 +18,10 @@ const __dirname = path.dirname(__filename);
 // Load env vars
 dotenv.config();
 
-const GO_BACKEND = process.env.GO_BACKEND_URL || "http://localhost:8080";
-const PYTHON_BACKEND =
-  process.env.PYTHON_BACKEND_URL || "http://localhost:8000";
+const PORT = process.env.PORT || 8080;
+const GO_BACKEND = process.env.GO_BACKEND_URL || "http://localhost:7001";
+const PYTHON_BACKEND = process.env.PYTHON_BACKEND_URL || "http://localhost:7002";
+const FRONTEND_DEV = "http://localhost:7000";
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
   console.error("FATAL: JWT_SECRET environment variable is not set.");
@@ -169,7 +170,27 @@ app.use(
   createProxyMiddleware({
     target: PYTHON_BACKEND,
     changeOrigin: true,
-    pathRewrite: { "^/api/v1/compliance": "/compliance" },
+    pathRewrite: {
+      "^/api/v1/compliance/status": "/compliance/stats",
+      "^/api/v1/compliance": "/compliance",
+    },
+  })
+);
+
+app.use(
+  "/api/v1/sentinel",
+  createProxyMiddleware({
+    target: GO_BACKEND,
+    changeOrigin: true,
+    pathRewrite: { "^/api/v1/sentinel": "/api/v1/agent-ops/self-healing" },
+  })
+);
+
+app.use(
+  "/api/v1/agent-ops/architecture",
+  createProxyMiddleware({
+    target: GO_BACKEND,
+    changeOrigin: true,
   })
 );
 

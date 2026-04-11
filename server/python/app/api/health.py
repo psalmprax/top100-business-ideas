@@ -18,6 +18,7 @@ async def health():
     """Comprehensive health check endpoint"""
     try:
         # Check database connectivity
+        from app.core.database import AsyncSessionLocal
         async with AsyncSessionLocal() as session:
             db_healthy = await check_database_health(session)
 

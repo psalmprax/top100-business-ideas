@@ -17,7 +17,7 @@ async def get_market_research(
 ):
     """Run Paperclip automated research for a given topic."""
     try:
-        return intelligence_service.run_market_research(session, topic)
+        return await intelligence_service.run_market_research(session, topic)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -32,6 +32,6 @@ async def generate_product_strategy(
         raise HTTPException(status_code=400, detail="Project name is required")
         
     try:
-        return intelligence_service.generate_product_strategy(session, project_name)
+        return await intelligence_service.generate_product_strategy(session, project_name)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

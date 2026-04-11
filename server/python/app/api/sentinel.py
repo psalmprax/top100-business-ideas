@@ -46,3 +46,10 @@ async def update_healing_config(
     session.commit()
     session.refresh(config)
     return {"status": "updated", "config": config}
+
+@router.post("/healing/simulate")
+async def simulate_healing(session: Session = Depends(get_session)):
+    """Trigger a simulated healing event for UI verification."""
+    from app.services.self_healing_manager import self_healing_manager
+    event = self_healing_manager.remediate_drift("simulation-trigger")
+    return {"status": "success", "event": event}

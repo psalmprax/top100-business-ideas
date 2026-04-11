@@ -1,3 +1,4 @@
+import * as React from "react";
 import { useState, useEffect } from "react";
 import { Link, useSearch, useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";

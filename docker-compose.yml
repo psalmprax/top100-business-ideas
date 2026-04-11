@@ -67,6 +67,7 @@ services:
       - OIDC_GOOGLE_CLIENT_ID=${OIDC_GOOGLE_CLIENT_ID}
       - OIDC_GOOGLE_CLIENT_SECRET=${OIDC_GOOGLE_CLIENT_SECRET}
       - SESSION_SECRET_KEY=${SESSION_SECRET_KEY:-test_session_secret_321}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
     volumes:
       - ./models:/models
     networks:
@@ -92,6 +93,9 @@ services:
       - VITE_STRIPE_PUBLIC_KEY=${VITE_STRIPE_PUBLIC_KEY:-pk_test_placeholder}
     depends_on:
       - api-gateway
+    volumes:
+      - .:/app
+      - /app/node_modules
     networks:
       - app-network
       - proxied

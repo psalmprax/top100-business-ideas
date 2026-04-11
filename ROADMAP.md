@@ -1,6 +1,7 @@
 # Roadmap: AlphaAI Real-First Transition
 
-## Milestone 1: Platform Hardening (Current)
+## Milestone 1: Platform Hardening (Complete ✅)
+
 Finalize the transition to backend-backed state across all core products.
 
 ### Phase 1: GSD Initialization (Complete)
@@ -28,12 +29,31 @@ Finalize the transition to backend-backed state across all core products.
 - [x] Finalize the gated Marketplace enrollment logic with database validation.
 
 ### Phase 6: Global Security & Performance Audit (Complete)
-- [x] Validate subagent performance (latencies < 500ms).
-- [x] Final verify Cancellable Biometrics & Panic Word flow.
-- [x] E2E Test Suite Pass (100% success).
+- [x] 06-01-PLAN.md — Performance Latency Validation
+- [x] 06-02-PLAN.md — Biometrics & Panic Word
+- [x] 06-03-PLAN.md — E2E Test Suite Pass
 
 ### Phase 7: Production Deployment (Complete)
 - [x] Deploy to production infrastructure (149.104.110.122).
 - [x] Final health check and smoke tests.
 - [x] Hardened Unified Frontend Dockerfile (Multi-stage).
 - [x] Implemented production-orchestrator `redeploy-sentinel.sh`.
+
+---
+
+## Milestone 2: Enterprise Scaling & Intelligence (Current)
+
+Expanding the platform with advanced routing, compliance automation, and event-driven intelligence.
+
+### Phase 8: Multi-Cloud Intelligence
+- [ ] Implement Unified LLM Proxy (Azure/Anthropic/Bedrock).
+- [ ] Add cost-aware routing and governance overrides.
+- [ ] Integrate with Sentinel Guard for real-time traffic monitoring.
+
+### Phase 9: Compliance Data Ingestion
+- [ ] Build vendor supply chain audit connectors (Tier-2/3).
+- [ ] Automate evidence collection for AI Act compliance.
+
+### Phase 10: Event-Driven Automation
+- [ ] Implement Article 71 incident notification webhooks.
+- [ ] Deploy background workers for scheduled compliance audits.

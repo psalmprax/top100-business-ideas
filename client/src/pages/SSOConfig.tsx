@@ -3,6 +3,7 @@
  * Admin UI to configure OIDC/SAML identity providers
  */
 
+import * as React from "react";
 import { useState, useEffect } from "react";
 import {
   Card,

@@ -58,7 +58,7 @@ export function usePanicMode(
       detectorRef.current = new PanicWordDetector(config);
 
       // Set up callback for panic detection
-      unsubscribeRef.current = detectorRef.current.onPanicDetected(event => {
+      unsubscribeRef.current = detectorRef.current.onPanicDetected((event: PanicEvent) => {
         console.log("[usePanicMode] Panic word detected:", event.detectedWord);
 
         // Store the event

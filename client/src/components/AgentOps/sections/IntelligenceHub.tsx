@@ -75,64 +75,91 @@ export function IntelligenceHub({
           </div>
 
           {researchResult && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <Card className="bg-muted/30 border-primary/10">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-bold flex items-center gap-2">
-                    <Users className="w-4 h-4" />
-                    Scanned Competitors
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {researchResult.competitors.map((comp: any, i: number) => (
-                      <div key={i} className="flex justify-between items-center p-2 rounded bg-background/40 border border-border/50">
-                        <span className="font-medium">{comp.name}</span>
-                        <Badge variant={comp.status === "dominant" ? "default" : "outline"}>
-                          {comp.market_share}
-                        </Badge>
-                      </div>
-                    ))}
+            <div className="space-y-4 mt-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              {/* Sentinel Resource Accounting */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg backdrop-blur-sm">
+                  <div className="text-[10px] font-bold text-muted-foreground uppercase mb-1">Total Tokens</div>
+                  <div className="text-xl font-black text-primary">{(researchResult.usage?.total_tokens || 0).toLocaleString()}</div>
+                </div>
+                <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg backdrop-blur-sm">
+                  <div className="text-[10px] font-bold text-muted-foreground uppercase mb-1">Session Cost</div>
+                  <div className="text-xl font-black text-primary">${(researchResult.usage?.cost || 0).toFixed(4)}</div>
+                </div>
+                <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg backdrop-blur-sm">
+                  <div className="text-[10px] font-bold text-muted-foreground uppercase mb-1">Input/Output</div>
+                  <div className="text-sm font-bold opacity-80">
+                    {researchResult.usage?.prompt_tokens} / {researchResult.usage?.completion_tokens}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+                <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg backdrop-blur-sm">
+                  <div className="text-[10px] font-bold text-muted-foreground uppercase mb-1">Latency</div>
+                  <div className="text-xl font-black flex items-center gap-1.5 underline decoration-primary/20">
+                    <Clock className="w-4 h-4 opacity-50" />
+                    {researchResult.latency_ms || 0}ms
+                  </div>
+                </div>
+              </div>
 
-              <Card className="bg-muted/30 border-primary/10">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-bold flex items-center gap-2">
-                    <Target className="w-4 h-4" />
-                    SWOT Analysis
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-2 text-[10px]">
-                    <div className="p-2 bg-green-500/5 border border-green-500/20 rounded">
-                      <div className="font-bold text-green-500 mb-1 uppercase tracking-tighter">Strengths</div>
-                      <ul className="list-disc pl-3 space-y-1">
-                        {researchResult.swot.strengths.map((s: string, i: number) => <li key={i}>{s}</li>)}
-                      </ul>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card className="bg-muted/30 border-primary/10">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-bold flex items-center gap-2">
+                      <Users className="w-4 h-4" />
+                      Scanned Competitors
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {researchResult.competitors?.map((comp: any, i: number) => (
+                        <div key={i} className="flex justify-between items-center p-2 rounded bg-background/40 border border-border/50">
+                          <span className="font-medium">{comp.name}</span>
+                          <Badge variant={comp.status === "dominant" ? "default" : "outline"}>
+                            {comp.market_share}
+                          </Badge>
+                        </div>
+                      ))}
                     </div>
-                    <div className="p-2 bg-red-500/5 border border-red-500/20 rounded">
-                      <div className="font-bold text-red-500 mb-1 uppercase tracking-tighter">Weaknesses</div>
-                      <ul className="list-disc pl-3 space-y-1">
-                        {researchResult.swot.weaknesses.map((s: string, i: number) => <li key={i}>{s}</li>)}
-                      </ul>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-muted/30 border-primary/10">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-bold flex items-center gap-2">
+                      <Target className="w-4 h-4" />
+                      SWOT Analysis
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-2 text-[10px]">
+                      <div className="p-2 bg-green-500/5 border border-green-500/20 rounded">
+                        <div className="font-bold text-green-500 mb-1 uppercase tracking-tighter">Strengths</div>
+                        <ul className="list-disc pl-3 space-y-1">
+                          {researchResult.swot?.strengths?.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                        </ul>
+                      </div>
+                      <div className="p-2 bg-red-500/5 border border-red-500/20 rounded">
+                        <div className="font-bold text-red-500 mb-1 uppercase tracking-tighter">Weaknesses</div>
+                        <ul className="list-disc pl-3 space-y-1">
+                          {researchResult.swot?.weaknesses?.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                        </ul>
+                      </div>
+                      <div className="p-2 bg-blue-500/5 border border-blue-500/20 rounded">
+                        <div className="font-bold text-blue-500 mb-1 uppercase tracking-tighter">Opportunities</div>
+                        <ul className="list-disc pl-3 space-y-1">
+                          {researchResult.swot?.opportunities?.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                        </ul>
+                      </div>
+                      <div className="p-2 bg-yellow-500/5 border border-yellow-500/20 rounded">
+                        <div className="font-bold text-yellow-500 mb-1 uppercase tracking-tighter">Threats</div>
+                        <ul className="list-disc pl-3 space-y-1">
+                          {researchResult.swot?.threats?.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                        </ul>
+                      </div>
                     </div>
-                    <div className="p-2 bg-blue-500/5 border border-blue-500/20 rounded">
-                      <div className="font-bold text-blue-500 mb-1 uppercase tracking-tighter">Opportunities</div>
-                      <ul className="list-disc pl-3 space-y-1">
-                        {researchResult.swot.opportunities.map((s: string, i: number) => <li key={i}>{s}</li>)}
-                      </ul>
-                    </div>
-                    <div className="p-2 bg-yellow-500/5 border border-yellow-500/20 rounded">
-                      <div className="font-bold text-yellow-500 mb-1 uppercase tracking-tighter">Threats</div>
-                      <ul className="list-disc pl-3 space-y-1">
-                        {researchResult.swot.threats.map((s: string, i: number) => <li key={i}>{s}</li>)}
-                      </ul>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           )}
         </CardContent>
@@ -166,8 +193,19 @@ export function IntelligenceHub({
 
           {strategyResult && (
             <div className="space-y-6 mt-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              {/* Resource Accounting */}
+              <div className="flex items-center gap-6 p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                <div className="flex items-center gap-2 text-primary font-bold">
+                  <Zap className="w-4 h-4" />
+                  Strategy Metrics:
+                </div>
+                <div className="text-xs font-medium">Tokens: <span className="text-white font-bold">{(strategyResult.usage?.total_tokens || 0).toLocaleString()}</span></div>
+                <div className="text-xs font-medium">Cost: <span className="text-white font-bold">${(strategyResult.usage?.cost || 0).toFixed(4)}</span></div>
+                <div className="text-xs font-medium">Latency: <span className="text-white font-bold">{strategyResult.latency_ms || 0}ms</span></div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {strategyResult.roadmap.map((phase: any, i: number) => (
+                {strategyResult.roadmap?.map((phase: any, i: number) => (
                   <div key={i} className="p-4 rounded-lg bg-muted/40 border border-border/50 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-2 text-[8px] font-black opacity-20 group-hover:opacity-100 transition-opacity">PHASE {i + 1}</div>
                     <div className="text-xs font-bold text-primary mb-1 uppercase tracking-wider">{phase.phase}</div>
@@ -191,14 +229,14 @@ export function IntelligenceHub({
                     <div>
                       <div className="text-[10px] font-bold uppercase text-muted-foreground mb-2">Core Components</div>
                       <div className="flex flex-wrap gap-2">
-                        {strategyResult.ux_blueprint.core_components.map((c: string, i: number) => (
+                        {strategyResult.ux_blueprint?.core_components?.map((c: string, i: number) => (
                           <Badge key={i} variant="secondary">{c}</Badge>
                         ))}
                       </div>
                     </div>
                     <div>
                       <div className="text-[10px] font-bold uppercase text-muted-foreground mb-2">Aesthetic Identity</div>
-                      <div className="text-sm italic">{strategyResult.ux_blueprint.aesthetic}</div>
+                      <div className="text-sm italic">{strategyResult.ux_blueprint?.aesthetic}</div>
                     </div>
                   </div>
                   <Separator className="my-4 opacity-30" />

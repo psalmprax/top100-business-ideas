@@ -3,11 +3,13 @@ Multi-Cloud Proxy Service for Agent Ops
 Routes LLM requests to OpenAI, Azure OpenAI, Anthropic, and AWS Bedrock via unified gateway.
 """
 
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Union
 from enum import Enum
 import httpx
 import os
 import logging
+import asyncio
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -33,10 +35,11 @@ class MultiCloudProxy:
                 "api_key": os.getenv("OPENAI_API_KEY", ""),
             },
             CloudProvider.AZURE: {
-                "base_url": os.getenv("AZURE_OPENAI_ENDPOINT", "https://<resource>.openai.azure.com/openai/deployments/<deployment>"),
+                "base_url": os.getenv("AZURE_OPENAI_ENDPOINT", "").rstrip("/"),
                 "auth_header": "api-key",
                 "api_key": os.getenv("AZURE_OPENAI_KEY", ""),
                 "api_version": os.getenv("AZURE_OPENAI_VERSION", "2024-02-01"),
+                "deployment": os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-4"),
             },
             CloudProvider.ANTHROPIC: {
                 "base_url": "https://api.anthropic.com/v1",
@@ -56,10 +59,15 @@ class MultiCloudProxy:
             CloudProvider.AZURE,
             CloudProvider.BEDROCK,
         ]
+        self.retry_config = {
+            "max_attempts": 3,
+            "base_delay": 1.0,  # seconds
+            "backoff_factor": 2.0,
+        }
     
     async def complete(
         self,
-        prompt: str,
+        input_data: Union[str, List[Dict[str, str]]],
         provider: CloudProvider = CloudProvider.OPENAI,
         model: str = "gpt-4",
         max_tokens: int = 1000,
@@ -69,39 +77,68 @@ class MultiCloudProxy:
         """
         Route completion request to specified provider or failover.
         """
+        messages = (
+            input_data
+            if isinstance(input_data, list)
+            else [{"role": "user", "content": input_data}]
+        )
+        # Use first message content as prompt for legacy string-based provider calls if needed
+        prompt = messages[-1]["content"] if messages else ""
+
         if fallback:
             return await self._complete_with_failover(
-                prompt, provider, model, max_tokens, temperature
+                messages, provider, model, max_tokens, temperature
             )
         else:
             return await self._complete_single(
-                prompt, provider, model, max_tokens, temperature
+                messages, provider, model, max_tokens, temperature
             )
     
     async def _complete_single(
         self,
-        prompt: str,
+        messages: List[Dict[str, str]],
         provider: CloudProvider,
         model: str,
         max_tokens: int,
         temperature: float,
     ) -> Dict[str, Any]:
-        """Complete request to a single provider."""
+        """Complete request to a single provider with exponential backoff."""
         
-        if provider == CloudProvider.OPENAI:
-            return await self._call_openai(prompt, model, max_tokens, temperature)
-        elif provider == CloudProvider.AZURE:
-            return await self._call_azure(prompt, model, max_tokens, temperature)
-        elif provider == CloudProvider.ANTHROPIC:
-            return await self._call_anthropic(prompt, model, max_tokens, temperature)
-        elif provider == CloudProvider.BEDROCK:
-            return await self._call_bedrock(prompt, model, max_tokens, temperature)
-        else:
-            raise ValueError(f"Unknown provider: {provider}")
+        last_exception = None
+        for attempt in range(self.retry_config["max_attempts"]):
+            try:
+                if provider == CloudProvider.OPENAI:
+                    result = await self._call_openai(messages, model, max_tokens, temperature)
+                elif provider == CloudProvider.AZURE:
+                    result = await self._call_azure(messages, model, max_tokens, temperature)
+                elif provider == CloudProvider.ANTHROPIC:
+                    result = await self._call_anthropic(messages, model, max_tokens, temperature)
+                elif provider == CloudProvider.BEDROCK:
+                    result = await self._call_bedrock(messages, model, max_tokens, temperature)
+                else:
+                    raise ValueError(f"Unknown provider: {provider}")
+                
+                return result
+
+            except Exception as e:
+                last_exception = e
+                # Protocol: 429 triggers immediate failover to keep the real-first engine moving
+                if "429" in str(e) or "rate limit" in str(e).lower():
+                    logger.warning(f"Rate limit hit on {provider}. Failover initiated.")
+                    break 
+                
+                if attempt < self.retry_config["max_attempts"] - 1:
+                    delay = self.retry_config["base_delay"] * (self.retry_config["backoff_factor"] ** attempt)
+                    logger.warning(f"Retry {attempt + 1}/{self.retry_config['max_attempts']} for {provider} after {delay}s failure: {e}")
+                    await asyncio.sleep(delay)
+                else:
+                    logger.error(f"Final attempt failed for {provider}: {e}")
+
+        raise last_exception or RuntimeError(f"Multi-Cloud Gateway failed to resolve {provider}")
     
     async def _complete_with_failover(
         self,
-        prompt: str,
+        messages: List[Dict[str, str]],
         preferred_provider: CloudProvider,
         model: str,
         max_tokens: int,
@@ -136,7 +173,7 @@ class MultiCloudProxy:
         }
     
     async def _call_openai(
-        self, prompt: str, model: str, max_tokens: int, temperature: float
+        self, messages: List[Dict[str, str]], model: str, max_tokens: int, temperature: float
     ) -> Dict[str, Any]:
         """Call OpenAI API."""
         config = self.providers[CloudProvider.OPENAI]
@@ -150,7 +187,7 @@ class MultiCloudProxy:
                 },
                 json={
                     "model": model,
-                    "messages": [{"role": "user", "content": prompt}],
+                    "messages": messages,
                     "max_tokens": max_tokens,
                     "temperature": temperature,
                 },
@@ -168,23 +205,23 @@ class MultiCloudProxy:
             }
     
     async def _call_azure(
-        self, prompt: str, model: str, max_tokens: int, temperature: float
+        self, messages: List[Dict[str, str]], model: str, max_tokens: int, temperature: float
     ) -> Dict[str, Any]:
         """Call Azure OpenAI API."""
         config = self.providers[CloudProvider.AZURE]
         
-        # Azure uses deployment name as model
-        deployment = os.getenv("AZURE_DEPLOYMENT_NAME", "gpt-4")
+        deployment = config["deployment"]
+        url = f"{config['base_url']}/openai/deployments/{deployment}/chat/completions?api-version={config['api_version']}"
         
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                f"{config['base_url'].replace('<deployment>', deployment)}?api-version={config['api_version']}",
+                url,
                 headers={
                     config["auth_header"]: config["api_key"],
                     "Content-Type": "application/json",
                 },
                 json={
-                    "messages": [{"role": "user", "content": prompt}],
+                    "messages": messages,
                     "max_tokens": max_tokens,
                     "temperature": temperature,
                 },
@@ -202,7 +239,7 @@ class MultiCloudProxy:
             }
     
     async def _call_anthropic(
-        self, prompt: str, model: str, max_tokens: int, temperature: float
+        self, messages: List[Dict[str, str]], model: str, max_tokens: int, temperature: float
     ) -> Dict[str, Any]:
         """Call Anthropic API."""
         config = self.providers[CloudProvider.ANTHROPIC]
@@ -226,7 +263,7 @@ class MultiCloudProxy:
                     "model": anthropic_model,
                     "max_tokens": max_tokens,
                     "temperature": temperature,
-                    "messages": [{"role": "user", "content": prompt}],
+                    "messages": messages,
                 },
                 timeout=30.0,
             )
@@ -245,41 +282,79 @@ class MultiCloudProxy:
             }
     
     async def _call_bedrock(
-        self, prompt: str, model: str, max_tokens: int, temperature: float
+        self, messages: List[Dict[str, str]], model: str, max_tokens: int, temperature: float
     ) -> Dict[str, Any]:
-        """Call AWS Bedrock API."""
+        """Call AWS Bedrock API with manual Signature V4 signing."""
         config = self.providers[CloudProvider.BEDROCK]
         
-        # Map model names to Bedrock IDs
         model_map = {
             "gpt-4": "anthropic.claude-3-sonnet-20240229-v1:0",
             "gpt-3.5": "anthropic.claude-3-haiku-20240307-v1:0",
-            "llama": "meta.llama2-70b-chat-v1",
+            "llama": "meta.llama3-70b-instruct-v1:0",
         }
         bedrock_model = model_map.get(model, model_map["gpt-4"])
         
         import json
-        import base64
         import hashlib
         import hmac
-        import time
+        from datetime import datetime
         
-        # Simplified Bedrock call (would need full AWS Signature in production)
         payload = {
             "anthropic_version": "bedrock-2023-05-31",
             "max_tokens": max_tokens,
             "temperature": temperature,
-            "messages": [{"role": "user", "content": prompt}],
+            "messages": messages,
         }
+        body = json.dumps(payload).encode("utf-8")
+        
+        # Manual SigV4 implementation helper
+        def sign(key, msg):
+            return hmac.new(key, msg.encode("utf-8"), hashlib.sha256).digest()
+
+        def get_signature_key(key, date_stamp, region_name, service_name):
+            k_date = sign(("AWS4" + key).encode("utf-8"), date_stamp)
+            k_region = sign(k_date, region_name)
+            k_service = sign(k_region, service_name)
+            k_signing = sign(k_service, "aws4_request")
+            return k_signing
+
+        access_key = config["api_key"]
+        secret_key = os.getenv("AWS_SECRET_ACCESS_KEY", "")
+        region = config["region"]
+        service = "bedrock"
+        host = f"bedrock-runtime.{region}.amazonaws.com"
+        endpoint = f"https://{host}/model/{bedrock_model}/invoke"
+        
+        now = datetime.utcnow()
+        amz_date = now.strftime("%Y%m%dT%H%M%SZ")
+        date_stamp = now.strftime("%Y%m%d")
+        
+        canonical_uri = f"/model/{bedrock_model}/invoke"
+        canonical_querystring = ""
+        canonical_headers = f"content-type:application/json\nhost:{host}\nx-amz-date:{amz_date}\n"
+        signed_headers = "content-type;host;x-amz-date"
+        payload_hash = hashlib.sha256(body).hexdigest()
+        
+        canonical_request = f"POST\n{canonical_uri}\n{canonical_querystring}\n{canonical_headers}\n{signed_headers}\n{payload_hash}"
+        
+        algorithm = "AWS4-HMAC-SHA256"
+        credential_scope = f"{date_stamp}/{region}/{service}/aws4_request"
+        string_to_sign = f"{algorithm}\n{amz_date}\n{credential_scope}\n{hashlib.sha256(canonical_request.encode('utf-8')).hexdigest()}"
+        
+        signing_key = get_signature_key(secret_key, date_stamp, region, service)
+        signature = hmac.new(signing_key, string_to_sign.encode("utf-8"), hashlib.sha256).hexdigest()
+        
+        auth_header = f"{algorithm} Credential={access_key}/{credential_scope}, SignedHeaders={signed_headers}, Signature={signature}"
         
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                f"{config['base_url']}/model/{bedrock_model}/invoke",
+                endpoint,
                 headers={
                     "Content-Type": "application/json",
-                    "Accept": "application/json",
+                    "X-Amz-Date": amz_date,
+                    "Authorization": auth_header,
                 },
-                json=payload,
+                content=body,
                 timeout=30.0,
             )
             response.raise_for_status()
@@ -287,8 +362,12 @@ class MultiCloudProxy:
             
             return {
                 "status": "success",
-                "content": data.get("completion", data.get("outputs", [{}])[0].get("text", "")),
+                "content": data.get("content", [{}])[0].get("text", ""),
                 "model": bedrock_model,
+                "usage": {
+                    "prompt_tokens": data.get("usage", {}).get("input_tokens", 0),
+                    "completion_tokens": data.get("usage", {}).get("output_tokens", 0),
+                },
                 "provider": "bedrock",
             }
     

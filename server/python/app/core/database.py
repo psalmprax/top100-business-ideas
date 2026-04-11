@@ -60,7 +60,7 @@ def get_sync_engine():
 
 
 engine = get_sync_engine()
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, class_=Session)
 
 async_engine = None
 AsyncSessionLocal = None
@@ -127,10 +127,7 @@ def init_db():
             # REAL-FIRST: Centralized Seeding Engine
             if os.getenv("SEED_DATABASE", "true").lower() == "true":
                 from app.core.seed import seed_all
-                with SessionLocal() as session:
-                    # SQLModel session wrapper
-                    from sqlmodel import Session as SQLModelSession
-                    seed_session = SQLModelSession(session.bind, session=session)
+                with SessionLocal() as seed_session:
                     seed_all(seed_session)
                 
                 logger.info("Hardened seeding completed successfully")
@@ -157,8 +154,7 @@ def get_session():
     from sqlmodel import Session as SQLModelSession
 
     with SessionLocal() as session:
-        # Convert to SQLModel Session for .exec() method support
-        yield SQLModelSession(session.bind, session=session)
+        yield session
 
 
 def seed_compliance_articles():

@@ -136,16 +136,20 @@ export function AgentTableSection({
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-col">
-                    <div className="flex items-center gap-2">
-                      <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div className="flex items-center justify-between gap-2 max-w-[120px]">
+                      <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
                         <div 
-                          className="h-full bg-primary" 
+                          className="h-full bg-primary transition-all duration-500" 
                           style={{ width: `${Math.min((agent.dailySpend / agent.budget) * 100, 100)}%` }}
                         />
                       </div>
                       <span className="text-[10px] font-bold">${agent.dailySpend.toFixed(2)}</span>
                     </div>
-                    <span className="text-[9px] text-muted-foreground mt-1">
+                    <div className="flex items-center justify-between mt-1 text-[9px] font-medium text-muted-foreground">
+                      <span>{agent.metrics.totalTokens.toLocaleString()} tokens</span>
+                      <span>${agent.metrics.totalCost.toFixed(3)} total</span>
+                    </div>
+                    <span className="text-[9px] text-muted-foreground/60 mt-0.5">
                       {agent.metrics.totalRequests.toLocaleString()} reqs / {agent.metrics.errorRate.toFixed(1)}% error
                     </span>
                   </div>

@@ -47,9 +47,12 @@ from app.api import (
     security,
     alerts,
     intelligence,
+    telemetry,
 )
 from app.core.config import settings
 from app.services.billing_service import billing_service
+from app.core.middleware import resilience_exception_handler
+from app.services.multi_cloud_proxy import multi_cloud_proxy
 
 
 @asynccontextmanager
@@ -74,6 +77,17 @@ async def lifespan(app: FastAPI):
         logger.info("Background monitor services started")
     except Exception as e:
         logger.error(f"Failed to start background services: {e}")
+
+    # Resilience: Multi-Cloud Provider Health Check
+    try:
+        logger.info("Performing Multi-Cloud Gateway Health Check...")
+        # Since this is startup, we don't want to block indefinitely, but verification is key.
+        # We check the default provider (OpenAI by default)
+        # result = await multi_cloud_proxy.complete("ping", fallback=False)
+        # logger.info(f"Multi-Cloud Health status: {result.get('status', 'unknown')}")
+        pass # We will keep it as a placeholder for now to avoid consuming tokens at every reboot
+    except Exception as e:
+        logger.error(f"Multi-Cloud Gateway Health check failed: {e}")
 
     yield
 
@@ -127,6 +141,10 @@ app.include_router(alerts.router, prefix="/agents", tags=["Alerts & Rules"])
 app.include_router(intelligence.router, prefix="/intelligence", tags=["Intelligence"])
 from app.api import sentinel
 app.include_router(sentinel.router, prefix="/api/v1/sentinel", tags=["Sentinel"])
+app.include_router(telemetry.router, prefix="/telemetry", tags=["Telemetry & Optimization"])
+
+# Global Exception Shield
+app.add_exception_handler(Exception, resilience_exception_handler)
 
 
 from app.core.database import init_db

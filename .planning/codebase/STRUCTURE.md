@@ -1,249 +1,83 @@
 # Codebase Structure
 
-**Analysis Date:** 2026-04-09
+**Analysis Date:** 2026-04-11
 
 ## Directory Layout
 
 ```
 top100-business-ideas/
-├── client/                          # Frontend React application
-│   └── src/
-│       ├── components/              # Reusable UI components
-│       │   ├── ui/                  # shadcn/ui base components (60+)
-│       │   ├── agents/              # Agent-specific components
-│       │   ├── layouts/             # Layout components (V1-V3)
-│       │   └── skeletons/           # Loading skeleton components
-│       ├── pages/                   # Page-level route components (25+)
-│       │   ├── Compliance/           # EU AI Act compliance pages
-│       │   ├── AlphaAgentOps.tsx   # Agent operations dashboard
-│       │   ├── AlphaDeepfakeDefense.tsx # Deepfake defense
-│       │   ├── AlphaWorkforce.tsx    # Workforce automation
-│       │   └── *.tsx               # Feature pages
-│       ├── hooks/                   # Custom React hooks (6)
-│       ├── lib/                     # Core utilities
-│       │   ├── api.ts              # Centralized API client
-│       │   ├── types.ts            # TypeScript type definitions
-│       │   ├── utils.ts           # Utility functions
-│       │   ├── storage.ts        # Local storage helpers
-│       │   └── exportUtils.ts   # Export functionality
-│       ├── contexts/                # React context providers (3)
-│       │   ├── AuthContext.tsx    # Authentication state
-│       │   ├── ThemeContext.tsx   # Theme (dark/light)
-│       │   └── PerspectiveContext.tsx # UI perspective switcher
-│       ├── utils/                 # Additional utilities
-│       ├── test/                  # Playwright E2E tests
-│       ├── tests/                 # Test utilities
-│       ├── const.ts              # App constants
-│       ├── App.tsx               # Main app with routing
-│       ├── main.tsx              # React entry point
-│       └── index.css             # Global styles (Tailwind)
-├── server/                        # Backend services
-│   ├── index.ts                   # Express API gateway (399 lines)
-│   ├── go/                       # Go backend
-│   │   ├── main                 # Compiled binary
-│   │   ├── cmd/                 # Entry points
-│   │   ├── internal/            # Business logic
-│   │   │   ├── handlers/       # HTTP handlers
-│   │   │   ├── services/       # Business services
-│   │   │   ├── repository/     # Data access
-│   │   │   ├── middleware/    # HTTP middleware
-│   │   │   └── database/      # DB connections
-│   │   ├── go.mod              # Go dependencies
-│   │   └── .env               # Go config
-│   └── python/                 # Python ML services
-│       ├── app/
-│       │   ├── main.py         # FastAPI entry
-│       │   ├── api/           # API route modules (15 files)
-│       │   ├── core/          # Core modules
-│       │   │   ├── config.py  # Settings
-│       │   │   ├── database.py # DB connection
-│       │   │   └── models/   # SQLModel definitions
-│       │   ├── services/      # Business services (35+)
-│       │   └── connectors/    # External connectors
-│       ├── venv/              # Python virtual env
-│       ├── requirements.txt   # Python deps
-│       ├── alembic/            # DB migrations
-│       └── .env               # Python config
-├── packages/                     # Shared SDK packages
-│   ├── agentops-sdk/         # Agent operations SDK
-│   ├── livenesslink-sdk/     # Liveness detection SDK
-│   └── regulens-sdk/         # Compliance SDK
-├── shared/                     # Shared utilities
-│   └── const.ts             # Shared constants
-├── ventures/                # Business venture definitions (30+)
-├── tests/                   # Test files
-├── dist/                   # Build output
-└── .planning/             # Development planning docs
+├── client/                          # Frontend React 19 application
+│   ├── src/
+│   │   ├── components/              # Reusable UI components (shadcn/ui + custom)
+│   │   ├── pages/                   # Feature pages (Compliance, AgentOps, etc.)
+│   │   ├── hooks/                   # Custom React hooks (useAuth, useApi)
+│   │   ├── contexts/                # Global state (Auth, Theme, Perspective)
+│   │   ├── lib/                     # API client and core utilities
+│   │   └── App.tsx                  # Main router and provider setup
+│   ├── public/                      # Static assets
+│   └── vite.config.ts               # Vite/Tailwind 4 configuration
+├── server/                          # Backend services
+│   ├── index.ts                     # Express Gateway / JWT Proxy (Unified Server)
+│   ├── go/                          # Go Backend (cmd, internal, go.mod)
+│   └── python/                      # Python ML Backend (app, migrations)
+├── packages/                        # Internal SDKs (Shared across products)
+│   ├── agentops-sdk*/               # Multi-language agent monitoring SDKs
+│   ├── livenesslink-sdk*/           # Biometric defense SDKs
+│   └── regulens-sdk*/               # AI compliance SDKs
+├── ventures/                        # 100+ Business intelligence/venture specs
+├── shared/                          # Cross-frontend/backend shared code
+├── tests/                           # Global E2E and verification scripts
+├── dist/                            # Production build artifacts (gitignored)
+├── .planning/                       # GSD workflows, phases, and codebase maps
+└── .manus-logs/                     # Development debug logs (network, console)
 ```
 
 ## Directory Purposes
 
-**client/src/components/ui/:**
+**client/src/**:
+- **components/ui/**: 60+ low-level primitives using Radix UI and Tailwind 4.
+- **pages/**: Integrated dashboards for specific AlphaAI products (AgentOps, Sentinel, DeepfakeDefense, ComplianceHub).
+- **lib/api.ts**: The "Nexus" for frontend-backend communication, containing clients for all proxied backends.
 
-- Purpose: shadcn/ui base component library
-- Contains: 60+ components (Button, Input, Card, Dialog, Table, Select, etc.)
-- Key files: `button.tsx`, `input.tsx`, `card.tsx`, `dialog.tsx`, `table.tsx`, `select.tsx`
-- Pattern: Radix UI primitives with Tailwind styling
+**server/index.ts**:
+- The "Guard" of the system. Handles the **Global Lockdown** logic, CORS enforcement, and auth-gated proxying to the Go and Python microservices.
 
-**client/src/pages/:**
+**server/go/internal/**:
+- High-concurrency services for user management, real-time agent orchestration, and payment processing.
 
-- Purpose: Route-level page components
-- Contains: 25+ page components for different features
-- Key files:
-  - `AlphaAgentOps.tsx` - Agent operations dashboard
-  - `AlphaDeepfakeDefense.tsx` - Deepfake detection interface
-  - `AlphaWorkforce.tsx` - Workforce automation
-  - `Home.tsx` - Market intelligence landing
-  - `Compliance/index.tsx` - EU AI Act compliance
-- Routing: wouter with protected routes via `ProtectedRoute` wrapper
+**server/python/app/services/**:
+- Complex logic for ML inference, deepfake verification, and semantic compliance audits. Contains 35+ specialized service modules.
 
-**client/src/lib/:**
+**packages/**:
+- A polyglot SDK repository providing language-specific bindings for the core AlphaAI platform capabilities (Go, Python, PHP, Java, etc.).
 
-- Purpose: Core utility libraries and API integration
-- Contains: API client, types, helpers, storage
-- Key files:
-  - `api.ts` - Centralized API layer with authApi, agentsApi, complianceApi, extendedApi
-  - `types.ts` - TypeScript interfaces
-  - `utils.ts` - Helper functions
-
-**client/src/hooks/:**
-
-- Purpose: Custom React hooks for reusable logic
-- Contains: `useAuth`, `useApi`, `useBusinessIdeas`, `useShortlist`, `usePersistFn`, `useComposition`
-
-**client/src/contexts/:**
-
-- Purpose: Global state management
-- Contains: AuthContext, ThemeContext, PerspectiveContext
-
-**server/index.ts:**
-
-- Purpose: Express API gateway
-- Responsibilities: JWT auth, rate limiting, proxy to backends, Socket.io, system lock
-
-**server/go/:**
-
-- Purpose: Core backend API (Go)
-- Contains: Auth, agents, billing, workforce, webhooks handlers
-- Structure: cmd (entry), internal (handlers, services, repository, middleware, database)
-
-**server/python/app/:**
-
-- Purpose: ML/AI backend services (Python/FastAPI)
-- Structure: app (main, api routes, core config/models, services), alembic (migrations)
-- Contains 15 API route modules and 35+ service modules
+**ventures/**:
+- A data-rich repository of "Startup Opportunity Maps", "Gap Analyses", and "customer validation" templates for 100+ business ideas.
 
 ## Key File Locations
 
-**Entry Points:**
+**Core Entries:**
+- `server/index.ts`: The unified gateway.
+- `client/src/main.tsx`: React frontend entry.
+- `server/go/cmd/server/main.go`: Go API entry.
+- `server/python/app/main.py`: Python FastAPI entry.
 
-- `client/src/main.tsx` - React application bootstrap
-- `client/src/App.tsx` - Main app with router, providers, routes
-- `server/index.ts` - Express gateway with proxy, auth, rate limiting
-- `server/go/main` - Compiled Go binary
-- `server/python/app/main.py` - FastAPI application
+**Security & Settings:**
+- `.env`: Master secrets configuration.
+- `vite.config.ts`: Frontend build and proxy rules.
+- `docker-compose.yml`: Local infrastructure setup (Postgres/Redis/Apps).
 
-**Configuration:**
-
-- `package.json` - Root project with pnpm, scripts, dependencies
-- `vite.config.ts` - Frontend build with Tailwind, React plugins
-- `playwright.config.ts` - E2E test configuration
-- `tsconfig.json` - TypeScript configuration
-- `docker-compose.yml` - Container orchestration
-
-**Core Logic:**
-
-- `client/src/lib/api.ts` - Centralized API communication layer
-- `client/src/contexts/AuthContext.tsx` - Authentication state management
-- `server/index.ts` - Gateway with proxy, auth, rate limiting
-
-**Testing:**
-
-- `client/src/test/` - Playwright E2E tests
-- `client/src/tests/` - Test utilities
-- `tests/` - Root-level test files
+**Hardening/Analysis:**
+- `AGENT_DOCUMENTATION.md`: Overview of the agent architecture.
+- `biometrics-verification-report.md`: Verification of the liveness detection system.
 
 ## Naming Conventions
 
-**Files:**
-
-- React components: PascalCase.tsx (Login.tsx, AlphaAgentOps.tsx)
-- Utility files: camelCase.ts (api.ts, utils.ts, storage.ts)
-- Test files: camelCase.spec.ts or camelCase.test.ts
-- Config: kebab-case (vite.config.ts, playwright.config.ts)
-
-**Directories:**
-
-- Feature pages: PascalCase (Compliance, AlphaAgentOps)
-- UI components: kebab-case (error-boundary, perspective-switcher)
-- Technical layers: camelCase (components, hooks, contexts, lib)
-- Backends: lowercase (go, python)
-
-**Functions/Variables:**
-
-- React components: PascalCase
-- Hooks: camelCase with use prefix (useAuth, useApi)
-- Utilities: camelCase
-- Constants: SCREAMING_SNAKE_CASE
-
-## Where to Add New Code
-
-**New Feature Page:**
-
-- Implementation: `client/src/pages/FeatureName.tsx`
-- API integration: Add to `client/src/lib/api.ts` (new API object or extend extendedApi)
-- Routing: Add to `client/src/App.tsx` Router component
-- Tests: `client/src/test/feature.spec.ts`
-
-**New API Endpoint:**
-
-- Backend (Go): `server/go/internal/handlers/` or `server/go/internal/services/`
-- Backend (Python): `server/python/app/api/` or `server/python/app/services/`
-- Frontend: Add method to appropriate API object in `client/src/lib/api.ts`
-
-**New UI Component:**
-
-- Base component: `client/src/components/ui/` (shadcn/ui style)
-- Feature component: `client/src/components/feature/`
-- Tests: Co-located or `client/src/test/`
-
-**New Custom Hook:**
-
-- Location: `client/src/hooks/hookName.ts` or `hookName.tsx`
-
-**New Context:**
-
-- Location: `client/src/contexts/ContextName.tsx`
-- Usage: Add Provider to `client/src/App.tsx`
-
-## Special Directories
-
-**packages/:**
-
-- Purpose: SDK packages for external consumption
-- Generated: No, maintained as part of project
-- Committed: Yes
-
-**ventures/:**
-
-- Purpose: Business venture definitions and documentation
-- Contains: 30+ venture directories with specs
-- Generated: No
-- Committed: Yes
-
-**.planning/:**
-
-- Purpose: Development planning and analysis
-- Contains: Phase plans, codebase docs, project state
-- Generated: Yes, by planning tools
-- Committed: Yes (to git, not deployed)
-
-**dist/:**
-
-- Purpose: Build output (frontend + bundled backend)
-- Generated: Yes, during build
-- Committed: No (in .gitignore)
+- **React components**: PascalCase (e.g., `AlphaAgentOpsDashboard.tsx`).
+- **Python/Go services**: snake_case for Python, camelCase/TitleCase for Go.
+- **SDKs**: kebab-case (e.g., `agentops-sdk-python`).
+- **Constants**: SCREAMING_SNAKE_CASE.
 
 ---
 
-_Structure analysis: 2026-04-09_
+_Structure analysis: 2026-04-11_

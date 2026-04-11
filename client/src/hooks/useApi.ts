@@ -3,6 +3,7 @@
  * Custom hook for handling API calls with loading and error states
  */
 
+import * as React from "react";
 import { useState, useEffect, useCallback } from 'react';
 
 interface UseApiState<T> {

@@ -1112,6 +1112,10 @@ export interface Integration {
   name: string;
   type: string;
   icon?: string;
+  url?: string;
+  endpoint?: string;
+  enabled?: boolean;
+  is_active?: boolean;
   config: Record<string, any>;
   status: string;
   connected?: boolean;
@@ -2321,7 +2325,7 @@ export const extendedApi = {
   },
 
   sentinel: {
-    getHealingStatus: () => apiRequest<any>("/api/v1/sentinel/healing/status"),
+    getHealingStatus: () => apiRequest<any>("/api/v1/agent-ops/self-healing/status"),
     updateHealingConfig: (config: {
       auto_refine?: boolean;
       safety_rollback?: boolean;
@@ -2509,7 +2513,7 @@ export const extendedApi = {
       getDashboard: () =>
         apiRequest<any>("/agent-ops/governance/compliance/dashboard"),
       getStatus: () =>
-        apiRequest<any>("/compliance/status"),
+        apiRequest<any>("/api/v1/compliance/stats"),
       runHipaaAudit: () =>
         apiRequest<any>("/compliance/audit/hipaa", { method: "POST" }),
       runSoxAudit: () =>

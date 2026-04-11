@@ -249,3 +249,22 @@ class OnPremDeployment(SQLModel, table=True):
     status: str = Field(default="active")  # active, maintenance, offline
     last_health_check: datetime = Field(default_factory=datetime.utcnow)
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class LLMUsageLog(SQLModel, table=True):
+    """Granular log of all LLM requests for cost and performance auditing"""
+
+    __tablename__ = "llm_usage_logs"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    agent_id: Optional[uuid.UUID] = Field(default=None, index=True)
+    provider: str = Field(index=True)
+    model: str = Field(index=True)
+    prompt_tokens: int = Field(default=0)
+    completion_tokens: int = Field(default=0)
+    total_tokens: int = Field(default=0)
+    cost: float = Field(default=0.0)
+    latency_ms: int = Field(default=0)
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    status: str = Field(default="success")  # success, error, fallback
+    error_message: Optional[str] = None

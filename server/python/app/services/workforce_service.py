@@ -10,9 +10,10 @@ from datetime import datetime
 
 # Import CrewAI components
 try:
-    from crewai import Agent, Task, Crew, Process
+    from crewai import Agent as CrewAgent, Task as CrewTask, Crew, Process
     from langchain_community.tools import DuckDuckGoSearchRun
     from langchain_openai import ChatOpenAI
+    from app.services.llm_service import llm_service
 
     CREWAI_AVAILABLE = True
 except ImportError:
@@ -37,6 +38,8 @@ from app.core.models import (
 )
 from sqlmodel import Session, select, func
 from app.services.intelligence_service import intelligence_service
+from app.services.optimization_service import optimization_service
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -213,6 +216,10 @@ class WorkforceService:
 
                 # Logic to 'learn' from this could involve updating a local vector store
                 # or fine-tuning instructions in future calls.
+                # Self-Optimization: Trigger tuning cycle on negative feedback
+                if status in ["discarded", "error"]:
+                    optimization_service.optimize_agent(interaction.id) # Potential to use agent id if mapped
+                
                 logger.info(
                     f"Agent feedback applied: {status} for interaction {interaction_id}"
                 )
@@ -237,39 +244,44 @@ class WorkforceService:
             )
 
         try:
-            # 1. Define Agents
-            strategist = Agent(
+            # 1. Define resilient LLM
+            resilient_llm = llm_service.get_resilient_chat_model()
+
+            # 2. Define Agents
+            strategist = CrewAgent(
                 role="Marketing Strategist",
                 goal=f"Develop a content strategy for {topic} that resonates with {target_audience}",
                 backstory="Expert in digital marketing and audience psychology.",
                 tools=[self.search_tool] if self.search_tool else [],
+                llm=resilient_llm,
                 allow_delegation=False,
                 verbose=True,
             )
 
-            writer = Agent(
+            writer = CrewAgent(
                 role="Content Writer",
                 goal=f"Write a compelling blog post and social media updates about {topic}",
                 backstory="Creative writer specialized in tech and business topics.",
+                llm=resilient_llm,
                 allow_delegation=False,
                 verbose=True,
             )
 
-            # 2. Define Tasks
-            research_task = Task(
+            # 3. Define Tasks
+            research_task = CrewTask(
                 description=f"Analyze current trends and audience pain points for {topic} in the context of {target_audience}.",
                 agent=strategist,
                 expected_output="A detailed summary of 3-5 key audience pain points and trending angles for the content.",
             )
 
-            writing_task = Task(
+            writing_task = CrewTask(
                 description=f"Create a 500-word blog post and 3 LinkedIn post drafts based on the research results.",
                 agent=writer,
                 context=[research_task],
                 expected_output="A Markdown-formatted blog post and 3 distinct LinkedIn posts.",
             )
 
-            # 3. Form the Crew
+            # 4. Form the Crew
             crew = Crew(
                 agents=[strategist, writer],
                 tasks=[research_task, writing_task],
@@ -277,8 +289,8 @@ class WorkforceService:
                 verbose=True,
             )
 
-            # 4. Kickoff
-            result = crew.kickoff()
+            # 4. Kickoff (Parallel-safe)
+            result = await asyncio.to_thread(crew.kickoff)
 
             return {
                 "status": "success",
@@ -303,14 +315,17 @@ class WorkforceService:
             )
 
         try:
-            analyst = Agent(
+            resilient_llm = llm_service.get_resilient_chat_model()
+
+            analyst = CrewAgent(
                 role="Customer Insights Analyst",
                 goal="Identify patterns, pain points, and churn risks in customer feedback",
                 backstory="Specialized in customer experience (CX) and sentiment analysis.",
+                llm=resilient_llm,
                 verbose=True,
             )
 
-            analysis_task = Task(
+            analysis_task = CrewTask(
                 description=f"Analyze the following customer feedback and categorize risks: {feedback_data}",
                 agent=analyst,
                 expected_output="A structured report identifying top 3 friction points, an overall churn risk score (1-10), and 3 actionable fixes.",
@@ -319,7 +334,7 @@ class WorkforceService:
             crew = Crew(
                 agents=[analyst], tasks=[analysis_task], memory=True, verbose=True
             )
-            result = crew.kickoff()
+            result = await asyncio.to_thread(crew.kickoff)
 
             # Log interaction for learning
             interaction_id = self._log_interaction(
@@ -351,15 +366,19 @@ class WorkforceService:
             )
 
         try:
-            receptionist = Agent(
+            resilient_llm = llm_service.get_resilient_chat_model()
+
+            receptionist = CrewAgent(
                 role="Inbound Receptionist",
                 goal="Provide helpful, accurate, and professional responses to inbound customer queries. Learn from previous human "
                 "approvals and discards to refine tone and accuracy.",
                 backstory="Highly efficient virtual assistant trained in corporate communication and technical support.",
+                llm=resilient_llm,
                 verbose=True,
             )
 
-            response_task = Task(
+            # 6. Create Case-Sensitive Task for Inbound Response
+            response_task = CrewTask(
                 description=f"Draft a professional and technical response to this inbound query: {query}",
                 agent=receptionist,
                 expected_output="A polite, concise email or chat response that addresses the query or explicitly escalates it if necessary.",
@@ -368,7 +387,7 @@ class WorkforceService:
             crew = Crew(
                 agents=[receptionist], tasks=[response_task], memory=True, verbose=True
             )
-            result = crew.kickoff()
+            result = await asyncio.to_thread(crew.kickoff)
 
             # Log interaction for learning
             interaction_id = self._log_interaction(
@@ -459,16 +478,20 @@ class WorkforceService:
                 # 2. Self-Optimization Phase: Analyze historical successes
                 learnings = self._get_search_learnings(session, niche)
                 
-                # 3. Optimization Phase: Search Optimizer Agent
-                optimizer = Agent(
+                # 3. Define resilient LLM
+                resilient_llm = llm_service.get_resilient_chat_model()
+
+                # 4. Optimization Phase: Search Optimizer Agent
+                optimizer = CrewAgent(
                     role="Closed-Loop Search Optimizer",
                     goal=f"Refine search parameters for {niche} based on historical successes and market intelligence. "
                          f"Output a set of high-conversion 'Autonomous Search Queries'.",
                     backstory="Specialized in iterative search optimization and lead quality assessment.",
+                    llm=resilient_llm,
                     verbose=True
                 )
                 
-                optimization_task = Task(
+                optimization_task = CrewTask(
                     description=f"Analyze historical successes for {niche}: {learnings}. "
                                 f"Incorporate current Market Intel: {market_context}. "
                                 f"SWOT: {swot_analysis}. "
@@ -478,26 +501,28 @@ class WorkforceService:
                 )
                 
                 optimization_crew = Crew(agents=[optimizer], tasks=[optimization_task], verbose=True)
-                optimized_queries = str(optimization_crew.kickoff())
+                optimization_result = await asyncio.to_thread(optimization_crew.kickoff)
+                optimized_queries = str(optimization_result)
 
                 # 4. Dual Budget Check
                 from app.services.agent_ops_service import agent_ops_service
-                settings = agent_ops_service.get_system_settings()
-                global_limit = float(settings.get("global_agent_budget", 1000.0))
+                settings_db = agent_ops_service.get_system_settings()
+                global_limit = float(settings_db.get("global_agent_budget", 1000.0))
                 
                 # 5. Define Researcher Agent with Optimized Mission
-                researcher = Agent(
+                researcher = CrewAgent(
                     role="Autosearch Executive",
                     goal=f"Identify high-profile, high-value prospects in {niche} using optimized search strategies: {optimized_queries}. "
                          f"Context: {market_context}. "
                          f"Target Fortune 500, Tier 1 banks, and government bodies if profile is enterprise.",
                     backstory="Expert in corporate intelligence and strategic lead generation boosted by closed-loop learning.",
                     tools=[self.search_tool] if self.search_tool else [],
+                    llm=resilient_llm,
                     verbose=True
                 )
 
                 # 6. Create Search Task with Intent Tracking
-                search_task = Task(
+                search_task = CrewTask(
                     description=f"Find 5 current 'High-Intent' triggers for companies matching the optimized queries. "
                                 f"Incorporate triggers: Funding, new regulations, or recent security events shared in Paperclip intel.",
                     agent=researcher,
@@ -505,7 +530,8 @@ class WorkforceService:
                 )
 
                 crew = Crew(agents=[researcher], tasks=[search_task], verbose=True)
-                search_results = str(crew.kickoff())
+                search_result = await asyncio.to_thread(crew.kickoff)
+                search_results = str(search_result)
 
                 # 7. Scrape & Score (Using GrowthTools)
                 from app.services.growth_tools import growth_tools
@@ -522,14 +548,15 @@ class WorkforceService:
                     total_intensity_score += intensity_score
                     
                     # 5. Draft Outreach (PENDING_APPROVAL)
-                    writer = Agent(
+                    writer = CrewAgent(
                         role="Outreach Architect",
                         goal="Draft a personalized, high-stakes outreach message based on intent signals.",
                         backstory="Specialized in executive communication for high-value targets.",
+                        llm=resilient_llm,
                         verbose=True
                     )
                     
-                    draft_task = Task(
+                    draft_task = CrewTask(
                         description=f"Draft a personalized email to the CEO/CTO of the company at {url} focusing on {niche}. "
                                     f"Context: {str(signals)}",
                         agent=writer,
@@ -537,7 +564,8 @@ class WorkforceService:
                     )
                     
                     writer_crew = Crew(agents=[writer], tasks=[draft_task], verbose=True)
-                    draft_output = str(writer_crew.kickoff())
+                    writer_result = await asyncio.to_thread(writer_crew.kickoff)
+                    draft_output = str(writer_result)
                     
                     # Persist Outreach Draft
                     outreach = WorkforceOutreach(

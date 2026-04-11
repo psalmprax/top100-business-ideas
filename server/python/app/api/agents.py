@@ -12,6 +12,7 @@ from app.core.models import (
     AgentStatus,
     SkillInstall,
     AgentType,
+    LLMUsageLog
 )
 from app.core.database import get_session
 
@@ -92,9 +93,10 @@ async def get_agent_metrics(session: Session = Depends(get_session)):
     stopped = sum(1 for a in agents if a.status == AgentStatus.STOPPED)
     error_count = sum(1 for a in agents if a.status == AgentStatus.ERROR)
 
-    total_requests = sum(a.metrics.get("totalRequests", 0) for a in agents if a.metrics)
-    total_tokens = sum(a.metrics.get("totalTokens", 0) for a in agents if a.metrics)
-    total_cost = sum(a.metrics.get("totalCost", 0.0) for a in agents if a.metrics)
+    # Strategic: Cross-reference with real LLM usage logs for accurate cost
+    total_requests = session.exec(select(func.count(LLMUsageLog.id))).one()
+    total_tokens = session.exec(select(func.sum(LLMUsageLog.total_tokens))).one() or 0
+    total_cost = session.exec(select(func.sum(LLMUsageLog.cost))).one() or 0.0
 
     avg_cpu = total_requests / total_agents if total_agents > 0 else 0
     avg_memory = (

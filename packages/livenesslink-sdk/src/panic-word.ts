@@ -136,7 +136,8 @@ export class PanicWordDetector {
 
       if (result.isFinal) {
         // Check if any panic word is in the transcript
-        for (const panicWord of this.panicWords) {
+        const panicWordsArray = Array.from(this.panicWords);
+        for (const panicWord of panicWordsArray) {
           if (this.containsPanicWord(transcript, panicWord)) {
             const panicEvent: PanicEvent = {
               detectedWord: panicWord,

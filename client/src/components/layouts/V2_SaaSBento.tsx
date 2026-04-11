@@ -12,6 +12,7 @@ import {
   ArrowRight
 } from "lucide-react";
 import { VentureCard } from "@/components/VentureCard";
+import * as React from "react";
 import { useState } from "react";
 
 interface LayoutProps {

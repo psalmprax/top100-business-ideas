@@ -3,6 +3,7 @@
  * Viewer for webhook delivery attempts and results
  */
 
+import * as React from "react";
 import { useState, useEffect } from "react";
 import {
   Card,

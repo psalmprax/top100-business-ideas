@@ -35,6 +35,7 @@ export interface DashboardAgent {
   created_at?: string;
   createdAt: Date;
   lastActiveAt: Date;
+  metadata?: Record<string, any>;
 }
 
 export interface DashboardAgentRule {
@@ -200,6 +201,8 @@ export interface HealingConfig {
   active: boolean;
   error_threshold: number;
   auto_healing_enabled: boolean;
+  mitigations_count?: number;
+  last_mitigation_time?: string;
   updated_at?: string;
 }
 

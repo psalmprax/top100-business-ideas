@@ -31,11 +31,16 @@ import {
 } from "@/components/ui/dialog";
 import { OverviewSection } from "@/components/AgentOps/sections/OverviewSection";
 import { AgentTableSection } from "@/components/AgentOps/sections/AgentTableSection";
-import { GovernanceSection } from "@/components/AgentOps/sections/GovernanceSection";
 import { IntelligenceHub } from "@/components/AgentOps/sections/IntelligenceHub";
-import { InfrastructureSection } from "@/components/AgentOps/sections/InfrastructureSection";
+import { BudgetSection } from "@/components/AgentOps/sections/BudgetSection";
 import { AgentSettingsDialog } from "@/components/AgentOps/AgentSettingsDialog";
 import { NewAgentDialog, WebhookDialog } from "@/components/AgentOps/Modals";
+import { AuditTrailSubsection } from "@/components/AgentOps/sections/Governance/AuditTrailSubsection";
+import { AlertsConfigSubsection } from "@/components/AgentOps/sections/Governance/AlertsConfigSubsection";
+import { ComplianceStatusSubsection } from "@/components/AgentOps/sections/Governance/ComplianceStatusSubsection";
+import { RegionalHealthSubsection } from "@/components/AgentOps/sections/Infrastructure/RegionalHealthSubsection";
+import { SelfHealingSubsection } from "@/components/AgentOps/sections/Infrastructure/SelfHealingSubsection";
+import { WebhooksSubsection } from "@/components/AgentOps/sections/Infrastructure/WebhooksSubsection";
 
 const ICON_MAP: Record<string, any> = {
   LayoutDashboard,
@@ -145,15 +150,9 @@ export default function AlphaAgentOps() {
                 />
               </TabsContent>
               <TabsContent value="budget">
-                <InfrastructureSection 
-                  multiCloudStatus={ops.multiCloudStatus}
-                  webhooks={ops.webhooks}
-                  onRegisterWebhook={() => setShowWebhookDialog(true)}
-                  clusterNodes={ops.clusterNodes}
-                  onPremDeployments={[]} 
-                  onTriggerOnPremAction={() => {}}
-                  onTriggerPanic={ops.handleTriggerPanic}
-                  onSystemReset={ops.handleSystemReset}
+                <BudgetSection 
+                  liveMetrics={ops.liveMetrics}
+                  budgetRules={[]} // Map from ops if available
                 />
               </TabsContent>
             </>
@@ -163,36 +162,30 @@ export default function AlphaAgentOps() {
           {ops.activeCategory === "ops" && (
             <>
               <TabsContent value="infrastructure">
-                <InfrastructureSection 
+                <RegionalHealthSubsection 
                   multiCloudStatus={ops.multiCloudStatus}
-                  webhooks={ops.webhooks}
-                  onRegisterWebhook={() => setShowWebhookDialog(true)}
                   clusterNodes={ops.clusterNodes}
-                  onPremDeployments={[]}
-                  onTriggerOnPremAction={() => {}}
                   onTriggerPanic={ops.handleTriggerPanic}
                   onSystemReset={ops.handleSystemReset}
                 />
               </TabsContent>
               <TabsContent value="webhooks">
-                <InfrastructureSection 
-                  multiCloudStatus={ops.multiCloudStatus}
+                <WebhooksSubsection 
                   webhooks={ops.webhooks}
                   onRegisterWebhook={() => setShowWebhookDialog(true)}
-                  clusterNodes={ops.clusterNodes}
-                  onPremDeployments={[]}
-                  onTriggerOnPremAction={() => {}}
-                  onTriggerPanic={ops.handleTriggerPanic}
-                  onSystemReset={ops.handleSystemReset}
+                  onRefresh={ops.refreshData}
                 />
               </TabsContent>
               <TabsContent value="on-prem">
-                 <div className="py-20 text-center text-muted-foreground bg-muted/10 rounded-xl border border-dashed flex flex-col items-center justify-center gap-4">
-                   <ShieldCheck className="w-12 h-12 opacity-20" />
-                   <div>
-                     <p className="text-xl font-bold">On-Prem Enclave - Enterprise Roadmap</p>
-                     <p className="max-w-md mx-auto mt-2">Bare-metal and private cloud orchestration is currently in private beta for Strategic tier accounts.</p>
+                 <div className="py-20 text-center text-muted-foreground bg-background/5 p-8 rounded-3xl border border-dashed border-border/20 flex flex-col items-center justify-center gap-6 animate-in fade-in zoom-in-95 duration-500">
+                   <div className="p-4 rounded-2xl bg-muted/30">
+                     <ShieldCheck className="w-12 h-12 opacity-20" />
                    </div>
+                   <div className="space-y-2">
+                     <p className="text-2xl font-black tracking-tight">On-Prem Enclave - Enterprise Roadmap</p>
+                     <p className="max-w-md mx-auto text-sm font-medium opacity-60">Bare-metal and private cloud orchestration is currently in private beta for Strategic tier accounts.</p>
+                   </div>
+                   <Button variant="outline" className="font-black text-xs uppercase tracking-widest px-8">Request Access</Button>
                  </div>
               </TabsContent>
             </>
@@ -200,36 +193,81 @@ export default function AlphaAgentOps() {
 
           {/* Governance Category */}
           {ops.activeCategory === "gov" && (
-            <TabsContent value={ops.activeTab}>
-              <GovernanceSection 
-                auditLog={ops.auditLog}
-                auditSearchQuery={ops.auditSearchQuery}
-                setAuditSearchQuery={ops.setAuditSearchQuery}
-                auditFilterOutcome={ops.auditFilterOutcome}
-                setAuditFilterOutcome={ops.setAuditFilterOutcome}
-                alertConfigs={ops.alertConfigs}
-                onToggleAlert={ops.toggleAlert}
-                onRunHipaaAudit={() => ops.handleRunComplianceAudit("hipaa")}
-                onRunSoxAudit={() => ops.handleRunComplianceAudit("sox")}
-                complianceStatus={ops.complianceStatus}
-              />
-            </TabsContent>
+            <>
+              <TabsContent value="audit">
+                <AuditTrailSubsection 
+                  auditLog={ops.auditLog}
+                  auditSearchQuery={ops.auditSearchQuery}
+                  setAuditSearchQuery={ops.setAuditSearchQuery}
+                  auditFilterOutcome={ops.auditFilterOutcome}
+                  setAuditFilterOutcome={ops.setAuditFilterOutcome}
+                  onSync={ops.refreshData}
+                />
+              </TabsContent>
+              <TabsContent value="alerts">
+                <AlertsConfigSubsection 
+                  alertConfigs={ops.alertConfigs}
+                  onToggleAlert={ops.toggleAlert}
+                />
+              </TabsContent>
+              <TabsContent value="compliance">
+                <ComplianceStatusSubsection 
+                  onRunHipaaAudit={() => ops.handleRunComplianceAudit("hipaa")}
+                  onRunSoxAudit={() => ops.handleRunComplianceAudit("sox")}
+                  complianceStatus={ops.complianceStatus}
+                />
+              </TabsContent>
+              <TabsContent value="sla">
+                 <div className="py-20 text-center text-muted-foreground bg-background/5 p-8 rounded-3xl border border-dashed border-border/20 flex flex-col items-center justify-center gap-4 animate-in fade-in duration-500">
+                    <ShieldCheck className="w-12 h-12 opacity-10" />
+                    <h3 className="text-xl font-black">SLA Oversight Module Under Migration</h3>
+                    <p className="text-sm font-medium opacity-60">This module is being transitioned to the regional compliance engine.</p>
+                 </div>
+              </TabsContent>
+              <TabsContent value="sso">
+                 <div className="py-20 text-center text-muted-foreground bg-background/5 p-8 rounded-3xl border border-dashed border-border/20 flex flex-col items-center justify-center gap-4 animate-in fade-in duration-500">
+                    <Server className="w-12 h-12 opacity-10" />
+                    <h3 className="text-xl font-black">SSO Protocol Registry</h3>
+                    <p className="text-sm font-medium opacity-60">Access controlled by top-level security policy.</p>
+                 </div>
+              </TabsContent>
+            </>
           )}
 
           {/* Intelligence Category */}
           {ops.activeCategory === "intelligence" && (
-            <IntelligenceHub 
-              researchTopic={ops.researchTopic}
-              setResearchTopic={ops.setResearchTopic}
-              isResearching={ops.isResearching}
-              researchResult={ops.researchResult}
-              onRunResearch={ops.handlePaperclipResearch}
-              strategyPrompt={ops.strategyPrompt}
-              setStrategyPrompt={ops.setStrategyPrompt}
-              isGeneratingStrategy={ops.isGeneratingStrategy}
-              strategyResult={ops.strategyResult}
-              onGenerateStrategy={ops.handleHermesStrategy}
-            />
+            <>
+              <TabsContent value="paperclip">
+                <IntelligenceHub 
+                  researchTopic={ops.researchTopic}
+                  setResearchTopic={ops.setResearchTopic}
+                  isResearching={ops.isResearching}
+                  researchResult={ops.researchResult}
+                  onRunResearch={ops.handlePaperclipResearch}
+                  strategyPrompt={ops.strategyPrompt}
+                  setStrategyPrompt={ops.setStrategyPrompt}
+                  isGeneratingStrategy={ops.isGeneratingStrategy}
+                  strategyResult={ops.strategyResult}
+                  onGenerateStrategy={ops.handleHermesStrategy}
+                  view="research"
+                />
+              </TabsContent>
+              <TabsContent value="hermes">
+                <IntelligenceHub 
+                  researchTopic={ops.researchTopic}
+                  setResearchTopic={ops.setResearchTopic}
+                  isResearching={ops.isResearching}
+                  researchResult={ops.researchResult}
+                  onRunResearch={ops.handlePaperclipResearch}
+                  strategyPrompt={ops.strategyPrompt}
+                  setStrategyPrompt={ops.setStrategyPrompt}
+                  isGeneratingStrategy={ops.isGeneratingStrategy}
+                  strategyResult={ops.strategyResult}
+                  onGenerateStrategy={ops.handleHermesStrategy}
+                  view="strategy"
+                />
+              </TabsContent>
+            </>
           )}
 
           {/* Fallback for other categories/tabs */}

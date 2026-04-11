@@ -51,7 +51,8 @@ librosa==0.10.0
 # External AI services (optional)
 # langchain-community==0.3.10  # Commented out due to version conflicts
 
-# Search and data collection (optional)
+# External AI services
+openai>=1.0.0
 duckduckgo-search==6.3.3
 ddgs>=9.0.0
 

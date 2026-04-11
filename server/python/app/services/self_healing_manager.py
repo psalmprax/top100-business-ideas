@@ -297,6 +297,7 @@ class SelfHealingManager:
             "degraded": degraded,
             "failed": failed,
             "health_percentage": (healthy / total * 100) if total > 0 else 0,
+            "mitigations_count": len(self.recovery_history),
             "nodes": [n.to_dict() for n in self.nodes.values()],
             "recent_recoveries": self.recovery_history[-10:]
             if self.recovery_history

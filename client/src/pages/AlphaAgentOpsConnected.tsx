@@ -204,6 +204,8 @@ export default function AlphaAgentOpsConnected() {
         environment: data.environment,
         status: "active",
         config: {
+          provider: data.provider,
+          model: data.model,
           temperature: data.temperature,
           maxTokens: data.maxTokens
         }

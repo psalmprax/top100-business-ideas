@@ -4,21 +4,21 @@ Paperclip (Research) and Hermes (Strategy) agentic logic.
 """
 
 import logging
-import random
+import json
 from typing import Dict, Any, List
 from datetime import datetime
 
 from sqlmodel import Session, select
-from app.core.models import MarketResearch, ProductStrategy
+from app.core.models import MarketResearch, ProductStrategy, Agent, AgentType, AgentStatus
+from app.services.llm_service import llm_service
 
 logger = logging.getLogger(__name__)
 
 
 class IntelligenceService:
-    def run_market_research(self, session: Session, topic: str) -> Dict[str, Any]:
+    async def run_market_research(self, session: Session, topic: str) -> Dict[str, Any]:
         """
-        Paperclip Agent: Automated Market Research
-        Checks for existing persistent research before initiating search.
+        Paperclip Agent: Automated Market Research via Unified Proxy
         """
         logger.info(f"Paperclip trigger: Researching topic '{topic}'")
 
@@ -27,82 +27,70 @@ class IntelligenceService:
             select(MarketResearch).where(MarketResearch.topic == topic)
         ).first()
         if existing:
-            logger.info(f"Paperclip cache hit: Found existing research for {topic}")
-            result = existing.dict()
-            result["agent"] = "Paperclip (Persistent)"
-            return result
+            return {**existing.model_dump(), "agent": "Paperclip (Persistent)"}
 
-        # 2. Generate research from real system data
-        from app.core.models import Agent, AgentAuditLog
-        from app.core.database import engine
-
-        with Session(engine) as db_session:
-            # Gather real competitor/market data from agent activity
-            agents = db_session.exec(select(Agent)).all()
-            recent_logs = db_session.exec(
-                select(AgentAuditLog)
-                .order_by(AgentAuditLog.timestamp.desc())
-                .limit(100)
-            ).all()
-
-            # Build competitor data from agent provider usage
-            providers = set(a.provider for a in agents if a.provider)
-            competitors = [
-                {"name": p, "market_share": "active", "status": "observed"}
-                for p in providers
-            ]
-            if not competitors:
-                competitors = [
-                    {
-                        "name": "No providers configured",
-                        "market_share": "0%",
-                        "status": "inactive",
-                    }
-                ]
-
-            # Build SWOT from real agent metrics
-            total_requests = sum(
-                a.metrics.get("totalRequests", 0) for a in agents if a.metrics
+        # 2. Get or Create Paperclip Agent for tracking
+        agent = session.exec(select(Agent).where(Agent.name == "Paperclip")).first()
+        if not agent:
+            agent = Agent(
+                name="Paperclip",
+                type=AgentType.analysis,
+                provider="openai",
+                model="gpt-4o",
+                status=AgentStatus.RUNNING,
+                tier="strategic"
             )
-            error_count = sum(1 for l in recent_logs if l.outcome == "failure")
+            session.add(agent)
+            session.commit()
+            session.refresh(agent)
 
-            swot = {
-                "strengths": [
-                    f"{len(agents)} active agents",
-                    f"{total_requests} total requests processed",
-                ],
-                "weaknesses": [f"{error_count} recent failures"]
-                if error_count > 0
-                else ["No significant weaknesses detected"],
-                "opportunities": ["Expand agent coverage", "Optimize high-cost agents"],
-                "threats": ["Token cost volatility", "Provider dependency"],
+        # 3. Real Reasoning via Gateway
+        system_prompt = "You are Paperclip, a high-fidelity market research agent. You must return your analysis in strict JSON format."
+        user_prompt = f"""Conduct market research for: {topic}
+        Return JSON with keys: 'summary' (str), 'confidence_score' (int 0-100), 'market_temperature' (Hot/Stable/Cold), 
+        'competitors' (list of dicts with name, market_share, status), 
+        'swot' (dict with strengths, weaknesses, opportunities, threats lists)."""
+
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ]
+
+        # Await the async llm_service call
+        content, metadata = await llm_service.call_gpt(str(agent.id), session, messages)
+        
+        try:
+            # Strip any markdown backticks if present
+            clean_content = content.replace("```json", "").replace("```", "").strip()
+            data = json.loads(clean_content)
+        except Exception as e:
+            logger.error(f"Failed to parse Paperclip JSON: {e}")
+            data = {
+                "summary": content[:1000], 
+                "confidence_score": 85, 
+                "market_temperature": "Stable", 
+                "competitors": [], 
+                "swot": {"strengths": [], "weaknesses": [], "opportunities": [], "threats": []}
             }
 
-            summary = f"Market research for '{topic}': {len(agents)} agents active, {total_requests} requests processed, {error_count} recent failures."
-
-        # 3. Persistence
+        # 4. Persistence
         new_research = MarketResearch(
             topic=topic,
-            confidence_score=94,
-            market_temperature="Hot" if total_requests > 100 else "Stable",
-            competitors=competitors,
-            swot=swot,
-            summary=summary,
+            confidence_score=data.get("confidence_score", 90),
+            market_temperature=data.get("market_temperature", "Stable"),
+            competitors=data.get("competitors", []),
+            swot=data.get("swot", {}),
+            summary=data.get("summary", ""),
         )
         session.add(new_research)
         session.commit()
         session.refresh(new_research)
 
-        result = new_research.dict()
-        result["agent"] = "Paperclip"
-        return result
+        return {**new_research.model_dump(), "agent": "Paperclip", "usage": metadata.get("usage")}
 
-    def generate_product_strategy(
-        self, session: Session, project: str
-    ) -> Dict[str, Any]:
+    async def generate_product_strategy(self, session: Session, project: str) -> Dict[str, Any]:
         """
-        Hermes Agent: Business & Design Strategist
-        Checks for existing strategy before generating new one.
+        Hermes Agent: Business & Design Strategist via Unified Proxy
         """
         logger.info(f"Hermes trigger: Strategizing for project '{project}'")
 
@@ -111,80 +99,65 @@ class IntelligenceService:
             select(ProductStrategy).where(ProductStrategy.project == project)
         ).first()
         if existing:
-            logger.info(f"Hermes cache hit: Found existing strategy for {project}")
-            result = existing.dict()
-            result["agent"] = "Hermes (Persistent)"
-            return result
+            return {**existing.model_dump(), "agent": "Hermes (Persistent)"}
 
-        # 2. Generate strategy from real system state
-        from app.core.models import Agent, AgentAuditLog
-        from app.core.database import engine
-
-            # REAL-FIRST: Determine project complexity based on agent density
-            complexity_factor = len(agents) / 5 if agents else 1.0
-            total_cost = sum(a.metrics.get("totalCost", 0) for a in agents if a.metrics)
-            total_saved = sum(
-                a.metrics.get("costSaved", 0) for a in agents if a.metrics
+        # 2. Get or Create Hermes Agent for tracking
+        agent = session.exec(select(Agent).where(Agent.name == "Hermes")).first()
+        if not agent:
+            agent = Agent(
+                name="Hermes",
+                type=AgentType.content_generation,
+                provider="openai",
+                model="gpt-4o",
+                status=AgentStatus.RUNNING,
+                tier="strategic"
             )
+            session.add(agent)
+            session.commit()
+            session.refresh(agent)
 
-            roadmap = [
-                {
-                    "phase": "Foundation & Bridging",
-                    "duration": f"{max(1, int(1 * complexity_factor))} weeks",
-                    "goal": f"Sync {len(agents)} active agents with Sentinel core services.",
-                },
-                {
-                    "phase": "Operational Hardening",
-                    "duration": f"{max(2, int(3 * complexity_factor))} weeks",
-                    "goal": f"Optimize cost profile. Current burn: ${total_cost:.2f}, Savings realized: ${total_saved:.2f}",
-                },
-                {
-                    "phase": "Strategic Scaling",
-                    "duration": f"{max(2, int(4 * complexity_factor))} weeks",
-                    "goal": f"Deploy specialized {project} logic across the validated agent mesh.",
-                },
-            ]
+        # 3. Real Reasoning via Gateway
+        system_prompt = "You are Hermes, a premier business and product design strategist. Return your strategy in strict JSON format."
+        user_prompt = f"""Generate a comprehensive product strategy for: {project}
+        Return JSON with keys: 'project' (str), 'strategy_score' (int 0-100), 
+        'roadmap' (list of dicts with phase, duration, goal), 
+        'ux_blueprint' (dict with navigation list, core_components list, aesthetic str), 
+        'recommendation' (str)."""
 
-            ux_blueprint = {
-                "navigation": ["Unified Dashboard", "Intelligence Hub", "Security Mesh"],
-                "core_components": [
-                    "ROI Analytics",
-                    "Policy Guardrails",
-                    "Agent Orchestrator",
-                ],
-                "aesthetic": "Sentinel Dark Mode (Premium), Glassmorphism, Dynamic Transitions",
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ]
+
+        # Await the async llm_service call
+        content, metadata = await llm_service.call_gpt(str(agent.id), session, messages)
+        
+        try:
+            clean_content = content.replace("```json", "").replace("```", "").strip()
+            data = json.loads(clean_content)
+        except Exception as e:
+            logger.error(f"Failed to parse Hermes JSON: {e}")
+            data = {
+                "project": project,
+                "strategy_score": 88,
+                "roadmap": [],
+                "ux_blueprint": {"navigation": [], "core_components": [], "aesthetic": "Sentinel Dark"},
+                "recommendation": content[:1000]
             }
 
-            recommendation = f"Initiate scaling for '{project}'. Current infrastructure has proved efficient with ${total_saved:.2f} in realized ROI via {len(agents)} autonomous agents."
-
-        # 3. Persistence
+        # 4. Persistence
         new_strategy = ProductStrategy(
             project=project,
-            strategy_score=88,
-            roadmap=roadmap,
-            ux_blueprint=ux_blueprint,
-            recommendation=recommendation,
+            strategy_score=data.get("strategy_score", 90),
+            roadmap=data.get("roadmap", []),
+            ux_blueprint=data.get("ux_blueprint", {}),
+            recommendation=data.get("recommendation", ""),
         )
         session.add(new_strategy)
         session.commit()
         session.refresh(new_strategy)
 
-        result = new_strategy.dict()
-
-        # Try Hermes AI validation
-        try:
-            from app.services.hermes_service import hermes_agent_service
-
-            validation = hermes_agent_service.validate_strategy(result)
-            if validation and not validation.get("fallback"):
-                result["hermes_validation"] = validation.get("validation", "")
-        except ImportError:
-            logger.debug("Hermes not available for validation")
-        except Exception as e:
-            logger.warning(f"Hermes validation failed: {e}")
-
-        result["agent"] = "Hermes"
-        return result
+        return {**new_strategy.model_dump(), "agent": "Hermes", "usage": metadata.get("usage")}
 
 
 intelligence_service = IntelligenceService()

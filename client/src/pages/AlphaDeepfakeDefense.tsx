@@ -13,6 +13,7 @@
  * - API for High-Volume Verification
  */
 
+import * as React from "react";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
@@ -1482,392 +1483,39 @@ export default function AlphaDeepfakeDefense() {
 
             {/* Detectors Tab */}
             <TabsContent value="detectors">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle className="text-card-title">
-                      AI Detectors
-                    </CardTitle>
-                    <CardDescription className="text-feature">
-                      Manage and test deepfake detection algorithms
-                    </CardDescription>
-                  </div>
-                  <Button
-                    data-testid="btn-test-detector"
-                    onClick={() => setShowTestDetectorDialog(true)}
-                  >
-                    <Zap className="w-4 h-4 mr-2" /> Test Detector
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-4 mb-4">
-                    <Select value={mediaType} onValueChange={setMediaType}>
-                      <SelectTrigger className="w-48">
-                        <SelectValue placeholder="Filter by type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Types</SelectItem>
-                        <SelectItem value="image">Images</SelectItem>
-                        <SelectItem value="video">Videos</SelectItem>
-                        <SelectItem value="audio">Audio</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Button variant="outline" onClick={handleExport}>
-                      <Download className="w-4 h-4 mr-2" />
-                      Export
-                    </Button>
-                  </div>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Media</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Result</TableHead>
-                        <TableHead>Confidence</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {analyses
-                        .filter(
-                          a => mediaType === "all" || a.mediaType === mediaType
-                        )
-                        .map(analysis => (
-                          <TableRow key={analysis.id}>
-                            <TableCell className="font-medium">
-                              <div className="flex items-center gap-2">
-                                <div className="w-6 h-6 rounded bg-muted/50 flex items-center justify-center">
-                                  {analysis.mediaType === "image" ? (
-                                    <Image className="w-3 h-3" />
-                                  ) : analysis.mediaType === "video" ? (
-                                    <Video className="w-3 h-3" />
-                                  ) : (
-                                    <Mic className="w-3 h-3" />
-                                  )}
-                                </div>
-                                <span className="truncate max-w-[150px]">
-                                  {analysis.mediaUrl.split("/").pop() ||
-                                    "unknown_media"}
-                                </span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="capitalize text-caption-premium">
-                              {analysis.mediaType}
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={
-                                  analysis.result === "real"
-                                    ? "default"
-                                    : "destructive"
-                                }
-                                className={
-                                  analysis.result === "real"
-                                    ? "bg-emerald-500"
-                                    : ""
-                                }
-                              >
-                                {analysis.result}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="font-bold">
-                              {(
-                                analysis.confidence *
-                                (analysis.confidence > 1 ? 1 : 100)
-                              ).toFixed(1)}
-                              %
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      {analyses.length === 0 && (
-                        <TableRow>
-                          <TableCell
-                            colSpan={4}
-                            className="h-24 text-center text-muted-foreground italic"
-                          >
-                            No active analyses detected in current session
-                            buffer.
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
+              <DetectorsSection 
+                mediaType={mediaType}
+                setMediaType={setMediaType}
+                analyses={analyses}
+                onShowTestDialog={() => setShowTestDetectorDialog(true)}
+                onExport={handleExport}
+              />
             </TabsContent>
 
             {/* Models Tab */}
             <TabsContent value="models">
-              <Card className="border-purple-500/20 shadow-lg">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <Layers className="w-6 h-6 text-purple-500" />
-                      Custom Detection Models
-                    </CardTitle>
-                    <CardDescription>
-                      Enterprise-specific neural networks and specialized
-                      weights
-                    </CardDescription>
-                  </div>
-                  <Button
-                    onClick={() => setShowDeployModelDialog(true)}
-                    className="bg-purple-600 hover:bg-purple-700"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Deploy New Model
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Model ID</TableHead>
-                        <TableHead>Neural Network</TableHead>
-                        <TableHead>Accuracy</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">
-                          Last Trained
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {customModels.map(model => (
-                        <TableRow key={model.id}>
-                          <TableCell className="font-mono text-xs">
-                            {model.id}
-                          </TableCell>
-                          <TableCell>
-                            <div className="font-bold">{model.name}</div>
-                            <div className="text-caption-premium text-muted-foreground">
-                              Version {model.version}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Progress
-                                value={model.accuracy * 100}
-                                className="w-12 h-1.5"
-                              />
-                              <span className="text-xs font-bold">
-                                {(model.accuracy * 100).toFixed(1)}%
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              className={
-                                model.status === "deployed"
-                                  ? "bg-green-500/10 text-green-500 border-green-500/20"
-                                  : "bg-amber-500/10 text-amber-500 border-amber-500/20"
-                              }
-                            >
-                              {model.status.toUpperCase()}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right text-xs text-muted-foreground">
-                            {model.lastTrained.toLocaleDateString()}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10"
-                              onClick={() => handleDeleteModel(model.id)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
+              <ModelsSection 
+                customModels={customModels}
+                onShowDeployDialog={() => setShowDeployModelDialog(true)}
+                onDeleteModel={handleDeleteModel}
+              />
             </TabsContent>
 
             {/* Liveness Tab */}
             <TabsContent value="liveness">
-              <div className="grid gap-4 md:grid-cols-3">
-                <Card className="md:col-span-2">
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                      <CardTitle className="flex items-center gap-2">
-                        <Video className="w-5 h-5 text-purple-500" />
-                        Live Liveness Detection
-                      </CardTitle>
-                      <CardDescription>
-                        Real-time biometric pulse & micro-expression scan
-                      </CardDescription>
-                    </div>
-                    <div className="flex gap-2">
-                      <Badge
-                        variant="outline"
-                        className="animate-pulse bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                      >
-                        <Activity className="w-3 h-3 mr-1" /> Live
-                      </Badge>
-                      <Button
-                        data-testid="btn-configure-liveness"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowConfigureLivenessDialog(true)}
-                      >
-                        <Settings className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="aspect-video bg-muted rounded-xl border-2 border-dashed flex flex-col items-center justify-center p-8 text-center relative overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent pointer-events-none" />
-                      <div className="absolute top-4 left-4 flex gap-2">
-                        <Badge
-                          variant="secondary"
-                          className="bg-black/40 backdrop-blur-md border-white/10 text-white"
-                        >
-                          4K RAW
-                        </Badge>
-                        <Badge
-                          variant="secondary"
-                          className="bg-black/40 backdrop-blur-md border-white/10 text-white"
-                        >
-                          60 FPS
-                        </Badge>
-                      </div>
-                      <div className="relative z-10">
-                        <div className="w-24 h-24 rounded-full border-4 border-purple-500 border-t-transparent animate-spin mb-4 mx-auto" />
-                        <h3 className="text-xl font-bold mb-2">
-                          Requesting Camera Access...
-                        </h3>
-                        <p className="text-sm text-muted-foreground max-w-xs mx-auto mb-6">
-                          Please grant permission to start the rPPG pulse scan
-                          and phoneme synchronization check.
-                        </p>
-                        <Button
-                          onClick={async () => {
-                            const tId = toast.loading(
-                              "Requesting Camera Access..."
-                            );
-                            try {
-                              const stream =
-                                await navigator.mediaDevices.getUserMedia({
-                                  video: true,
-                                });
-                              toast.success(
-                                "Liveness Model v4 Warmup... 3D Depth Active",
-                                { id: tId }
-                              );
-                              setIsAnalyzing(true);
-                              setScanStage("CAPTURING_LIVENESS");
-                              setScanProgress(0);
-                              const videoTrack = stream.getVideoTracks()[0];
-                              if (videoTrack) {
-                                videoTrack.stop();
-                              }
-                              try {
-                                const result =
-                                  await extendedApi.deepfake.analyzeEnterprise({
-                                    source: "live_camera",
-                                    verification_mode: "liveness_depth",
-                                    timestamp: new Date().toISOString(),
-                                  });
-                                setAdvancedResult({
-                                  id: result?.id || "liveness-" + Date.now(),
-                                  confidence:
-                                    result?.forensic_score ||
-                                    result?.confidence ||
-                                    0.992,
-                                  liveness_verified: result?.liveness_verified,
-                                  bpm: result?.bpm || 74,
-                                  phoneme_sync:
-                                    result?.phoneme_sync || "MATCHED",
-                                  pixel_status:
-                                    result?.pixel_status || "OPTIMAL",
-                                  flags: result?.flags || [],
-                                  timestamp: new Date().toISOString(),
-                                });
-                              } catch (e) {
-                                console.error(
-                                  "Liveness verification failed:",
-                                  e
-                                );
-                                throw e; // Let the outer catch handle the toast
-                              }
-                              setScanProgress(100);
-                              setIsAnalyzing(false);
-                              toast.success(
-                                "Liveness Verified: Human Presence Confirmed"
-                              );
-                              handleDownload(
-                                "liveness-cert.pdf",
-                                "LIVENESS_CERTIFICATE"
-                              );
-                            } catch {
-                              toast.error(
-                                "Camera access denied or unavailable",
-                                { id: tId }
-                              );
-                            }
-                          }}
-                        >
-                          Enable Camera
-                        </Button>
-                      </div>
-                      {/* Mock Scanning Grid Overlay */}
-                      <div className="absolute inset-0 flex items-center justify-center opacity-20 pointer-events-none">
-                        <div className="w-full h-full border-[20px] border-white/10 grid grid-cols-12 grid-rows-12 gap-px">
-                          {Array.from({ length: 144 }).map((_, i) => (
-                            <div
-                              key={i}
-                              className="border-[0.5px] border-white/10"
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Recent Sessions</CardTitle>
-                    <CardDescription>Biometric audit logs</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {sessions.map(session => (
-                        <div
-                          key={session.id}
-                          className="p-3 rounded-lg border bg-muted/30"
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="font-mono text-caption-premium text-muted-foreground">
-                              {session.id}
-                            </span>
-                            <Badge
-                              variant={
-                                session.status === "verified"
-                                  ? "default"
-                                  : "destructive"
-                              }
-                              className="text-[10px] h-4"
-                            >
-                              {session.status}
-                            </Badge>
-                          </div>
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="capitalize">{session.type}</span>
-                            <span className="font-bold">
-                              {session.microExpressionScore ||
-                                session.voiceLivenessScore ||
-                                "0"}
-                              %
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+               <LivenessSection 
+                 sessions={sessions}
+                 isAnalyzing={isAnalyzing}
+                 setIsAnalyzing={setIsAnalyzing}
+                 scanStage={scanStage}
+                 setScanStage={setScanStage}
+                 scanProgress={scanProgress}
+                 setScanProgress={setScanProgress}
+                 advancedResult={advancedResult}
+                 setAdvancedResult={setAdvancedResult}
+                 onShowConfigureDialog={() => setShowConfigureLivenessDialog(true)}
+                 handleDownload={handleDownload}
+               />
             </TabsContent>
 
             {/* Training Tab */}

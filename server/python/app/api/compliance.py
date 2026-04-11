@@ -400,6 +400,7 @@ async def register_ai_system(
     }
 
 @router.get("/status")
+@router.get("/stats")
 async def get_compliance_status(session: Session = Depends(get_session)):
     """Get aggregated compliance status (HIPAA, SOX, GDPR) derived from real audit logs"""
     status_map = {}

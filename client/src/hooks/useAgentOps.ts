@@ -82,7 +82,7 @@ export function useAgentOps() {
       const [
         agentsRes, auditRes, rulesRes, webhookRes, cloudRes,
         healingRes, llmRes, alertsRes, vigilanceRes, roiRes,
-        healingConfigRes, forecastRes, complianceStatusRes
+        healingConfigRes, forecastRes, complianceStatusRes, defaultsRes
       ] = await Promise.all([
         extendedApi.agents.list(),
         extendedApi.compliance.getAuditLogs(
@@ -109,7 +109,14 @@ export function useAgentOps() {
       if (complianceStatusRes) setComplianceStatus(complianceStatusRes);
 
       if (Array.isArray(roiRes)) setRoiMetrics(roiRes);
-      if (Array.isArray(healingConfigRes)) setHealingConfigs(healingConfigRes);
+      if (Array.isArray(healingConfigRes)) {
+        const enriched = healingConfigRes.map((c, i) => i === 0 ? {
+          ...c,
+          mitigations_count: healingRes?.mitigations_count || 0,
+          last_mitigation_time: healingRes?.recent_recoveries?.[0]?.timestamp
+        } : c);
+        setHealingConfigs(enriched);
+      }
       if (Array.isArray(forecastRes)) setUsageForecasts(forecastRes);
 
       const transformedAgents: DashboardAgent[] = (Array.isArray(agentsRes) ? agentsRes : []).map(agent => ({
@@ -159,9 +166,6 @@ export function useAgentOps() {
           ...ev, timestamp: new Date(ev.timestamp)
         })));
         if (healingRes.nodes) setClusterNodes(healingRes.nodes);
-        if (healingRes.config) {
-           setHealingConfigs([healingRes.config]);
-        }
       }
       setLlmConfigs(Array.isArray(llmRes) ? llmRes : []);
       setAlertConfigs(alertsRes as any);
@@ -179,7 +183,11 @@ export function useAgentOps() {
   };
 
   useEffect(() => {
-    if (isAuthenticated) refreshData();
+    if (isAuthenticated) {
+      refreshData();
+      const interval = setInterval(refreshData, 30000);
+      return () => clearInterval(interval);
+    }
   }, [isAuthenticated, auditSearchQuery, auditFilterOutcome]);
 
   const toggleAgentStatus = async (agentId: string) => {
@@ -367,12 +375,12 @@ export function useAgentOps() {
     }
   };
 
-  const handleInjectHint = async (agentId: string) => {
+  const handleInjectHint = async (agent: DashboardAgent) => {
     const hint = window.prompt("Enter administrative hint/instruction for this agent:");
     if (!hint) return;
 
     try {
-      await extendedApi.agents.injectHint(agentId, hint);
+      await extendedApi.agents.injectHint(agent.id, hint);
       toast.success("Governance hint injected into agent execution context.");
       refreshData();
     } catch (error) {
