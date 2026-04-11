@@ -73,6 +73,7 @@ class MultiCloudProxy:
         max_tokens: int = 1000,
         temperature: float = 0.7,
         fallback: bool = True,
+        api_key: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Route completion request to specified provider or failover.
@@ -87,11 +88,11 @@ class MultiCloudProxy:
 
         if fallback:
             return await self._complete_with_failover(
-                messages, provider, model, max_tokens, temperature
+                messages, provider, model, max_tokens, temperature, api_key
             )
         else:
             return await self._complete_single(
-                messages, provider, model, max_tokens, temperature
+                messages, provider, model, max_tokens, temperature, api_key
             )
     
     async def _complete_single(
@@ -101,6 +102,7 @@ class MultiCloudProxy:
         model: str,
         max_tokens: int,
         temperature: float,
+        api_key: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Complete request to a single provider with exponential backoff."""
         
@@ -108,13 +110,13 @@ class MultiCloudProxy:
         for attempt in range(self.retry_config["max_attempts"]):
             try:
                 if provider == CloudProvider.OPENAI:
-                    result = await self._call_openai(messages, model, max_tokens, temperature)
+                    result = await self._call_openai(messages, model, max_tokens, temperature, api_key)
                 elif provider == CloudProvider.AZURE:
-                    result = await self._call_azure(messages, model, max_tokens, temperature)
+                    result = await self._call_azure(messages, model, max_tokens, temperature, api_key)
                 elif provider == CloudProvider.ANTHROPIC:
-                    result = await self._call_anthropic(messages, model, max_tokens, temperature)
+                    result = await self._call_anthropic(messages, model, max_tokens, temperature, api_key)
                 elif provider == CloudProvider.BEDROCK:
-                    result = await self._call_bedrock(messages, model, max_tokens, temperature)
+                    result = await self._call_bedrock(messages, model, max_tokens, temperature, api_key)
                 else:
                     raise ValueError(f"Unknown provider: {provider}")
                 
@@ -143,6 +145,7 @@ class MultiCloudProxy:
         model: str,
         max_tokens: int,
         temperature: float,
+        api_key: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Try preferred provider, then failover to others on failure."""
         
@@ -156,7 +159,7 @@ class MultiCloudProxy:
         for provider in providers:
             try:
                 result = await self._complete_single(
-                    prompt, provider, model, max_tokens, temperature
+                    messages, provider, model, max_tokens, temperature, api_key
                 )
                 result["provider_used"] = provider.value
                 result["failover_count"] = providers.index(provider)
@@ -173,16 +176,17 @@ class MultiCloudProxy:
         }
     
     async def _call_openai(
-        self, messages: List[Dict[str, str]], model: str, max_tokens: int, temperature: float
+        self, messages: List[Dict[str, str]], model: str, max_tokens: int, temperature: float, api_key: Optional[str] = None
     ) -> Dict[str, Any]:
         """Call OpenAI API."""
         config = self.providers[CloudProvider.OPENAI]
+        key = api_key or config["api_key"]
         
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 f"{config['base_url']}/chat/completions",
                 headers={
-                    config["auth_header"]: f"Bearer {config['api_key']}",
+                    config["auth_header"]: f"Bearer {key}",
                     "Content-Type": "application/json",
                 },
                 json={
@@ -205,10 +209,11 @@ class MultiCloudProxy:
             }
     
     async def _call_azure(
-        self, messages: List[Dict[str, str]], model: str, max_tokens: int, temperature: float
+        self, messages: List[Dict[str, str]], model: str, max_tokens: int, temperature: float, api_key: Optional[str] = None
     ) -> Dict[str, Any]:
         """Call Azure OpenAI API."""
         config = self.providers[CloudProvider.AZURE]
+        key = api_key or config["api_key"]
         
         deployment = config["deployment"]
         url = f"{config['base_url']}/openai/deployments/{deployment}/chat/completions?api-version={config['api_version']}"
@@ -217,7 +222,7 @@ class MultiCloudProxy:
             response = await client.post(
                 url,
                 headers={
-                    config["auth_header"]: config["api_key"],
+                    config["auth_header"]: key,
                     "Content-Type": "application/json",
                 },
                 json={
@@ -239,10 +244,11 @@ class MultiCloudProxy:
             }
     
     async def _call_anthropic(
-        self, messages: List[Dict[str, str]], model: str, max_tokens: int, temperature: float
+        self, messages: List[Dict[str, str]], model: str, max_tokens: int, temperature: float, api_key: Optional[str] = None
     ) -> Dict[str, Any]:
         """Call Anthropic API."""
         config = self.providers[CloudProvider.ANTHROPIC]
+        key = api_key or config["api_key"]
         
         # Map model names
         model_map = {
@@ -255,7 +261,7 @@ class MultiCloudProxy:
             response = await client.post(
                 f"{config['base_url']}/messages",
                 headers={
-                    config["auth_header"]: config["api_key"],
+                    config["auth_header"]: key,
                     "anthropic-version": "2023-06-01",
                     "Content-Type": "application/json",
                 },
@@ -282,10 +288,11 @@ class MultiCloudProxy:
             }
     
     async def _call_bedrock(
-        self, messages: List[Dict[str, str]], model: str, max_tokens: int, temperature: float
+        self, messages: List[Dict[str, str]], model: str, max_tokens: int, temperature: float, api_key: Optional[str] = None
     ) -> Dict[str, Any]:
         """Call AWS Bedrock API with manual Signature V4 signing."""
         config = self.providers[CloudProvider.BEDROCK]
+        key = api_key or config["api_key"]
         
         model_map = {
             "gpt-4": "anthropic.claude-3-sonnet-20240229-v1:0",

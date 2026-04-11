@@ -50,6 +50,7 @@ class Agent(SQLModel, table=True):
     persistent_memory: bool = Field(default=True)
     tier: str = Field(default="industrial")  # strategic, tactical, industrial
     api_secret: str = Field(default_factory=lambda: secrets.token_urlsafe(32))
+    provider_api_key: Optional[str] = Field(default=None)
     config: Optional[Dict[str, Any]] = Field(default={}, sa_column=Column(JSON))
     budget: float = Field(default=10.0)
     daily_spend: float = Field(default=0.0)
@@ -74,6 +75,7 @@ class AgentCreate(SQLModel):
     control_webhook: Optional[str] = None
     persistent_memory: bool = True
     tier: str = "industrial"
+    provider_api_key: Optional[str] = None
     config: Optional[Dict[str, Any]] = {}
     budget: float = 10.0
 
@@ -90,6 +92,7 @@ class AgentUpdate(SQLModel):
     control_webhook: Optional[str] = None
     persistent_memory: Optional[bool] = None
     tier: Optional[str] = None
+    provider_api_key: Optional[str] = None
     config: Optional[Dict[str, Any]] = None
     status: Optional[AgentStatus] = None
     budget: Optional[float] = None

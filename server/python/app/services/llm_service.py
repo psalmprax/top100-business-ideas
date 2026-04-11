@@ -41,12 +41,18 @@ class LLMService:
         start_time = time.time()
         
         try:
+            # Fetch agent to check for custom API key
+            from uuid import UUID
+            agent = session.get(DB_Agent, UUID(agent_id)) if agent_id and agent_id != "None" else None
+            custom_key = agent.provider_api_key if agent else None
+
             # Call the multi-cloud proxy
             result = await multi_cloud_proxy.complete(
                 input_data=messages,
                 provider=cloud_provider,
                 model=model,
-                temperature=temperature
+                temperature=temperature,
+                api_key=custom_key
             )
 
             duration_ms = int((time.time() - start_time) * 1000)

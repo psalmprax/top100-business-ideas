@@ -234,6 +234,24 @@ export function AgentSettingsDialog({
               placeholder="https://api.company.com/agents/control"
             />
           </div>
+          <div className="space-y-2">
+            <Label>Provider API Key (Optional)</Label>
+            <Input
+              type="password"
+              value={editedAgent.provider_api_key || ""}
+              onChange={e =>
+                setEditedAgent(prev => ({
+                  ...prev,
+                  provider_api_key: e.target.value,
+                }))
+              }
+              placeholder="Enter LLM key if not using server defaults"
+              className="bg-zinc-900 border-purple-500/20 focus:border-purple-500"
+            />
+            <p className="text-[10px] text-zinc-500">
+              Leave blank to use the platform's global API keys.
+            </p>
+          </div>
         </div>
       </div>
       <DialogFooter>

@@ -51,6 +51,7 @@ export function NewAgentDialog({ open, onOpenChange, onSave }: ModalProps) {
     budget: 50,
     maxTokens: 100000,
     temperature: 0.7,
+    provider_api_key: "",
   });
 
   const getModelOptions = (provider: string) => {
@@ -237,6 +238,21 @@ export function NewAgentDialog({ open, onOpenChange, onSave }: ModalProps) {
                 coherence.
               </p>
             </div>
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="provider_api_key">Provider API Key (Optional)</Label>
+            <Input
+              id="provider_api_key"
+              type="password"
+              placeholder="Masked credentials for specific node"
+              className="bg-slate-800 border-slate-700 focus:border-blue-500"
+              value={data.provider_api_key}
+              onChange={e => setData({ ...data, provider_api_key: e.target.value })}
+            />
+            <p className="text-[10px] text-slate-500">
+              Overrides platform global keys if provided.
+            </p>
           </div>
 
           <div className="grid gap-4">

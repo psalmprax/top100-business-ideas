@@ -18,6 +18,7 @@ export interface DashboardAgent {
   provider?: string;
   model?: string;
   api_secret?: string;
+  provider_api_key?: string;
   org_id?: string;
   control_webhook?: string;
   budget: number;
