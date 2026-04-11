@@ -32,14 +32,14 @@ import { storage } from "@/lib/storage";
 import { UserMenu } from "@/components/UserMenu";
 
 // Modular Sections
-import { CEOSection } from "./sections/CEOSection";
-import { GrowthSection } from "./sections/GrowthSection";
-import { BoardroomSection } from "./sections/BoardroomSection";
-import { OpsSection } from "./sections/OpsSection";
-import { FinanceSection } from "./sections/FinanceSection";
-import { CashClawSection } from "./sections/CashClawSection";
-import { HRSection } from "./sections/HRSection";
-import { CommsSection } from "./sections/CommsSection";
+import { CEOSection } from "@/components/Workforce/sections/CEOSection";
+import { GrowthSection } from "@/components/Workforce/sections/GrowthSection";
+import { BoardroomSection } from "@/components/Workforce/sections/BoardroomSection";
+import { OpsSection } from "@/components/Workforce/sections/OpsSection";
+import { FinanceSection } from "@/components/Workforce/sections/FinanceSection";
+import { CashClawSection } from "@/components/Workforce/sections/CashClawSection";
+import { HRSection } from "@/components/Workforce/sections/HRSection";
+import { CommsSection } from "@/components/Workforce/sections/CommsSection";
 
 const AlphaWorkforce = () => {
   const [isAutonomous, setIsAutonomous] = useState(
