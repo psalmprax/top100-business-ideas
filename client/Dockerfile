@@ -46,4 +46,4 @@ COPY tsconfig.node.json ./tsconfig.node.json
 EXPOSE 7000
 
 # Start dev server from the project root
-CMD ["pnpm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "7000"]
+CMD ["pnpm", "run", "dev", "--host", "0.0.0.0", "--port", "7000"]
