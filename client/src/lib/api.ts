@@ -1336,12 +1336,32 @@ export const extendedApi = {
         body: JSON.stringify(modelData),
         strict: true,
       }),
-    getBiasReports: (modelId: string) =>
-      apiRequest<any[]>(`/api/v1/compliance/bias-reports/${modelId}`),
-    triggerBiasScan: (modelId: string) =>
-      apiRequest<any>("/api/v1/compliance/bias-scan", {
+    getBiasReports: (scope: string = "global") =>
+      apiRequest<any[]>(`/api/v1/compliance/bias/reports?scope=${scope}`),
+    triggerBiasScan: (scope: string = "global") =>
+      apiRequest<any>(`/api/v1/compliance/bias/scan?scope=${scope}`, {
         method: "POST",
-        body: JSON.stringify({ modelId }),
+        strict: true,
+      }),
+    getEnterpriseAudits: () =>
+      apiRequest<any[]>("/api/v1/compliance/enterprise/audits"),
+    getLiveMetrics: () => apiRequest<any>("/api/v1/compliance/metrics/live"),
+    updatePolicy: (policyData: any) =>
+      apiRequest<any>("/api/v1/compliance/policy/update", {
+        method: "POST",
+        body: JSON.stringify(policyData),
+        strict: true,
+      }),
+    deleteVendor: (vendorId: string) =>
+      apiRequest<any>(`/api/v1/compliance/vendors/${vendorId}`, {
+        method: "DELETE",
+        strict: true,
+      }),
+    get: () => apiRequest<any[]>("/api/v1/compliance/incidents"),
+    updateIncidentStatus: (incidentId: string, status: string) =>
+      apiRequest<any>(`/api/v1/compliance/incidents/${incidentId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
         strict: true,
       }),
     generateDocumentation: (modelId: string, options: ApiOptions = {}) =>
