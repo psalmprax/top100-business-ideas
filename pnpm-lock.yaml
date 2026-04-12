@@ -334,6 +334,9 @@ importers:
         specifier: '>=16.8.0'
         version: 19.2.1
     devDependencies:
+      '@types/dom-speech-recognition':
+        specifier: '*'
+        version: 0.0.9
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.39
@@ -1883,6 +1886,9 @@ packages:
 
   '@types/debug@4.1.12':
     resolution: {integrity: sha512-vIChWdVG3LG1SMxEvI/AK+FWJthlrqlTu7fbrlywTkkaONwk/UAGaULXRlf8vkzFBLVm0zkMdCquhL5aOjhXPQ==}
+
+  '@types/dom-speech-recognition@0.0.9':
+    resolution: {integrity: sha512-uxta75eB62f/Jex9wYTAypKKpiEZ5nOvBRj3TI4yI7JSc65y9eF/Lh9SFjCE3xACj5O5ox2d8nTQFe7Y/nJzfw==}
 
   '@types/dotenv@6.1.1':
     resolution: {integrity: sha512-ftQl3DtBvqHl9L16tpqqzA4YzCSXZfi7g8cQceTz5rOlYtk/IZbFjAv3mLOQlNIgOaylCQWQoBdDQHPgEBJPHg==}
@@ -5745,6 +5751,8 @@ snapshots:
   '@types/debug@4.1.12':
     dependencies:
       '@types/ms': 2.1.0
+
+  '@types/dom-speech-recognition@0.0.9': {}
 
   '@types/dotenv@6.1.1':
     dependencies:

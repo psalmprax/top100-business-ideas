@@ -11,7 +11,9 @@ import {
   Settings2,
   Cpu,
   ShieldCheck,
-  UserPlus
+  UserPlus,
+  Target,
+  RefreshCw,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -45,7 +47,7 @@ const AlphaWorkforce = () => {
   const [isAutonomous, setIsAutonomous] = useState(
     storage.get("workforce_autonomous", false)
   );
-  
+
   const [workforceData, setWorkforceData] = useState<any>(null);
   const [isHiringOpen, setIsHiringOpen] = useState(false);
   const [webhooks, setWebhooks] = useState({
@@ -160,12 +162,16 @@ const AlphaWorkforce = () => {
       setContentDrafts(drafts || []);
       setPlatformDecisions(decisionsData || {});
       setExecutionHistory(historyData || []);
-      
+
       if (Array.isArray(fetchedIntegrations)) {
         setIntegrations(fetchedIntegrations);
-        const slack = fetchedIntegrations.find((i: any) => i.type === "slack")?.url || "";
-        const telegram = fetchedIntegrations.find((i: any) => i.type === "telegram")?.url || "";
-        const discord = fetchedIntegrations.find((i: any) => i.type === "discord")?.url || "";
+        const slack =
+          fetchedIntegrations.find((i: any) => i.type === "slack")?.url || "";
+        const telegram =
+          fetchedIntegrations.find((i: any) => i.type === "telegram")?.url ||
+          "";
+        const discord =
+          fetchedIntegrations.find((i: any) => i.type === "discord")?.url || "";
         setWebhooks({ slack, telegram, discord });
       }
 
@@ -174,9 +180,21 @@ const AlphaWorkforce = () => {
 
       if (earnings) {
         setRevenueData({
-          agentOps: earnings.segments?.agentOps || { revenue: 0, growth: 0, roi: 0 },
-          compliance: earnings.segments?.compliance || { revenue: 0, growth: 0, roi: 0 },
-          deepfake: earnings.segments?.deepfake || { revenue: 0, growth: 0, roi: 0 },
+          agentOps: earnings.segments?.agentOps || {
+            revenue: 0,
+            growth: 0,
+            roi: 0,
+          },
+          compliance: earnings.segments?.compliance || {
+            revenue: 0,
+            growth: 0,
+            roi: 0,
+          },
+          deepfake: earnings.segments?.deepfake || {
+            revenue: 0,
+            growth: 0,
+            roi: 0,
+          },
           totalCapital: earnings.total_capital || 0,
           burnRate: earnings.burn_rate || 0,
           avgRoi: earnings.avg_roi || 0,
@@ -199,7 +217,8 @@ const AlphaWorkforce = () => {
       toast.warning(
         `RECOVERY-FIRST: Workforce service "${endpoint}" reported a connection drop. Activating local-first autonomous simulation.`,
         {
-          description: "Your Alpha Workforce agents are continuing work in autonomous sandbox mode.",
+          description:
+            "Your Alpha Workforce agents are continuing work in autonomous sandbox mode.",
           duration: 8000,
         }
       );
@@ -242,7 +261,10 @@ const AlphaWorkforce = () => {
     ]);
 
     try {
-      const response = await extendedApi.workforce.sendMessage(msg, selectedRecipient);
+      const response = await extendedApi.workforce.sendMessage(
+        msg,
+        selectedRecipient
+      );
       setChatMessages(prev => prev.map(m => (m.id === tempId ? response : m)));
       fetchAgents();
       toast.success(response.sender + " is responding", {
@@ -259,7 +281,8 @@ const AlphaWorkforce = () => {
   const handleRecoverRevenue = async () => {
     toast.info("CashClaw Active: Detecting uncollected revenue...");
     try {
-      const result = await extendedApi.workforce.cashclaw.recover("all_outstanding");
+      const result =
+        await extendedApi.workforce.cashclaw.recover("all_outstanding");
       const recovered = parseFloat(result.recovered_amount) || 0;
       setCashclawData((prev: any) => ({
         ...prev,
@@ -276,9 +299,14 @@ const AlphaWorkforce = () => {
 
   const handleRunMarketing = async () => {
     setIsRunningMarketing(true);
-    toast.info("Marketing Crew Kicked Off...", { icon: <Brain className="w-4 h-4 text-purple-500" /> });
+    toast.info("Marketing Crew Kicked Off...", {
+      icon: <Brain className="w-4 h-4 text-purple-500" />,
+    });
     try {
-      const result = await extendedApi.workforce.runCampaign("AI Compliance Blitz", "Financial Services SMBs");
+      const result = await extendedApi.workforce.runCampaign(
+        "AI Compliance Blitz",
+        "Financial Services SMBs"
+      );
       toast.success("Marketing Campaign Complete!");
     } catch (e) {
       toast.error("Marketing crew failed");
@@ -289,7 +317,9 @@ const AlphaWorkforce = () => {
 
   const handleRunAutosearch = async () => {
     setIsAutosearching(true);
-    toast.info(`Autosearch Engine: Targeting ${targetProfile}...`, { icon: <Target className="w-4 h-4 text-indigo-500" /> });
+    toast.info(`Autosearch Engine: Targeting ${targetProfile}...`, {
+      icon: <Target className="w-4 h-4 text-indigo-500" />,
+    });
     try {
       await extendedApi.workforce.runAutosearch(autosearchNiche, targetProfile);
       toast.success("Autosearch Cycle Initiated");
@@ -315,7 +345,9 @@ const AlphaWorkforce = () => {
   const handleToggleAutonomy = async () => {
     const nextState = !isAutonomous;
     try {
-      await extendedApi.workforce.toggleAutonomy(nextState ? "full" : "partial");
+      await extendedApi.workforce.toggleAutonomy(
+        nextState ? "full" : "partial"
+      );
       setIsAutonomous(nextState);
       storage.set("workforce_autonomous", nextState);
     } catch (e) {
@@ -364,11 +396,14 @@ const AlphaWorkforce = () => {
   };
 
   const handleShiftMarketFocus = () => {
-    toast.promise(extendedApi.workforce.analyzeInsights("Re-evaluate market signals"), {
-      loading: "AI CEO is re-evaluating...",
-      success: "Market analysis complete.",
-      error: "Market re-evaluation failed.",
-    });
+    toast.promise(
+      extendedApi.workforce.analyzeInsights("Re-evaluate market signals"),
+      {
+        loading: "AI CEO is re-evaluating...",
+        success: "Market analysis complete.",
+        error: "Market re-evaluation failed.",
+      }
+    );
   };
 
   if (isLoading) {
@@ -376,7 +411,9 @@ const AlphaWorkforce = () => {
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="flex flex-col items-center gap-4">
           <RefreshCw className="w-10 h-10 text-primary animate-spin" />
-          <p className="text-xs font-black uppercase tracking-widest text-muted-foreground animate-pulse">Syncing Alpha Workforce Node...</p>
+          <p className="text-xs font-black uppercase tracking-widest text-muted-foreground animate-pulse">
+            Syncing Alpha Workforce Node...
+          </p>
         </div>
       </div>
     );
@@ -395,7 +432,8 @@ const AlphaWorkforce = () => {
                 Alpha <span className="text-indigo-400">Workforce</span>
               </h1>
               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
-                <Activity className="w-3 h-3 text-green-500" /> Autonomous Corporate Management
+                <Activity className="w-3 h-3 text-green-500" /> Autonomous
+                Corporate Management
               </p>
             </div>
           </div>
@@ -403,10 +441,15 @@ const AlphaWorkforce = () => {
           <div className="flex items-center gap-6 bg-muted/30 px-6 py-3 rounded-2xl border border-primary/10 shadow-inner">
             <div className="flex items-center gap-3">
               <div className="flex flex-col items-end">
-                <Label htmlFor="auto-mode" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                <Label
+                  htmlFor="auto-mode"
+                  className="text-[10px] font-black uppercase tracking-widest text-muted-foreground"
+                >
                   Autonomous Mode
                 </Label>
-                <span className={`text-[9px] font-bold ${isAutonomous ? "text-green-500" : "text-amber-500"}`}>
+                <span
+                  className={`text-[9px] font-bold ${isAutonomous ? "text-green-500" : "text-amber-500"}`}
+                >
                   {isAutonomous ? "Delegated Active" : "Manual Required"}
                 </span>
               </div>
@@ -419,13 +462,21 @@ const AlphaWorkforce = () => {
             </div>
             <div className="h-8 w-px bg-border hidden md:block" />
             <div className="hidden md:flex flex-col">
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground leading-none">Global ROI</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground leading-none">
+                Global ROI
+              </span>
               <span className="text-lg font-black text-green-500 tabular-nums">
-                {revenueData?.avgRoi ? `${revenueData.avgRoi.toFixed(1)}x` : "---x"}
+                {revenueData?.avgRoi
+                  ? `${revenueData.avgRoi.toFixed(1)}x`
+                  : "---x"}
               </span>
             </div>
             <div className="h-8 w-px bg-border hidden md:block" />
-            <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 h-9 font-black uppercase text-[10px] tracking-widest px-6" onClick={handleDeployWorkforce}>
+            <Button
+              size="sm"
+              className="bg-indigo-600 hover:bg-indigo-700 h-9 font-black uppercase text-[10px] tracking-widest px-6"
+              onClick={handleDeployWorkforce}
+            >
               Deploy Swarm
             </Button>
             <UserMenu />
@@ -443,16 +494,22 @@ const AlphaWorkforce = () => {
                 { value: "growth", label: "Growth", icon: TrendingUp },
                 { value: "ops", label: "Ops", icon: Zap },
                 { value: "finance", label: "Finance", icon: DollarSign },
-                { value: "cashclaw", label: "CashClaw", icon: TrendingUp, color: "text-amber-500" },
+                {
+                  value: "cashclaw",
+                  label: "CashClaw",
+                  icon: TrendingUp,
+                  color: "text-amber-500",
+                },
                 { value: "hr", label: "Workforce", icon: Users },
-                { value: "comms", label: "Discourse", icon: MessageSquare }
+                { value: "comms", label: "Discourse", icon: MessageSquare },
               ].map(tab => (
                 <TabsTrigger
                   key={tab.value}
                   value={tab.value}
                   className="px-6 h-11 rounded-xl font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-white/10 data-[state=active]:text-white transition-all"
                 >
-                  <tab.icon className={`w-4 h-4 mr-2 ${tab.color || ""}`} /> {tab.label}
+                  <tab.icon className={`w-4 h-4 mr-2 ${tab.color || ""}`} />{" "}
+                  {tab.label}
                 </TabsTrigger>
               ))}
             </TabsList>
@@ -460,14 +517,14 @@ const AlphaWorkforce = () => {
           </ScrollArea>
 
           <TabsContent value="boardroom">
-            <BoardroomSection 
+            <BoardroomSection
               platformDecisions={platformDecisions}
               onDecision={handleGovernanceDecision}
             />
           </TabsContent>
 
           <TabsContent value="ceo">
-            <CEOSection 
+            <CEOSection
               goals={goals}
               workforceData={workforceData}
               executionHistory={executionHistory}
@@ -476,7 +533,7 @@ const AlphaWorkforce = () => {
           </TabsContent>
 
           <TabsContent value="growth">
-            <GrowthSection 
+            <GrowthSection
               revenueData={revenueData}
               acquisitions={acquisitions}
               contentDrafts={contentDrafts}
@@ -497,14 +554,14 @@ const AlphaWorkforce = () => {
           </TabsContent>
 
           <TabsContent value="ops">
-            <OpsSection 
+            <OpsSection
               workforceData={workforceData}
               executionHistory={executionHistory}
             />
           </TabsContent>
 
           <TabsContent value="finance">
-            <FinanceSection 
+            <FinanceSection
               revenueData={revenueData}
               fiscalRequests={fiscalRequests}
               ventures={ventures}
@@ -513,7 +570,7 @@ const AlphaWorkforce = () => {
           </TabsContent>
 
           <TabsContent value="cashclaw">
-            <CashClawSection 
+            <CashClawSection
               cashclawData={cashclawData}
               skillsMarketplace={skillsMarketplace}
               jobFeed={jobFeed}
@@ -522,7 +579,7 @@ const AlphaWorkforce = () => {
           </TabsContent>
 
           <TabsContent value="hr">
-            <HRSection 
+            <HRSection
               agentRoster={agentRoster}
               isAutonomous={isAutonomous}
               onHireAgent={() => setIsHiringOpen(true)}
@@ -533,7 +590,7 @@ const AlphaWorkforce = () => {
           </TabsContent>
 
           <TabsContent value="comms">
-            <CommsSection 
+            <CommsSection
               chatMessages={chatMessages}
               availableAgents={availableAgents}
               selectedRecipient={selectedRecipient}

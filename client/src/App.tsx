@@ -28,6 +28,16 @@ import RegionalCompliancePage from "./pages/RegionalCompliance";
 import BiometricEnrollmentPage from "./pages/BiometricEnrollment";
 import VentureDetailPage from "./pages/VentureUniversalTemplate";
 import SkillMarketplacePage from "./pages/SkillMarketplace";
+const OptimizationDashboard = React.lazy(
+  () => import("./pages/OptimizationDashboard")
+);
+const GovernanceDashboard = React.lazy(
+  () => import("./pages/GovernanceDashboard")
+);
+const ShadowAIMonitor = React.lazy(() => import("./pages/ShadowAIMonitor"));
+const ReportingDashboard = React.lazy(
+  () => import("./pages/ReportingDashboard")
+);
 import MobileLandingPage from "./pages/MobileLanding";
 
 import {
@@ -95,12 +105,12 @@ function Router() {
       />
       <ProtectedRoute
         path="/products/agent-ops/optimization"
-        component={import("./pages/OptimizationDashboard").default}
+        component={OptimizationDashboard}
         productId="agent-ops"
       />
       <ProtectedRoute
         path="/products/agent-ops/governance"
-        component={import("./pages/GovernanceDashboard").default}
+        component={GovernanceDashboard}
         productId="agent-ops"
       />
       <ProtectedRoute
@@ -110,13 +120,10 @@ function Router() {
       />
       <ProtectedRoute
         path="/products/ai-compliance/shadow-ai"
-        component={import("./pages/ShadowAIMonitor").default}
+        component={ShadowAIMonitor}
         productId="ai-compliance"
       />
-      <ProtectedRoute
-        path="/reports"
-        component={import("./pages/ReportingDashboard").default}
-      />
+      <ProtectedRoute path="/reports" component={ReportingDashboard} />
       <ProtectedRoute
         path="/products/deepfake-defense"
         component={AlphaDeepfakeDefensePage}

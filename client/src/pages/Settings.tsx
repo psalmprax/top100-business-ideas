@@ -24,6 +24,7 @@ import {
   Lock,
   Bell,
   Shield,
+  ShieldCheck,
   Key,
   Save,
   Loader2,
@@ -73,14 +74,17 @@ export default function Settings() {
 
   const [apiKeys, setApiKeys] = useState<any[]>([]);
   const [webhooks, setWebhooks] = useState<any[]>([]);
+  const [biometricKeys, setBiometricKeys] = useState<any[]>([]);
+  const [mfaEnabled, setMfaEnabled] = useState(false);
 
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const [userData, keysData, webhookData] = await Promise.all([
+        const [userData, keysData, webhookData, bioData] = await Promise.all([
           authApi.me(),
           userApi.apiKeys(),
           extendedApi.webhooks.list(),
+          extendedApi.deepfake.listBiometrics(),
         ]);
 
         if (userData) {
@@ -120,6 +124,13 @@ export default function Settings() {
             name: w.name,
             status: w.is_active ? "Active" : "Inactive",
           })));
+          if (userData.mfa_enabled) {
+            setMfaEnabled(true);
+          }
+        }
+
+        if (Array.isArray(bioData)) {
+          setBiometricKeys(bioData);
         }
       } catch (err) {
         console.error("Failed to sync settings with backend:", err);
@@ -473,22 +484,48 @@ export default function Settings() {
                         Use an app like Google Authenticator
                       </p>
                     </div>
-                    <Button
-                      variant="outline"
-                      className="border-slate-600 opacity-50 cursor-not-allowed"
-                      onClick={() => {
-                        toast.info(
-                          "Multi-Factor Authentication is a planned Enterprise feature.",
-                          {
-                            description:
-                              "Contact sales to join the early access waitlist for hardware security keys and TOTP support.",
-                          }
-                        );
-                      }}
-                    >
-                      Coming Soon
-                    </Button>
+                    <div className="flex items-center gap-4">
+                      {biometricKeys.length === 0 ? (
+                        <Button
+                          variant="outline"
+                          className="border-blue-500/50 text-blue-400 hover:bg-blue-500/10"
+                          onClick={() => {
+                            window.location.href = "/biometric-enrollment";
+                          }}
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Enroll Key
+                        </Button>
+                      ) : (
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-muted-foreground mr-2">
+                            {biometricKeys.length} keys registered
+                          </span>
+                          <Switch 
+                            checked={mfaEnabled} 
+                            onCheckedChange={async (checked) => {
+                              try {
+                                setMfaEnabled(checked);
+                                await userApi.update({ mfa_enabled: checked } as any);
+                                toast.success(`MFA ${checked ? "enabled" : "disabled"}`);
+                              } catch (err) {
+                                setMfaEnabled(!checked);
+                                toast.error("Failed to update MFA status");
+                              }
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
+                  {biometricKeys.length > 0 && (
+                    <div className="mt-4 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10 flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                      <p className="text-[10px] text-emerald-500 font-medium uppercase tracking-wider">
+                        Hardware-backed identity protection active
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 

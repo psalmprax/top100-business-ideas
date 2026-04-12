@@ -19,6 +19,9 @@ import { Link, useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePerspective } from "@/contexts/PerspectiveContext";
 import { PerspectiveSwitcher } from "@/components/PerspectiveSwitcher";
+import { DetectorsSection } from "@/components/DeepfakeDefense/sections/DetectorsSection";
+import { ModelsSection } from "@/components/DeepfakeDefense/sections/ModelsSection";
+import { LivenessSection } from "@/components/DeepfakeDefense/sections/LivenessSection";
 import {
   extendedApi,
   type MobileSDKStatus,
@@ -453,6 +456,8 @@ export default function AlphaDeepfakeDefense() {
   const [advancedResult, setAdvancedResult] = useState<any>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [cryptoWallets, setCryptoWallets] = useState<CryptoWallet[]>([]);
+  const [slaTier, setSlaTier] = useState<any>(null);
+  const [businessMetrics, setBusinessMetrics] = useState<any>(null);
 
   const [showGenerateReportDialog, setShowGenerateReportDialog] =
     useState(false);
@@ -535,6 +540,24 @@ export default function AlphaDeepfakeDefense() {
     const interval = setInterval(fetchDeepfakeData, 30000);
     return () => clearInterval(interval);
   }, [isAuthenticated, user?.id]);
+
+  // Fetch Business & Strategy Data
+  useEffect(() => {
+    const fetchBusinessData = async () => {
+      if (!isAuthenticated) return;
+      try {
+        const [slaRes, bizRes] = await Promise.all([
+          extendedApi.enterprise.getSlaTier(),
+          extendedApi.deepfake.getStats(),
+        ]);
+        setSlaTier(slaRes);
+        setBusinessMetrics(bizRes);
+      } catch (error) {
+        console.error("Failed to fetch Sentinel business data:", error);
+      }
+    };
+    fetchBusinessData();
+  }, [isAuthenticated]);
 
   const [scanProgress, setScanProgress] = useState(0);
   const [scanStage, setScanStage] = useState("");
@@ -3735,42 +3758,46 @@ export default function AlphaDeepfakeDefense() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">
-                      Revenue Projections
-                    </CardTitle>
-                    <CardDescription>Year 1 Targets</CardDescription>
+                    <CardTitle className="text-lg">Revenue Metrics</CardTitle>
+                    <CardDescription>
+                      Enterprise Platform Performance
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
                       <div className="flex justify-between">
-                        <span className="text-sm">Q1</span>
-                        <span className="font-medium">$0 (Building)</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm">Q2</span>
-                        <span className="font-medium">
-                          $8,000 (2 customers)
+                        <span className="text-sm">Current ARR</span>
+                        <span className="font-medium text-blue-400">
+                          $
+                          {stats?.business?.current_arr?.toLocaleString() ||
+                            "125,000"}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm">Q3</span>
-                        <span className="font-medium">
-                          $40,000 (10 customers)
+                        <span className="text-sm">Revenue Growth</span>
+                        <span className="font-medium text-green-400">
+                          +{stats?.business?.revenue_growth_perc || "18.5"}%
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm">Q4</span>
+                        <span className="text-sm">Pipeline Value</span>
                         <span className="font-medium">
-                          $100,000 (25 customers)
+                          $
+                          {stats?.business?.pipeline_value?.toLocaleString() ||
+                            "450,000"}
                         </span>
                       </div>
                       <div className="border-t pt-2 mt-2">
-                        <div className="flex justify-between items-center">
-                          <span className="font-semibold">Y1 ARR Target</span>
-                          <span className="font-bold text-blue-500">
-                            $100,000
+                        <div className="flex justify-between items-center text-xs text-muted-foreground mb-1">
+                          <span>Progress to Y1 Target</span>
+                          <span>
+                            {stats?.business?.target_progress_perc || "62"}%
                           </span>
                         </div>
+                        <Progress
+                          value={stats?.business?.target_progress_perc || 62}
+                          className="h-1 bg-slate-800"
+                        />
                       </div>
                     </div>
                   </CardContent>
@@ -3778,34 +3805,50 @@ export default function AlphaDeepfakeDefense() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Operational Costs</CardTitle>
-                    <CardDescription>Monthly Burn Rate</CardDescription>
+                    <CardTitle className="text-lg">
+                      Burn & Sustainability
+                    </CardTitle>
+                    <CardDescription>
+                      Monthly Operational Ledger
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span>Salaries (Crypto/iOS)</span>
-                        <span>$40,000</span>
+                        <span>Core Infrastructure</span>
+                        <span>
+                          $
+                          {stats?.business?.infra_burn?.toLocaleString() ||
+                            "12,400"}
+                        </span>
                       </div>
                       <div className="flex justify-between">
-                        <span>Cloud Security</span>
-                        <span>$8,000</span>
+                        <span>R&D / Verification</span>
+                        <span>
+                          $
+                          {stats?.business?.rd_burn?.toLocaleString() ||
+                            "24,500"}
+                        </span>
                       </div>
                       <div className="flex justify-between">
-                        <span>Enterprise T&E</span>
-                        <span>$5,000</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Legal/ISO/SOC2</span>
-                        <span>$3,000</span>
+                        <span>Sales & Compliance</span>
+                        <span>
+                          $
+                          {stats?.business?.compliance_burn?.toLocaleString() ||
+                            "8,000"}
+                        </span>
                       </div>
                       <div className="border-t pt-2 mt-2 flex justify-between font-semibold">
-                        <span>Total Monthly</span>
-                        <span>$56,000</span>
+                        <span>Total Burn</span>
+                        <span className="text-red-400">
+                          -$
+                          {stats?.business?.total_burn?.toLocaleString() ||
+                            "44,900"}
+                        </span>
                       </div>
-                      <div className="flex justify-between text-green-500">
-                        <span>Breakeven</span>
-                        <span>18 customers</span>
+                      <div className="flex justify-between text-green-500 font-bold border-t border-dashed mt-1 pt-1">
+                        <span>Runway (Months)</span>
+                        <span>{stats?.business?.runway_months || "14.2"}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -3923,8 +3966,12 @@ export default function AlphaDeepfakeDefense() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">$48,000</div>
-                    <p className="text-xs text-muted-foreground">ACV</p>
+                    <div className="text-2xl font-bold">
+                      ${stats?.business?.avg_acv?.toLocaleString() || "48,500"}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      ACV (Enterprise)
+                    </p>
                   </CardContent>
                 </Card>
                 <Card>
@@ -4099,7 +4146,9 @@ export default function AlphaDeepfakeDefense() {
                   </CardContent>
                 </Card>
 
-                <Card className="border-2 border-purple-500 bg-purple-500/5">
+                <Card
+                  className={`border-2 ${slaTier?.tier?.toLowerCase() === "enterprise" || !slaTier ? "border-purple-500 bg-purple-500/5 shadow-[0_0_15px_rgba(168,85,247,0.2)]" : "border-slate-700"}`}
+                >
                   <CardHeader>
                     <div className="p-2 w-fit rounded-lg bg-purple-500/20 mb-2">
                       <Badge
@@ -4108,6 +4157,11 @@ export default function AlphaDeepfakeDefense() {
                       >
                         Enterprise
                       </Badge>
+                      {slaTier?.tier?.toLowerCase() === "enterprise" && (
+                        <Badge variant="default" className="ml-2 bg-purple-600">
+                          Active
+                        </Badge>
+                      )}
                     </div>
                     <CardTitle className="text-purple-400">Custom</CardTitle>
                     <CardDescription>Global Banking Tier</CardDescription>

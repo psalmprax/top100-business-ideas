@@ -64,8 +64,17 @@ export default function ReportingDashboard() {
   async function loadData() {
     setIsLoading(true);
     try {
-      // TODO: Add reports list endpoint
-      setReports([]);
+      const artifacts = await extendedApi.compliance.listArtifacts();
+      // Map artifacts to Report interface
+      const mappedReports: Report[] = (artifacts || []).map((art: any) => ({
+        id: art.id || String(Math.random()),
+        type: art.report_type || art.type || "Compliance",
+        status: "ready", // Artifacts are by definition ready
+        created_at: art.created_at || new Date().toISOString(),
+        download_url: art.url || art.download_url,
+        size: art.size || "KB",
+      }));
+      setReports(mappedReports.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
     } catch (err) {
       toast.error("Failed to load reports");
     } finally {
@@ -73,14 +82,41 @@ export default function ReportingDashboard() {
     }
   }
 
-  async function generateReport() {
+  async function generateReport(type: string = "compliance") {
     setIsGenerating(true);
+    setReportType(type);
     try {
-      toast.success("Report generation started");
+      toast.info(`Generating ${type} report...`);
+      const result = await extendedApi.compliance.exportReport(undefined, type);
+      
+      if (result && (result.url || result.download_url)) {
+        toast.success(`${type} report ready`);
+        // Refresh history to show the new report
+        await loadData();
+        
+        // Auto-download? For now let's just let the user download from history
+        // window.open(result.url || result.download_url, '_blank');
+      } else {
+        toast.info("Report queued. Check history in a few moments.");
+      }
     } catch (err) {
+      console.error("Generation error:", err);
       toast.error("Failed to generate report");
     } finally {
       setIsGenerating(false);
+    }
+  }
+
+  async function downloadArtifact(url: string, name: string) {
+    if (!url) {
+      toast.error("Download URL not found");
+      return;
+    }
+    
+    try {
+      window.open(url, '_blank');
+    } catch (err) {
+      toast.error("Download failed");
     }
   }
 
@@ -128,7 +164,7 @@ export default function ReportingDashboard() {
               <CardContent>
                 <Button
                   className="w-full"
-                  onClick={generateReport}
+                  onClick={() => generateReport("compliance")}
                   disabled={isGenerating}
                 >
                   <Download className="w-4 h-4 mr-2" /> Generate
@@ -149,7 +185,7 @@ export default function ReportingDashboard() {
               <CardContent>
                 <Button
                   className="w-full"
-                  onClick={generateReport}
+                  onClick={() => generateReport("performance")}
                   disabled={isGenerating}
                 >
                   <Download className="w-4 h-4 mr-2" /> Generate
@@ -170,7 +206,7 @@ export default function ReportingDashboard() {
               <CardContent>
                 <Button
                   className="w-full"
-                  onClick={generateReport}
+                  onClick={() => generateReport("billing")}
                   disabled={isGenerating}
                 >
                   <Download className="w-4 h-4 mr-2" /> Generate
@@ -231,8 +267,8 @@ export default function ReportingDashboard() {
                         </TableCell>
                         <TableCell>{report.size}</TableCell>
                         <TableCell>
-                          {report.status === "ready" && (
-                            <Button size="sm">
+                          {report.download_url && (
+                            <Button size="sm" onClick={() => downloadArtifact(report.download_url!, report.type)}>
                               <Download className="w-3 h-3 mr-1" /> Download
                             </Button>
                           )}

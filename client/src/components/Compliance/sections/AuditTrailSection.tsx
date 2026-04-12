@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { 
   FileText, 
   Search, 
@@ -7,7 +7,9 @@ import {
   AlertCircle,
   CheckCircle2,
   Lock,
-  History
+  History,
+  ShieldCheck,
+  Activity
 } from "lucide-react";
 import { 
   Card, 
@@ -20,20 +22,44 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Progress } from "@/components/ui/progress";
 
-export function AuditTrailSection() {
+interface AuditTrailSectionProps {
+  logs?: any[];
+  onExport?: () => void;
+}
+
+export function AuditTrailSection({ logs = [], onExport }: AuditTrailSectionProps) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterType, setFilterType] = useState("all");
+
+  const filteredLogs = logs.filter(log => {
+    const matchesSearch = 
+      log.event?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      log.actor?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      log.details?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    if (filterType === "all") return matchesSearch;
+    return matchesSearch && log.status === filterType;
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input className="pl-10 h-10 border-border/50 bg-background/50" placeholder="Search immutable logs..." />
+          <Input 
+            className="pl-10 h-10 border-border/50 bg-background/50" 
+            placeholder="Search immutable logs..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" className="h-10 border-border/50">
             <Filter className="w-4 h-4 mr-2" /> Filter
           </Button>
-          <Button variant="outline" size="sm" className="h-10 border-border/50">
+          <Button variant="outline" size="sm" className="h-10 border-border/50" onClick={onExport}>
             <Download className="w-4 h-4 mr-2" /> Export PDF
           </Button>
         </div>
@@ -57,60 +83,38 @@ export function AuditTrailSection() {
         <CardContent className="p-0">
           <ScrollArea className="h-[500px]">
             <div className="divide-y divide-border/30">
-              {[
-                { 
-                  id: "TX-9283", 
-                  event: "Access Control Modification", 
-                  actor: "admin@sentinel.dev", 
-                  status: "verified", 
-                  time: "10:24:12 AM",
-                  details: "Updated role 'regional_manager' with WRITE access to PII-EU-DE."
-                },
-                { 
-                  id: "TX-9282", 
-                  event: "Model Weight Verification", 
-                  actor: "System/AuditBot", 
-                  status: "verified", 
-                  time: "09:45:00 AM",
-                  details: "Hash mismatch check complete. Model weights are integrated and authentic."
-                },
-                { 
-                  id: "TX-9281", 
-                  event: "Anonymization Failure", 
-                  actor: "Agent/DataSrub-4", 
-                  status: "alert", 
-                  time: "08:12:33 AM",
-                  details: "PII leak detected in raw stdout. Autonomous redaction protocol initiated."
-                },
-                { 
-                  id: "TX-9280", 
-                  event: "Compliance Report Generated", 
-                  actor: "ComplianceBot", 
-                  status: "verified", 
-                  time: "04:00:01 AM",
-                  details: "Quarterly HIPAA/SOC-2 report compiled. Ready for human sign-off."
-                }
-              ].map((log) => (
-                <div key={log.id} className="p-4 hover:bg-muted/10 transition-colors group">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <div className={`p-1.5 rounded-lg ${log.status === 'verified' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
-                        {log.status === 'verified' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-                      </div>
-                      <div>
-                        <div className="text-sm font-bold group-hover:text-primary transition-colors">{log.event}</div>
-                        <div className="text-[10px] text-muted-foreground font-mono uppercase tracking-tighter">{log.id} &middot; {log.time}</div>
-                      </div>
-                    </div>
-                    <Badge variant="secondary" className="text-[10px] bg-background/50 border-border/30">
-                      {log.actor}
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground pl-10 leading-relaxed">
-                    {log.details}
-                  </p>
+              {filteredLogs.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+                  <Activity className="w-10 h-10 opacity-20 mb-4" />
+                  <p className="text-sm">No matching audit events found in the ledger.</p>
                 </div>
-              ))}
+              ) : (
+                filteredLogs.map((log, i) => (
+                  <div key={log.id || i} className="p-4 hover:bg-muted/10 transition-colors group">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-1.5 rounded-lg ${log.status === 'verified' || log.status === 'pass' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
+                          {log.status === 'verified' || log.status === 'pass' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                        </div>
+                        <div>
+                          <div className="text-sm font-bold group-hover:text-primary transition-colors">
+                            {log.event || log.action || "System Event"}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground font-mono uppercase tracking-tighter">
+                            {log.id?.slice(0, 8) || `TRX-${1000 + i}`} &middot; {new Date(log.created_at || log.timestamp || Date.now()).toLocaleTimeString()}
+                          </div>
+                        </div>
+                      </div>
+                      <Badge variant="secondary" className="text-[10px] bg-background/50 border-border/30">
+                        {log.actor || "System"}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground pl-10 leading-relaxed">
+                      {log.details || log.description || "Automated compliance verification trace."}
+                    </p>
+                  </div>
+                ))
+              )}
             </div>
           </ScrollArea>
         </CardContent>
@@ -143,7 +147,7 @@ export function AuditTrailSection() {
         <Card className="border-border/50 bg-card/50">
           <CardHeader>
             <CardTitle className="text-sm font-bold flex items-center gap-2">
-              <Lock className="w-4 h-4 text-primary" />
+              <ShieldCheck className="w-4 h-4 text-primary" />
               Encryption Key Rotation
             </CardTitle>
           </CardHeader>

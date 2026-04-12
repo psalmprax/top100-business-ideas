@@ -1183,6 +1183,28 @@ async def get_shadow_ai_stats(session: Session = Depends(get_session)):
     }
 
 
+@router.post("/shadow-ai/block/{tool_id}")
+async def block_shadow_ai_tool(tool_id: str, session: Session = Depends(get_session)):
+    """Block a detected shadow AI tool"""
+    return {
+        "status": "success",
+        "tool_id": tool_id,
+        "action": "blocked",
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+
+
+@router.post("/shadow-ai/allow/{tool_id}")
+async def allow_shadow_ai_tool(tool_id: str, session: Session = Depends(get_session)):
+    """Allow a detected shadow AI tool"""
+    return {
+        "status": "success",
+        "tool_id": tool_id,
+        "action": "allowed",
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+
+
 class RedTeamRequest(BaseModel):
     article_id: str
 

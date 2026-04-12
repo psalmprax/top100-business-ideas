@@ -1,6 +1,6 @@
-# ViralForge Platform: UI/UX Scenario Gap Analysis (Use Case Driven)
+# Top 100 Business Ideas: UI/UX Scenario Gap Analysis (Use Case Driven)
 
-This document provides a comprehensive audit of all UI interactions (buttons, menus, clickables) across the ViralForge platform. Each scenario is evaluated against the **"Real-First"** architecture policy: every interaction must be backed by an authenticated, persistent backend implementation, with simulations relegated strictly to fallback/resilience roles.
+This document provides a comprehensive audit of all UI interactions (buttons, menus, clickables) across the Top 100 Business Ideas platform. Each scenario is evaluated against the **"Real-First"** architecture policy: every interaction must be backed by an authenticated, persistent backend implementation, with simulations relegated strictly to fallback/resilience roles.
 
 ## Status Definitions
 - 🟢 **REAL**: Fully backed by authenticated backend endpoints with database persistence.

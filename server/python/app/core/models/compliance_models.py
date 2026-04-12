@@ -162,8 +162,8 @@ class ForensicTrace(SQLModel, table=True):
 
     __tablename__ = "forensic_traces"
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    user_id: uuid.UUID = Field(index=True)
-    agent_id: uuid.UUID
+    user_id: uuid.UUID = Field(index=True, foreign_key="users.id")
+    agent_id: uuid.UUID = Field(foreign_key="agents.id")
     action: str
     details: dict = Field(default={}, sa_column=Column(JSON))
     timestamp: datetime = Field(default_factory=datetime.utcnow)
@@ -174,7 +174,7 @@ class GovernanceDecision(SQLModel, table=True):
 
     __tablename__ = "governance_decisions"
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    user_id: uuid.UUID = Field(index=True)
+    user_id: uuid.UUID = Field(index=True, foreign_key="users.id")
     stage: int
     decision: str  # e.g., "Human override", "Autonomous"
     status: str = Field(default="REVIEW_REQUIRED")

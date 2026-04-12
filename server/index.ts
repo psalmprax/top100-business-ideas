@@ -20,7 +20,8 @@ dotenv.config();
 
 const PORT = process.env.PORT || 8080;
 const GO_BACKEND = process.env.GO_BACKEND_URL || "http://localhost:7001";
-const PYTHON_BACKEND = process.env.PYTHON_BACKEND_URL || "http://localhost:7002";
+const PYTHON_BACKEND =
+  process.env.PYTHON_BACKEND_URL || "http://localhost:7002";
 const FRONTEND_DEV = "http://localhost:7000";
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
@@ -42,9 +43,10 @@ let IS_SYSTEM_LOCKED = false;
 
 const io = new SocketServer(server, {
   cors: {
-    origin: process.env.NODE_ENV === "production" 
-      ? (process.env.CORS_ORIGIN || "http://149.104.110.122") 
-      : "*",
+    origin:
+      process.env.NODE_ENV === "production"
+        ? process.env.CORS_ORIGIN || "http://149.104.110.122"
+        : "*",
     methods: ["GET", "POST"],
   },
 });
@@ -57,8 +59,20 @@ app.use(
         scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
-        imgSrc: ["'self'", "data:", "https://images.unsplash.com", "https://api.placeholder.com"],
-        connectSrc: ["'self'", "ws:", "wss:", "http://localhost:7001", "http://localhost:8080", "http://localhost:8000"],
+        imgSrc: [
+          "'self'",
+          "data:",
+          "https://images.unsplash.com",
+          "https://api.placeholder.com",
+        ],
+        connectSrc: [
+          "'self'",
+          "ws:",
+          "wss:",
+          "http://localhost:7001",
+          "http://localhost:8080",
+          "http://localhost:8000",
+        ],
       },
     },
   })
@@ -66,19 +80,26 @@ app.use(
 app.use(compression());
 app.use(
   cors({
-    origin: process.env.NODE_ENV === "production" 
-      ? (process.env.CORS_ORIGIN || "http://149.104.110.122") 
-      : "*",
+    origin:
+      process.env.NODE_ENV === "production"
+        ? process.env.CORS_ORIGIN || "http://149.104.110.122"
+        : "*",
     credentials: true,
   })
 );
 
 // GLOBAL LOCK MIDDLEWARE
 const lockMiddleware = (req: Request, res: Response, next: NextFunction) => {
-  if (IS_SYSTEM_LOCKED && !req.path.includes("/api/v1/auth") && !req.path.includes("/api/status") && !req.path.includes("/api/v1/panic/reset")) {
-    return res.status(503).json({ 
-      error: "System Lock Active", 
-      message: "The AlphaAI infrastructure is currently under defensive lockdown. All agentic operations are suspended." 
+  if (
+    IS_SYSTEM_LOCKED &&
+    !req.path.includes("/api/v1/auth") &&
+    !req.path.includes("/api/status") &&
+    !req.path.includes("/api/v1/panic/reset")
+  ) {
+    return res.status(503).json({
+      error: "System Lock Active",
+      message:
+        "The AlphaAI infrastructure is currently under defensive lockdown. All agentic operations are suspended.",
     });
   }
   next();
@@ -87,7 +108,10 @@ const lockMiddleware = (req: Request, res: Response, next: NextFunction) => {
 // JWT VALIDATION MIDDLEWARE
 const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
   // Allow health checks and auth routes (login/register)
-  if (req.originalUrl.includes("/api/status") || req.originalUrl.includes("/api/v1/auth")) {
+  if (
+    req.originalUrl.includes("/api/status") ||
+    req.originalUrl.includes("/api/v1/auth")
+  ) {
     return next();
   }
 
@@ -357,28 +381,30 @@ app.get("/api/status", (_req, res) => {
 // PANIC WORD / GLOBAL LOCK ENDPOINTS
 app.post("/api/v1/panic", (req, res) => {
   const { reason } = req.body;
-  console.warn(`[SECURITY] Panic Word Triggered! Reason: ${reason || "Unspecified"}`);
+  console.warn(
+    `[SECURITY] Panic Word Triggered! Reason: ${reason || "Unspecified"}`
+  );
   IS_SYSTEM_LOCKED = true;
-  
+
   // Emit security alert via Socket.io
   io.emit("security_alert", {
     type: "GLOBAL_LOCK",
     timestamp: new Date().toISOString(),
-    message: "Global security lockdown initiated via Panic Word protocol."
+    message: "Global security lockdown initiated via Panic Word protocol.",
   });
 
-  res.json({ 
-    success: true, 
-    message: "Global System Lock engaged. All agentic operations suspended." 
+  res.json({
+    success: true,
+    message: "Global System Lock engaged. All agentic operations suspended.",
   });
 });
 
 app.post("/api/v1/panic/reset", (req, res) => {
   const { adminSecret } = req.body;
-  
+
   // Use environment secret ONLY
   const validSecret = ADMIN_SECRET;
-  
+
   if (adminSecret !== validSecret) {
     console.warn(`[SECURITY] Unauthorized reset attempt from IP: ${req.ip}`);
     return res.status(403).json({ error: "Unauthorized reset attempt" });
@@ -386,11 +412,11 @@ app.post("/api/v1/panic/reset", (req, res) => {
 
   console.info("[SECURITY] Global System Lock released by administrator.");
   IS_SYSTEM_LOCKED = false;
-  
+
   io.emit("security_alert", {
     type: "LOCK_RELEASED",
     timestamp: new Date().toISOString(),
-    message: "Security lockdown released. Normal operations resumed."
+    message: "Security lockdown released. Normal operations resumed.",
   });
 
   res.json({ success: true, message: "System lock released." });
@@ -411,8 +437,6 @@ app.use(
     res.status(500).json({ error: "Internal server error" });
   }
 );
-
-const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => {
   console.log(`

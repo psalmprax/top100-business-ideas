@@ -592,3 +592,19 @@ func (h *DeepfakeHandler) UpdateDuressConfig(c *gin.Context) {
 
 	c.Data(http.StatusOK, "application/json", response)
 }
+
+func (h *DeepfakeHandler) UpdateConfig(c *gin.Context) {
+	var req interface{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request"})
+		return
+	}
+
+	response, err := h.proxyService.Forward("POST", "/deepfake/config", req)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to update config", Details: err.Error()})
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json", response)
+}

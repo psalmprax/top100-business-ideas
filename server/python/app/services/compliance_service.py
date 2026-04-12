@@ -18,7 +18,13 @@ from app.core.models import (
     AgentAuditLog,
     AlertConfig,
     ComplianceArticle,
+    Agent,
+    AgentStatus,
+    BiometricEnrollment,
+    VerificationSession,
+    ComplianceIncident,
 )
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +34,36 @@ class ComplianceService:
     Orchestration service for EU AI Act compliance.
     Replaces simulations with persistent, structured analysis.
     """
+
+    def __init__(self):
+        self._monitor_task = None
+        self.is_running = False
+
+    def start_audit_loop(self):
+        """Start the background compliance audit loop"""
+        if not self.is_running:
+            self.is_running = True
+            self._monitor_task = asyncio.create_task(self._audit_loop())
+            logger.info("Compliance Audit Background Service Started.")
+
+    def stop_audit_loop(self):
+        self.is_running = False
+        if self._monitor_task:
+            self._monitor_task.cancel()
+
+    async def _audit_loop(self):
+        """Periodically trigger automated audits (SOX, HIPAA, AI Act)"""
+        while self.is_running:
+            try:
+                from app.core.database import engine
+
+                with Session(engine) as session:
+                    logger.info("Starting scheduled compliance audits...")
+                    await self.run_sox_audit(session, user_id="system_cron")
+                    await self.run_hipaa_audit(session, user_id="system_cron")
+            except Exception as e:
+                logger.error(f"Error in compliance audit loop: {e}")
+            await asyncio.sleep(86400)  # Run once every 24 hours
 
     def register_model(
         self,
@@ -318,6 +354,144 @@ class ComplianceService:
             }
             for a in articles
         ]
+
+    async def run_sox_audit(self, session: Session, user_id: str = "system_admin"):
+        """Run a SOX §404 financial integrity audit across all agents"""
+        audit_id = str(uuid.uuid4())
+        agents = session.exec(select(Agent)).all()
+        findings = []
+
+        for agent in agents:
+            if agent.status == AgentStatus.RUNNING:
+                if agent.daily_spend > agent.dailyBudget:
+                    findings.append(
+                        {
+                            "agent_id": str(agent.id),
+                            "agent_name": agent.name,
+                            "issue": "Budget overrun detected",
+                            "severity": "high",
+                            "daily_budget": float(agent.dailyBudget),
+                            "daily_spend": float(agent.daily_spend),
+                        }
+                    )
+                if not agent.model or agent.model == "":
+                    findings.append(
+                        {
+                            "agent_id": str(agent.id),
+                            "agent_name": agent.name,
+                            "issue": "Missing model configuration",
+                            "severity": "medium",
+                        }
+                    )
+
+        status = "COMPLIANT" if len(findings) == 0 else "NON_COMPLIANT"
+
+        audit_log = ComplianceAuditLog(
+            id=audit_id,
+            user_id=user_id,
+            action="RUN_SOX_AUDIT",
+            resource="financial_integrity_v1",
+            compliance_type="SOX",
+            status=status.lower(),
+            metadata_json={
+                "findings": findings,
+                "finding_count": len(findings),
+                "agent_scope": len(agents),
+            },
+        )
+        session.add(audit_log)
+        session.commit()
+
+        return {
+            "audit_id": audit_id,
+            "status": status,
+            "findings": findings,
+            "finding_count": len(findings),
+            "agents_scanned": len(agents),
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+
+    async def run_hipaa_audit(self, session: Session, user_id: str = "system_admin"):
+        """Run a HIPAA data privacy and security audit"""
+        audit_id = str(uuid.uuid4())
+        findings = []
+
+        enrollments = session.exec(select(BiometricEnrollment)).all()
+        inactive_active = [e for e in enrollments if not e.is_active]
+        if len(inactive_active) > 0:
+            findings.append(
+                {
+                    "issue": "Inactive biometric enrollments still present",
+                    "severity": "medium",
+                    "count": len(inactive_active),
+                }
+            )
+
+        sessions = session.exec(select(VerificationSession)).all()
+        unverified = [s for s in sessions if s.result is None or s.result == "pending"]
+        if len(unverified) > 10:
+            findings.append(
+                {
+                    "issue": "High number of unverified sessions",
+                    "severity": "high",
+                    "count": len(unverified),
+                }
+            )
+
+        status = "COMPLIANT" if len(findings) == 0 else "NON_COMPLIANT"
+
+        audit_log = ComplianceAuditLog(
+            id=audit_id,
+            user_id=user_id,
+            action="RUN_HIPAA_AUDIT",
+            resource="privacy_controls_v1",
+            compliance_type="HIPAA",
+            status=status.lower(),
+            metadata_json={
+                "findings": findings,
+                "finding_count": len(findings),
+                "enrollments_checked": len(enrollments),
+                "sessions_checked": len(sessions),
+            },
+        )
+        session.add(audit_log)
+        session.commit()
+
+        return {
+            "audit_id": audit_id,
+            "status": status,
+            "findings": findings,
+            "finding_count": len(findings),
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+
+    async def report_article_71_incident(self, session: Session, request: Dict[str, Any]):
+        """Report a serious incident as per EU AI Act Article 71"""
+        incident = ComplianceIncident(
+            id=str(uuid.uuid4()),
+            title=f"[ARTICLE 71] {request.get('title', 'Unknown Incident')}",
+            description=request.get("description"),
+            severity="critical" if request.get("severity") == "serious" else request.get("severity", "high"),
+            incident_type="compliance",
+            status="open",
+            reported_by=request.get("reported_by", "external_webhook"),
+            affected_systems=request.get("affected_systems", ["production_mesh"]),
+        )
+        session.add(incident)
+
+        # Log specialized audit entry for Article 71
+        audit_log = ComplianceAuditLog(
+            user_id="art71_relay",
+            action="ARTICLE_71_INCIDENT_REPORTED",
+            resource=incident.id,
+            status="verified",
+            compliance_type="EU AI Act - Article 71",
+            metadata_json={"title": incident.title, "severity": incident.severity},
+        )
+        session.add(audit_log)
+        session.commit()
+        session.refresh(incident)
+        return incident
 
 
 # Singleton

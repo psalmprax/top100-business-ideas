@@ -146,6 +146,7 @@ def init_db():
                 # Optional: legacy seeds if not covered by seed_all
                 try:
                     seed_users()
+                    seed_agents()
                     seed_deepfake_data()
                     seed_workforce_data()
                     seed_business_ideas()

@@ -164,9 +164,9 @@ async def analyze_enterprise(
 async def list_detectors(session: Session = Depends(get_session)):
     """List available deepfake detectors based on actual ML capabilities"""
     from app.ml.deepfake_detector import deepfake_detector
-    
+
     status = "active" if deepfake_detector.is_loaded else "limited"
-    
+
     detectors = [
         {
             "id": "det-1",
@@ -200,7 +200,7 @@ async def list_detectors(session: Session = Depends(get_session)):
 async def get_stats(session: Session = Depends(get_session)):
     """Get aggregated statistics from DB with settings-driven ROI metrics"""
     from app.core.models import SystemSetting
-    
+
     analyses = session.exec(select(DeepfakeAnalysis)).all()
 
     total = len(analyses)
@@ -215,12 +215,20 @@ async def get_stats(session: Session = Depends(get_session)):
     avg_confidence = sum(a.confidence for a in analyses) / total if total > 0 else 0
 
     # REAL-FIRST: Fetch metrics from system settings
-    accuracy_setting = session.exec(select(SystemSetting).where(SystemSetting.setting_key == "deepfake_accuracy")).first()
-    fraud_loss_setting = session.exec(select(SystemSetting).where(SystemSetting.setting_key == "avg_deepfake_fraud_loss")).first()
-    
+    accuracy_setting = session.exec(
+        select(SystemSetting).where(SystemSetting.setting_key == "deepfake_accuracy")
+    ).first()
+    fraud_loss_setting = session.exec(
+        select(SystemSetting).where(
+            SystemSetting.setting_key == "avg_deepfake_fraud_loss"
+        )
+    ).first()
+
     accuracy = float(accuracy_setting.setting_value) if accuracy_setting else 94.5
-    avg_fraud_loss = float(fraud_loss_setting.setting_value) if fraud_loss_setting else 50000
-    
+    avg_fraud_loss = (
+        float(fraud_loss_setting.setting_value) if fraud_loss_setting else 50000
+    )
+
     monetary_savings = fake * avg_fraud_loss
 
     return {
@@ -289,6 +297,7 @@ async def list_custom_models(session: Session = Depends(get_session)):
     models = session.exec(select(CustomModel)).all()
     return models
 
+
 @router.delete("/models/{model_id}")
 async def delete_model(model_id: str, session: Session = Depends(get_session)):
     """Permanently delete a neural model from the enclave"""
@@ -296,8 +305,48 @@ async def delete_model(model_id: str, session: Session = Depends(get_session)):
     # For now, we simulate success for existing models
     return {"status": "purged", "model_id": model_id}
 
+
 @router.get("/threats", response_model=List[DeepfakeThreat])
 async def list_threats(session: Session = Depends(get_session)):
     """List all deepfake threats"""
     threats = session.exec(select(DeepfakeThreat)).all()
     return threats
+
+
+@router.get("/sdk/download/{platform}")
+async def get_sdk_download(platform: str):
+    """Get SDK download information"""
+    sdk_info = {
+        "android": {
+            "platform": "android",
+            "download_url": "https://cdn.livenesslink.com/sdk/android/v1.2.0/livenesslink-sdk.aar",
+            "version": "1.2.0",
+            "docs_url": "https://docs.livenesslink.com/android",
+            "api_reference": "https://api.livenesslink.com/docs/android",
+        },
+        "ios": {
+            "platform": "ios",
+            "download_url": "https://cdn.livenesslink.com/sdk/ios/v1.2.0/LivenessLinkSDK.xcframework.zip",
+            "version": "1.2.0",
+            "docs_url": "https://docs.livenesslink.com/ios",
+            "api_reference": "https://api.livenesslink.com/docs/ios",
+        },
+        "web": {
+            "platform": "web",
+            "download_url": "https://cdn.livenesslink.com/sdk/web/v1.2.0/livenesslink-sdk.min.js",
+            "version": "1.2.0",
+            "docs_url": "https://docs.livenesslink.com/web",
+            "api_reference": "https://api.livenesslink.com/docs/web",
+        },
+    }
+
+    return sdk_info.get(
+        platform.lower(),
+        {
+            "platform": platform,
+            "download_url": f"https://cdn.livenesslink.com/sdk/{platform}/latest",
+            "version": "1.2.0",
+            "docs_url": f"https://docs.livenesslink.com/{platform}",
+            "api_reference": f"https://api.livenesslink.com/docs/{platform}",
+        },
+    )

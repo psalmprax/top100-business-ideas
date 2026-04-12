@@ -208,7 +208,7 @@ class AgentAuditLog(SQLModel, table=True):
     __tablename__ = "audit_logs"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    agent_id: uuid.UUID = Field(index=True)
+    agent_id: uuid.UUID = Field(index=True, foreign_key="agents.id")
     action: str
     intent: str
     outcome: str

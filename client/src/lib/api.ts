@@ -738,6 +738,7 @@ export interface User {
   subscriptionTier?: string;
   company?: string;
   allowedProducts: string[];
+  mfa_enabled?: boolean;
   notifications?: {
     emailAlerts: boolean;
     slackIntegration: boolean;
@@ -752,6 +753,22 @@ export interface User {
     defaultModel: string;
     autoSave: boolean;
   };
+}
+
+export interface BiasReport {
+  id: string;
+  model?: string;
+  modelId?: string;
+  category: string;
+  bias_score: number;
+  score?: number;
+  severity: "low" | "medium" | "high" | "critical";
+  findings: string[];
+  recommendations: string[];
+  created_at: string;
+  date?: string;
+  type?: string;
+  status: "pending" | "reviewed" | "mitigated";
 }
 
 export const userApi = {
@@ -1558,99 +1575,11 @@ export const extendedApi = {
       }>("/api/v1/edge/stats"),
   },
 
-  // Optimization Service (Agent Ops UC 18)
-  optimization: {
-    getWorkforceEfficiency: () => apiRequest<any>("/api/v1/telemetry/workforce/efficiency"),
-    getLLMPerformance: (agentId: string, days?: number) => 
-      apiRequest<any>(`/api/v1/telemetry/llm/performance/${agentId}${days ? `?days=${days}` : ""}`),
-    optimizeAgent: (agentId: string) => 
-      apiRequest<any>(`/api/v1/telemetry/workforce/optimize/${agentId}`, {
-        method: "POST",
-      }),
-    getWorkforceStatus: () => apiRequest<any>("/api/v1/telemetry/workforce/status"),
-  },
-
-  // Shadow AI Detection (AI Compliance UC 15)
+  // Shadow AI (AI Compliance UC 15)
   shadowAI: {
     detections: (riskLevel?: string, status?: string) => {
       let url = "/api/v1/shadow-ai/detections?";
       if (riskLevel) url += `risk_level=${riskLevel}&`;
-      if (status) url += `status=${status}`;
-      return apiRequest<any[]>(url);
-    },
-    getDetectionsStream: () => apiRequest<any>("/api/v1/shadow-ai/detections/stream"),
-    blockTool: (toolId: string) => 
-      apiRequest<any>(`/api/v1/shadow-ai/block/${toolId}`, {
-        method: "POST",
-      }),
-    allowTool: (toolId: string) => 
-      apiRequest<any>(`/api/v1/shadow-ai/allow/${toolId}`, {
-        method: "POST",
-      }),
-    getStats: () => apiRequest<any>("/api/v1/shadow-ai/stats"),
-  },
-
-  // Governance Service (Agent Ops UC 19)
-  governance: {
-    getAuditQuorum: () => apiRequest<any>("/api/v1/governance/audit/quorum"),
-    getAuditLogs: (agentId?: string, query?: string, outcome?: string) => {
-      const params = new URLSearchParams();
-      if (agentId) params.append("agentId", agentId);
-      if (query) params.append("search", query);
-      if (outcome) params.append("outcome", outcome);
-      const qs = params.toString();
-      return apiRequest<any[]>(`/api/v1/governance/audit${qs ? "?" + qs : ""}`);
-    },
-    createApprovalRequest: (data: any) => 
-      apiRequest<any>("/api/v1/governance/approval", {
-        method: "POST",
-        body: JSON.stringify(data),
-      }),
-    processApproval: (requestId: string, approved: boolean, reasoning: string) => 
-      apiRequest<any>(`/api/v1/governance/approval/${requestId}`, {
-        method: "PATCH",
-        body: JSON.stringify({ approved, reasoning }),
-      }),
-    getGovernanceStats: () => apiRequest<any>("/api/v1/governance/stats"),
-  },
-
-  // Agent Messaging (Hermes Service)
-  hermes: {
-    broadcastMessage: (agentIds: string[], message: string, priority: string) => 
-      apiRequest<any>("/api/v1/agents/message/broadcast", {
-        method: "POST",
-        body: JSON.stringify({ agent_ids: agentIds, message, priority }),
-      }),
-    getMessages: (agentId?: string) => 
-      apiRequest<any[]>(agentId ? `/api/v1/agents/message/receive?agent_id=${agentId}` : "/api/v1/agents/message/receive"),
-  },
-
-  // White-label Service
-  whitelabel: {
-    configs: () => apiRequest<any[]>("/api/v1/whitelabel/configs"),
-    create: (config: any) => 
-      apiRequest<any>("/api/v1/whitelabel/configs", {
-        method: "POST",
-        body: JSON.stringify(config),
-      }),
-    update: (id: string, config: any) => 
-      apiRequest<any>(`/api/v1/whitelabel/configs/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(config),
-      }),
-    preview: (id: string) => 
-      apiRequest<any>(`/api/v1/whitelabel/preview/${id}`),
-  },
-
-  // Regional Compliance
-  regionalCompliance: {
-    scanRegion: (region: string) => 
-      apiRequest<any>("/api/v1/compliance/regional/scan", {
-        method: "POST",
-        body: JSON.stringify({ region }),
-      }),
-    getRegionalReports: () => apiRequest<any[]>("/api/v1/compliance/regional-reports"),
-  },
       if (status) url += `status=${status}`;
       return apiRequest<ShadowAIDetection[]>(url);
     },
@@ -1658,6 +1587,14 @@ export const extendedApi = {
       apiRequest<ShadowAIDetection>("/api/v1/shadow-ai/detections", {
         method: "POST",
         body: JSON.stringify(detection),
+      }),
+    blockTool: (toolId: string) =>
+      apiRequest<any>(`/api/v1/shadow-ai/block/${toolId}`, {
+        method: "POST",
+      }),
+    allowTool: (toolId: string) =>
+      apiRequest<any>(`/api/v1/shadow-ai/allow/${toolId}`, {
+        method: "POST",
       }),
     remediate: (detectionId: string) =>
       apiRequest<ShadowAIDetection>(
@@ -2005,7 +1942,10 @@ export const extendedApi = {
         method: "POST",
         body: JSON.stringify({ system }),
       }),
-    getArchitectureDefaults: () => apiRequest<{ temperature: number; maxTokens: number; budget: number }>("/api/v1/agent-ops/architecture/defaults"),
+    getArchitectureDefaults: () =>
+      apiRequest<{ temperature: number; maxTokens: number; budget: number }>(
+        "/api/v1/agent-ops/architecture/defaults"
+      ),
     listRules: () => apiRequest<any[]>("/api/v1/agent-ops/rules/budget"),
     createRule: (rule: any) =>
       apiRequest<any>("/api/v1/agent-ops/rules/budget", {
@@ -2413,7 +2353,8 @@ export const extendedApi = {
   },
 
   sentinel: {
-    getHealingStatus: () => apiRequest<any>("/api/v1/agent-ops/self-healing/status"),
+    getHealingStatus: () =>
+      apiRequest<any>("/api/v1/agent-ops/self-healing/status"),
     updateHealingConfig: (config: {
       auto_refine?: boolean;
       safety_rollback?: boolean;
@@ -2423,7 +2364,8 @@ export const extendedApi = {
         method: "POST",
         body: JSON.stringify(config),
       }),
-    getStreamingMetrics: () => apiRequest<any>("/api/v1/sentinel/metrics/stream"),
+    getStreamingMetrics: () =>
+      apiRequest<any>("/api/v1/sentinel/metrics/stream"),
   },
 
   vendors: {
@@ -2503,6 +2445,14 @@ export const extendedApi = {
     getStats: () => apiRequest<any>("/api/v1/deepfake/stats"),
     listThreats: () => apiRequest<any[]>("/api/v1/deepfake/threats"),
     listModels: () => apiRequest<any[]>("/api/v1/deepfake/models"),
+    getSdkDownload: (platform: string) =>
+      apiRequest<{
+        platform: string;
+        download_url: string;
+        version: string;
+        docs_url: string;
+        api_reference: string;
+      }>(`/api/v1/deepfake/sdk/download/${platform}`),
     analyze: (media_url: string, media_type: string) =>
       apiRequest<any>("/api/v1/deepfake/analyze", {
         method: "POST",
@@ -2600,8 +2550,7 @@ export const extendedApi = {
     compliance: {
       getDashboard: () =>
         apiRequest<any>("/agent-ops/governance/compliance/dashboard"),
-      getStatus: () =>
-        apiRequest<any>("/api/v1/compliance/stats"),
+      getStatus: () => apiRequest<any>("/api/v1/compliance/stats"),
       runHipaaAudit: () =>
         apiRequest<any>("/compliance/audit/hipaa", { method: "POST" }),
       runSoxAudit: () =>

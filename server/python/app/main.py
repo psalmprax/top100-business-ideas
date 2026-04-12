@@ -53,6 +53,7 @@ from app.core.config import settings
 from app.services.billing_service import billing_service
 from app.core.middleware import resilience_exception_handler
 from app.services.multi_cloud_proxy import multi_cloud_proxy
+from app.services.compliance_service import compliance_service
 
 
 @asynccontextmanager
@@ -74,7 +75,8 @@ async def lifespan(app: FastAPI):
     # Start background services
     try:
         billing_service.start_budget_enforcement_loop()
-        logger.info("Background monitor services started")
+        compliance_service.start_audit_loop()
+        logger.info("Background monitor services started (Budget + Compliance)")
     except Exception as e:
         logger.error(f"Failed to start background services: {e}")
 

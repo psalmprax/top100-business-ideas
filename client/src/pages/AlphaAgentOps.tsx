@@ -8,27 +8,23 @@ import { useLocation } from "wouter";
 import { useAuth } from "../contexts/AuthContext";
 import { usePerspective } from "../contexts/PerspectiveContext";
 import { useAgentOps } from "../hooks/useAgentOps";
-import { 
-  LayoutDashboard, 
-  Server, 
-  ShieldCheck, 
-  Zap, 
-  Brain, 
-  RefreshCw
+import {
+  LayoutDashboard,
+  Server,
+  ShieldCheck,
+  Zap,
+  Brain,
+  RefreshCw,
 } from "lucide-react";
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription
+  DialogDescription,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { OverviewSection } from "@/components/AgentOps/sections/OverviewSection";
 import { AgentTableSection } from "@/components/AgentOps/sections/AgentTableSection";
 import { IntelligenceHub } from "@/components/AgentOps/sections/IntelligenceHub";
@@ -47,7 +43,7 @@ const ICON_MAP: Record<string, any> = {
   Server,
   ShieldCheck,
   Zap,
-  Brain
+  Brain,
 };
 
 export default function AlphaAgentOps() {
@@ -67,7 +63,8 @@ export default function AlphaAgentOps() {
   }
 
   // Defensive defaults for category tabs
-  const activeTabs = ops.categoryTabs[ops.activeCategory as keyof typeof ops.categoryTabs] || [];
+  const activeTabs =
+    ops.categoryTabs[ops.activeCategory as keyof typeof ops.categoryTabs] || [];
 
   return (
     <div className="container mx-auto py-8 px-4 space-y-8 animate-in fade-in duration-700">
@@ -78,11 +75,13 @@ export default function AlphaAgentOps() {
             <ShieldCheck className="w-10 h-10 text-primary" />
             Alpha Agent Ops
           </h1>
-          <p className="text-muted-foreground mt-1">Autonomous governance for the agentic enterprise.</p>
+          <p className="text-muted-foreground mt-1">
+            Autonomous governance for the agentic enterprise.
+          </p>
         </div>
 
         <div className="flex bg-muted/30 p-1 rounded-xl border border-border/50 backdrop-blur-md">
-          {ops.categories.map((cat) => {
+          {ops.categories.map(cat => {
             const Icon = ICON_MAP[cat.icon];
             const isActive = ops.activeCategory === cat.id;
             return (
@@ -90,13 +89,16 @@ export default function AlphaAgentOps() {
                 key={cat.id}
                 onClick={() => {
                   ops.setActiveCategory(cat.id as any);
-                  const firstTab = ops.categoryTabs[cat.id as keyof typeof ops.categoryTabs][0];
+                  const firstTab =
+                    ops.categoryTabs[
+                      cat.id as keyof typeof ops.categoryTabs
+                    ][0];
                   ops.setActiveTab(firstTab);
                 }}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all duration-300 ${
-                  isActive 
-                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105" 
-                  : "text-muted-foreground hover:text-white hover:bg-white/5"
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105"
+                    : "text-muted-foreground hover:text-white hover:bg-white/5"
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -108,9 +110,13 @@ export default function AlphaAgentOps() {
       </div>
 
       {/* Primary Orchestration Tabs */}
-      <Tabs value={ops.activeTab} onValueChange={ops.setActiveTab} className="w-full space-y-6">
+      <Tabs
+        value={ops.activeTab}
+        onValueChange={ops.setActiveTab}
+        className="w-full space-y-6"
+      >
         <TabsList className="bg-transparent border-b border-border/50 w-full justify-start rounded-none h-auto p-0 gap-8">
-          {activeTabs.map((tab) => (
+          {activeTabs.map(tab => (
             <TabsTrigger
               key={tab}
               value={tab}
@@ -126,18 +132,25 @@ export default function AlphaAgentOps() {
           {ops.activeCategory === "core" && (
             <>
               <TabsContent value="overview">
-                <OverviewSection 
-                  agents={ops.agents} 
+                <OverviewSection
+                  agents={ops.agents}
                   liveMetrics={ops.liveMetrics}
-                  healingConfig={ops.healingConfigs[0] || { id: "default", type: "system", active: true, auto_healing_enabled: true }}
+                  healingConfig={
+                    ops.healingConfigs[0] || {
+                      id: "default",
+                      type: "system",
+                      active: true,
+                      auto_healing_enabled: true,
+                    }
+                  }
                   onSelfHealingToggle={ops.handleSelfHealingToggle}
                 />
               </TabsContent>
               <TabsContent value="agents">
-                <AgentTableSection 
-                  agents={ops.agents} 
+                <AgentTableSection
+                  agents={ops.agents}
                   onToggleStatus={ops.toggleAgentStatus}
-                  onOpenSettings={(agent) => {
+                  onOpenSettings={agent => {
                     ops.setSelectedAgent(agent);
                     ops.setShowSettingsDialog(true);
                   }}
@@ -150,7 +163,7 @@ export default function AlphaAgentOps() {
                 />
               </TabsContent>
               <TabsContent value="budget">
-                <BudgetSection 
+                <BudgetSection
                   liveMetrics={ops.liveMetrics}
                   budgetRules={[]} // Map from ops if available
                 />
@@ -162,7 +175,7 @@ export default function AlphaAgentOps() {
           {ops.activeCategory === "ops" && (
             <>
               <TabsContent value="infrastructure">
-                <RegionalHealthSubsection 
+                <RegionalHealthSubsection
                   multiCloudStatus={ops.multiCloudStatus}
                   clusterNodes={ops.clusterNodes}
                   onTriggerPanic={ops.handleTriggerPanic}
@@ -170,23 +183,33 @@ export default function AlphaAgentOps() {
                 />
               </TabsContent>
               <TabsContent value="webhooks">
-                <WebhooksSubsection 
+                <WebhooksSubsection
                   webhooks={ops.webhooks}
                   onRegisterWebhook={() => setShowWebhookDialog(true)}
                   onRefresh={ops.refreshData}
                 />
               </TabsContent>
               <TabsContent value="on-prem">
-                 <div className="py-20 text-center text-muted-foreground bg-background/5 p-8 rounded-3xl border border-dashed border-border/20 flex flex-col items-center justify-center gap-6 animate-in fade-in zoom-in-95 duration-500">
-                   <div className="p-4 rounded-2xl bg-muted/30">
-                     <ShieldCheck className="w-12 h-12 opacity-20" />
-                   </div>
-                   <div className="space-y-2">
-                     <p className="text-2xl font-black tracking-tight">On-Prem Enclave - Enterprise Roadmap</p>
-                     <p className="max-w-md mx-auto text-sm font-medium opacity-60">Bare-metal and private cloud orchestration is currently in private beta for Strategic tier accounts.</p>
-                   </div>
-                   <Button variant="outline" className="font-black text-xs uppercase tracking-widest px-8">Request Access</Button>
-                 </div>
+                <div className="py-20 text-center text-muted-foreground bg-background/5 p-8 rounded-3xl border border-dashed border-border/20 flex flex-col items-center justify-center gap-6 animate-in fade-in zoom-in-95 duration-500">
+                  <div className="p-4 rounded-2xl bg-muted/30">
+                    <ShieldCheck className="w-12 h-12 opacity-20" />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-2xl font-black tracking-tight">
+                      On-Prem Enclave - Enterprise Roadmap
+                    </p>
+                    <p className="max-w-md mx-auto text-sm font-medium opacity-60">
+                      Bare-metal and private cloud orchestration is currently in
+                      private beta for Strategic tier accounts.
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="font-black text-xs uppercase tracking-widest px-8"
+                  >
+                    Request Access
+                  </Button>
+                </div>
               </TabsContent>
             </>
           )}
@@ -195,7 +218,7 @@ export default function AlphaAgentOps() {
           {ops.activeCategory === "gov" && (
             <>
               <TabsContent value="audit">
-                <AuditTrailSubsection 
+                <AuditTrailSubsection
                   auditLog={ops.auditLog}
                   auditSearchQuery={ops.auditSearchQuery}
                   setAuditSearchQuery={ops.setAuditSearchQuery}
@@ -205,31 +228,38 @@ export default function AlphaAgentOps() {
                 />
               </TabsContent>
               <TabsContent value="alerts">
-                <AlertsConfigSubsection 
+                <AlertsConfigSubsection
                   alertConfigs={ops.alertConfigs}
                   onToggleAlert={ops.toggleAlert}
                 />
               </TabsContent>
               <TabsContent value="compliance">
-                <ComplianceStatusSubsection 
+                <ComplianceStatusSubsection
                   onRunHipaaAudit={() => ops.handleRunComplianceAudit("hipaa")}
                   onRunSoxAudit={() => ops.handleRunComplianceAudit("sox")}
                   complianceStatus={ops.complianceStatus}
                 />
               </TabsContent>
               <TabsContent value="sla">
-                 <div className="py-20 text-center text-muted-foreground bg-background/5 p-8 rounded-3xl border border-dashed border-border/20 flex flex-col items-center justify-center gap-4 animate-in fade-in duration-500">
-                    <ShieldCheck className="w-12 h-12 opacity-10" />
-                    <h3 className="text-xl font-black">SLA Oversight Module Under Migration</h3>
-                    <p className="text-sm font-medium opacity-60">This module is being transitioned to the regional compliance engine.</p>
-                 </div>
+                <div className="py-20 text-center text-muted-foreground bg-background/5 p-8 rounded-3xl border border-dashed border-border/20 flex flex-col items-center justify-center gap-4 animate-in fade-in duration-500">
+                  <ShieldCheck className="w-12 h-12 opacity-10" />
+                  <h3 className="text-xl font-black">
+                    SLA Oversight Module Under Migration
+                  </h3>
+                  <p className="text-sm font-medium opacity-60">
+                    This module is being transitioned to the regional compliance
+                    engine.
+                  </p>
+                </div>
               </TabsContent>
               <TabsContent value="sso">
-                 <div className="py-20 text-center text-muted-foreground bg-background/5 p-8 rounded-3xl border border-dashed border-border/20 flex flex-col items-center justify-center gap-4 animate-in fade-in duration-500">
-                    <Server className="w-12 h-12 opacity-10" />
-                    <h3 className="text-xl font-black">SSO Protocol Registry</h3>
-                    <p className="text-sm font-medium opacity-60">Access controlled by top-level security policy.</p>
-                 </div>
+                <div className="py-20 text-center text-muted-foreground bg-background/5 p-8 rounded-3xl border border-dashed border-border/20 flex flex-col items-center justify-center gap-4 animate-in fade-in duration-500">
+                  <Server className="w-12 h-12 opacity-10" />
+                  <h3 className="text-xl font-black">SSO Protocol Registry</h3>
+                  <p className="text-sm font-medium opacity-60">
+                    Access controlled by top-level security policy.
+                  </p>
+                </div>
               </TabsContent>
             </>
           )}
@@ -238,7 +268,7 @@ export default function AlphaAgentOps() {
           {ops.activeCategory === "intelligence" && (
             <>
               <TabsContent value="paperclip">
-                <IntelligenceHub 
+                <IntelligenceHub
                   researchTopic={ops.researchTopic}
                   setResearchTopic={ops.setResearchTopic}
                   isResearching={ops.isResearching}
@@ -253,7 +283,7 @@ export default function AlphaAgentOps() {
                 />
               </TabsContent>
               <TabsContent value="hermes">
-                <IntelligenceHub 
+                <IntelligenceHub
                   researchTopic={ops.researchTopic}
                   setResearchTopic={ops.setResearchTopic}
                   isResearching={ops.isResearching}
@@ -275,8 +305,13 @@ export default function AlphaAgentOps() {
             <div className="py-20 text-center text-muted-foreground bg-muted/10 rounded-xl border border-dashed flex flex-col items-center justify-center gap-4">
               <Zap className="w-12 h-12 opacity-20" />
               <div>
-                <p className="text-xl font-bold">Advanced Orchestration - Enterprise Roadmap</p>
-                <p className="max-w-md mx-auto mt-2">Long-term ROI forecasting, advanced localization, and autonomous venture modeling are planned for Q3 2026.</p>
+                <p className="text-xl font-bold">
+                  Advanced Orchestration - Enterprise Roadmap
+                </p>
+                <p className="max-w-md mx-auto mt-2">
+                  Long-term ROI forecasting, advanced localization, and
+                  autonomous venture modeling are planned for Q3 2026.
+                </p>
               </div>
             </div>
           )}
@@ -284,14 +319,19 @@ export default function AlphaAgentOps() {
       </Tabs>
 
       {/* Modals */}
-      <Dialog open={ops.showSettingsDialog} onOpenChange={ops.setShowSettingsDialog}>
+      <Dialog
+        open={ops.showSettingsDialog}
+        onOpenChange={ops.setShowSettingsDialog}
+      >
         <DialogContent className="sm:max-w-[800px]">
           <DialogHeader>
             <DialogTitle>Agent Configuration & Context</DialogTitle>
-            <DialogDescription>Fine-tune operational parameters and governance rules.</DialogDescription>
+            <DialogDescription>
+              Fine-tune operational parameters and governance rules.
+            </DialogDescription>
           </DialogHeader>
           {ops.selectedAgent && (
-            <AgentSettingsDialog 
+            <AgentSettingsDialog
               agent={ops.selectedAgent}
               onSave={ops.handleUpdateAgent}
               onOpenChange={ops.setShowSettingsDialog}
@@ -300,13 +340,13 @@ export default function AlphaAgentOps() {
         </DialogContent>
       </Dialog>
 
-      <NewAgentDialog 
+      <NewAgentDialog
         open={ops.showNewAgentDialog}
         onOpenChange={ops.setShowNewAgentDialog}
         onSave={ops.handleCreateAgent}
       />
 
-      <WebhookDialog 
+      <WebhookDialog
         open={showWebhookDialog}
         onOpenChange={setShowWebhookDialog}
         onSave={() => {

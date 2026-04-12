@@ -34,19 +34,10 @@ import {
   Check,
   RefreshCw,
 } from "lucide-react";
-import { extendedApi } from "@/lib/api";
+import { extendedApi, type ShadowAIDetection } from "@/lib/api";
 import { toast } from "sonner";
 
-interface ShadowDetection {
-  id: string;
-  tool_name: string;
-  risk_level: "low" | "medium" | "high" | "critical";
-  status: "detected" | "blocked" | "allowed";
-  detected_at: string;
-  user_id?: string;
-  ip_address?: string;
-  count: number;
-}
+type ShadowDetection = ShadowAIDetection;
 
 interface ShadowStats {
   total_detections: number;
