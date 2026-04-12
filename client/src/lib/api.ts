@@ -1376,7 +1376,6 @@ export const extendedApi = {
         body: JSON.stringify({ model_id: modelId }),
         strict: true,
       }),
-    getLiveMetrics: () => apiRequest<any>("/api/v1/compliance/live-metrics"),
     remediateDrift: (target_id: string) =>
       apiRequest<any>("/api/v1/compliance/remediate", {
         method: "POST",
@@ -1448,7 +1447,7 @@ export const extendedApi = {
     getVelocityTrends: () => apiRequest<any[]>("/api/v1/compliance/velocity"),
     getDeadlines: () => apiRequest<any[]>("/api/v1/compliance/deadlines"),
     getEnterpriseAudits: () =>
-      apiRequest<any[]>("/api/v1/compliance/enterprise-audits"),
+      apiRequest<any[]>("/api/v1/compliance/enterprise/audits"),
     getModelBreakdown: (id: string) =>
       apiRequest<any>(`/api/v1/compliance/models/${id}/breakdown`),
     getModelAudits: (id: string) =>
@@ -1494,29 +1493,6 @@ export const extendedApi = {
       if (queryString) url += `?${queryString}`;
       return apiRequest<any>(url, options);
     },
-    getAuditLogs: (agentId?: string, query?: string, outcome?: string) => {
-      const params = new URLSearchParams();
-      if (agentId) params.append("agentId", agentId);
-      if (query) params.append("search", query);
-      if (outcome) params.append("outcome", outcome);
-      const qs = params.toString();
-      return apiRequest<any[]>(`/api/v1/compliance/audit${qs ? "?" + qs : ""}`);
-    },
-    updateIncidentStatus: (id: string, status: string) =>
-      apiRequest<any>(`/api/v1/compliance/incidents/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ status }),
-        strict: true,
-      }),
-    deleteVendor: (id: string) =>
-      apiRequest<any>(`/api/v1/vendors/${id}`, {
-        method: "DELETE",
-      }),
-    updatePolicy: (policy: any) =>
-      apiRequest<any>("/api/v1/compliance/policy", {
-        method: "PATCH",
-        body: JSON.stringify(policy),
-      }),
   },
   training: {
     listModules: () => apiRequest<any[]>("/api/v1/training/modules"),
