@@ -1446,8 +1446,6 @@ export const extendedApi = {
     getROIMetrics: () => apiRequest<any>("/api/v1/compliance/roi"),
     getVelocityTrends: () => apiRequest<any[]>("/api/v1/compliance/velocity"),
     getDeadlines: () => apiRequest<any[]>("/api/v1/compliance/deadlines"),
-    getEnterpriseAudits: () =>
-      apiRequest<any[]>("/api/v1/compliance/enterprise/audits"),
     getModelBreakdown: (id: string) =>
       apiRequest<any>(`/api/v1/compliance/models/${id}/breakdown`),
     getModelAudits: (id: string) =>
