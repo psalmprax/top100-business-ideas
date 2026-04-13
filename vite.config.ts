@@ -182,12 +182,16 @@ export default defineConfig({
     },
     proxy: {
       "/api/v1": {
-        target: process.env.VITE_API_PROXY_TARGET || "http://localhost:8080",
+        target: "http://149.104.110.122:7001",
         changeOrigin: true,
+        secure: false,
+        logLevel: "debug",
       },
       "/ml": {
-        target: process.env.VITE_API_PROXY_TARGET || "http://localhost:8080",
+        target: "http://149.104.110.122:7001",
         changeOrigin: true,
+        secure: false,
+        logLevel: "debug",
       },
     },
     allowedHosts: [
