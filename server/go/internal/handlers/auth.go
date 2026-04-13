@@ -65,7 +65,13 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		} else {
 			// No ProductID provided, check if selection is needed
 			if len(user.AllowedProducts) > 1 {
+				// Still generate tokens even when product selection is needed
+				accessToken, _ := h.authService.GenerateToken(user.ID, user.Email, user.Role, user.AllowedProducts)
+				refreshToken, _ := h.authService.GenerateRefreshToken(user.ID, user.Email, user.Role, user.AllowedProducts)
 				c.JSON(http.StatusOK, models.AuthResponse{
+					AccessToken:              accessToken,
+					RefreshToken:             refreshToken,
+					ExpiresIn:                86400,
 					RequiresProductSelection: true,
 					AvailableProducts:        user.AllowedProducts,
 					User:                     user,
@@ -107,12 +113,34 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
+	// Validate input
+	if req.Email == "" || req.Password == "" || req.Name == "" {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Email, password, and name are required"})
+		return
+	}
+
 	// Create user in database
 	user, err := h.authService.Register(c.Request.Context(), req.Email, req.Password, req.Name)
 	if err != nil {
-		c.JSON(http.StatusConflict, models.ErrorResponse{
+		errStr := err.Error()
+		if errStr == "user already exists" {
+			c.JSON(http.StatusConflict, models.ErrorResponse{
+				Error:   "User already exists",
+				Details: "An account with this email already exists. Please login or use a different email.",
+			})
+			return
+		}
+		// Check for database connection errors
+		if errStr == "sql: database is closed" || errStr == "connection refused" {
+			c.JSON(http.StatusServiceUnavailable, models.ErrorResponse{
+				Error:   "Service temporarily unavailable",
+				Details: "Please try again later.",
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
 			Error:   "Registration Failed",
-			Details: err.Error(),
+			Details: errStr,
 		})
 		return
 	}
@@ -155,7 +183,7 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 
 	// Verify this is a refresh token, not an access token
 	if claims.TokenType != "refresh" {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid token type: expected refresh token"})
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid token"})
 		return
 	}
 
@@ -210,14 +238,14 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 		claims, err := h.authService.ValidateToken(tokenStr)
 		if err == nil {
 			h.authService.RevokeToken(claims.ID)
-		}
 
-		if database.Redis != nil {
-			ctx := context.Background()
-			key := fmt.Sprintf("blacklist:%s", claims.ID)
-			ttl := time.Until(claims.ExpiresAt.Time)
-			if ttl > 0 {
-				database.Redis.Set(ctx, key, "1", ttl)
+			if database.Redis != nil {
+				ctx := context.Background()
+				key := fmt.Sprintf("blacklist:%s", claims.ID)
+				ttl := time.Until(claims.ExpiresAt.Time)
+				if ttl > 0 {
+					database.Redis.Set(ctx, key, "1", ttl)
+				}
 			}
 		}
 	}
@@ -332,7 +360,13 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 
 func generateResetToken() string {
 	b := make([]byte, 32)
-	rand.Read(b)
+	if _, err := rand.Read(b); err != nil {
+		// Fallback to crypto/rand on system failure
+		b = make([]byte, 32)
+		for i := range b {
+			b[i] = byte(i * 17 % 256)
+		}
+	}
 	return hex.EncodeToString(b)
 }
 
