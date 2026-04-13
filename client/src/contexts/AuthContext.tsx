@@ -64,12 +64,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string, productId?: string) => {
     try {
-      const data = await authApi.login(email, password, productId);
+      // Prevent infinite recursion: if productId is provided but still requires selection,
+      // return the selection prompt instead of retrying
+      if (productId != undefined) {
+        const data = await authApi.login(email, password, productId);
 
-      if (data.requiresProductSelection) {
+        const requiresSelection =
+          data.requiresProductSelection ||
+          (data as any).requires_product_selection;
+        if (requiresSelection) {
+          const availableProducts =
+            data.availableProducts || (data as any).available_products;
+          return {
+            requiresSelection: true,
+            availableProducts,
+          };
+        }
+
+        const token = data.accessToken || data.access_token;
+        if (token && data.user) {
+          localStorage.setItem("auth_token", token);
+          setUser(data.user);
+        }
+        return {};
+      }
+
+      // If productId not provided, auto-select first available product
+      const loginProductId = productId;
+
+      const data = await authApi.login(email, password, loginProductId);
+
+      const requiresSelection =
+        data.requiresProductSelection ||
+        (data as any).requires_product_selection;
+      if (requiresSelection) {
+        // Auto-select first available product and retry login
+        const availableProducts =
+          data.availableProducts || (data as any).available_products;
+        if (availableProducts && availableProducts.length > 0) {
+          const firstProduct = availableProducts[0];
+          console.log("[Auth] Auto-selecting product:", firstProduct);
+          return login(email, password, firstProduct);
+        }
         return {
           requiresSelection: true,
-          availableProducts: data.availableProducts,
+          availableProducts,
         };
       }
 
