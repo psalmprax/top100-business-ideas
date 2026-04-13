@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/top100-business-ideas/api/internal/models"
 	"github.com/top100-business-ideas/api/internal/services"
@@ -13,17 +16,139 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var agentIDRegex = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-[0-9a-f]{12}$`)
+
 type AgentOpsHandler struct {
 	proxyService *services.ProxyService
+	cache        *agentCache
+}
+
+type agentCache struct {
+	mu      sync.RWMutex
+	agents  agentCacheEntry
+	metrics agentCacheEntry
+}
+
+type agentCacheEntry struct {
+	data      []byte
+	expiresAt time.Time
 }
 
 func NewAgentOpsHandler(proxyService *services.ProxyService) *AgentOpsHandler {
 	return &AgentOpsHandler{
 		proxyService: proxyService,
+		cache:        newAgentCache(),
 	}
 }
 
+func newAgentCache() *agentCache {
+	return &agentCache{}
+}
+
+func (c *agentCache) get(key string) ([]byte, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	var entry agentCacheEntry
+	switch key {
+	case "agents":
+		entry = c.agents
+	case "metrics":
+		entry = c.metrics
+	default:
+		return nil, false
+	}
+
+	if time.Now().Before(entry.expiresAt) {
+		return entry.data, true
+	}
+	return nil, false
+}
+
+func (c *agentCache) set(key string, data []byte, ttl time.Duration) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	entry := agentCacheEntry{
+		data:      data,
+		expiresAt: time.Now().Add(ttl),
+	}
+
+	switch key {
+	case "agents":
+		c.agents = entry
+	case "metrics":
+		c.metrics = entry
+	}
+}
+
+func validateAgentID(id string) error {
+	if id == "" {
+		return fmt.Errorf("agent ID is required")
+	}
+	if !agentIDRegex.MatchString(id) {
+		return fmt.Errorf("invalid agent ID format")
+	}
+	return nil
+}
+
+func transformAgentList(data []byte) ([]byte, error) {
+	var agents []models.Agent
+	if err := json.Unmarshal(data, &agents); err != nil {
+		return data, err
+	}
+
+	transformed := map[string]interface{}{
+		"status":    "success",
+		"count":     len(agents),
+		"agents":    agents,
+		"cached":    false,
+		"timestamp": time.Now().Unix(),
+	}
+
+	return json.Marshal(transformed)
+}
+
+func transformAgent(data []byte) ([]byte, error) {
+	var agent models.Agent
+	if err := json.Unmarshal(data, &agent); err != nil {
+		return data, err
+	}
+
+	transformed := map[string]interface{}{
+		"status":    "success",
+		"agent":     agent,
+		"timestamp": time.Now().Unix(),
+	}
+
+	return json.Marshal(transformed)
+}
+
+func transformMetrics(data []byte) ([]byte, error) {
+	var metrics models.AgentMetrics
+	if err := json.Unmarshal(data, &metrics); err != nil {
+		return data, err
+	}
+
+	transformed := map[string]interface{}{
+		"status":    "success",
+		"metrics":   metrics,
+		"timestamp": time.Now().Unix(),
+	}
+
+	return json.Marshal(transformed)
+}
+
 func (h *AgentOpsHandler) ListAgents(c *gin.Context) {
+	// Try cache first (TTL: 30 seconds)
+	if cached, ok := h.cache.get("agents"); ok {
+		var agents []models.Agent
+		if err := json.Unmarshal(cached, &agents); err == nil {
+			c.JSON(http.StatusOK, agents)
+			return
+		}
+	}
+
 	response, err := h.proxyService.ListAgents()
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch agents from backend", Details: err.Error()})
@@ -31,9 +156,19 @@ func (h *AgentOpsHandler) ListAgents(c *gin.Context) {
 	}
 
 	if len(response) == 0 || string(response) == "[]" {
-		c.JSON(http.StatusOK, []models.Agent{})
+		transformed, _ := transformAgentList([]byte("[]"))
+		c.Data(http.StatusOK, "application/json", transformed)
 		return
 	}
+
+	// Transform and cache response
+	transformed, err := transformAgentList(response)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to transform response"})
+		return
+	}
+
+	h.cache.set("agents", transformed, 30*time.Second)
 
 	var agents []models.Agent
 	if err := json.Unmarshal(response, &agents); err != nil {
@@ -47,19 +182,26 @@ func (h *AgentOpsHandler) ListAgents(c *gin.Context) {
 func (h *AgentOpsHandler) GetAgent(c *gin.Context) {
 	id := c.Param("id")
 
+	// Input validation
+	if err := validateAgentID(id); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: err.Error()})
+		return
+	}
+
 	response, err := h.proxyService.GetAgent(id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, models.ErrorResponse{Error: "Agent not found"})
 		return
 	}
 
-	var agent models.Agent
-	if err := json.Unmarshal(response, &agent); err != nil {
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to parse response"})
+	// Transform response
+	transformed, err := transformAgent(response)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to transform response"})
 		return
 	}
 
-	c.JSON(http.StatusOK, agent)
+	c.Data(http.StatusOK, "application/json", transformed)
 }
 
 func (h *AgentOpsHandler) CreateAgent(c *gin.Context) {
@@ -374,7 +516,8 @@ func (h *AgentOpsHandler) ProxyToPython(c *gin.Context) {
 	var body interface{}
 	if c.Request.Method == "POST" || c.Request.Method == "PUT" || c.Request.Method == "PATCH" {
 		if err := c.ShouldBindJSON(&body); err != nil && err != io.EOF {
-			// Ignore EOF if no body provided
+			c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request body", Details: err.Error()})
+			return
 		}
 	}
 
