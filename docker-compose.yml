@@ -55,13 +55,13 @@ services:
       - PORT=8000
       - ENVIRONMENT=development
       - SECRET_KEY=${SECRET_KEY:?SECRET_KEY must be set}
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/alphaai
-      - DB_HOST=db
+      - DATABASE_URL=postgresql://postgres:postgres@top100-business-ideas-db-1:5432/alphaai
+      - DB_HOST=top100-business-ideas-db-1
       - DB_PORT=5432
       - DB_USER=postgres
       - DB_PASSWORD=postgres
       - DB_NAME=alphaai
-      - REDIS_HOST=redis
+      - REDIS_HOST=top100-business-ideas-redis-1
       - REDIS_PORT=6379
       - SEED_DATABASE=${SEED_DATABASE:-false}
       - OIDC_GOOGLE_CLIENT_ID=${OIDC_GOOGLE_CLIENT_ID}
