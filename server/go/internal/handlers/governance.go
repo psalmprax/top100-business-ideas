@@ -1,10 +1,8 @@
 package handlers
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/top100-business-ideas/api/internal/models"
 	"github.com/top100-business-ideas/api/internal/services"
