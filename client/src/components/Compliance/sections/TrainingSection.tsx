@@ -1,15 +1,22 @@
 import { useState, useEffect } from "react";
-import { 
-  BookOpen, 
-  Award, 
-  CheckCircle2, 
-  PlayCircle, 
+import {
+  BookOpen,
+  Award,
+  CheckCircle2,
+  PlayCircle,
   RefreshCw,
   Clock,
   ArrowRight,
-  ShieldCheck
+  ShieldCheck,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardFooter,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -37,17 +44,25 @@ export function TrainingSection() {
   }
 
   async function startModule(id: string) {
-    toast.info("Opening training environment...", {
-      description: "Redirecting to interactive compliance sandbox."
-    });
-    // In a real app, this would open a dialog or redirect
+    try {
+      await extendedApi.training.updateProgress({
+        module_id: id,
+        progress: 10,
+      });
+      toast.success("Training module started");
+      loadModules();
+    } catch (err) {
+      toast.error("Failed to start training module");
+    }
   }
 
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center p-20">
         <RefreshCw className="w-8 h-8 animate-spin text-primary" />
-        <p className="mt-4 text-muted-foreground text-sm font-medium">Loading certification catalog...</p>
+        <p className="mt-4 text-muted-foreground text-sm font-medium">
+          Loading certification catalog...
+        </p>
       </div>
     );
   }
@@ -60,27 +75,38 @@ export function TrainingSection() {
             <BookOpen className="w-5 h-5 text-emerald-500" />
             Empowerment & Training
           </h3>
-          <p className="text-sm text-muted-foreground">Article 17 & 18 workforce literacy and deployment readiness</p>
+          <p className="text-sm text-muted-foreground">
+            Article 17 & 18 workforce literacy and deployment readiness
+          </p>
         </div>
         <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
           <Award className="w-4 h-4 text-yellow-500" />
-          Certified Personnel: <span className="text-foreground ml-1">12 / 15</span>
+          Certified Personnel:{" "}
+          <span className="text-foreground ml-1">12 / 15</span>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {modules.map((mod) => (
-          <Card key={mod.id} className="flex flex-col h-full bg-card/40 backdrop-blur-sm border-border/50 hover:border-emerald-500/30 transition-all">
+        {modules.map(mod => (
+          <Card
+            key={mod.id}
+            className="flex flex-col h-full bg-card/40 backdrop-blur-sm border-border/50 hover:border-emerald-500/30 transition-all"
+          >
             <CardHeader>
               <div className="flex justify-between items-start mb-2">
-                <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-tight">
+                <Badge
+                  variant="outline"
+                  className="text-[10px] uppercase font-bold tracking-tight"
+                >
                   {mod.category}
                 </Badge>
                 {mod.status === "completed" && (
                   <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                 )}
               </div>
-              <CardTitle className="text-base line-clamp-1">{mod.title}</CardTitle>
+              <CardTitle className="text-base line-clamp-1">
+                {mod.title}
+              </CardTitle>
               <CardDescription className="text-xs line-clamp-2 min-h-[32px]">
                 {mod.description}
               </CardDescription>
@@ -96,12 +122,14 @@ export function TrainingSection() {
               <Progress value={mod.progress || 0} className="h-1.5" />
             </CardContent>
             <CardFooter className="pt-0 border-t border-border/20 mt-4">
-              <Button 
-                variant={mod.status === "completed" ? "ghost" : "default"} 
+              <Button
+                variant={mod.status === "completed" ? "ghost" : "default"}
                 className="w-full mt-4 text-xs h-9 justify-between"
                 onClick={() => mod.id && startModule(mod.id)}
               >
-                {mod.status === "completed" ? "Review Content" : "Continue Training"}
+                {mod.status === "completed"
+                  ? "Review Content"
+                  : "Continue Training"}
                 <ArrowRight className="w-3 h-3 ml-2" />
               </Button>
             </CardFooter>
@@ -125,7 +153,21 @@ export function TrainingSection() {
               </div>
               <Progress value={80} className="h-2 bg-emerald-500/20" />
             </div>
-            <Button size="sm" variant="outline" className="border-emerald-500/20 text-emerald-600 hover:bg-emerald-500/10">
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-emerald-500/20 text-emerald-600 hover:bg-emerald-500/10"
+              onClick={async () => {
+                try {
+                  await extendedApi.training.downloadCertificate(
+                    "enterprise-readiness"
+                  );
+                  toast.success("Report download started");
+                } catch (err) {
+                  toast.error("Failed to download report");
+                }
+              }}
+            >
               Download Full Report
             </Button>
           </div>

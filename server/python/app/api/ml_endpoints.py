@@ -16,6 +16,7 @@ router = APIRouter(prefix="/ml", tags=["ml"])
 
 class InferenceRequest(BaseModel):
     """Request model for inference"""
+
     model_name: str = Field(..., description="Name of the model to use")
     input_data: Dict[str, Any] = Field(..., description="Input data for inference")
     use_cache: bool = Field(default=True, description="Whether to use caching")
@@ -23,12 +24,14 @@ class InferenceRequest(BaseModel):
 
 class BatchInferenceRequest(BaseModel):
     """Request model for batch inference"""
+
     model_name: str
     inputs: List[Dict[str, Any]]
 
 
 class InferenceResponse(BaseModel):
     """Response model for inference"""
+
     result: Dict[str, Any]
     model: str
     timestamp: str
@@ -48,15 +51,14 @@ async def run_inference(request: InferenceRequest):
         model_info = service.get_model_info(request.model_name)
         if not model_info:
             raise HTTPException(
-                status_code=404,
-                detail=f"Model '{request.model_name}' not found"
+                status_code=404, detail=f"Model '{request.model_name}' not found"
             )
 
         # Run inference
         result = await service.infer(
             model_name=request.model_name,
             input_data=request.input_data,
-            use_cache=request.use_cache
+            use_cache=request.use_cache,
         )
 
         return InferenceResponse(
@@ -64,7 +66,7 @@ async def run_inference(request: InferenceRequest):
             model=result["model"],
             timestamp=result["timestamp"],
             inference_time_ms=result.get("inference_time_ms", 0),
-            cached=False  # Could check cache status
+            cached=False,  # Could check cache status
         )
 
     except Exception as e:
@@ -84,21 +86,15 @@ async def run_batch_inference(request: BatchInferenceRequest):
         model_info = service.get_model_info(request.model_name)
         if not model_info:
             raise HTTPException(
-                status_code=404,
-                detail=f"Model '{request.model_name}' not found"
+                status_code=404, detail=f"Model '{request.model_name}' not found"
             )
 
         # Run batch inference
-        results = await service.batch_inference(
-            model_name=request.model_name,
-            inputs=request.inputs
+        results = await service.batch_infer(
+            model_name=request.model_name, inputs=request.inputs
         )
 
-        return {
-            "model": request.model_name,
-            "count": len(results),
-            "results": results
-        }
+        return {"model": request.model_name, "count": len(results), "results": results}
 
     except Exception as e:
         logger.error(f"Batch inference error: {e}")
@@ -123,10 +119,7 @@ async def get_model_info(model_name: str):
     model_info = service.get_model_info(model_name)
 
     if not model_info:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Model '{model_name}' not found"
-        )
+        raise HTTPException(status_code=404, detail=f"Model '{model_name}' not found")
 
     return model_info
 
@@ -152,11 +145,9 @@ async def clear_cache():
 
 # Product-specific endpoints
 
+
 @router.post("/agent-ops/classify")
-async def classify_agent_operation(
-    task_description: str,
-    context: Optional[str] = ""
-):
+async def classify_agent_operation(task_description: str, context: Optional[str] = ""):
     """
     Classify an agent operation and get optimization suggestions
     """
@@ -164,20 +155,14 @@ async def classify_agent_operation(
 
     result = await service.infer(
         model_name="agent-ops",
-        input_data={
-            "task_description": task_description,
-            "context": context
-        }
+        input_data={"task_description": task_description, "context": context},
     )
 
     return result
 
 
 @router.post("/ai-compliance/check")
-async def check_compliance(
-    document: str,
-    regulations: List[str] = ["GDPR", "AI_ACT"]
-):
+async def check_compliance(document: str, regulations: List[str] = ["GDPR", "AI_ACT"]):
     """
     Check a document for AI compliance
     """
@@ -185,20 +170,14 @@ async def check_compliance(
 
     result = await service.infer(
         model_name="ai-compliance",
-        input_data={
-            "document": document,
-            "regulations": regulations
-        }
+        input_data={"document": document, "regulations": regulations},
     )
 
     return result
 
 
 @router.post("/deepfake/detect")
-async def detect_deepfake(
-    media_url: str,
-    media_type: str = "video"
-):
+async def detect_deepfake(media_url: str, media_type: str = "video"):
     """
     Detect if media is a deepfake
     """
@@ -206,10 +185,24 @@ async def detect_deepfake(
 
     result = await service.infer(
         model_name="deepfake-defense",
-        input_data={
-            "media_url": media_url,
-            "media_type": media_type
-        }
+        input_data={"media_url": media_url, "media_type": media_type},
     )
 
     return result
+
+
+@router.get("/health")
+async def get_ml_health():
+    """
+    Get ML service health status including model availability and device info
+    """
+    service = await get_inference_service()
+    health = service.get_health_status()
+
+    models = service.list_models()
+
+    return {
+        "status": "healthy" if health["torch_available"] else "degraded",
+        "ml_backend": health,
+        "models": models,
+    }

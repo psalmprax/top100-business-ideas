@@ -1,14 +1,20 @@
 import { useState, useEffect } from "react";
-import { 
-  ShieldAlert, 
-  Terminal, 
-  Play, 
+import {
+  ShieldAlert,
+  Terminal,
+  Play,
   Search,
   CheckCircle2,
   AlertTriangle,
-  RefreshCw 
+  RefreshCw,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { extendedApi } from "@/lib/api";
@@ -26,13 +32,13 @@ export function RedTeamSection() {
   async function loadAudits() {
     setLoading(true);
     try {
-      // Mocking for now, will map to listScans later if needed
-      setAudits([
-        { id: "1", target: "Text Classifier V2", date: "2024-03-20", status: "completed", vulnerabilities: 0 },
-        { id: "2", target: "Biometric SDK", date: "2024-03-22", status: "completed", vulnerabilities: 1 }
-      ]);
+      const data = await extendedApi.compliance
+        .listScans("system-core")
+        .catch(() => []);
+      setAudits(data || []);
     } catch (err) {
       console.error("Failed to fetch red team audits", err);
+      setAudits([]);
     } finally {
       setLoading(false);
     }
@@ -55,7 +61,9 @@ export function RedTeamSection() {
     return (
       <div className="flex flex-col items-center justify-center p-20">
         <RefreshCw className="w-8 h-8 animate-spin text-primary" />
-        <p className="mt-4 text-muted-foreground text-sm font-medium">Securing adversarial environment...</p>
+        <p className="mt-4 text-muted-foreground text-sm font-medium">
+          Securing adversarial environment...
+        </p>
       </div>
     );
   }
@@ -68,7 +76,10 @@ export function RedTeamSection() {
             <ShieldAlert className="w-5 h-5 text-red-500" />
             Red Team Penetration Testing
           </h3>
-          <p className="text-sm text-muted-foreground">Automated adversarial attacks to identify model vulnerabilities (Art. 15 EU AI Act)</p>
+          <p className="text-sm text-muted-foreground">
+            Automated adversarial attacks to identify model vulnerabilities
+            (Art. 15 EU AI Act)
+          </p>
         </div>
         <Button onClick={startAudit} disabled={isRunning} variant="destructive">
           <Play className="w-4 h-4 mr-2" />
@@ -85,7 +96,11 @@ export function RedTeamSection() {
                   <Terminal className="w-4 h-4" />
                   {audit.target}
                 </CardTitle>
-                <Badge variant={audit.vulnerabilities > 0 ? "destructive" : "default"}>
+                <Badge
+                  variant={
+                    audit.vulnerabilities > 0 ? "destructive" : "default"
+                  }
+                >
                   {audit.status}
                 </Badge>
               </div>

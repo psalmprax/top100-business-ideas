@@ -518,6 +518,11 @@ const AlphaWorkforce = () => {
 
           <TabsContent value="boardroom">
             <BoardroomSection
+              workforceData={workforceData}
+              goals={goals}
+              executionHistory={executionHistory}
+              activeEmployees={activeEmployees}
+              ventures={ventures}
               platformDecisions={platformDecisions}
               onDecision={handleGovernanceDecision}
             />
@@ -525,9 +530,8 @@ const AlphaWorkforce = () => {
 
           <TabsContent value="ceo">
             <CEOSection
-              goals={goals}
               workforceData={workforceData}
-              executionHistory={executionHistory}
+              revenueData={revenueData}
               onShiftMarketFocus={handleShiftMarketFocus}
             />
           </TabsContent>
@@ -554,26 +558,30 @@ const AlphaWorkforce = () => {
           </TabsContent>
 
           <TabsContent value="ops">
-            <OpsSection
-              workforceData={workforceData}
-              executionHistory={executionHistory}
-            />
+            <OpsSection executionHistory={executionHistory} />
           </TabsContent>
 
           <TabsContent value="finance">
             <FinanceSection
               revenueData={revenueData}
               fiscalRequests={fiscalRequests}
+              setFiscalRequests={setFiscalRequests}
               ventures={ventures}
-              onApproveFiscal={id => handleGovernanceDecision(1, "APPROVE")} // Simplified for extraction
+              onFiscalApproval={(id: string, status: string) =>
+                handleGovernanceDecision(1, status)
+              }
+              MetricCard={() => <div />}
             />
           </TabsContent>
 
           <TabsContent value="cashclaw">
             <CashClawSection
               cashclawData={cashclawData}
+              setCashclawData={setCashclawData}
               skillsMarketplace={skillsMarketplace}
+              setSkillsMarketplace={setSkillsMarketplace}
               jobFeed={jobFeed}
+              isRecovering={false}
               onRecoverRevenue={handleRecoverRevenue}
             />
           </TabsContent>
@@ -581,11 +589,11 @@ const AlphaWorkforce = () => {
           <TabsContent value="hr">
             <HRSection
               agentRoster={agentRoster}
-              isAutonomous={isAutonomous}
-              onHireAgent={() => setIsHiringOpen(true)}
               isHiringOpen={isHiringOpen}
               setIsHiringOpen={setIsHiringOpen}
               handleHireAgent={handleHireAgent}
+              platformDecisions={platformDecisions}
+              handleGovernanceDecision={handleGovernanceDecision}
             />
           </TabsContent>
 

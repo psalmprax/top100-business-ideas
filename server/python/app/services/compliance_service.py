@@ -20,8 +20,8 @@ from app.core.models import (
     ComplianceArticle,
     Agent,
     AgentStatus,
-    BiometricEnrollment,
-    VerificationSession,
+    # BiometricEnrollment,
+    # VerificationSession,
     ComplianceIncident,
 )
 import asyncio
@@ -416,16 +416,16 @@ class ComplianceService:
         audit_id = str(uuid.uuid4())
         findings = []
 
-        enrollments = session.exec(select(BiometricEnrollment)).all()
-        inactive_active = [e for e in enrollments if not e.is_active]
-        if len(inactive_active) > 0:
-            findings.append(
-                {
-                    "issue": "Inactive biometric enrollments still present",
-                    "severity": "medium",
-                    "count": len(inactive_active),
-                }
-            )
+        # enrollments = session.exec(select(BiometricEnrollment)).all()
+        # inactive_active = [e for e in enrollments if not e.is_active]
+        # if len(inactive_active) > 0:
+        #     findings.append(
+        #         {
+        #             "issue": "Inactive biometric enrollments still present",
+        #             "severity": "medium",
+        #             "count": len(inactive_active),
+        #         }
+        #     )
 
         sessions = session.exec(select(VerificationSession)).all()
         unverified = [s for s in sessions if s.result is None or s.result == "pending"]
@@ -465,13 +465,17 @@ class ComplianceService:
             "timestamp": datetime.utcnow().isoformat(),
         }
 
-    async def report_article_71_incident(self, session: Session, request: Dict[str, Any]):
+    async def report_article_71_incident(
+        self, session: Session, request: Dict[str, Any]
+    ):
         """Report a serious incident as per EU AI Act Article 71"""
         incident = ComplianceIncident(
             id=str(uuid.uuid4()),
             title=f"[ARTICLE 71] {request.get('title', 'Unknown Incident')}",
             description=request.get("description"),
-            severity="critical" if request.get("severity") == "serious" else request.get("severity", "high"),
+            severity="critical"
+            if request.get("severity") == "serious"
+            else request.get("severity", "high"),
             incident_type="compliance",
             status="open",
             reported_by=request.get("reported_by", "external_webhook"),

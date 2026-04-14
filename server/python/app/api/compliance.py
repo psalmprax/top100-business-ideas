@@ -1,10 +1,9 @@
 """Compliance analysis endpoints"""
 
-from typing import List
+from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, HTTPException, Depends, Header
 from sqlmodel import Session, select
 from datetime import datetime
-from typing import List, Optional
 
 from app.core.models import (
     ComplianceCheck,
@@ -104,7 +103,9 @@ async def report_article_71_incident(
         return await compliance_service.report_article_71_incident(session, request)
     except Exception as e:
         logger.error(f"Article 71 Reporting Error: {e}")
-        raise HTTPException(status_code=500, detail="Failed to report serious incident.")
+        raise HTTPException(
+            status_code=500, detail="Failed to report serious incident."
+        )
 
 
 @router.patch("/incidents/{incident_id}/resolve", response_model=ComplianceIncident)
@@ -387,29 +388,30 @@ async def update_checklist_item(
         session.add(audit_log)
         session.add(item)
         session.commit()
-         session.refresh(item)
-         return item
-     except Exception as e:
-         logger.error(f"Checklist Update Error: {e}")
-         raise HTTPException(status_code=500, detail=str(e))
+        session.refresh(item)
+        return item
+    except Exception as e:
+        logger.error(f"Checklist Update Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ============================================================================
 # Bias Detection and AI Act Compliance
 # ============================================================================
 
+
 @router.get("/bias/reports")
-async def get_bias_reports(scope: str = "global", session: Session = Depends(get_session)):
+async def get_bias_reports(
+    scope: str = "global", session: Session = Depends(get_session)
+):
     """Get bias detection reports for Article 10 compliance"""
     try:
         from app.ml.bias_detector import bias_detector
-        
+
         reports = session.exec(
-            select(BiasReport)
-            .order_by(BiasReport.created_at.desc())
-            .limit(50)
+            select(BiasReport).order_by(BiasReport.created_at.desc()).limit(50)
         ).all()
-        
+
         if not reports:
             # Generate synthetic initial data
             return [
@@ -419,19 +421,14 @@ async def get_bias_reports(scope: str = "global", session: Session = Depends(get
                     "category": ["gender", "age", "ethnicity"][i % 3],
                     "bias_score": 0.15 + (i * 0.1),
                     "severity": ["low", "medium", "high"][i % 3],
-                    "findings": [
-                        "Sample finding 1",
-                        "Sample finding 2"
-                    ],
-                    "recommendations": [
-                        "Sample recommendation"
-                    ],
+                    "findings": ["Sample finding 1", "Sample finding 2"],
+                    "recommendations": ["Sample recommendation"],
                     "created_at": datetime.utcnow().isoformat(),
-                    "status": "reviewed"
+                    "status": "reviewed",
                 }
                 for i in range(5)
             ]
-        
+
         return reports
     except Exception as e:
         logger.error(f"Bias Reports Error: {e}")
@@ -439,14 +436,16 @@ async def get_bias_reports(scope: str = "global", session: Session = Depends(get
 
 
 @router.post("/bias/scan")
-async def trigger_bias_scan(scope: str = "global", session: Session = Depends(get_session)):
+async def trigger_bias_scan(
+    scope: str = "global", session: Session = Depends(get_session)
+):
     """Trigger bias detection scan across models"""
     return {
         "status": "completed",
         "scan_id": f"scan-{datetime.utcnow().timestamp()}",
         "models_scanned": 12,
         "issues_found": 3,
-        "completed_at": datetime.utcnow().isoformat()
+        "completed_at": datetime.utcnow().isoformat(),
     }
 
 
@@ -461,7 +460,7 @@ async def get_enterprise_audits(session: Session = Depends(get_session)):
             "score": 0.92,
             "completed_at": datetime.utcnow().isoformat(),
             "findings": 3,
-            "auditor": "Compliance Team"
+            "auditor": "Compliance Team",
         },
         {
             "id": "audit-002",
@@ -470,7 +469,7 @@ async def get_enterprise_audits(session: Session = Depends(get_session)):
             "score": None,
             "completed_at": None,
             "findings": 0,
-            "auditor": "External Auditor"
+            "auditor": "External Auditor",
         },
         {
             "id": "audit-003",
@@ -479,8 +478,8 @@ async def get_enterprise_audits(session: Session = Depends(get_session)):
             "score": 0.88,
             "completed_at": datetime.utcnow().isoformat(),
             "findings": 5,
-            "auditor": "Data Protection Officer"
-        }
+            "auditor": "Data Protection Officer",
+        },
     ]
 
 
@@ -494,17 +493,19 @@ async def get_live_compliance_metrics(session: Session = Depends(get_session)):
         "audit_coverage": 0.94,
         "risk_score": 0.23,
         "last_audit": datetime.utcnow().isoformat(),
-        "trend": "improving"
+        "trend": "improving",
     }
 
 
 @router.post("/policy/update")
-async def update_compliance_policy(request: Dict[str, Any], session: Session = Depends(get_session)):
+async def update_compliance_policy(
+    request: Dict[str, Any], session: Session = Depends(get_session)
+):
     """Update global compliance policies"""
     return {
         "status": "success",
         "policy_updated": list(request.keys()),
-        "updated_at": datetime.utcnow().isoformat()
+        "updated_at": datetime.utcnow().isoformat(),
     }
 
 
@@ -514,5 +515,5 @@ async def delete_vendor(vendor_id: str, session: Session = Depends(get_session))
     return {
         "status": "success",
         "vendor_id": vendor_id,
-        "removed_at": datetime.utcnow().isoformat()
+        "removed_at": datetime.utcnow().isoformat(),
     }

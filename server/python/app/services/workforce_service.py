@@ -10,6 +10,8 @@ import re
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 
+logger = logging.getLogger(__name__)
+
 # Import CrewAI components
 CREWAI_AVAILABLE = False
 CrewAgent = None
