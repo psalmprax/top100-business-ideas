@@ -203,7 +203,7 @@ func main() {
 				return
 			case <-ticker.C:
 				if wsHub.GetClientCount() > 0 {
-					metrics, err := proxyService.Forward("GET", "/compliance/live-metrics", nil)
+					metrics, err := proxyService.Forward("GET", "/compliance/metrics/live", nil)
 					if err == nil {
 						var m map[string]interface{}
 						if err := json.Unmarshal(metrics, &m); err == nil {
