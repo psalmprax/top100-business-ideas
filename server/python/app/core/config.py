@@ -17,8 +17,10 @@ class Settings:
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
-    # Database
-    DATABASE_URL: str = "postgresql://postgres:postgres@db:5432/alphaai"
+    # Database - use actual container name from docker-compose
+    DATABASE_URL: str = (
+        "postgresql://postgres:postgres@top100-business-ideas-db-1:5432/alphaai"
+    )
 
     # Redis
     REDIS_URL: str = "redis://localhost:6379"
