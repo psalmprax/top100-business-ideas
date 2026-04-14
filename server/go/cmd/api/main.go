@@ -119,6 +119,10 @@ func main() {
 	userHandler := handlers.NewUserHandler(userRepo, authService)
 	panicHandler := handlers.NewPanicHandler(cfg.AdminSecret)
 
+	// New domain-specific handlers for production-grade routing
+	governanceHandler := handlers.NewGovernanceHandler(proxyService)
+	intelligenceHandler := handlers.NewIntelligenceHandler(proxyService)
+
 	// Setup Gin router
 	if cfg.Environment == "production" {
 		gin.SetMode(gin.ReleaseMode)
@@ -444,22 +448,22 @@ func main() {
 				// Governance & Advanced Analytics (Sentinel)
 				governance := agentOps.Group("/governance")
 				{
-					governance.GET("/compliance/dashboard", agentOpsHandler.ProxyToPython)
-					governance.GET("/compliance/articles", agentOpsHandler.ProxyToPython)
-					governance.POST("/compliance/assess/:id", agentOpsHandler.ProxyToPython)
-					governance.GET("/sla/dashboard", agentOpsHandler.ProxyToPython)
-					governance.GET("/sla/metrics", agentOpsHandler.ProxyToPython)
-					governance.GET("/partners", agentOpsHandler.ProxyToPython)
-					governance.POST("/partners/:id/sync", agentOpsHandler.ProxyToPython)
-					governance.GET("/forecast/usage", agentOpsHandler.ProxyToPython)
-					governance.GET("/analytics/roi", agentOpsHandler.ProxyToPython)
-					governance.GET("/localization/configs", agentOpsHandler.ProxyToPython)
-					governance.GET("/healing/configs", agentOpsHandler.ProxyToPython)
-					governance.GET("/insights/strategic", agentOpsHandler.ProxyToPython)
-					governance.GET("/settings", agentOpsHandler.ProxyToPython)
-					governance.PUT("/settings/:id", agentOpsHandler.ProxyToPython)
-					governance.GET("/on-prem/deployments", agentOpsHandler.ProxyToPython)
-					governance.POST("/on-prem/deploy/:id", agentOpsHandler.ProxyToPython)
+					governance.GET("/compliance/dashboard", governanceHandler.GetComplianceDashboard)
+					governance.GET("/compliance/articles", governanceHandler.GetComplianceArticles)
+					governance.POST("/compliance/assess/:id", governanceHandler.AssessCompliance)
+					governance.GET("/sla/dashboard", governanceHandler.GetSLADashboard)
+					governance.GET("/sla/metrics", governanceHandler.GetSLAMetrics)
+					governance.GET("/partners", governanceHandler.GetPartners)
+					governance.POST("/partners/:id/sync", governanceHandler.SyncPartner)
+					governance.GET("/forecast/usage", governanceHandler.GetUsageForecast)
+					governance.GET("/analytics/roi", governanceHandler.GetROIAnalytics)
+					governance.GET("/localization/configs", governanceHandler.GetLocalizationConfigs)
+					governance.GET("/healing/configs", governanceHandler.GetHealingConfigs)
+					governance.GET("/insights/strategic", governanceHandler.GetStrategicInsights)
+					governance.GET("/settings", governanceHandler.GetSettings)
+					governance.PUT("/settings/:id", governanceHandler.UpdateSetting)
+					governance.GET("/on-prem/deployments", governanceHandler.GetOnPremDeployments)
+					governance.POST("/on-prem/deploy/:id", governanceHandler.DeployOnPrem)
 				}
 			}
 
@@ -596,10 +600,10 @@ func main() {
 			protected.POST("/graphql-proxy", agentOpsHandler.ProxyToPython)
 
 			// Hermes AI Agent Integration
-			protected.POST("/hermes/chat", agentOpsHandler.ProxyToPython)
-			protected.POST("/hermes/analyze", agentOpsHandler.ProxyToPython)
-			protected.POST("/hermes/suggest-fix", agentOpsHandler.ProxyToPython)
-			protected.POST("/hermes/validate-strategy", agentOpsHandler.ProxyToPython)
+			protected.POST("/hermes/chat", intelligenceHandler.HermesChat)
+			protected.POST("/hermes/analyze", intelligenceHandler.HermesAnalyze)
+			protected.POST("/hermes/suggest-fix", intelligenceHandler.HermesSuggestFix)
+			protected.POST("/hermes/validate-strategy", intelligenceHandler.HermesValidateStrategy)
 		}
 	}
 
