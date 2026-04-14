@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -14,7 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
-
+	"github.com/top100-business-ideas/api/internal/api/routers"
 	"github.com/top100-business-ideas/api/internal/config"
 	"github.com/top100-business-ideas/api/internal/database"
 	"github.com/top100-business-ideas/api/internal/handlers"
@@ -39,18 +38,18 @@ import (
 // @BasePath		/api/v1
 
 func main() {
-	// Load environment variables
-	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found, using environment variables")
-	}
-
-	// Initialize logger
+	// Initialize logger first
 	logger := zerolog.New(os.Stdout).
 		Level(zerolog.InfoLevel).
 		With().
 		Timestamp().
 		Caller().
 		Logger()
+
+	// Load environment variables
+	if err := godotenv.Load(); err != nil {
+		logger.Info().Msg("No .env file found, using environment variables")
+	}
 
 	// Load configuration
 	cfg := config.Load()
@@ -62,16 +61,14 @@ func main() {
 	}
 	defer database.Close()
 
-	// Temporarily skip database migrations to avoid schema conflicts with Python backend
-	// TODO: Implement unified schema management
-	// if err := database.RunMigrations(context.Background()); err != nil {
-	// 	logger.Fatal().Err(err).Msg("Failed to run database migrations")
-	// }
-	logger.Info().Msg("Database migrations skipped - using existing schema")
+	// Run database migrations - all tables use IF NOT EXISTS for safety
+	if err := database.RunMigrations(context.Background()); err != nil {
+		logger.Fatal().Err(err).Msg("Failed to run database migrations")
+	}
+	logger.Info().Msg("Database migrations completed successfully")
 
 	// Initialize Repositories
 	userRepo := repository.NewUserRepository()
-	workforceRepo := repository.NewWorkforceRepository()
 
 	// Initialize Services
 	authService := services.NewAuthService(cfg.JWTSecret, userRepo)
@@ -108,13 +105,6 @@ func main() {
 	multiCloudHandler := handlers.NewMultiCloudHandler(proxyService)
 	selfHealingHandler := handlers.NewSelfHealingHandler(proxyService)
 	trainingHandler := handlers.NewTrainingHandler(proxyService)
-	shadowAIHandler := handlers.NewShadowAIHandler(proxyService)
-	wearableHandler := handlers.NewWearableHandler(proxyService)
-	cryptoHandler := handlers.NewCryptoHandler(proxyService)
-	travelKioskHandler := handlers.NewTravelKioskHandler(proxyService)
-	edgeHandler := handlers.NewEdgeHandler(proxyService)
-	vendorHandler := handlers.NewVendorHandler(proxyService)
-	workforceHandler := handlers.NewWorkforceHandler(proxyService, workforceRepo)
 	enterpriseHandler := handlers.NewEnterpriseHandler(proxyService)
 	denialDefenseRepo := repository.NewDenialDefenseRepository()
 	denialDefenseHandler := handlers.NewDenialDefenseHandler(denialDefenseRepo)
@@ -137,6 +127,7 @@ func main() {
 	router.Use(middleware.Recovery())
 	router.Use(middleware.CORS())
 	router.Use(middleware.SystemLock())
+	router.Use(middleware.RateLimitMiddleware(100))
 
 	// Health check (no auth required)
 	router.GET("/health", healthHandler.Health)
@@ -148,473 +139,35 @@ func main() {
 	router.POST("/ml/ai-compliance/check", mlHandler.ProxyML)
 	router.POST("/ml/deepfake/detect", mlHandler.ProxyML)
 
-	// API v1 routes
-	v1 := router.Group("/api/v1")
-	{
-		// Panic routes (Administrative)
-		panicGroup := v1.Group("/panic")
-		{
-			panicGroup.POST("/lock", panicHandler.Lock)
-			panicGroup.POST("/reset", panicHandler.Reset)
-		}
-
-		// Auth routes (no auth required)
-		auth := v1.Group("/auth")
-		{
-			auth.POST("/login", authHandler.Login)
-			auth.POST("/register", authHandler.Register)
-			auth.POST("/refresh", authHandler.RefreshToken)
-			auth.POST("/password-reset", authHandler.RequestPasswordReset)
-			auth.POST("/password-reset/confirm", authHandler.ResetPassword)
-		}
-
-		// Public SSO routes for login
-		ssoPublic := v1.Group("/sso")
-		{
-			ssoPublic.POST("/connect/:provider", agentOpsHandler.ProxyToPython)
-			ssoPublic.GET("/callback/:provider", agentOpsHandler.ProxyToPython)
-		}
-
-		// Protected routes
-		protected := v1.Group("")
-		protected.Use(middleware.Auth(authService))
-		{
-			// User routes
-			protected.GET("/auth/me", authHandler.Me)
-			protected.POST("/auth/logout", authHandler.Logout)
-			protected.PUT("/user", userHandler.UpdateProfile)
-			protected.PUT("/user/password", userHandler.UpdatePassword)
-			protected.GET("/user/api-keys", userHandler.ListAPIKeys)
-			protected.POST("/user/api-keys", userHandler.CreateAPIKey)
-			protected.DELETE("/user/api-keys/:id", userHandler.DeleteAPIKey)
-
-			// Protected SSO configuration
-			ssoProtected := protected.Group("/sso")
-			{
-				ssoProtected.GET("/config/:id", agentOpsHandler.ProxyToPython)
-				ssoProtected.POST("/config/:id", agentOpsHandler.ProxyToPython)
-				ssoProtected.GET("/config/:id/liveness-link", agentOpsHandler.ProxyToPython)
-				ssoProtected.POST("/handshake", agentOpsHandler.ProxyToPython)
-				ssoProtected.GET("/providers/:id", func(c *gin.Context) {
-					id := c.Param("id")
-					c.Request.URL.Path = "/api/v1/sso/config/" + id
-					agentOpsHandler.ProxyToPython(c)
-				})
-			}
-
-			// Agent Operations
-			agents := protected.Group("/agents")
-			agents.Use(middleware.ProductAccess("agent-ops"))
-			{
-				agents.GET("", agentOpsHandler.ListAgents)
-				agents.GET("/:id/logs", agentOpsHandler.GetAgentLogs)
-				agents.GET("/:id/forecast", agentOpsHandler.GetForecast)
-
-				// Management only actions
-				agents.Use(middleware.RequireRole("management"))
-				{
-					agents.POST("", agentOpsHandler.CreateAgent)
-					agents.PUT("/:id", agentOpsHandler.UpdateAgent)
-					agents.DELETE("/:id", agentOpsHandler.DeleteAgent)
-					agents.POST("/:id/stop", agentOpsHandler.StopAgent)
-					agents.POST("/:id/restart", agentOpsHandler.RestartAgent)
-					agents.POST("/:id/clone", agentOpsHandler.CloneConfig)
-					agents.POST("/:id/optimize", agentOpsHandler.OptimizeMemory)
-				}
-				agents.POST("/:id/hint", agentOpsHandler.ProxyToPython)
-			}
-
-			// Agent Metrics
-			metrics := protected.Group("/metrics")
-			metrics.Use(middleware.ProductAccess("agent-ops"))
-			{
-				metrics.GET("/agents", agentOpsHandler.GetAgentMetrics)
-				metrics.GET("/agents/:id/history", agentOpsHandler.GetAgentHistory)
-			}
-
-			// Compliance (AI Act)
-			compliance := protected.Group("/compliance")
-			compliance.Use(middleware.ProductAccess("compliance"))
-			{
-				compliance.GET("/stats", complianceHandler.GetStats)
-				compliance.GET("", complianceHandler.ListChecks)
-				compliance.GET("/:id", complianceHandler.GetCheck)
-				compliance.POST("/check", complianceHandler.RunCheck)
-				compliance.GET("/categories", complianceHandler.GetCategories)
-
-				// Extended AI Model Compliance & Orchestration
-				compliance.PATCH("/models/:id/guardrails", agentOpsHandler.ProxyToPython)
-				compliance.POST("/documentation/:id", complianceHandler.GenerateDocumentation)
-				compliance.GET("/incidents", complianceHandler.ListAuditLogs)
-				compliance.POST("/incidents/article-71", agentOpsHandler.ProxyToPython)
-				compliance.PATCH("/incidents/:id", complianceHandler.UpdateIncidentStatus)
-				compliance.POST("/upload", complianceHandler.UploadArtifact)
-				compliance.GET("/artifacts", complianceHandler.ListArtifacts)
-				compliance.GET("/roi", complianceHandler.GetROIMetrics)
-				compliance.GET("/velocity", complianceHandler.GetVelocityTrends)
-				compliance.GET("/deadlines", complianceHandler.GetDeadlines)
-				compliance.GET("/enterprise-audits", complianceHandler.GetEnterpriseAudits)
-				compliance.GET("/models/:id/breakdown", complianceHandler.GetModelBreakdown)
-				compliance.GET("/models/:id/audits", complianceHandler.GetModelAudits)
-				compliance.GET("/models/:id/handshakes", complianceHandler.GetModelHandshakes)
-				compliance.GET("/regional-reports", complianceHandler.GetRegionalReports)
-				compliance.GET("/financial-metrics", complianceHandler.GetFinancialMetrics)
-				compliance.GET("/audit", complianceHandler.ListAuditLogs)
-				compliance.GET("/checklists", complianceHandler.ListChecklists)
-				compliance.POST("/checklists/:id", complianceHandler.UpdateChecklistItem)
-				compliance.GET("/checks", complianceHandler.ListChecks)
-				compliance.GET("/checks/:id", complianceHandler.GetCheck)
-				compliance.POST("/checks/run", complianceHandler.RunCheck)
-				compliance.GET("/models", complianceHandler.ListModels)
-				compliance.POST("/models", complianceHandler.RegisterModel)
-				compliance.GET("/bias-reports/:id", complianceHandler.GetBiasReports)
-				compliance.GET("/reports/export", complianceHandler.ExportReport)
-				compliance.GET("/live-metrics", agentOpsHandler.ProxyToPython)
-				compliance.POST("/remediate", agentOpsHandler.ProxyToPython)
-			}
-
-			// Deepfake Defense
-			deepfake := protected.Group("/deepfake")
-			deepfake.Use(middleware.ProductAccess("deepfake"))
-			{
-				deepfake.POST("/analyze", deepfakeHandler.Analyze)
-				deepfake.POST("/upload", deepfakeHandler.Upload)
-				deepfake.GET("/analyses", deepfakeHandler.ListAnalyses)
-				deepfake.GET("/analyses/:id", deepfakeHandler.GetAnalysis)
-				deepfake.GET("/stats", deepfakeHandler.GetStats)
-				deepfake.POST("/challenge", deepfakeHandler.CreateChallenge)
-				deepfake.POST("/verify", deepfakeHandler.VerifyAuthSignature)
-				deepfake.POST("/analyze/enterprise", deepfakeHandler.AnalyzeEnterprise)
-				deepfake.GET("/detectors", deepfakeHandler.ListDetectors)
-				deepfake.GET("/threats", agentOpsHandler.ProxyToPython)
-				deepfake.GET("/duress", deepfakeHandler.GetDuressConfig)
-				deepfake.POST("/duress", deepfakeHandler.UpdateDuressConfig)
-			}
-
-			// Denial Defense
-			denialDefense := protected.Group("/denial-defense")
-			{
-				denialDefense.GET("/claims", denialDefenseHandler.ListClaims)
-				denialDefense.GET("/stats", denialDefenseHandler.GetStats)
-				denialDefense.POST("/claims", denialDefenseHandler.CreateClaim)
-				denialDefense.PUT("/claims", denialDefenseHandler.UpdateClaim)
-			}
-
-			// Enterprise
-			enterprise := protected.Group("/enterprise")
-			{
-				enterprise.GET("/partner-config", enterpriseHandler.GetPartnerConfig)
-				enterprise.POST("/sla-tier", enterpriseHandler.UpdateSlaTier)
-			}
-
-			// WebSocket for real-time updates
-			protected.GET("/ws", wsHandler.HandleWebSocket)
-
-			// Rules
-			rules := protected.Group("/rules")
-			rules.Use(middleware.ProductAccess("agent-ops"))
-			{
-				rules.GET("", rulesHandler.ListRules)
-				rules.POST("", rulesHandler.CreateRule)
-				rules.PUT("/:id", rulesHandler.UpdateRule)
-				rules.DELETE("/:id", rulesHandler.DeleteRule)
-				rules.POST("/:id/toggle", rulesHandler.ToggleRule)
-			}
-
-			// Metrics
-			metricsGroup := protected.Group("/metrics")
-			metricsGroup.Use(middleware.ProductAccess("agent-ops"))
-			{
-				metricsGroup.GET("/current", metricsHandler.GetCurrentMetrics)
-				metricsGroup.GET("/history", metricsHandler.GetMetricsHistory)
-				metricsGroup.GET("/agent/:id", metricsHandler.GetAgentMetrics)
-			}
-
-			// Billing
-			billing := protected.Group("/billing")
-			billing.Use(middleware.ProductAccess("billing"))
-			{
-				billing.GET("/subscription", billingHandler.GetSubscription)
-				billing.GET("/invoices", billingHandler.GetInvoices)
-
-				// Financial actions (Management only)
-				billing.Use(middleware.RequireRole("management"))
-				{
-					billing.POST("/checkout", billingHandler.CreateCheckout)
-					billing.POST("/cancel", billingHandler.CancelSubscription)
-					billing.PUT("/payment-method", billingHandler.UpdatePaymentMethod)
-				}
-			}
-
-			// Webhooks (Agent Ops UC12)
-			webhooks := protected.Group("/webhooks")
-			webhooks.Use(middleware.ProductAccess("agent-ops"))
-			{
-				webhooks.GET("/:id", webhookHandler.GetWebhook)
-
-				// Config actions (Management only)
-				webhooks.Use(middleware.RequireRole("management"))
-				{
-					webhooks.POST("", webhookHandler.CreateWebhook)
-					webhooks.PUT("/:id", webhookHandler.UpdateWebhook)
-					webhooks.DELETE("/:id", webhookHandler.DeleteWebhook)
-					webhooks.POST("/:id/test", webhookHandler.TestWebhook)
-				}
-				webhooks.GET("/:id/executions", webhookHandler.GetWebhookExecutions)
-			}
-
-			// Alerts (Agent Ops UC4)
-			alerts := protected.Group("/alerts")
-			alerts.Use(middleware.ProductAccess("agent-ops"))
-			{
-				alerts.GET("", alertHandler.ListAlerts)
-
-				// Management only actions
-				alerts.Use(middleware.RequireRole("management"))
-				{
-					alerts.POST("", alertHandler.CreateAlert)
-					alerts.PUT("/:id", alertHandler.UpdateAlert)
-					alerts.DELETE("/:id", alertHandler.DeleteAlert)
-				}
-			}
-
-			// Consolidated Agent Operations (Frontend Alignment)
-			agentOps := protected.Group("/agent-ops")
-			agentOps.Use(middleware.ProductAccess("agent-ops"))
-			{
-				agentOps.GET("/audit", agentOpsHandler.GetAuditLogs)
-				agentOps.POST("/alerts/:id/ignore", agentOpsHandler.ProxyToPython)
-				agentOps.GET("/agents", agentOpsHandler.ProxyToPython)
-				agentOps.GET("/architecture/defaults", agentOpsHandler.ProxyToPython)
-				agentOps.GET("/models/config", agentOpsHandler.ListLLMConfigs)
-				agentOps.GET("/rules/budget", rulesHandler.ListRules)
-				agentOps.GET("/webhooks", webhookHandler.ListWebhooks)
-				agentOps.POST("/webhooks", webhookHandler.CreateWebhook)
-				agentOps.PUT("/webhooks/:id", webhookHandler.UpdateWebhook)
-				agentOps.DELETE("/webhooks/:id", webhookHandler.DeleteWebhook)
-				agentOps.GET("/cloud/health", agentOpsHandler.ProxyToPython)
-				agentOps.POST("/cloud/failover", agentOpsHandler.ProxyToPython)
-				agentOps.POST("/compliance/hipaa", agentOpsHandler.ProxyToPython)
-				agentOps.POST("/compliance/sox", agentOpsHandler.ProxyToPython)
-				agentOps.POST("/gateway/gql", agentOpsHandler.ProxyToPython)
-				agentOps.POST("/deploy/language", agentOpsHandler.ProxyToPython)
-				agentOps.POST("/sync-locale", agentOpsHandler.SyncLinguisticPackage)
-				agentOps.POST("/self-healing/deploy", agentOpsHandler.ProxyToPython)
-				agentOps.GET("/snapshots", agentOpsHandler.ProxyToPython)
-				agentOps.POST("/proxy/config", agentOpsHandler.ProxyToPython)
-				agentOps.POST("/retention", agentOpsHandler.ProxyToPython)
-				agentOps.GET("/metrics/stream", agentOpsHandler.ProxyToPython)
-
-				// Sensitive Management Actions
-				agentOps.Use(middleware.RequireRole("management"))
-				{
-					agentOps.POST("/forensics", agentOpsHandler.RunForensics)
-					agentOps.POST("/whitelabel/provision", agentOpsHandler.ProvisionClient)
-					agentOps.POST("/bulk/:action", agentOpsHandler.ProxyToPython)
-					agentOps.POST("/:id/optimize", agentOpsHandler.ProxyToPython)
-					agentOps.POST("/:id/dump", agentOpsHandler.ProxyToPython)
-					agentOps.POST("/:id/compress", agentOpsHandler.ProxyToPython)
-					agentOps.PATCH("/compliance/alerts/:id/resolve", agentOpsHandler.ProxyToPython)
-					agentOps.POST("/compliance/audit/sox", agentOpsHandler.ProxyToPython)
-					agentOps.POST("/security/rotate-key", agentOpsHandler.ProxyToPython)
-					agentOps.POST("/venture/realize/:id", agentOpsHandler.ProxyToPython)
-					agentOps.POST("/skills/install", agentOpsHandler.ProxyToPython)
-				}
-
-				// Vigilance (Sentinel Monitoring)
-				vigilance := agentOps.Group("/vigilance")
-				{
-					vigilance.GET("/alerts", agentOpsHandler.ProxyToPython)
-					vigilance.POST("/alerts/:id/acknowledge", agentOpsHandler.ProxyToPython)
-				}
-
-				// Self-Healing (Agent Ops UC17)
-				selfHealing := agentOps.Group("/self-healing")
-				{
-					selfHealing.GET("/status", selfHealingHandler.GetHealingStatus)
-					selfHealing.GET("/events", selfHealingHandler.GetEvents)
-					selfHealing.GET("/stats", selfHealingHandler.GetStats)
-					selfHealing.GET("/metrics/streaming", agentOpsHandler.ProxyToPython)
-					selfHealing.POST("/config", agentOpsHandler.ProxyToPython)
-					selfHealing.POST("/recover", selfHealingHandler.TriggerRecovery)
-					selfHealing.POST("/hint", agentOpsHandler.ProxyToPython)
-				}
-
-				// Venture Intelligence (Market Intelligence)
-				venture := agentOps.Group("/venture")
-				{
-					venture.GET("/insights", agentOpsHandler.ListVentureInsights)
-					venture.POST("/scenario/analyze", agentOpsHandler.AnalyzeVentureScenario)
-				}
-
-				// Governance & Advanced Analytics (Sentinel)
-				governance := agentOps.Group("/governance")
-				{
-					governance.GET("/compliance/dashboard", governanceHandler.GetComplianceDashboard)
-					governance.GET("/compliance/articles", governanceHandler.GetComplianceArticles)
-					governance.POST("/compliance/assess/:id", governanceHandler.AssessCompliance)
-					governance.GET("/sla/dashboard", governanceHandler.GetSLADashboard)
-					governance.GET("/sla/metrics", governanceHandler.GetSLAMetrics)
-					governance.GET("/partners", governanceHandler.GetPartners)
-					governance.POST("/partners/:id/sync", governanceHandler.SyncPartner)
-					governance.GET("/forecast/usage", governanceHandler.GetUsageForecast)
-					governance.GET("/analytics/roi", governanceHandler.GetROIAnalytics)
-					governance.GET("/localization/configs", governanceHandler.GetLocalizationConfigs)
-					governance.GET("/healing/configs", governanceHandler.GetHealingConfigs)
-					governance.GET("/insights/strategic", governanceHandler.GetStrategicInsights)
-					governance.GET("/settings", governanceHandler.GetSettings)
-					governance.PUT("/settings/:id", governanceHandler.UpdateSetting)
-					governance.GET("/on-prem/deployments", governanceHandler.GetOnPremDeployments)
-					governance.POST("/on-prem/deploy/:id", governanceHandler.DeployOnPrem)
-				}
-			}
-
-			// Multi-Cloud (Agent Ops UC16)
-			multiCloud := protected.Group("/multi-cloud")
-			multiCloud.Use(middleware.ProductAccess("agent-ops"))
-			{
-				multiCloud.GET("/status", multiCloudHandler.GetStatus)
-				multiCloud.POST("/failover", multiCloudHandler.InitiateFailover)
-			}
-
-			// Training (AI Compliance UC10)
-			training := protected.Group("/training")
-			training.Use(middleware.ProductAccess("compliance"))
-			{
-				training.GET("/modules", trainingHandler.ListModules)
-				training.GET("/modules/:id", trainingHandler.GetModule)
-
-				training.Use(middleware.RequireRole("management"))
-				{
-					training.POST("/modules", trainingHandler.CreateModule)
-				}
-
-				training.POST("/progress", trainingHandler.UpdateProgress)
-				training.GET("/progress/:userId", trainingHandler.GetUserProgress)
-				training.GET("/stats", trainingHandler.GetTrainingStats)
-				training.GET("/modules/:id/certificate", trainingHandler.DownloadCertificate)
-			}
-
-			// Shadow AI (AI Compliance UC15)
-			shadowAI := protected.Group("/shadow-ai")
-			shadowAI.Use(middleware.ProductAccess("compliance"))
-			{
-				shadowAI.GET("/detections", shadowAIHandler.ListDetections)
-				shadowAI.PUT("/detections/:id/remediate", shadowAIHandler.RemediateDetection)
-				shadowAI.GET("/stats", shadowAIHandler.GetShadowAIStats)
-			}
-
-			// Edge AI (AI Compliance UC14)
-			edgeGroup := protected.Group("/edge")
-			edgeGroup.Use(middleware.ProductAccess("compliance"))
-			{
-				edgeGroup.GET("/deployments", edgeHandler.ListDeployments)
-				edgeGroup.GET("/deployments/:id/logs", edgeHandler.GetEdgeLogs)
-				edgeGroup.POST("/deployments/:id/sync", edgeHandler.SyncWeights)
-			}
-
-			// Vendors (AI Compliance UC7)
-			vendors := protected.Group("/vendors")
-			vendors.Use(middleware.ProductAccess("compliance"))
-			{
-				vendors.GET("", vendorHandler.ListVendors)
-				vendors.POST("", vendorHandler.AddVendor)
-			}
-
-			// Wearables (Deepfake UC14)
-			wearable := protected.Group("/wearables")
-			wearable.Use(middleware.ProductAccess("deepfake"))
-			{
-				wearable.GET("/devices", wearableHandler.ListDevices)
-				wearable.POST("/devices", wearableHandler.RegisterDevice)
-				wearable.POST("/devices/:id/pair", wearableHandler.PairDevice)
-			}
-
-			// Mobile SDK (Deepfake UC10)
-			mobileSDK := protected.Group("/mobile-sdk")
-			mobileSDK.Use(middleware.ProductAccess("deepfake"))
-			{
-				mobileSDK.GET("/stats", agentOpsHandler.ProxyToPython)
-			}
-
-			// Crypto (Deepfake UC12)
-			crypto := protected.Group("/crypto")
-			crypto.Use(middleware.ProductAccess("deepfake"))
-			{
-				crypto.GET("/wallets", cryptoHandler.ListWallets)
-				crypto.POST("/wallets", cryptoHandler.ProtectWallet)
-				crypto.POST("/wallets/:id/verify", cryptoHandler.VerifyTransaction)
-			}
-
-			// Travel (Deepfake UC16)
-			travel := protected.Group("/travel")
-			travel.Use(middleware.ProductAccess("deepfake"))
-			{
-				travel.GET("/kiosks", travelKioskHandler.ListKiosks)
-				travel.POST("/kiosks/:id/verify", travelKioskHandler.VerifyTraveler)
-			}
-
-			// Workforce & Sovereign (Digital Workforce Gap)
-			workforce := protected.Group("/workforce")
-			workforce.Use(middleware.ProductAccess("workforce"))
-			{
-				workforce.GET("/status", workforceHandler.GetStatus)
-				workforce.POST("/sovereign/request", workforceHandler.RequestApproval)
-				workforce.POST("/sovereign/callback", workforceHandler.HandleCallback)
-
-				// Real-First Hardening
-				workforce.POST("/cashclaw/recover", workforceHandler.RecoverRevenue)
-				workforce.POST("/campaigns/run", workforceHandler.RunCampaign)
-				workforce.GET("/leads/source", workforceHandler.SourceLeads)
-				workforce.POST("/insights/analyze", workforceHandler.AnalyzeInsights)
-				workforce.POST("/inbound/handle", workforceHandler.HandleInbound)
-				workforce.POST("/feedback", workforceHandler.ProvideFeedback)
-				workforce.GET("/skills", workforceHandler.GetSkills)
-				workforce.GET("/jobs", workforceHandler.GetJobs)
-				workforce.GET("/acquisitions", workforceHandler.GetAcquisitions)
-				workforce.GET("/content", workforceHandler.GetContentDrafts)
-				workforce.GET("/decisions", workforceHandler.ListDecisions)
-				workforce.GET("/traces", workforceHandler.ListTraces)
-
-				// Autosearch & Outreach
-				workforce.POST("/autosearch/run", workforceHandler.RunAutosearch)
-				workforce.GET("/outreach/drafts", workforceHandler.GetOutreachDrafts)
-				workforce.POST("/outreach/:id/approve", workforceHandler.ApproveOutreach)
-				workforce.GET("/invoices", workforceHandler.GetInvoices)
-				workforce.POST("/referral/activate", workforceHandler.ActivateReferral)
-				workforce.GET("/referral/stats", workforceHandler.GetReferralStats)
-				workforce.POST("/autonomy/toggle", workforceHandler.ToggleAutonomy)
-				workforce.GET("/deploy/check", workforceHandler.DeployCheck)
-			}
-
-			// On-Premise (Agent Ops UC18)
-			onPrem := protected.Group("/on-prem")
-			onPrem.Use(middleware.ProductAccess("agent-ops"))
-			{
-				onPrem.POST("/manifest", agentOpsHandler.ProxyToPython)
-				onPrem.GET("/manifest", agentOpsHandler.ProxyToPython)
-				onPrem.GET("/checklist", agentOpsHandler.ProxyToPython)
-				onPrem.GET("/deployments", agentOpsHandler.ProxyToPython)
-				onPrem.POST("/deploy/:id", agentOpsHandler.ProxyToPython)
-			}
-
-			// GraphQL Proxy
-			protected.POST("/graphql-proxy", agentOpsHandler.ProxyToPython)
-
-			// Hermes AI Agent Integration
-			protected.POST("/hermes/chat", intelligenceHandler.HermesChat)
-			protected.POST("/hermes/analyze", intelligenceHandler.HermesAnalyze)
-			protected.POST("/hermes/suggest-fix", intelligenceHandler.HermesSuggestFix)
-			protected.POST("/hermes/validate-strategy", intelligenceHandler.HermesValidateStrategy)
-		}
+	// Setup all API routes using modular router system
+	handlerContainer := &routers.HandlerContainer{
+		PanicHandler:         panicHandler,
+		AuthHandler:          authHandler,
+		UserHandler:          userHandler,
+		AgentOpsHandler:      agentOpsHandler,
+		ComplianceHandler:    complianceHandler,
+		DeepfakeHandler:      deepfakeHandler,
+		DenialDefenseHandler: denialDefenseHandler,
+		EnterpriseHandler:    enterpriseHandler,
+		RulesHandler:         rulesHandler,
+		MetricsHandler:       metricsHandler,
+		BillingHandler:       billingHandler,
+		WSHandler:            wsHandler,
+		WebhookHandler:       webhookHandler,
+		AlertHandler:         alertHandler,
+		MultiCloudHandler:    multiCloudHandler,
+		SelfHealingHandler:   selfHealingHandler,
+		TrainingHandler:      trainingHandler,
+		GovernanceHandler:    governanceHandler,
 	}
 
-	// Start server
-	logger.Info().
-		Str("host", cfg.Host).
-		Int("port", cfg.Port).
-		Str("environment", cfg.Environment).
-		Msg("Starting API Gateway")
+	middlewareContainer := &routers.MiddlewareContainer{
+		Auth:          middleware.Auth(authService),
+		ProductAccess: middleware.ProductAccess,
+		RequireRole:   middleware.RequireRole,
+	}
+
+	routers.SetupAllRoutes(router, handlerContainer, middlewareContainer, intelligenceHandler)
 
 	srv := &http.Server{
 		Addr:         fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),

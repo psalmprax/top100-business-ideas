@@ -40,7 +40,6 @@ from app.api import (
     deepfake,
     health,
     auth_verify,
-    extended,
     enterprise,
     governance,
     venture,
@@ -48,6 +47,14 @@ from app.api import (
     alerts,
     intelligence,
     telemetry,
+)
+from app.api.routers import (
+    webhooks_router,
+    multi_cloud_router,
+    self_healing_router,
+    agent_ops_router,
+    budget_router,
+    workforce_router,
 )
 from app.core.config import settings
 from app.services.billing_service import billing_service
@@ -87,7 +94,7 @@ async def lifespan(app: FastAPI):
         # We check the default provider (OpenAI by default)
         # result = await multi_cloud_proxy.complete("ping", fallback=False)
         # logger.info(f"Multi-Cloud Health status: {result.get('status', 'unknown')}")
-        pass # We will keep it as a placeholder for now to avoid consuming tokens at every reboot
+        pass  # We will keep it as a placeholder for now to avoid consuming tokens at every reboot
     except Exception as e:
         logger.error(f"Multi-Cloud Gateway Health check failed: {e}")
 
@@ -133,7 +140,12 @@ app.include_router(enterprise.router, tags=["Enterprise"])
 app.include_router(
     auth_verify.router, prefix="/auth/verify", tags=["Liveness Authentication"]
 )
-app.include_router(extended.router, tags=["Extended API - Full Sync"])
+app.include_router(webhooks_router, prefix="/webhooks", tags=["Webhooks"])
+app.include_router(multi_cloud_router, prefix="/multi-cloud", tags=["Multi-Cloud"])
+app.include_router(self_healing_router, prefix="/self-healing", tags=["Self-Healing"])
+app.include_router(agent_ops_router, prefix="/agent-ops", tags=["Agent Operations"])
+app.include_router(budget_router, prefix="/budget", tags=["Budget Management"])
+app.include_router(workforce_router, prefix="/workforce", tags=["Workforce"])
 app.include_router(
     governance.router, prefix="/governance", tags=["Governance & Advanced Features"]
 )
@@ -142,8 +154,11 @@ app.include_router(security.router, prefix="/security", tags=["Security"])
 app.include_router(alerts.router, prefix="/agents", tags=["Alerts & Rules"])
 app.include_router(intelligence.router, prefix="/intelligence", tags=["Intelligence"])
 from app.api import sentinel
+
 app.include_router(sentinel.router, prefix="/api/v1/sentinel", tags=["Sentinel"])
-app.include_router(telemetry.router, prefix="/telemetry", tags=["Telemetry & Optimization"])
+app.include_router(
+    telemetry.router, prefix="/telemetry", tags=["Telemetry & Optimization"]
+)
 
 # Global Exception Shield
 app.add_exception_handler(Exception, resilience_exception_handler)
