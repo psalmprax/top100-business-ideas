@@ -16,13 +16,13 @@ services:
       - ADMIN_SECRET=${ADMIN_SECRET:?ADMIN_SECRET must be set}
       - JWT_EXPIRY=24h
       - PYTHON_BACKEND_URL=http://python-backend:8000
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/alphaai
-      - DB_HOST=db
+      - DATABASE_URL=postgresql://postgres:postgres@top100-business-ideas-db-1:5432/alphaai
+      - DB_HOST=top100-business-ideas-db-1
       - DB_PORT=5432
       - DB_USER=postgres
       - DB_PASSWORD=postgres
       - DB_NAME=alphaai
-      - REDIS_HOST=redis
+      - REDIS_HOST=top100-business-ideas-redis-1
       - REDIS_PORT=6379
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
