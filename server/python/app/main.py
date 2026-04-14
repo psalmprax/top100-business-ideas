@@ -59,6 +59,7 @@ from app.api.routers import (
 from app.core.config import settings
 from app.services.billing_service import billing_service
 from app.core.middleware import resilience_exception_handler
+from app.core.resilience import RateLimitMiddleware
 from app.services.multi_cloud_proxy import multi_cloud_proxy
 from app.services.compliance_service import compliance_service
 
@@ -130,6 +131,12 @@ session_secret = os.getenv("SESSION_SECRET_KEY")
 if not session_secret:
     raise ValueError("SESSION_SECRET_KEY environment variable is required")
 app.add_middleware(SessionMiddleware, secret_key=session_secret)
+
+# Resilience: Rate Limiting Shield (In-Memory Sliding Window)
+app.add_middleware(RateLimitMiddleware, window=60, limit=200)
+
+# Register Global Resilience Exception Handler
+app.add_exception_handler(Exception, resilience_exception_handler)
 
 # Include routers
 app.include_router(health.router, prefix="/health", tags=["Health"])

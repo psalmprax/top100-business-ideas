@@ -10,6 +10,7 @@ import os
 import logging
 import asyncio
 import time
+from app.core.resilience import ml_breaker
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +66,7 @@ class MultiCloudProxy:
             "backoff_factor": 2.0,
         }
     
+    @ml_breaker
     async def complete(
         self,
         input_data: Union[str, List[Dict[str, str]]],

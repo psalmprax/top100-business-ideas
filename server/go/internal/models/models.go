@@ -34,8 +34,8 @@ type Agent struct {
 	Tier             string        `json:"tier" db:"tier"`
 	PersistentMemory bool          `json:"persistent_memory" db:"persistent_memory"`
 	Metrics          *AgentMetrics `json:"metrics"`
-	CreatedAt        time.Time     `json:"created_at" db:"created_at"`
-	UpdatedAt        time.Time     `json:"updated_at" db:"updated_at"`
+	CreatedAt        time.Time     `json:"createdAt" db:"created_at"`
+	UpdatedAt        time.Time     `json:"updatedAt" db:"updated_at"`
 }
 
 // AgentMetrics represents agent performance metrics

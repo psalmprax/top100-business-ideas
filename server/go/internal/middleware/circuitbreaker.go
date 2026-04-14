@@ -1,9 +1,12 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 // CircuitState represents the state of a circuit breaker
@@ -151,7 +154,7 @@ func (e *CircuitTimeoutError) Error() string {
 	return e.Message
 }
 
-// CircuitBreakerMiddleware creates a middleware that applies circuit breaker to handlers
+// CircuitBreakerMiddleware creates a middleware that applies circuit breaker to stdlib handlers
 func CircuitBreakerMiddleware(config CircuitBreakerConfig) func(http.Handler) http.Handler {
 	breaker := NewCircuitBreaker(config)
 
@@ -171,6 +174,35 @@ func CircuitBreakerMiddleware(config CircuitBreakerConfig) func(http.Handler) ht
 				}
 			}
 		})
+	}
+}
+
+// GinCircuitBreakerMiddleware creates a Gin middleware for circuit breaking
+func GinCircuitBreakerMiddleware(serviceName string, config CircuitBreakerConfig) gin.HandlerFunc {
+	breaker := GetOrCreateBreaker(serviceName, config)
+
+	return func(c *gin.Context) {
+		err := breaker.Execute(func() error {
+			c.Next()
+			
+			// If the handler set an error or status >= 500, we count it as a failure
+			if len(c.Errors) > 0 || c.Writer.Status() >= 500 {
+				return fmt.Errorf("request failed with status %d", c.Writer.Status())
+			}
+			return nil
+		})
+
+		if err != nil {
+			if _, ok := err.(*CircuitOpenError); ok {
+				c.AbortWithStatusJSON(http.StatusServiceUnavailable, gin.H{
+					"error":   "Circuit Breaker Open",
+					"message": fmt.Sprintf("Service '%s' is temporarily unavailable to prevent cascading failure.", serviceName),
+					"status":  "isolated",
+				})
+				return
+			}
+			// Other errors (like timeout) are already handled by the logic above or c.Next()
+		}
 	}
 }
 

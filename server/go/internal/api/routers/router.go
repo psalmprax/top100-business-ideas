@@ -1,7 +1,10 @@
 package routers
 
 import (
+	"time"
+
 	"github.com/gin-gonic/gin"
+	"github.com/top100-business-ideas/api/internal/middleware"
 )
 
 // HandlerContainer holds all handler implementations
@@ -80,7 +83,7 @@ type MiddlewareContainer struct {
 }
 
 // SetupRoutes configures all API routes
-func SetupRoutes(router *gin.Engine, handlers *HandlerContainer, middleware *MiddlewareContainer) {
+func SetupRoutes(router *gin.Engine, handlers *HandlerContainer, mw *MiddlewareContainer) {
 	// API v1 group
 	v1 := router.Group("/api/v1")
 
@@ -88,21 +91,34 @@ func SetupRoutes(router *gin.Engine, handlers *HandlerContainer, middleware *Mid
 	SetupPanicRoutes(v1, handlers.PanicHandler)
 
 	// Public auth routes
-	SetupAuthRoutes(v1, handlers.AuthHandler, handlers.UserHandler, middleware.Auth)
+	SetupAuthRoutes(v1, handlers.AuthHandler, handlers.UserHandler, mw.Auth)
 
 	// SSO routes
-	SetupSSORoutes(v1, handlers.AgentOpsHandler, middleware.Auth)
+	SetupSSORoutes(v1, handlers.AgentOpsHandler, mw.Auth)
 
 	// All protected routes
 	protected := v1.Group("")
-	protected.Use(middleware.Auth)
+	protected.Use(mw.Auth)
+	
+	// Apply Circuit Breaker for proxy intensive routes
+	proxyCB := middleware.GinCircuitBreakerMiddleware("python-backend", middleware.CircuitBreakerConfig{
+		FailureThreshold: 5,
+		SuccessThreshold: 2,
+		Timeout:          30 * time.Second,
+		RequestTimeout:   10 * time.Second,
+	})
+	
 	{
-		// Agent routes
-		SetupAgentRoutes(protected, handlers.AgentOpsHandler, middleware.ProductAccess, middleware.RequireRole)
+		// Agent routes (Proxy heavy)
+		agentGroup := protected.Group("")
+		agentGroup.Use(proxyCB)
+		SetupAgentRoutes(agentGroup, handlers.AgentOpsHandler, middleware.ProductAccess, middleware.RequireRole)
 
-		// Agent Ops routes including webhooks, alerts, multi-cloud, self-healing, training, governance
+		// Agent Ops routes (Proxy heavy)
+		opsGroup := protected.Group("")
+		opsGroup.Use(proxyCB)
 		SetupAgentOpsRoutes(
-			protected,
+			opsGroup,
 			handlers.AgentOpsHandler,
 			handlers.WebhookHandler,
 			handlers.AlertHandler,
@@ -114,28 +130,26 @@ func SetupRoutes(router *gin.Engine, handlers *HandlerContainer, middleware *Mid
 			middleware.RequireRole,
 		)
 
-		// Compliance routes
-		SetupComplianceRoutes(protected, handlers.ComplianceHandler, handlers.AgentOpsHandler, middleware.ProductAccess)
+		// Compliance routes (Proxy heavy)
+		complianceGroup := protected.Group("")
+		complianceGroup.Use(proxyCB)
+		SetupComplianceRoutes(complianceGroup, handlers.ComplianceHandler, handlers.AgentOpsHandler, middleware.ProductAccess)
 
-		// Deepfake routes
-		SetupDeepfakeRoutes(protected, handlers.DeepfakeHandler, handlers.AgentOpsHandler, middleware.ProductAccess)
+		// Deepfake routes (Proxy heavy)
+		deepfakeGroup := protected.Group("")
+		deepfakeGroup.Use(proxyCB)
+		SetupDeepfakeRoutes(deepfakeGroup, handlers.DeepfakeHandler, handlers.AgentOpsHandler, middleware.ProductAccess)
+		
+		// Metrics routes (Proxy heavy)
+		metricsGroup := protected.Group("")
+		metricsGroup.Use(proxyCB)
+		SetupMetricsRoutes(metricsGroup, handlers.MetricsHandler, middleware.ProductAccess)
 
-		// Denial defense routes
+		// Other routes (Less proxy intensive or async)
 		SetupDenialDefenseRoutes(protected, handlers.DenialDefenseHandler)
-
-		// Enterprise routes
 		SetupEnterpriseRoutes(protected, handlers.EnterpriseHandler)
-
-		// Rules routes
 		SetupRulesRoutes(protected, handlers.RulesHandler, middleware.ProductAccess)
-
-		// Metrics routes
-		SetupMetricsRoutes(protected, handlers.MetricsHandler, middleware.ProductAccess)
-
-		// Billing routes
 		SetupBillingRoutes(protected, handlers.BillingHandler, middleware.ProductAccess, middleware.RequireRole)
-
-		// WebSocket routes
 		SetupWSRoutes(protected, handlers.WSHandler)
 	}
 }

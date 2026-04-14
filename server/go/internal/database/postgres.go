@@ -61,8 +61,17 @@ func Connect(cfg *Config) error {
 			return fmt.Errorf("unable to parse config: %w", perr)
 		}
 
-		poolConfig.MaxConns = 25
-		poolConfig.MinConns = 5
+		// Resilience: Production-grade connection pooling
+		poolConfig.MaxConns = 50
+		poolConfig.MinConns = 10
+		poolConfig.MaxConnLifetime = 1 * time.Hour
+		poolConfig.MaxConnIdleTime = 30 * time.Minute
+		poolConfig.HealthCheckPeriod = 1 * time.Minute
+		
+		// Allow tuning via ENV
+		if max := os.Getenv("DB_MAX_CONNS"); max != "" {
+			fmt.Sscanf(max, "%d", &poolConfig.MaxConns)
+		}
 
 		p, err = pgxpool.NewWithConfig(ctx, poolConfig)
 		if err == nil {
