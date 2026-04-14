@@ -62,10 +62,12 @@ func main() {
 	}
 	defer database.Close()
 
-	if err := database.RunMigrations(context.Background()); err != nil {
-		logger.Fatal().Err(err).Msg("Failed to run database migrations")
-	}
-	logger.Info().Msg("Database migrations completed successfully")
+	// Temporarily skip database migrations to avoid schema conflicts with Python backend
+	// TODO: Implement unified schema management
+	// if err := database.RunMigrations(context.Background()); err != nil {
+	// 	logger.Fatal().Err(err).Msg("Failed to run database migrations")
+	// }
+	logger.Info().Msg("Database migrations skipped - using existing schema")
 
 	// Initialize Repositories
 	userRepo := repository.NewUserRepository()
