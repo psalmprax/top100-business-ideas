@@ -9,14 +9,14 @@ async function loginAndNavigate(
   tabName: string | undefined
 ) {
   await page.goto(`${BASE_URL}/login?product=agent-ops`);
-  await page.waitForLoadState("networkidle");
+  await page.waitForLoadState("domcontentloaded");
 
   await page.getByTestId("input-email").fill("admin@example.com");
   await page.getByTestId("input-password").fill("AlphaAI@2026");
   await page.getByTestId("btn-signin").click();
 
   await page.waitForURL("**/products/agent-ops", { timeout: 20000 });
-  await page.waitForLoadState("networkidle");
+  await page.waitForLoadState("domcontentloaded");
   await page.waitForTimeout(3000);
 
   if (menuButton) {
@@ -31,7 +31,7 @@ async function loginAndNavigate(
 }
 
 test.describe("AgentOps API Response Validation", () => {
-  test.skip("should validate governance/audit API returns data", async ({
+  test("should validate governance/audit API returns data", async ({
     request,
   }) => {
     const response = await request.get(`${API_URL}/governance/audit/quorum`);
@@ -43,7 +43,7 @@ test.describe("AgentOps API Response Validation", () => {
     );
   });
 
-  test.skip("should validate governance/optimization API returns data", async ({
+  test("should validate governance/optimization API returns data", async ({
     request,
   }) => {
     const response = await request.get(
@@ -57,7 +57,7 @@ test.describe("AgentOps API Response Validation", () => {
     );
   });
 
-  test.skip("should validate governance/optimization/cost API returns data", async ({
+  test("should validate governance/optimization/cost API returns data", async ({
     request,
   }) => {
     const response = await request.get(
@@ -71,7 +71,7 @@ test.describe("AgentOps API Response Validation", () => {
     );
   });
 
-  test.skip("should validate shadow-ai/detections API returns data", async ({
+  test("should validate shadow-ai/detections API returns data", async ({
     request,
   }) => {
     const response = await request.get(`${API_URL}/shadow-ai/detections`);
@@ -83,7 +83,7 @@ test.describe("AgentOps API Response Validation", () => {
     );
   });
 
-  test.skip("should validate shadow-ai/stats API returns data", async ({
+  test("should validate shadow-ai/stats API returns data", async ({
     request,
   }) => {
     const response = await request.get(`${API_URL}/shadow-ai/stats`);

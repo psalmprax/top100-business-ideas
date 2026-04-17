@@ -5,21 +5,21 @@ const API_URL = "http://149.104.110.122:7002";
 
 async function loginAndNavigate(page: any, tabName?: string) {
   await page.goto(`${BASE_URL}/login?product=alpha-workforce`);
-  await page.waitForLoadState("networkidle");
+  await page.waitForLoadState("domcontentloaded");
 
   await page.getByTestId("input-email").fill("admin@example.com");
   await page.getByTestId("input-password").fill("AlphaAI@2026");
   await page.getByTestId("btn-signin").click();
 
   // Check if redirected to workforce or another page
-  await page.waitForLoadState("networkidle");
+  await page.waitForLoadState("domcontentloaded");
   await page.waitForTimeout(3000);
 
   // If redirected to agent-ops (due to permissions), navigate to workforce
   const currentUrl = page.url();
   if (currentUrl.includes("/products/agent-ops")) {
     await page.goto(`${BASE_URL}/products/workforce`);
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(3000);
   }
 

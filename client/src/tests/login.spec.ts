@@ -11,7 +11,7 @@ test.describe("Authentication", () => {
     await page.goto("/");
 
     // Wait for the page to load
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     // Take screenshot for debugging
     await page.screenshot({ path: "debug-homepage.png" });
@@ -40,7 +40,7 @@ test.describe("Authentication", () => {
     await page.goto("/login");
 
     // Wait for the page to load
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     // Wait for login form elements
     await page.waitForSelector('input[type="email"]', { timeout: 10000 });
@@ -117,7 +117,7 @@ test.describe("Authentication", () => {
     await page.goto("/login");
 
     // Wait for the page to load
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     // Check if we're already logged in and redirected
     const currentUrl = page.url();
@@ -165,7 +165,7 @@ test.describe("Authentication", () => {
     await page.goto("/products/agent-ops");
 
     // Wait for navigation
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
 
     // Check if we were redirected to login (not authenticated)
     const currentUrl = page.url();
