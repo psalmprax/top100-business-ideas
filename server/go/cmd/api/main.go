@@ -46,17 +46,35 @@ func main() {
 		Caller().
 		Logger()
 
+	// Parent context for the application
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Handle signals for graceful shutdown
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-sigCh
+		logger.Info().Msg("Shutting down server...")
+		cancel()
+	}()
+
 	// Load environment variables
 	if err := godotenv.Load(); err != nil {
 		logger.Info().Msg("No .env file found, using environment variables")
 	}
 
 	// Load configuration
-	cfg := config.Load()
+	cfg := config.Load(&logger)
 
-	// Initialize Database
-	dbConfig := database.LoadConfig()
-	if err := database.Connect(dbConfig); err != nil {
+	// Initialize Redis with retry
+	if err := database.ConnectRedis(ctx, cfg.RedisURL, &logger); err != nil {
+		logger.Error().Err(err).Msg("Failed to connect to Redis, features like rate limiting and session management will be compromised")
+	}
+	defer database.CloseRedis()
+
+	// Initialize Database with retry
+	if err := database.Connect(ctx, cfg.DatabaseURL, &logger); err != nil {
 		logger.Fatal().Err(err).Msg("Failed to connect to database")
 	}
 	defer database.Close()
@@ -69,11 +87,21 @@ func main() {
 
 	// Initialize Repositories
 	userRepo := repository.NewUserRepository()
+	workforceRepo := repository.NewWorkforceRepository()
 
 	// Initialize Services
 	authService := services.NewAuthService(cfg.JWTSecret, userRepo)
-	proxyService := services.NewProxyService(cfg.PythonBackendURL)
+	proxyService := services.NewProxyService(cfg.PythonBackendURL, &logger)
 	wsHub := services.NewWebSocketHub()
+
+	// Hardening: Audit and Integrity Services
+	auditService := services.NewSelfHealingAuditService(&logger, proxyService)
+	integrityService := services.NewIntegrityService(&logger, database.Pool, database.Redis, proxyService)
+
+	// Perform Startup Integrity Check (Dependency Inventory)
+	if err := integrityService.VerifySystemIntegrity(); err != nil {
+		logger.Error().Err(err).Msg("System integrity check reported warnings")
+	}
 
 	// Initialize handlers
 	healthHandler := handlers.NewHealthHandler()
@@ -97,7 +125,7 @@ func main() {
 		logger.Error().Err(err).Msg("Failed to initialize BillingService, falling back to restricted mode")
 	}
 	billingHandler := handlers.NewBillingHandler(billingService, proxyService)
-	mlHandler := handlers.NewMLHandler(cfg.PythonBackendURL)
+	mlHandler := handlers.NewMLHandler(proxyService)
 
 	// New handlers for gap closure
 	webhookHandler := handlers.NewWebhookHandler(proxyService)
@@ -105,6 +133,7 @@ func main() {
 	multiCloudHandler := handlers.NewMultiCloudHandler(proxyService)
 	selfHealingHandler := handlers.NewSelfHealingHandler(proxyService)
 	trainingHandler := handlers.NewTrainingHandler(proxyService)
+	shadowAIHandler := handlers.NewShadowAIHandler(proxyService)
 	enterpriseHandler := handlers.NewEnterpriseHandler(proxyService)
 	denialDefenseRepo := repository.NewDenialDefenseRepository()
 	denialDefenseHandler := handlers.NewDenialDefenseHandler(denialDefenseRepo)
@@ -114,30 +143,34 @@ func main() {
 	// New domain-specific handlers for production-grade routing
 	governanceHandler := handlers.NewGovernanceHandler(proxyService)
 	intelligenceHandler := handlers.NewIntelligenceHandler(proxyService)
+	workforceHandler := handlers.NewWorkforceHandler(proxyService, workforceRepo)
 
 	// Setup Gin router
 	if cfg.Environment == "production" {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	router := gin.Default()
+	router := gin.New() // Use New() instead of Default() for full control
 
-	// Global middleware
+	// Global middleware stack - Hardening Order
+	// 1. Security Headers first
+	router.Use(middleware.SecurityHeaders())
+	// 2. Request ID and Tracing
+	router.Use(middleware.RequestID())
+	// 3. Structured Logging
 	router.Use(middleware.Logger(&logger))
-	router.Use(middleware.Recovery())
-	router.Use(middleware.CORS())
+	// 4. Enhanced Self-Healing Recovery
+	router.Use(middleware.SelfHealingRecovery(auditService))
+	// 5. Infrastructure
+	router.Use(middleware.CORS(cfg.AllowedOrigins))
 	router.Use(middleware.SystemLock())
 	router.Use(middleware.RateLimitMiddleware(100))
 
 	// Health check (no auth required)
 	router.GET("/health", healthHandler.Health)
 
-	// ML endpoints (proxy to Python backend)
-	router.POST("/ml/infer", mlHandler.ProxyML)
-	router.GET("/ml/models", mlHandler.ProxyML)
-	router.POST("/ml/agent-ops/classify", mlHandler.ProxyML)
-	router.POST("/ml/ai-compliance/check", mlHandler.ProxyML)
-	router.POST("/ml/deepfake/detect", mlHandler.ProxyML)
+	// 135: // ML endpoints (proxy to Python backend) protected by Circuit Breaker
+	// Moved to SetupAllRoutes for /api/v1 versioning parity
 
 	// Setup all API routes using modular router system
 	handlerContainer := &routers.HandlerContainer{
@@ -157,8 +190,12 @@ func main() {
 		AlertHandler:         alertHandler,
 		MultiCloudHandler:    multiCloudHandler,
 		SelfHealingHandler:   selfHealingHandler,
+		ShadowAIHandler:      shadowAIHandler,
 		TrainingHandler:      trainingHandler,
 		GovernanceHandler:    governanceHandler,
+		MLHandler:            mlHandler,
+		IntelligenceHandler:  intelligenceHandler,
+		WorkforceHandler:     workforceHandler,
 	}
 
 	middlewareContainer := &routers.MiddlewareContainer{
@@ -167,7 +204,7 @@ func main() {
 		RequireRole:   middleware.RequireRole,
 	}
 
-	routers.SetupAllRoutes(router, handlerContainer, middlewareContainer, intelligenceHandler)
+	routers.SetupAllRoutes(router, handlerContainer, middlewareContainer)
 
 	srv := &http.Server{
 		Addr:         fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
@@ -176,19 +213,6 @@ func main() {
 		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
-
-	// Setup signal handling for graceful shutdown
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		<-sigCh
-		logger.Info().Msg("Shutting down server...")
-		cancel()
-		_ = srv.Shutdown(context.Background())
-	}()
 
 	// Start WebSocket hub in background
 	go wsHub.Run()
@@ -203,7 +227,7 @@ func main() {
 				return
 			case <-ticker.C:
 				if wsHub.GetClientCount() > 0 {
-					metrics, err := proxyService.Forward("GET", "/compliance/metrics/live", nil)
+					metrics, err := proxyService.Forward(nil, "GET", "/compliance/metrics/live", nil)
 					if err == nil {
 						var m map[string]interface{}
 						if err := json.Unmarshal(metrics, &m); err == nil {
@@ -216,6 +240,12 @@ func main() {
 				}
 			}
 		}
+	}()
+
+	// Start server shutdown monitor
+	go func() {
+		<-ctx.Done()
+		_ = srv.Shutdown(context.Background())
 	}()
 
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {

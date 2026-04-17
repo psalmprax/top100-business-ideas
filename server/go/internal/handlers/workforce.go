@@ -321,7 +321,7 @@ func (h *WorkforceHandler) GetStatus(c *gin.Context) {
 		"endpoint": "workforce_status",
 	})
 
-	resp, err := h.proxy.Forward("GET", "/workforce/status", enrichedReq)
+	resp, err := h.proxy.Forward(c, "GET", "/workforce/status", enrichedReq)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch workforce status", Details: err.Error()})
 		return
@@ -391,7 +391,7 @@ func (h *WorkforceHandler) RequestApproval(c *gin.Context) {
 	})
 
 	// Proxy to Python SovereignService
-	resp, err := h.proxy.Forward("POST", "/workforce/sovereign/request", req)
+	resp, err := h.proxy.Forward(c, "POST", "/workforce/sovereign/request", req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to create sovereign request", Details: err.Error()})
 		return
@@ -434,7 +434,7 @@ func (h *WorkforceHandler) HandleCallback(c *gin.Context) {
 	})
 
 	// Forward to Python
-	resp, err := h.proxy.Forward("POST", "/workforce/sovereign/callback", req)
+	resp, err := h.proxy.Forward(c, "POST", "/workforce/sovereign/callback", req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to process sovereign callback", Details: err.Error()})
 		return
@@ -453,7 +453,7 @@ func (h *WorkforceHandler) RecoverRevenue(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.proxy.Forward("POST", "/workforce/cashclaw/recover", req)
+	resp, err := h.proxy.Forward(c, "POST", "/workforce/cashclaw/recover", req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to recover revenue", Details: err.Error()})
 		return
@@ -497,7 +497,7 @@ func (h *WorkforceHandler) RunCampaign(c *gin.Context) {
 	})
 
 	// Transform response to add metadata
-	resp, err := h.proxy.Forward("POST", "/workforce/campaigns/run", enrichedReq)
+	resp, err := h.proxy.Forward(c, "POST", "/workforce/campaigns/run", enrichedReq)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to run campaign", Details: err.Error()})
 		return
@@ -527,7 +527,7 @@ func (h *WorkforceHandler) SourceLeads(c *gin.Context) {
 		criteria = "general"
 	}
 
-	resp, err := h.proxy.Forward("GET", "/workforce/leads/source?criteria="+criteria, nil)
+	resp, err := h.proxy.Forward(c, "GET", "/workforce/leads/source?criteria="+criteria, nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to source leads", Details: err.Error()})
 		return
@@ -546,7 +546,7 @@ func (h *WorkforceHandler) AnalyzeInsights(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.proxy.Forward("POST", "/workforce/insights/analyze", req)
+	resp, err := h.proxy.Forward(c, "POST", "/workforce/insights/analyze", req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to analyze insights", Details: err.Error()})
 		return
@@ -565,7 +565,7 @@ func (h *WorkforceHandler) HandleInbound(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.proxy.Forward("POST", "/workforce/inbound/handle", req)
+	resp, err := h.proxy.Forward(c, "POST", "/workforce/inbound/handle", req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to handle inbound", Details: err.Error()})
 		return
@@ -586,7 +586,7 @@ func (h *WorkforceHandler) ProvideFeedback(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.proxy.Forward("POST", "/workforce/feedback", req)
+	resp, err := h.proxy.Forward(c, "POST", "/workforce/feedback", req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to provide feedback", Details: err.Error()})
 		return
@@ -603,7 +603,7 @@ func (h *WorkforceHandler) GetSkills(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.proxy.Forward("GET", "/workforce/skills", nil)
+	resp, err := h.proxy.Forward(c, "GET", "/workforce/skills", nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch skills", Details: err.Error()})
 		return
@@ -617,7 +617,7 @@ func (h *WorkforceHandler) GetSkills(c *gin.Context) {
 
 // GetJobs returns live job feed from persistence
 func (h *WorkforceHandler) GetJobs(c *gin.Context) {
-	resp, err := h.proxy.Forward("GET", "/workforce/jobs", nil)
+	resp, err := h.proxy.Forward(c, "GET", "/workforce/jobs", nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch jobs", Details: err.Error()})
 		return
@@ -627,7 +627,7 @@ func (h *WorkforceHandler) GetJobs(c *gin.Context) {
 
 // GetAcquisitions returns growth acquisition wins
 func (h *WorkforceHandler) GetAcquisitions(c *gin.Context) {
-	resp, err := h.proxy.Forward("GET", "/workforce/acquisitions", nil)
+	resp, err := h.proxy.Forward(c, "GET", "/workforce/acquisitions", nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch acquisitions", Details: err.Error()})
 		return
@@ -637,7 +637,7 @@ func (h *WorkforceHandler) GetAcquisitions(c *gin.Context) {
 
 // GetContentDrafts returns content factory drafts
 func (h *WorkforceHandler) GetContentDrafts(c *gin.Context) {
-	resp, err := h.proxy.Forward("GET", "/workforce/content", nil)
+	resp, err := h.proxy.Forward(c, "GET", "/workforce/content", nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch content drafts", Details: err.Error()})
 		return
@@ -656,7 +656,7 @@ func (h *WorkforceHandler) RunAutosearch(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.proxy.Forward("POST", "/workforce/autosearch/run", req)
+	resp, err := h.proxy.Forward(c, "POST", "/workforce/autosearch/run", req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to run autosearch", Details: err.Error()})
 		return
@@ -667,7 +667,7 @@ func (h *WorkforceHandler) RunAutosearch(c *gin.Context) {
 
 // GetOutreachDrafts returns pending outreach messages
 func (h *WorkforceHandler) GetOutreachDrafts(c *gin.Context) {
-	resp, err := h.proxy.Forward("GET", "/workforce/outreach/drafts", nil)
+	resp, err := h.proxy.Forward(c, "GET", "/workforce/outreach/drafts", nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch outreach drafts", Details: err.Error()})
 		return
@@ -706,7 +706,7 @@ func (h *WorkforceHandler) ApproveOutreach(c *gin.Context) {
 		"approval_action": "send",
 	})
 
-	resp, err := h.proxy.Forward("POST", "/workforce/outreach/"+id+"/approve", enrichedReq)
+	resp, err := h.proxy.Forward(c, "POST", "/workforce/outreach/"+id+"/approve", enrichedReq)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to approve outreach", Details: err.Error()})
 		return
@@ -736,7 +736,7 @@ func (h *WorkforceHandler) ApproveOutreach(c *gin.Context) {
 
 // GetInvoices returns workforce-specific financial records
 func (h *WorkforceHandler) GetInvoices(c *gin.Context) {
-	resp, err := h.proxy.Forward("GET", "/enterprise/invoices", nil)
+	resp, err := h.proxy.Forward(c, "GET", "/enterprise/invoices", nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch workforce invoices", Details: err.Error()})
 		return
@@ -755,7 +755,7 @@ func (h *WorkforceHandler) ActivateReferral(c *gin.Context) {
 	req := map[string]interface{}{
 		"user_id": userID,
 	}
-	resp, err := h.proxy.Forward("POST", "/workforce/referral/activate", req)
+	resp, err := h.proxy.Forward(c, "POST", "/workforce/referral/activate", req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to activate referral", Details: err.Error()})
 		return
@@ -771,7 +771,7 @@ func (h *WorkforceHandler) GetReferralStats(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.proxy.Forward("GET", "/workforce/referral/stats?user_id="+userID.(string), nil)
+	resp, err := h.proxy.Forward(c, "GET", "/workforce/referral/stats?user_id="+userID.(string), nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch referral stats", Details: err.Error()})
 		return
@@ -789,7 +789,7 @@ func (h *WorkforceHandler) ToggleAutonomy(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.proxy.Forward("POST", "/workforce/autonomy/toggle", req)
+	resp, err := h.proxy.Forward(c, "POST", "/workforce/autonomy/toggle", req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to toggle autonomy", Details: err.Error()})
 		return
@@ -799,7 +799,7 @@ func (h *WorkforceHandler) ToggleAutonomy(c *gin.Context) {
 
 // DeployCheck runs a deployment health check
 func (h *WorkforceHandler) DeployCheck(c *gin.Context) {
-	resp, err := h.proxy.Forward("GET", "/workforce/deploy/check", nil)
+	resp, err := h.proxy.Forward(c, "GET", "/workforce/deploy/check", nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to run deploy check", Details: err.Error()})
 		return

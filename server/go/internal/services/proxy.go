@@ -9,6 +9,10 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog"
+	"github.com/top100-business-ideas/api/internal/pkg/retry"
 )
 
 var (
@@ -21,13 +25,16 @@ var (
 
 // ProxyService handles communication with the Python backend
 type ProxyService struct {
-	baseURL string
-	client  *http.Client
-	pool    *sync.Pool
+	baseURL     string
+	client      *http.Client
+	pool        *sync.Pool
+	logger      *zerolog.Logger
+	sandboxMode bool
+	mu          sync.RWMutex
 }
 
-func NewProxyService(baseURL string) *ProxyService {
-	return &ProxyService{
+func NewProxyService(baseURL string, logger *zerolog.Logger) *ProxyService {
+	ps := &ProxyService{
 		baseURL: baseURL,
 		client: &http.Client{
 			Timeout:   60 * time.Second,
@@ -38,7 +45,49 @@ func NewProxyService(baseURL string) *ProxyService {
 				return &bytes.Buffer{}
 			},
 		},
+		logger: logger,
 	}
+
+	// Start health check loop for Sandbox Mode
+	go ps.monitorHealth()
+
+	return ps
+}
+
+func (p *ProxyService) monitorHealth() {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		resp, err := p.client.Get(p.baseURL + "/health")
+		p.mu.Lock()
+		if err != nil {
+			if !p.sandboxMode {
+				p.logger.Warn().Err(err).Msg("Backend lost connectivity. Entering Sandbox Mode.")
+				p.sandboxMode = true
+			}
+		} else {
+			resp.Body.Close()
+			if p.sandboxMode && resp.StatusCode == http.StatusOK {
+				p.logger.Info().Msg("Backend connectivity restored. Exiting Sandbox Mode.")
+				p.sandboxMode = false
+			}
+		}
+		p.mu.Unlock()
+		<-ticker.C
+	}
+}
+
+func (p *ProxyService) SetSandboxMode(enabled bool) {
+	p.mu.Lock()
+	p.sandboxMode = enabled
+	p.mu.Unlock()
+}
+
+func (p *ProxyService) IsSandbox() bool {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	return p.sandboxMode
 }
 
 const (
@@ -46,7 +95,13 @@ const (
 	retryDelayBase = 100 * time.Millisecond
 )
 
-func (p *ProxyService) ForwardWithStatus(method, path string, body interface{}, headers map[string]string) (int, []byte, error) {
+func (p *ProxyService) ForwardWithStatus(c *gin.Context, method, path string, body interface{}, headers map[string]string) (int, []byte, error) {
+	// Hardening: Sandbox Mode Fallback
+	if p.IsSandbox() {
+		p.logger.Debug().Str("path", path).Msg("Serving Sandbox Mode mock response")
+		return http.StatusOK, []byte(`{"status":"sandbox","message":"Backend unreachable, serving simulation data","data":[]}`), nil
+	}
+
 	var reqBody io.Reader
 	if body != nil {
 		jsonBody, err := json.Marshal(body)
@@ -58,211 +113,242 @@ func (p *ProxyService) ForwardWithStatus(method, path string, body interface{}, 
 
 	url := p.baseURL + path
 
-	var lastErr error
-	for attempt := 0; attempt < maxRetries; attempt++ {
+	// Trace Propagation: Extract RequestID from context if it exists
+	var requestID string
+	if c != nil {
+		if ctxVal := c.Value("RequestID"); ctxVal != nil {
+			if rid, ok := ctxVal.(string); ok {
+				requestID = rid
+			}
+		}
+	}
+
+	policy := retry.RetryPolicy{
+		MaxAttempts: 3,
+		BaseDelay:   100 * time.Millisecond,
+		MaxDelay:    2 * time.Second,
+		Jitter:      true,
+	}
+
+	var responseBody []byte
+	var statusCode int
+
+	err := policy.Do(context.Background(), func() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
 		req, err := http.NewRequestWithContext(ctx, method, url, reqBody)
 		if err != nil {
-			return 0, nil, fmt.Errorf("failed to create request: %w", err)
+			return fmt.Errorf("failed to create request: %w", err)
 		}
 
 		req.Header.Set("Content-Type", "application/json")
+		if requestID != "" {
+			req.Header.Set("X-Request-ID", requestID)
+		}
 		for k, v := range headers {
 			req.Header.Set(k, v)
 		}
 
 		resp, err := p.client.Do(req)
 		if err != nil {
-			if attempt < maxRetries-1 {
-				delay := retryDelayBase * time.Duration(1<<attempt)
-				time.Sleep(delay)
-				lastErr = err
-				continue
-			}
-			return 0, nil, fmt.Errorf("backend connectivity failure after %d attempts: %w", maxRetries, err)
+			p.logger.Warn().
+				Str("request_id", requestID).
+				Str("path", path).
+				Err(err).
+				Msg("Retrying backend request after connectivity failure")
+			return err
 		}
 		defer resp.Body.Close()
 
-		responseBody, err := io.ReadAll(resp.Body)
+		statusCode = resp.StatusCode
+		responseBody, err = io.ReadAll(resp.Body)
 		if err != nil {
-			return resp.StatusCode, nil, fmt.Errorf("failed to read backend response: %w", err)
+			return fmt.Errorf("failed to read backend response: %w", err)
 		}
 
 		// Success case
-		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-			return resp.StatusCode, responseBody, nil
+		if statusCode >= 200 && statusCode < 300 {
+			return nil
 		}
 
-		// Handle structured errors from Python (FastAPI uses "detail" field)
-		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
-			var pyErr struct {
-				Detail interface{} `json:"detail"`
-			}
-			if err := json.Unmarshal(responseBody, &pyErr); err == nil {
-				// We found a structured error, propagate it
-				return resp.StatusCode, responseBody, nil
-			}
-			// Fallback for non-structured 4xx
-			return resp.StatusCode, responseBody, nil
+		// Handle client errors (4xx) - no retry
+		if statusCode >= 400 && statusCode < 500 {
+			p.logger.Warn().
+				Str("request_id", requestID).
+				Int("status", statusCode).
+				Str("path", path).
+				Msg("Backend returned client error (4xx)")
+			return nil // Don't retry 4xx
 		}
 
 		// Handle server errors (5xx) with retries
-		if resp.StatusCode >= 500 {
-			if attempt < maxRetries-1 {
-				delay := retryDelayBase * time.Duration(1<<attempt)
-				time.Sleep(delay)
-				lastErr = fmt.Errorf("backend server error: %d", resp.StatusCode)
-				continue
-			}
-			return resp.StatusCode, responseBody, nil
+		if statusCode >= 500 {
+			p.logger.Warn().
+				Str("request_id", requestID).
+				Int("status", statusCode).
+				Str("path", path).
+				Msg("Retrying backend request after 5xx error")
+			return fmt.Errorf("backend server error: %d", statusCode)
 		}
 
-		return resp.StatusCode, responseBody, nil
+		return nil
+	})
+
+	if err != nil {
+		p.logger.Error().
+			Str("request_id", requestID).
+			Str("path", path).
+			Err(err).
+			Msg("Backend connectivity failure after max retries")
+
+		// Auto-trigger Sandbox Mode transition
+		p.SetSandboxMode(true)
+
+		return 0, nil, fmt.Errorf("backend connectivity failure: %w", err)
 	}
 
-	return 0, nil, fmt.Errorf("proxy operation failed: %w", lastErr)
+	return statusCode, responseBody, nil
 }
 
-func (p *ProxyService) Forward(method, path string, body interface{}) ([]byte, error) {
-	_, response, err := p.ForwardWithStatus(method, path, body, nil)
+func (p *ProxyService) Forward(c *gin.Context, method, path string, body interface{}) ([]byte, error) {
+	_, response, err := p.ForwardWithStatus(c, method, path, body, nil)
 	return response, err
 }
 
 // Agent Operations
-func (p *ProxyService) ListAgents() ([]byte, error) {
-	return p.Forward("GET", "/agents", nil)
+func (p *ProxyService) ListAgents(c *gin.Context) ([]byte, error) {
+	return p.Forward(c, "GET", "/agents", nil)
 }
 
-func (p *ProxyService) GetAgent(id string) ([]byte, error) {
-	return p.Forward("GET", fmt.Sprintf("/agents/%s", id), nil)
+func (p *ProxyService) GetAgent(c *gin.Context, id string) ([]byte, error) {
+	return p.Forward(c, "GET", fmt.Sprintf("/agents/%s", id), nil)
 }
 
-func (p *ProxyService) CreateAgent(data interface{}) ([]byte, error) {
-	return p.Forward("POST", "/agents", data)
+func (p *ProxyService) CreateAgent(c *gin.Context, data interface{}) ([]byte, error) {
+	return p.Forward(c, "POST", "/agents", data)
 }
 
-func (p *ProxyService) UpdateAgent(id string, data interface{}) ([]byte, error) {
-	return p.Forward("PUT", fmt.Sprintf("/agents/%s", id), data)
+func (p *ProxyService) UpdateAgent(c *gin.Context, id string, data interface{}) ([]byte, error) {
+	return p.Forward(c, "PUT", fmt.Sprintf("/agents/%s", id), data)
 }
 
-func (p *ProxyService) DeleteAgent(id string) ([]byte, error) {
-	return p.Forward("DELETE", fmt.Sprintf("/agents/%s", id), nil)
+func (p *ProxyService) DeleteAgent(c *gin.Context, id string) ([]byte, error) {
+	return p.Forward(c, "DELETE", fmt.Sprintf("/agents/%s", id), nil)
 }
 
-func (p *ProxyService) GetAgentMetrics() ([]byte, error) {
-	return p.Forward("GET", "/metrics/agents", nil)
+func (p *ProxyService) GetAgentMetrics(c *gin.Context) ([]byte, error) {
+	return p.Forward(c, "GET", "/metrics/agents", nil)
 }
 
-func (p *ProxyService) GetAgentHistory(id string) ([]byte, error) {
-	return p.Forward("GET", fmt.Sprintf("/agents/%s/history", id), nil)
+func (p *ProxyService) GetAgentHistory(c *gin.Context, id string) ([]byte, error) {
+	return p.Forward(c, "GET", fmt.Sprintf("/agents/%s/history", id), nil)
 }
 
-func (p *ProxyService) StopAgent(id string) ([]byte, error) {
-	return p.Forward("POST", fmt.Sprintf("/agents/%s/stop", id), nil)
+func (p *ProxyService) StopAgent(c *gin.Context, id string) ([]byte, error) {
+	return p.Forward(c, "POST", fmt.Sprintf("/agents/%s/stop", id), nil)
 }
 
-func (p *ProxyService) RestartAgent(id string) ([]byte, error) {
-	return p.Forward("POST", fmt.Sprintf("/agents/%s/restart", id), nil)
+func (p *ProxyService) RestartAgent(c *gin.Context, id string) ([]byte, error) {
+	return p.Forward(c, "POST", fmt.Sprintf("/agents/%s/restart", id), nil)
 }
 
-func (p *ProxyService) GetAgentLogs(id string) ([]byte, error) {
-	return p.Forward("GET", fmt.Sprintf("/agents/%s/logs", id), nil)
+func (p *ProxyService) GetAgentLogs(c *gin.Context, id string) ([]byte, error) {
+	return p.Forward(c, "GET", fmt.Sprintf("/agents/%s/logs", id), nil)
 }
 
 // Compliance
-func (p *ProxyService) ListComplianceChecks() ([]byte, error) {
-	return p.Forward("GET", "/compliance", nil)
+func (p *ProxyService) ListComplianceChecks(c *gin.Context) ([]byte, error) {
+	return p.Forward(c, "GET", "/compliance", nil)
 }
 
-func (p *ProxyService) GetComplianceCheck(id string) ([]byte, error) {
-	return p.Forward("GET", fmt.Sprintf("/compliance/%s", id), nil)
+func (p *ProxyService) GetComplianceCheck(c *gin.Context, id string) ([]byte, error) {
+	return p.Forward(c, "GET", fmt.Sprintf("/compliance/%s", id), nil)
 }
 
-func (p *ProxyService) RunComplianceCheck(data interface{}) ([]byte, error) {
-	return p.Forward("POST", "/compliance/check", data)
+func (p *ProxyService) RunComplianceCheck(c *gin.Context, data interface{}) ([]byte, error) {
+	return p.Forward(c, "POST", "/compliance/check", data)
 }
 
-func (p *ProxyService) GetComplianceCategories() ([]byte, error) {
-	return p.Forward("GET", "/compliance/categories", nil)
+func (p *ProxyService) GetComplianceCategories(c *gin.Context) ([]byte, error) {
+	return p.Forward(c, "GET", "/compliance/categories", nil)
 }
 
 // Deepfake
-func (p *ProxyService) AnalyzeDeepfake(data interface{}) ([]byte, error) {
-	return p.Forward("POST", "/deepfake/analyze", data)
+func (p *ProxyService) AnalyzeDeepfake(c *gin.Context, data interface{}) ([]byte, error) {
+	return p.Forward(c, "POST", "/deepfake/analyze", data)
 }
 
-func (p *ProxyService) ListDeepfakeAnalyses() ([]byte, error) {
-	return p.Forward("GET", "/deepfake/analyses", nil)
+func (p *ProxyService) ListDeepfakeAnalyses(c *gin.Context) ([]byte, error) {
+	return p.Forward(c, "GET", "/deepfake/analyses", nil)
 }
 
-func (p *ProxyService) GetDeepfakeAnalysis(id string) ([]byte, error) {
-	return p.Forward("GET", fmt.Sprintf("/deepfake/analyses/%s", id), nil)
+func (p *ProxyService) GetDeepfakeAnalysis(c *gin.Context, id string) ([]byte, error) {
+	return p.Forward(c, "GET", fmt.Sprintf("/deepfake/analyses/%s", id), nil)
 }
 
-func (p *ProxyService) GetDeepfakeStats() ([]byte, error) {
-	return p.Forward("GET", "/deepfake/stats", nil)
+func (p *ProxyService) GetDeepfakeStats(c *gin.Context) ([]byte, error) {
+	return p.Forward(c, "GET", "/deepfake/stats", nil)
 }
 
-func (p *ProxyService) CreateDeepfakeChallenge(userID string) ([]byte, error) {
-	return p.Forward("POST", fmt.Sprintf("/deepfake/challenge?user_id=%s", userID), nil)
+func (p *ProxyService) CreateDeepfakeChallenge(c *gin.Context, userID string) ([]byte, error) {
+	return p.Forward(c, "POST", fmt.Sprintf("/deepfake/challenge?user_id=%s", userID), nil)
 }
 
-func (p *ProxyService) VerifyDeepfakeSignature(challengeID, signature, hardwareID string) ([]byte, error) {
-	return p.Forward("POST", fmt.Sprintf("/deepfake/verify?challenge_id=%s&signature=%s&hardware_id=%s", challengeID, signature, hardwareID), nil)
+func (p *ProxyService) VerifyDeepfakeSignature(c *gin.Context, challengeID, signature, hardwareID string) ([]byte, error) {
+	return p.Forward(c, "POST", fmt.Sprintf("/deepfake/verify?challenge_id=%s&signature=%s&hardware_id=%s", challengeID, signature, hardwareID), nil)
 }
 
-func (p *ProxyService) AnalyzeDeepfakeEnterprise(data interface{}) ([]byte, error) {
-	return p.Forward("POST", "/deepfake/analyze/enterprise", data)
+func (p *ProxyService) AnalyzeDeepfakeEnterprise(c *gin.Context, data interface{}) ([]byte, error) {
+	return p.Forward(c, "POST", "/deepfake/analyze/enterprise", data)
 }
 
-func (p *ProxyService) ListDeepfakeDetectors() ([]byte, error) {
-	return p.Forward("GET", "/deepfake/detectors", nil)
+func (p *ProxyService) ListDeepfakeDetectors(c *gin.Context) ([]byte, error) {
+	return p.Forward(c, "GET", "/deepfake/detectors", nil)
 }
 
 // Enterprise
-func (p *ProxyService) GetPartnerConfig() ([]byte, error) {
-	return p.Forward("GET", "/enterprise/partner-config", nil)
+func (p *ProxyService) GetPartnerConfig(c *gin.Context) ([]byte, error) {
+	return p.Forward(c, "GET", "/enterprise/partner-config", nil)
 }
 
-func (p *ProxyService) UpdateSlaTier(data interface{}) ([]byte, error) {
-	return p.Forward("POST", "/enterprise/sla-tier", data)
+func (p *ProxyService) UpdateSlaTier(c *gin.Context, data interface{}) ([]byte, error) {
+	return p.Forward(c, "POST", "/enterprise/sla-tier", data)
 }
 
 // Extended Compliance (AI Act Models)
-func (p *ProxyService) ListComplianceModels() ([]byte, error) {
-	return p.Forward("GET", "/compliance/models", nil)
+func (p *ProxyService) ListComplianceModels(c *gin.Context) ([]byte, error) {
+	return p.Forward(c, "GET", "/compliance/models", nil)
 }
 
-func (p *ProxyService) RegisterComplianceModel(data interface{}) ([]byte, error) {
-	return p.Forward("POST", "/compliance/models", data)
+func (p *ProxyService) RegisterComplianceModel(c *gin.Context, data interface{}) ([]byte, error) {
+	return p.Forward(c, "POST", "/compliance/models", data)
 }
 
-func (p *ProxyService) UpdateComplianceGuardrails(id string, data interface{}) ([]byte, error) {
-	return p.Forward("PATCH", fmt.Sprintf("/compliance/models/%s/guardrails", id), data)
+func (p *ProxyService) UpdateComplianceGuardrails(c *gin.Context, id string, data interface{}) ([]byte, error) {
+	return p.Forward(c, "PATCH", fmt.Sprintf("/compliance/models/%s/guardrails", id), data)
 }
 
-func (p *ProxyService) GetBiasReports(modelID string) ([]byte, error) {
-	return p.Forward("GET", fmt.Sprintf("/compliance/bias-reports/%s", modelID), nil)
+func (p *ProxyService) GetBiasReports(c *gin.Context, modelID string) ([]byte, error) {
+	return p.Forward(c, "GET", fmt.Sprintf("/compliance/bias-reports/%s", modelID), nil)
 }
 
-func (p *ProxyService) TriggerBiasScan(data interface{}) ([]byte, error) {
-	return p.Forward("POST", "/compliance/bias-scan", data)
+func (p *ProxyService) TriggerBiasScan(c *gin.Context, data interface{}) ([]byte, error) {
+	return p.Forward(c, "POST", "/compliance/bias-scan", data)
 }
 
-func (p *ProxyService) RunForensics(agentID string) ([]byte, error) {
+func (p *ProxyService) RunForensics(c *gin.Context, agentID string) ([]byte, error) {
 	path := "/compliance/forensics"
 	if agentID != "" {
 		path = fmt.Sprintf("%s?agent_id=%s", path, agentID)
 	}
-	return p.Forward("POST", path, nil)
+	return p.Forward(c, "POST", path, nil)
 }
 
-func (p *ProxyService) ProvisionClient(data interface{}) ([]byte, error) {
-	return p.Forward("POST", "/whitelabel/provision", data)
+func (p *ProxyService) ProvisionClient(c *gin.Context, data interface{}) ([]byte, error) {
+	return p.Forward(c, "POST", "/whitelabel/provision", data)
 }
 
-func (p *ProxyService) GetAgentOpsMetrics() ([]byte, error) {
-	return p.Forward("GET", "/agent-ops/metrics", nil)
+func (p *ProxyService) GetAgentOpsMetrics(c *gin.Context) ([]byte, error) {
+	return p.Forward(c, "GET", "/agent-ops/metrics", nil)
 }

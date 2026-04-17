@@ -1,54 +1,51 @@
 package handlers
 
 import (
-	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/top100-business-ideas/api/internal/services"
 )
 
 type MLHandler struct {
-	PythonBackendURL string
+	proxyService *services.ProxyService
 }
 
-func NewMLHandler(pythonBackendURL string) *MLHandler {
+func NewMLHandler(proxyService *services.ProxyService) *MLHandler {
 	return &MLHandler{
-		PythonBackendURL: pythonBackendURL,
+		proxyService: proxyService,
 	}
 }
 
 func (h *MLHandler) ProxyML(c *gin.Context) {
-	// Get the ML endpoint from the request path
-	path := strings.TrimPrefix(c.Request.URL.Path, "/ml")
+	// 1. Get request body
+	var body map[string]interface{}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
 
-	// Forward request to Python backend
-	url := h.PythonBackendURL + path
+	// 2. Proxied path
+	path := "/ml/infer" // Match the Python endpoint. In reality this might be dynamic.
 
-	// Read request body
-	bodyBytes, err := c.GetRawData()
+	// 3. Use ProxyService for resilience (Circuit Breaker, Retries, Timeout, Trace propagation)
+	status, response, err := h.proxyService.ForwardWithStatus(c, http.MethodPost, path, body, nil)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to read request body"})
+		c.JSON(http.StatusBadGateway, gin.H{"error": fmt.Sprintf("ML service unavailable: %v", err)})
 		return
 	}
 
-	// Forward the request
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(bodyBytes))
-	if err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"error": "Failed to connect to ML service"})
-		return
+	// 4. Propagate response
+	// Attempt to unmarshal as JSON to return structured response
+	var jsonResponse interface{}
+	if err := json.Unmarshal(response, &jsonResponse); err == nil {
+		c.JSON(status, jsonResponse)
+	} else {
+		// Fallback for non-JSON or raw binary responses (unlikely for /infer but good for safety)
+		c.Data(status, "application/json", response)
 	}
-	defer resp.Body.Close()
-
-	// Parse response
-	var result map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"error": "Failed to parse ML response"})
-		return
-	}
-
-	c.JSON(http.StatusOK, result)
 }
 
 func (h *MLHandler) Infer(c *gin.Context) {

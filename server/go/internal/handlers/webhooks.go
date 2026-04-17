@@ -22,7 +22,7 @@ func NewWebhookHandler(proxy *services.ProxyService) *WebhookHandler {
 // ListWebhooks returns all webhooks
 // GET /api/v1/webhooks
 func (h *WebhookHandler) ListWebhooks(c *gin.Context) {
-	resp, err := h.proxy.Forward("GET", "/webhooks", nil)
+	resp, err := h.proxy.Forward(c, "GET", "/webhooks", nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch webhooks", Details: err.Error()})
 		return
@@ -34,7 +34,7 @@ func (h *WebhookHandler) ListWebhooks(c *gin.Context) {
 // GET /api/v1/webhooks/:id
 func (h *WebhookHandler) GetWebhook(c *gin.Context) {
 	id := c.Param("id")
-	resp, err := h.proxy.Forward("GET", "/webhooks/"+id, nil)
+	resp, err := h.proxy.Forward(c, "GET", "/webhooks/"+id, nil)
 	if err != nil {
 		c.JSON(http.StatusNotFound, models.ErrorResponse{Error: "Webhook not found", Details: err.Error()})
 		return
@@ -50,7 +50,7 @@ func (h *WebhookHandler) CreateWebhook(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request", Details: err.Error()})
 		return
 	}
-	resp, err := h.proxy.Forward("POST", "/webhooks", req)
+	resp, err := h.proxy.Forward(c, "POST", "/webhooks", req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to create webhook", Details: err.Error()})
 		return
@@ -67,7 +67,7 @@ func (h *WebhookHandler) UpdateWebhook(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request", Details: err.Error()})
 		return
 	}
-	resp, err := h.proxy.Forward("PUT", "/webhooks/"+id, req)
+	resp, err := h.proxy.Forward(c, "PUT", "/webhooks/"+id, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to update webhook", Details: err.Error()})
 		return
@@ -79,7 +79,7 @@ func (h *WebhookHandler) UpdateWebhook(c *gin.Context) {
 // DELETE /api/v1/webhooks/:id
 func (h *WebhookHandler) DeleteWebhook(c *gin.Context) {
 	id := c.Param("id")
-	_, err := h.proxy.Forward("DELETE", "/webhooks/"+id, nil)
+	_, err := h.proxy.Forward(c, "DELETE", "/webhooks/"+id, nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to delete webhook", Details: err.Error()})
 		return
@@ -91,7 +91,7 @@ func (h *WebhookHandler) DeleteWebhook(c *gin.Context) {
 // POST /api/v1/webhooks/:id/test
 func (h *WebhookHandler) TestWebhook(c *gin.Context) {
 	id := c.Param("id")
-	resp, err := h.proxy.Forward("POST", "/webhooks/"+id+"/test", nil)
+	resp, err := h.proxy.Forward(c, "POST", "/webhooks/"+id+"/test", nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to test webhook", Details: err.Error()})
 		return
@@ -103,7 +103,7 @@ func (h *WebhookHandler) TestWebhook(c *gin.Context) {
 // GET /api/v1/webhooks/:id/executions
 func (h *WebhookHandler) GetWebhookExecutions(c *gin.Context) {
 	id := c.Param("id")
-	resp, err := h.proxy.Forward("GET", "/webhooks/"+id+"/executions", nil)
+	resp, err := h.proxy.Forward(c, "GET", "/webhooks/"+id+"/executions", nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch executions", Details: err.Error()})
 		return
@@ -123,7 +123,7 @@ func NewAlertHandler(proxy *services.ProxyService) *AlertHandler {
 // ListAlerts returns all alert configurations
 // GET /api/v1/alerts
 func (h *AlertHandler) ListAlerts(c *gin.Context) {
-	resp, err := h.proxy.Forward("GET", "/alerts", nil)
+	resp, err := h.proxy.Forward(c, "GET", "/alerts", nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch alerts", Details: err.Error()})
 		return
@@ -139,7 +139,7 @@ func (h *AlertHandler) CreateAlert(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request", Details: err.Error()})
 		return
 	}
-	resp, err := h.proxy.Forward("POST", "/alerts", req)
+	resp, err := h.proxy.Forward(c, "POST", "/alerts", req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to create alert", Details: err.Error()})
 		return
@@ -156,7 +156,7 @@ func (h *AlertHandler) UpdateAlert(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request", Details: err.Error()})
 		return
 	}
-	resp, err := h.proxy.Forward("PUT", "/alerts/"+id, req)
+	resp, err := h.proxy.Forward(c, "PUT", "/alerts/"+id, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to update alert", Details: err.Error()})
 		return
@@ -168,7 +168,7 @@ func (h *AlertHandler) UpdateAlert(c *gin.Context) {
 // DELETE /api/v1/alerts/:id
 func (h *AlertHandler) DeleteAlert(c *gin.Context) {
 	id := c.Param("id")
-	_, err := h.proxy.Forward("DELETE", "/alerts/"+id, nil)
+	_, err := h.proxy.Forward(c, "DELETE", "/alerts/"+id, nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to delete alert", Details: err.Error()})
 		return
@@ -188,7 +188,7 @@ func NewMultiCloudHandler(proxy *services.ProxyService) *MultiCloudHandler {
 // GetStatus returns multi-cloud provider status
 // GET /api/v1/multi-cloud/status
 func (h *MultiCloudHandler) GetStatus(c *gin.Context) {
-	resp, err := h.proxy.Forward("GET", "/multi-cloud/status", nil)
+	resp, err := h.proxy.Forward(c, "GET", "/multi-cloud/status", nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch cloud status", Details: err.Error()})
 		return
@@ -208,7 +208,7 @@ func (h *MultiCloudHandler) InitiateFailover(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.proxy.Forward("POST", "/multi-cloud/failover", req)
+	resp, err := h.proxy.Forward(c, "POST", "/multi-cloud/failover", req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to initiate failover", Details: err.Error()})
 		return
@@ -228,7 +228,7 @@ func NewSelfHealingHandler(proxy *services.ProxyService) *SelfHealingHandler {
 // GetEvents returns self-healing event logs
 // GET /api/v1/self-healing/events
 func (h *SelfHealingHandler) GetEvents(c *gin.Context) {
-	resp, err := h.proxy.Forward("GET", "/self-healing/events", nil)
+	resp, err := h.proxy.Forward(c, "GET", "/self-healing/events", nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch self-healing events", Details: err.Error()})
 		return
@@ -244,7 +244,7 @@ func (h *SelfHealingHandler) TriggerRecovery(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request", Details: err.Error()})
 		return
 	}
-	resp, err := h.proxy.Forward("POST", "/self-healing/recover", req)
+	resp, err := h.proxy.Forward(c, "POST", "/self-healing/recover", req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to trigger recovery", Details: err.Error()})
 		return
@@ -255,7 +255,7 @@ func (h *SelfHealingHandler) TriggerRecovery(c *gin.Context) {
 // GetHealingStatus returns the current status of the self-healing cluster
 // GET /api/v1/self-healing/status
 func (h *SelfHealingHandler) GetHealingStatus(c *gin.Context) {
-	resp, err := h.proxy.Forward("GET", "/self-healing/status", nil)
+	resp, err := h.proxy.Forward(c, "GET", "/self-healing/status", nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch self-healing status", Details: err.Error()})
 		return
@@ -266,7 +266,7 @@ func (h *SelfHealingHandler) GetHealingStatus(c *gin.Context) {
 // GetStats returns self-healing statistics
 // GET /api/v1/self-healing/stats
 func (h *SelfHealingHandler) GetStats(c *gin.Context) {
-	resp, err := h.proxy.Forward("GET", "/self-healing/stats", nil)
+	resp, err := h.proxy.Forward(c, "GET", "/self-healing/stats", nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch self-healing stats", Details: err.Error()})
 		return

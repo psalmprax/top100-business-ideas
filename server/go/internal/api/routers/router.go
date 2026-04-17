@@ -21,6 +21,7 @@ type HandlerContainer struct {
 	MetricsHandler       MetricsHandler
 	BillingHandler       BillingHandler
 	WSHandler            WSHandler
+	IntelligenceHandler  IntelligenceHandler
 	WebhookHandler       interface {
 		GetWebhook(c *gin.Context)
 		CreateWebhook(c *gin.Context)
@@ -45,6 +46,11 @@ type HandlerContainer struct {
 		GetEvents(c *gin.Context)
 		GetStats(c *gin.Context)
 		TriggerRecovery(c *gin.Context)
+	}
+	ShadowAIHandler interface {
+		ListDetections(c *gin.Context)
+		GetShadowAIStats(c *gin.Context)
+		RemediateDetection(c *gin.Context)
 	}
 	TrainingHandler interface {
 		ListModules(c *gin.Context)
@@ -73,6 +79,27 @@ type HandlerContainer struct {
 		GetOnPremDeployments(c *gin.Context)
 		DeployOnPrem(c *gin.Context)
 	}
+	MLHandler interface {
+		ProxyML(c *gin.Context)
+		Infer(c *gin.Context)
+		ListModels(c *gin.Context)
+		ClassifyAgentOperation(c *gin.Context)
+		CheckCompliance(c *gin.Context)
+		DetectDeepfake(c *gin.Context)
+	}
+	WorkforceHandler WorkforceHandler
+}
+
+// IntelligenceHandler interface
+type IntelligenceHandler interface {
+	// Generic Intelligence
+	GetStrategicInsights(c *gin.Context)
+	GetMarketTrends(c *gin.Context)
+	GetRiskAssessment(c *gin.Context)
+	GetOptimizationRules(c *gin.Context)
+	// Hermes Specific
+	HermesSuggestFix(c *gin.Context)
+	HermesValidateStrategy(c *gin.Context)
 }
 
 // MiddlewareContainer holds all middleware functions
@@ -82,8 +109,8 @@ type MiddlewareContainer struct {
 	RequireRole   func(string) gin.HandlerFunc
 }
 
-// SetupRoutes configures all API routes
-func SetupRoutes(router *gin.Engine, handlers *HandlerContainer, mw *MiddlewareContainer) {
+// SetupAllRoutes configures all API routes
+func SetupAllRoutes(router *gin.Engine, handlers *HandlerContainer, mw *MiddlewareContainer) {
 	// API v1 group
 	v1 := router.Group("/api/v1")
 
@@ -99,7 +126,7 @@ func SetupRoutes(router *gin.Engine, handlers *HandlerContainer, mw *MiddlewareC
 	// All protected routes
 	protected := v1.Group("")
 	protected.Use(mw.Auth)
-	
+
 	// Apply Circuit Breaker for proxy intensive routes
 	proxyCB := middleware.GinCircuitBreakerMiddleware("python-backend", middleware.CircuitBreakerConfig{
 		FailureThreshold: 5,
@@ -107,7 +134,7 @@ func SetupRoutes(router *gin.Engine, handlers *HandlerContainer, mw *MiddlewareC
 		Timeout:          30 * time.Second,
 		RequestTimeout:   10 * time.Second,
 	})
-	
+
 	{
 		// Agent routes (Proxy heavy)
 		agentGroup := protected.Group("")
@@ -124,6 +151,7 @@ func SetupRoutes(router *gin.Engine, handlers *HandlerContainer, mw *MiddlewareC
 			handlers.AlertHandler,
 			handlers.MultiCloudHandler,
 			handlers.SelfHealingHandler,
+			handlers.ShadowAIHandler,
 			handlers.TrainingHandler,
 			handlers.GovernanceHandler,
 			middleware.ProductAccess,
@@ -139,7 +167,7 @@ func SetupRoutes(router *gin.Engine, handlers *HandlerContainer, mw *MiddlewareC
 		deepfakeGroup := protected.Group("")
 		deepfakeGroup.Use(proxyCB)
 		SetupDeepfakeRoutes(deepfakeGroup, handlers.DeepfakeHandler, handlers.AgentOpsHandler, middleware.ProductAccess)
-		
+
 		// Metrics routes (Proxy heavy)
 		metricsGroup := protected.Group("")
 		metricsGroup.Use(proxyCB)
@@ -151,5 +179,18 @@ func SetupRoutes(router *gin.Engine, handlers *HandlerContainer, mw *MiddlewareC
 		SetupRulesRoutes(protected, handlers.RulesHandler, middleware.ProductAccess)
 		SetupBillingRoutes(protected, handlers.BillingHandler, middleware.ProductAccess, middleware.RequireRole)
 		SetupWSRoutes(protected, handlers.WSHandler)
+		SetupAdditionalRoutes(protected, handlers.IntelligenceHandler)
+		SetupWorkforceRoutes(protected, handlers.WorkforceHandler, middleware.ProductAccess, middleware.RequireRole)
+
+		// ML routes (Proxied to Python)
+		mlGroup := v1.Group("/ml")
+		mlGroup.Use(proxyCB)
+		{
+			mlGroup.POST("/infer", handlers.MLHandler.ProxyML)
+			mlGroup.GET("/models", handlers.MLHandler.ListModels)
+			mlGroup.POST("/agent-ops/classify", handlers.MLHandler.ClassifyAgentOperation)
+			mlGroup.POST("/ai-compliance/check", handlers.MLHandler.CheckCompliance)
+			mlGroup.POST("/deepfake/detect", handlers.MLHandler.DetectDeepfake)
+		}
 	}
 }

@@ -26,7 +26,7 @@ func (h *IntelligenceHandler) HermesChat(c *gin.Context) {
 		return
 	}
 
-	response, err := h.proxyService.Forward("POST", "/intelligence/hermes/chat", req)
+	response, err := h.proxyService.Forward(c, "POST", "/intelligence/hermes/chat", req)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to chat with Hermes", Details: err.Error()})
 		return
@@ -41,7 +41,7 @@ func (h *IntelligenceHandler) HermesAnalyze(c *gin.Context) {
 		return
 	}
 
-	response, err := h.proxyService.Forward("POST", "/intelligence/hermes/analyze", req)
+	response, err := h.proxyService.Forward(c, "POST", "/intelligence/hermes/analyze", req)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to analyze with Hermes", Details: err.Error()})
 		return
@@ -56,7 +56,7 @@ func (h *IntelligenceHandler) HermesSuggestFix(c *gin.Context) {
 		return
 	}
 
-	response, err := h.proxyService.Forward("POST", "/intelligence/hermes/suggest-fix", req)
+	response, err := h.proxyService.Forward(c, "POST", "/intelligence/hermes/suggest-fix", req)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to get fix suggestion from Hermes", Details: err.Error()})
 		return
@@ -71,7 +71,7 @@ func (h *IntelligenceHandler) HermesValidateStrategy(c *gin.Context) {
 		return
 	}
 
-	response, err := h.proxyService.Forward("POST", "/intelligence/hermes/validate-strategy", req)
+	response, err := h.proxyService.Forward(c, "POST", "/intelligence/hermes/validate-strategy", req)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to validate strategy with Hermes", Details: err.Error()})
 		return
@@ -80,7 +80,7 @@ func (h *IntelligenceHandler) HermesValidateStrategy(c *gin.Context) {
 }
 
 func (h *IntelligenceHandler) PaperclipResearch(c *gin.Context) {
-	response, err := h.proxyService.Forward("GET", "/intelligence/paperclip/research", nil)
+	response, err := h.proxyService.Forward(c, "GET", "/intelligence/paperclip/research", nil)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to get paperclip research", Details: err.Error()})
 		return
@@ -95,9 +95,45 @@ func (h *IntelligenceHandler) PaperclipRun(c *gin.Context) {
 		return
 	}
 
-	response, err := h.proxyService.Forward("POST", "/intelligence/paperclip/run", req)
+	response, err := h.proxyService.Forward(c, "POST", "/intelligence/paperclip/run", req)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to run paperclip research", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+func (h *IntelligenceHandler) GetStrategicInsights(c *gin.Context) {
+	response, err := h.proxyService.Forward(c, "GET", "/intelligence/insights", nil)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch strategic insights", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+func (h *IntelligenceHandler) GetMarketTrends(c *gin.Context) {
+	response, err := h.proxyService.Forward(c, "GET", "/intelligence/trends", nil)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch market trends", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+func (h *IntelligenceHandler) GetRiskAssessment(c *gin.Context) {
+	response, err := h.proxyService.Forward(c, "GET", "/intelligence/risk", nil)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch risk assessment", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+func (h *IntelligenceHandler) GetOptimizationRules(c *gin.Context) {
+	response, err := h.proxyService.Forward(c, "GET", "/intelligence/optimization", nil)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch optimization rules", Details: err.Error()})
 		return
 	}
 	c.Data(http.StatusOK, "application/json", response)

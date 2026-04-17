@@ -34,7 +34,7 @@ func max(a, b int) int {
 // AggregateAgentMetrics fetches and aggregates metrics from Python backend
 // Applies business logic: calculates trends, identifies anomalies, derives insights
 func (h *MetricsAggregator) AggregateAgentMetrics(c *gin.Context) {
-	response, err := h.proxyService.GetAgentMetrics()
+	response, err := h.proxyService.GetAgentMetrics(c)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch agent metrics", Details: err.Error()})
 		return
@@ -109,7 +109,7 @@ func (h *MetricsAggregator) GetTopAgents(c *gin.Context) {
 
 	limitInt, _ := strconv.Atoi(limit)
 
-	response, err := h.proxyService.ListAgents()
+	response, err := h.proxyService.ListAgents(c)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch agents", Details: err.Error()})
 		return
@@ -157,7 +157,7 @@ func (h *MetricsAggregator) GetTopAgents(c *gin.Context) {
 }
 
 func (h *MetricsAggregator) AnomalyDetection(c *gin.Context) {
-	response, err := h.proxyService.GetAgentMetrics()
+	response, err := h.proxyService.GetAgentMetrics(c)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch metrics", Details: err.Error()})
 		return

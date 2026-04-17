@@ -20,7 +20,7 @@ func NewRulesHandler(proxyService *services.ProxyService) *RulesHandler {
 }
 
 func (h *RulesHandler) ListRules(c *gin.Context) {
-	response, err := h.proxyService.Forward("GET", "/agents/rules/budget", nil)
+	response, err := h.proxyService.Forward(c, "GET", "/agents/rules/budget", nil)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, gin.H{"error": "Failed to fetch rules", "details": err.Error()})
 		return
@@ -35,7 +35,7 @@ func (h *RulesHandler) CreateRule(c *gin.Context) {
 		return
 	}
 
-	response, err := h.proxyService.Forward("POST", "/agents/rules/budget", body)
+	response, err := h.proxyService.Forward(c, "POST", "/agents/rules/budget", body)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, gin.H{"error": "Failed to create rule", "details": err.Error()})
 		return
@@ -51,7 +51,7 @@ func (h *RulesHandler) UpdateRule(c *gin.Context) {
 		return
 	}
 
-	response, err := h.proxyService.Forward("PUT", fmt.Sprintf("/agents/alerts/%s", id), body)
+	response, err := h.proxyService.Forward(c, "PUT", fmt.Sprintf("/agents/alerts/%s", id), body)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, gin.H{"error": "Failed to update rule", "details": err.Error()})
 		return
@@ -61,7 +61,7 @@ func (h *RulesHandler) UpdateRule(c *gin.Context) {
 
 func (h *RulesHandler) DeleteRule(c *gin.Context) {
 	id := c.Param("id")
-	response, err := h.proxyService.Forward("DELETE", fmt.Sprintf("/agents/alerts/%s", id), nil)
+	response, err := h.proxyService.Forward(c, "DELETE", fmt.Sprintf("/agents/alerts/%s", id), nil)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, gin.H{"error": "Failed to delete rule", "details": err.Error()})
 		return
@@ -77,7 +77,7 @@ func (h *RulesHandler) ToggleRule(c *gin.Context) {
 		return
 	}
 
-	response, err := h.proxyService.Forward("PATCH", fmt.Sprintf("/agents/alerts/%s", id), body)
+	response, err := h.proxyService.Forward(c, "PATCH", fmt.Sprintf("/agents/alerts/%s", id), body)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, gin.H{"error": "Failed to toggle rule", "details": err.Error()})
 		return

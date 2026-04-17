@@ -23,7 +23,7 @@ func NewBillingHandler(s *services.BillingService, p *services.ProxyService) *Bi
 
 func (h *BillingHandler) GetSubscription(c *gin.Context) {
 	// Real-First logic: Proxy to Python Enterprise API
-	resp, err := h.proxy.Forward("GET", "/enterprise/subscription", nil)
+	resp, err := h.proxy.Forward(c, "GET", "/enterprise/subscription", nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch subscription", "details": err.Error()})
 		return
@@ -33,7 +33,7 @@ func (h *BillingHandler) GetSubscription(c *gin.Context) {
 
 func (h *BillingHandler) GetInvoices(c *gin.Context) {
 	// Real-First logic: Proxy to Python Enterprise API
-	resp, err := h.proxy.Forward("GET", "/enterprise/invoices", nil)
+	resp, err := h.proxy.Forward(c, "GET", "/enterprise/invoices", nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch invoices", "details": err.Error()})
 		return
@@ -81,7 +81,7 @@ func (h *BillingHandler) CancelSubscription(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.proxy.Forward("GET", "/enterprise/subscription", nil)
+	resp, err := h.proxy.Forward(c, "GET", "/enterprise/subscription", nil)
 	if err == nil {
 		var sub map[string]interface{}
 		if json.Unmarshal(resp, &sub) == nil {
@@ -113,7 +113,7 @@ func (h *BillingHandler) CancelSubscription(c *gin.Context) {
 	}
 
 	// Fallback: proxy cancellation to Python billing service
-	proxyResp, proxyErr := h.proxy.Forward("POST", "/billing/cancel", map[string]interface{}{
+	proxyResp, proxyErr := h.proxy.Forward(c, "POST", "/billing/cancel", map[string]interface{}{
 		"user_id": userID,
 	})
 	if proxyErr == nil {
@@ -143,7 +143,7 @@ func (h *BillingHandler) UpdatePaymentMethod(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.proxy.Forward("GET", "/enterprise/subscription", nil)
+	resp, err := h.proxy.Forward(c, "GET", "/enterprise/subscription", nil)
 	if err == nil {
 		var sub map[string]interface{}
 		if json.Unmarshal(resp, &sub) == nil {
@@ -177,7 +177,7 @@ func (h *BillingHandler) UpdatePaymentMethod(c *gin.Context) {
 	}
 
 	// Fallback: proxy to Python billing service
-	proxyResp, proxyErr := h.proxy.Forward("POST", "/billing/payment-method", map[string]interface{}{
+	proxyResp, proxyErr := h.proxy.Forward(c, "POST", "/billing/payment-method", map[string]interface{}{
 		"user_id":           userID,
 		"payment_method_id": req.PaymentMethodID,
 	})

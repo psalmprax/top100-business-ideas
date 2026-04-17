@@ -149,7 +149,7 @@ func (h *AgentOpsHandler) ListAgents(c *gin.Context) {
 		}
 	}
 
-	response, err := h.proxyService.ListAgents()
+	response, err := h.proxyService.ListAgents(c)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch agents from backend", Details: err.Error()})
 		return
@@ -188,7 +188,7 @@ func (h *AgentOpsHandler) GetAgent(c *gin.Context) {
 		return
 	}
 
-	response, err := h.proxyService.GetAgent(id)
+	response, err := h.proxyService.GetAgent(c, id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, models.ErrorResponse{Error: "Agent not found"})
 		return
@@ -211,7 +211,7 @@ func (h *AgentOpsHandler) CreateAgent(c *gin.Context) {
 		return
 	}
 
-	response, err := h.proxyService.CreateAgent(req)
+	response, err := h.proxyService.CreateAgent(c, req)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to create agent", Details: err.Error()})
 		return
@@ -235,7 +235,7 @@ func (h *AgentOpsHandler) UpdateAgent(c *gin.Context) {
 		return
 	}
 
-	response, err := h.proxyService.UpdateAgent(id, req)
+	response, err := h.proxyService.UpdateAgent(c, id, req)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to update agent", Details: err.Error()})
 		return
@@ -253,7 +253,7 @@ func (h *AgentOpsHandler) UpdateAgent(c *gin.Context) {
 func (h *AgentOpsHandler) DeleteAgent(c *gin.Context) {
 	id := c.Param("id")
 
-	_, err := h.proxyService.DeleteAgent(id)
+	_, err := h.proxyService.DeleteAgent(c, id)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to delete agent", Details: err.Error()})
 		return
@@ -265,7 +265,7 @@ func (h *AgentOpsHandler) DeleteAgent(c *gin.Context) {
 func (h *AgentOpsHandler) GetAgentLogs(c *gin.Context) {
 	id := c.Param("id")
 
-	response, err := h.proxyService.GetAgentLogs(id)
+	response, err := h.proxyService.GetAgentLogs(c, id)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch logs", Details: err.Error()})
 		return
@@ -283,7 +283,7 @@ func (h *AgentOpsHandler) GetAgentLogs(c *gin.Context) {
 func (h *AgentOpsHandler) StopAgent(c *gin.Context) {
 	id := c.Param("id")
 
-	_, err := h.proxyService.StopAgent(id)
+	_, err := h.proxyService.StopAgent(c, id)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to stop agent", Details: err.Error()})
 		return
@@ -295,7 +295,7 @@ func (h *AgentOpsHandler) StopAgent(c *gin.Context) {
 func (h *AgentOpsHandler) RestartAgent(c *gin.Context) {
 	id := c.Param("id")
 
-	_, err := h.proxyService.RestartAgent(id)
+	_, err := h.proxyService.RestartAgent(c, id)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to restart agent", Details: err.Error()})
 		return
@@ -305,7 +305,7 @@ func (h *AgentOpsHandler) RestartAgent(c *gin.Context) {
 }
 
 func (h *AgentOpsHandler) GetAgentMetrics(c *gin.Context) {
-	response, err := h.proxyService.GetAgentMetrics()
+	response, err := h.proxyService.GetAgentMetrics(c)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch metrics", Details: err.Error()})
 		return
@@ -323,7 +323,7 @@ func (h *AgentOpsHandler) GetAgentMetrics(c *gin.Context) {
 func (h *AgentOpsHandler) GetAgentHistory(c *gin.Context) {
 	id := c.Param("id")
 
-	response, err := h.proxyService.GetAgentHistory(id)
+	response, err := h.proxyService.GetAgentHistory(c, id)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch history", Details: err.Error()})
 		return
@@ -360,7 +360,7 @@ func (h *AgentOpsHandler) GetAuditLogs(c *gin.Context) {
 		path = fmt.Sprintf("%s&outcome=%s", path, outcome)
 	}
 
-	status, response, err := h.proxyService.ForwardWithStatus("GET", path, nil, nil)
+	status, response, err := h.proxyService.ForwardWithStatus(c, "GET", path, nil, nil)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch audit logs", Details: err.Error()})
 		return
@@ -371,7 +371,7 @@ func (h *AgentOpsHandler) GetAuditLogs(c *gin.Context) {
 
 // ListLLMConfigs retrieves available LLM configurations
 func (h *AgentOpsHandler) ListLLMConfigs(c *gin.Context) {
-	status, response, err := h.proxyService.ForwardWithStatus("GET", "/ml/models", nil, nil)
+	status, response, err := h.proxyService.ForwardWithStatus(c, "GET", "/ml/models", nil, nil)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch LLM configs", Details: err.Error()})
 		return
@@ -385,7 +385,7 @@ func (h *AgentOpsHandler) GetForecast(c *gin.Context) {
 	id := c.Param("id")
 	path := fmt.Sprintf("/agents/%s/forecast", id)
 
-	status, response, err := h.proxyService.ForwardWithStatus("GET", path, nil, nil)
+	status, response, err := h.proxyService.ForwardWithStatus(c, "GET", path, nil, nil)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch forecast", Details: err.Error()})
 		return
@@ -400,7 +400,7 @@ func (h *AgentOpsHandler) CloneConfig(c *gin.Context) {
 	id := c.Param("id")
 	path := fmt.Sprintf("/agents/%s/clone", id)
 
-	status, response, err := h.proxyService.ForwardWithStatus("POST", path, nil, nil)
+	status, response, err := h.proxyService.ForwardWithStatus(c, "POST", path, nil, nil)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to clone agent", Details: err.Error()})
 		return
@@ -420,7 +420,7 @@ func (h *AgentOpsHandler) SyncLinguisticPackage(c *gin.Context) {
 		return
 	}
 
-	status, response, err := h.proxyService.ForwardWithStatus("POST", "/agent-ops/sync-locale", req, nil)
+	status, response, err := h.proxyService.ForwardWithStatus(c, "POST", "/agent-ops/sync-locale", req, nil)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to sync linguistic package", Details: err.Error()})
 		return
@@ -435,7 +435,7 @@ func (h *AgentOpsHandler) OptimizeMemory(c *gin.Context) {
 	id := c.Param("id")
 	path := fmt.Sprintf("/agents/%s/optimize", id)
 
-	status, response, err := h.proxyService.ForwardWithStatus("POST", path, nil, nil)
+	status, response, err := h.proxyService.ForwardWithStatus(c, "POST", path, nil, nil)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to optimize agent memory", Details: err.Error()})
 		return
@@ -524,7 +524,7 @@ func (h *AgentOpsHandler) ProxyToPython(c *gin.Context) {
 	headers := map[string]string{
 		"X-User-ID": c.GetString("user_id"),
 	}
-	status, response, err := h.proxyService.ForwardWithStatus(c.Request.Method, path, body, headers)
+	status, response, err := h.proxyService.ForwardWithStatus(c, c.Request.Method, path, body, headers)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Backend proxy error", Details: err.Error()})
 		return
@@ -534,7 +534,7 @@ func (h *AgentOpsHandler) ProxyToPython(c *gin.Context) {
 }
 func (h *AgentOpsHandler) RunForensics(c *gin.Context) {
 	agentID := c.Query("agent_id")
-	response, err := h.proxyService.RunForensics(agentID)
+	response, err := h.proxyService.RunForensics(c, agentID)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Forensic analysis failed", Details: err.Error()})
 		return
@@ -549,7 +549,7 @@ func (h *AgentOpsHandler) ProvisionClient(c *gin.Context) {
 		return
 	}
 
-	response, err := h.proxyService.ProvisionClient(req)
+	response, err := h.proxyService.ProvisionClient(c, req)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Provisioning failed", Details: err.Error()})
 		return
@@ -557,7 +557,7 @@ func (h *AgentOpsHandler) ProvisionClient(c *gin.Context) {
 	c.Data(http.StatusOK, "application/json", response)
 }
 func (h *AgentOpsHandler) ListVentureInsights(c *gin.Context) {
-	status1, response1, err1 := h.proxyService.ForwardWithStatus("GET", "/venture/insights", nil, nil)
+	status1, response1, err1 := h.proxyService.ForwardWithStatus(c, "GET", "/venture/insights", nil, nil)
 	if err1 != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch venture insights", Details: err1.Error()})
 		return
@@ -572,7 +572,7 @@ func (h *AgentOpsHandler) AnalyzeVentureScenario(c *gin.Context) {
 		return
 	}
 
-	status2, response2, err2 := h.proxyService.ForwardWithStatus("POST", "/venture/scenario/analyze", req, nil)
+	status2, response2, err2 := h.proxyService.ForwardWithStatus(c, "POST", "/venture/scenario/analyze", req, nil)
 	if err2 != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to analyze scenario", Details: err2.Error()})
 		return

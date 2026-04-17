@@ -22,7 +22,7 @@ func NewWearableHandler(proxyService *services.ProxyService) *WearableHandler {
 
 // ListDevices returns all wearable devices
 func (h *WearableHandler) ListDevices(c *gin.Context) {
-	response, err := h.proxyService.Forward("GET", "/wearables", nil)
+	response, err := h.proxyService.Forward(c, "GET", "/wearables", nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch wearables", Details: err.Error()})
 		return
@@ -37,7 +37,7 @@ func (h *WearableHandler) RegisterDevice(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request"})
 		return
 	}
-	response, err := h.proxyService.Forward("POST", "/wearables", req)
+	response, err := h.proxyService.Forward(c, "POST", "/wearables", req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to register wearable", Details: err.Error()})
 		return
@@ -48,7 +48,7 @@ func (h *WearableHandler) RegisterDevice(c *gin.Context) {
 // PairDevice pairs a wearable device for biometric verification
 func (h *WearableHandler) PairDevice(c *gin.Context) {
 	id := c.Param("id")
-	response, err := h.proxyService.Forward("POST", fmt.Sprintf("/wearables/%s/pair", id), nil)
+	response, err := h.proxyService.Forward(c, "POST", fmt.Sprintf("/wearables/%s/pair", id), nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to pair device", Details: err.Error()})
 		return
@@ -69,7 +69,7 @@ func NewCryptoHandler(proxyService *services.ProxyService) *CryptoHandler {
 
 // ListWallets returns all protected crypto wallets
 func (h *CryptoHandler) ListWallets(c *gin.Context) {
-	response, err := h.proxyService.Forward("GET", "/crypto/wallets", nil)
+	response, err := h.proxyService.Forward(c, "GET", "/crypto/wallets", nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch wallets", Details: err.Error()})
 		return
@@ -84,7 +84,7 @@ func (h *CryptoHandler) ProtectWallet(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request"})
 		return
 	}
-	response, err := h.proxyService.Forward("POST", "/crypto/wallets", req)
+	response, err := h.proxyService.Forward(c, "POST", "/crypto/wallets", req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to protect wallet", Details: err.Error()})
 		return
@@ -100,7 +100,7 @@ func (h *CryptoHandler) VerifyTransaction(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request"})
 		return
 	}
-	response, err := h.proxyService.Forward("POST", fmt.Sprintf("/crypto/wallets/%s/verify", walletID), req)
+	response, err := h.proxyService.Forward(c, "POST", fmt.Sprintf("/crypto/wallets/%s/verify", walletID), req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to verify transaction", Details: err.Error()})
 		return
@@ -121,7 +121,7 @@ func NewTravelKioskHandler(proxyService *services.ProxyService) *TravelKioskHand
 
 // ListKiosks returns all travel kiosks
 func (h *TravelKioskHandler) ListKiosks(c *gin.Context) {
-	response, err := h.proxyService.Forward("GET", "/travel/kiosks", nil)
+	response, err := h.proxyService.Forward(c, "GET", "/travel/kiosks", nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch kiosks", Details: err.Error()})
 		return
@@ -137,7 +137,7 @@ func (h *TravelKioskHandler) VerifyTraveler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request"})
 		return
 	}
-	response, err := h.proxyService.Forward("POST", fmt.Sprintf("/travel/kiosks/%s/verify", kioskID), req)
+	response, err := h.proxyService.Forward(c, "POST", fmt.Sprintf("/travel/kiosks/%s/verify", kioskID), req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to verify traveler", Details: err.Error()})
 		return
@@ -158,7 +158,7 @@ func NewEdgeHandler(proxyService *services.ProxyService) *EdgeHandler {
 
 // ListDeployments returns edge AI deployments
 func (h *EdgeHandler) ListDeployments(c *gin.Context) {
-	response, err := h.proxyService.Forward("GET", "/edge/deployments", nil)
+	response, err := h.proxyService.Forward(c, "GET", "/edge/deployments", nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch deployments", Details: err.Error()})
 		return
@@ -169,7 +169,7 @@ func (h *EdgeHandler) ListDeployments(c *gin.Context) {
 // SyncWeights syncs model weights to an edge deployment
 func (h *EdgeHandler) SyncWeights(c *gin.Context) {
 	id := c.Param("id")
-	response, err := h.proxyService.Forward("POST", fmt.Sprintf("/edge/deployments/%s/sync", id), nil)
+	response, err := h.proxyService.Forward(c, "POST", fmt.Sprintf("/edge/deployments/%s/sync", id), nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to sync weights", Details: err.Error()})
 		return
@@ -180,7 +180,7 @@ func (h *EdgeHandler) SyncWeights(c *gin.Context) {
 // GetEdgeLogs returns logs for an edge deployment
 func (h *EdgeHandler) GetEdgeLogs(c *gin.Context) {
 	id := c.Param("id")
-	response, err := h.proxyService.Forward("GET", fmt.Sprintf("/edge/deployments/%s/logs", id), nil)
+	response, err := h.proxyService.Forward(c, "GET", fmt.Sprintf("/edge/deployments/%s/logs", id), nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch edge logs", Details: err.Error()})
 		return
@@ -201,7 +201,7 @@ func NewVendorHandler(proxyService *services.ProxyService) *VendorHandler {
 
 // ListVendors returns all vendors
 func (h *VendorHandler) ListVendors(c *gin.Context) {
-	response, err := h.proxyService.Forward("GET", "/vendors", nil)
+	response, err := h.proxyService.Forward(c, "GET", "/vendors", nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch vendors", Details: err.Error()})
 		return
@@ -216,7 +216,7 @@ func (h *VendorHandler) AddVendor(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request"})
 		return
 	}
-	response, err := h.proxyService.Forward("POST", "/vendors", req)
+	response, err := h.proxyService.Forward(c, "POST", "/vendors", req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to add vendor", Details: err.Error()})
 		return

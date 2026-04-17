@@ -381,7 +381,7 @@ func (h *DeepfakeHandler) Analyze(c *gin.Context) {
 	analysis, err := h.callPythonService(req.MediaURL, req.MediaType)
 	if err != nil {
 		// Fallback to proxy service if Python service is unavailable
-		response, proxyErr := h.proxyService.AnalyzeDeepfake(enrichedReq)
+		response, proxyErr := h.proxyService.AnalyzeDeepfake(c, enrichedReq)
 		if proxyErr != nil {
 			c.JSON(http.StatusBadGateway, models.ErrorResponse{
 				Error:   "Failed to analyze media",
@@ -424,7 +424,7 @@ func (h *DeepfakeHandler) ListAnalyses(c *gin.Context) {
 		return
 	}
 
-	response, err := h.proxyService.ListDeepfakeAnalyses()
+	response, err := h.proxyService.ListDeepfakeAnalyses(c)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch analyses", Details: err.Error()})
 		return
@@ -451,7 +451,7 @@ func (h *DeepfakeHandler) ListAnalyses(c *gin.Context) {
 func (h *DeepfakeHandler) GetAnalysis(c *gin.Context) {
 	id := c.Param("id")
 
-	response, err := h.proxyService.GetDeepfakeAnalysis(id)
+	response, err := h.proxyService.GetDeepfakeAnalysis(c, id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, models.ErrorResponse{Error: "Analysis not found"})
 		return
@@ -467,7 +467,7 @@ func (h *DeepfakeHandler) GetAnalysis(c *gin.Context) {
 }
 
 func (h *DeepfakeHandler) GetStats(c *gin.Context) {
-	response, err := h.proxyService.GetDeepfakeStats()
+	response, err := h.proxyService.GetDeepfakeStats(c)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch stats", Details: err.Error()})
 		return
@@ -489,7 +489,7 @@ func (h *DeepfakeHandler) CreateChallenge(c *gin.Context) {
 		return
 	}
 
-	response, err := h.proxyService.CreateDeepfakeChallenge(userID)
+	response, err := h.proxyService.CreateDeepfakeChallenge(c, userID)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to create challenge", Details: err.Error()})
 		return
@@ -514,7 +514,7 @@ func (h *DeepfakeHandler) VerifyAuthSignature(c *gin.Context) {
 		return
 	}
 
-	response, err := h.proxyService.VerifyDeepfakeSignature(challengeID, signature, hardwareID)
+	response, err := h.proxyService.VerifyDeepfakeSignature(c, challengeID, signature, hardwareID)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to verify signature", Details: err.Error()})
 		return
@@ -536,7 +536,7 @@ func (h *DeepfakeHandler) AnalyzeEnterprise(c *gin.Context) {
 		return
 	}
 
-	response, err := h.proxyService.Forward("POST", "/deepfake/analyze/enterprise", req)
+	response, err := h.proxyService.Forward(c, "POST", "/deepfake/analyze/enterprise", req)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to analyze enterprise deepfake", Details: err.Error()})
 		return
@@ -546,7 +546,7 @@ func (h *DeepfakeHandler) AnalyzeEnterprise(c *gin.Context) {
 }
 
 func (h *DeepfakeHandler) ListDetectors(c *gin.Context) {
-	response, err := h.proxyService.ListDeepfakeDetectors()
+	response, err := h.proxyService.ListDeepfakeDetectors(c)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch detectors", Details: err.Error()})
 		return
@@ -568,7 +568,7 @@ func (h *DeepfakeHandler) GetDuressConfig(c *gin.Context) {
 		return
 	}
 
-	response, err := h.proxyService.Forward("GET", "/deepfake/duress/config/"+userID, nil)
+	response, err := h.proxyService.Forward(c, "GET", "/deepfake/duress/config/"+userID, nil)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch duress config", Details: err.Error()})
 		return
@@ -584,7 +584,7 @@ func (h *DeepfakeHandler) UpdateDuressConfig(c *gin.Context) {
 		return
 	}
 
-	response, err := h.proxyService.Forward("POST", "/deepfake/duress/config", req)
+	response, err := h.proxyService.Forward(c, "POST", "/deepfake/duress/config", req)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to update duress config", Details: err.Error()})
 		return
@@ -600,7 +600,7 @@ func (h *DeepfakeHandler) UpdateConfig(c *gin.Context) {
 		return
 	}
 
-	response, err := h.proxyService.Forward("POST", "/deepfake/config", req)
+	response, err := h.proxyService.Forward(c, "POST", "/deepfake/config", req)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to update config", Details: err.Error()})
 		return

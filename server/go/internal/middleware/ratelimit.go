@@ -2,8 +2,7 @@ package middleware
 
 import (
 	"net/http"
-	"os"
-	"strings"
+	"strconv"
 	"sync"
 	"time"
 
@@ -75,16 +74,29 @@ func (rl *RateLimiter) Allow(key string) bool {
 	b := rl.getBucket(key)
 	now := time.Now()
 
-	// Calculate how many tokens to add since last fill
+	// Calculate how many tokens to add since last fill using high precision float math
 	elapsed := now.Sub(b.lastFill)
-	tokensToAdd := int(elapsed.Seconds()) * rl.rate
+	tokensToAdd := float64(elapsed.Nanoseconds()) * float64(rl.rate) / 1e9
 
-	// Refill tokens
-	b.tokens += tokensToAdd
-	if b.tokens > rl.capacity {
-		b.tokens = rl.capacity
+	// Update bucket status
+	// We only increment by whole tokens, but we keep the fractional remainder by 
+	// NOT updating lastFill to 'now' exactly, but rather to 'lastFill + (tokensAdded / rate)'
+	// OR, simpler: just use float arithmetic for tokens in the bucket but cast to int for comparison.
+	
+	// Let's use the fractional token approach by storing tokens as float64 in the bucket
+	// but keeping the API the same (int).
+	
+	// Actually, a better way without changing struct types:
+	if tokensToAdd >= 1 {
+		intTokens := int(tokensToAdd)
+		b.tokens += intTokens
+		if b.tokens > rl.capacity {
+			b.tokens = rl.capacity
+		}
+		// Move lastFill forward by the amount of time consumed by added whole tokens
+		timeConsumed := time.Duration(int64(intTokens) * 1e9 / int64(rl.rate))
+		b.lastFill = b.lastFill.Add(timeConsumed)
 	}
-	b.lastFill = now
 
 	// Check if we have tokens available
 	if b.tokens > 0 {
@@ -103,9 +115,9 @@ func (rl *RateLimiter) GetRemainingTokens(key string) int {
 	b := rl.getBucket(key)
 	now := time.Now()
 
-	// Calculate current tokens
+	// Calculate tokens currently in bucket including fractional time
 	elapsed := now.Sub(b.lastFill)
-	tokensToAdd := int(elapsed.Seconds()) * rl.rate
+	tokensToAdd := int(float64(elapsed.Nanoseconds()) * float64(rl.rate) / 1e9)
 	tokens := b.tokens + tokensToAdd
 	if tokens > rl.capacity {
 		tokens = rl.capacity
@@ -145,7 +157,7 @@ func RateLimitMiddleware(rateLimit int) gin.HandlerFunc {
 		// Check rate limit
 		if !limiter.Allow(key) {
 			remaining := limiter.GetRemainingTokens(key)
-			c.Header("X-RateLimit-Remaining", string(rune(remaining)))
+			c.Header("X-RateLimit-Remaining", strconv.Itoa(remaining))
 			c.Header("X-RateLimit-Reset", "1")
 			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
 				"error":       "Rate limit exceeded",
@@ -157,8 +169,8 @@ func RateLimitMiddleware(rateLimit int) gin.HandlerFunc {
 
 		// Set rate limit headers
 		remaining := limiter.GetRemainingTokens(key)
-		c.Header("X-RateLimit-Limit", string(rune(capacity)))
-		c.Header("X-RateLimit-Remaining", string(rune(remaining)))
+		c.Header("X-RateLimit-Limit", strconv.Itoa(capacity))
+		c.Header("X-RateLimit-Remaining", strconv.Itoa(remaining))
 
 		c.Next()
 	}
@@ -191,66 +203,4 @@ func APIKeyRateLimitMiddleware(getRateLimit func(apiKey string) int) gin.Handler
 
 		c.Next()
 	}
-}
-
-// CORSMiddleware handles CORS
-func CORSMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		origin := c.GetHeader("Origin")
-		allowedOrigins := strings.Split(os.Getenv("ALLOWED_ORIGINS"), ",")
-
-		// Validate origin if provided
-		validOrigin := false
-		if origin != "" {
-			for _, ao := range allowedOrigins {
-				if strings.TrimSpace(ao) == origin || ao == "*" {
-					validOrigin = true
-					break
-				}
-			}
-		}
-
-		// If no origin or valid origin, set it
-		if validOrigin || (len(allowedOrigins) == 1 && strings.TrimSpace(allowedOrigins[0]) == "") {
-			if origin != "" && (len(allowedOrigins) > 0 && allowedOrigins[0] != "") {
-				c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
-			} else {
-				c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-			}
-		} else {
-			c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		}
-
-		// Only allow credentials with specific origins, not wildcard
-		if c.Writer.Header().Get("Access-Control-Allow-Origin") != "*" {
-			c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		}
-
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-API-Key")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE, PATCH")
-
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
-			return
-		}
-
-		c.Next()
-	}
-}
-
-// RequestIDMiddleware adds a unique request ID to each request
-func RequestIDMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		requestID := c.GetHeader("X-Request-ID")
-		if requestID == "" {
-			requestID = generateRequestID()
-		}
-		c.Set("request_id", requestID)
-		c.Header("X-Request-ID", requestID)
-		c.Next()
-	}
-}
-
-func generateRequestID() string {
-	return strings.ReplaceAll(time.Now().Format("20060102150405.000000"), ".", "")
 }

@@ -33,6 +33,11 @@ func SetupAgentOpsRoutes(
 		GetStats(c *gin.Context)
 		TriggerRecovery(c *gin.Context)
 	},
+	shadowAIHandler interface {
+		ListDetections(c *gin.Context)
+		GetShadowAIStats(c *gin.Context)
+		RemediateDetection(c *gin.Context)
+	},
 	trainingHandler interface {
 		ListModules(c *gin.Context)
 		GetModule(c *gin.Context)
@@ -216,12 +221,12 @@ func SetupAgentOpsRoutes(
 	shadowAI := protected.Group("/shadow-ai")
 	shadowAI.Use(productAccessMiddleware("compliance"))
 	{
-		shadowAI.GET("/detections", trainingHandler.ListDetections)
-		shadowAI.GET("/stats", trainingHandler.GetShadowAIStats)
+		shadowAI.GET("/detections", shadowAIHandler.ListDetections)
+		shadowAI.GET("/stats", shadowAIHandler.GetShadowAIStats)
 
 		shadowAI.Use(requireRoleMiddleware("management"))
 		{
-			shadowAI.PUT("/detections/:id/remediate", trainingHandler.RemediateDetection)
+			shadowAI.PUT("/detections/:id/remediate", shadowAIHandler.RemediateDetection)
 		}
 	}
 }

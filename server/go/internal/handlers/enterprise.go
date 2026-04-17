@@ -21,7 +21,7 @@ func NewEnterpriseHandler(proxyService *services.ProxyService) *EnterpriseHandle
 }
 
 func (h *EnterpriseHandler) GetPartnerConfig(c *gin.Context) {
-	response, err := h.proxyService.GetPartnerConfig()
+	response, err := h.proxyService.GetPartnerConfig(c)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch partner config", Details: err.Error()})
 		return
@@ -43,7 +43,7 @@ func (h *EnterpriseHandler) UpdateSlaTier(c *gin.Context) {
 		return
 	}
 
-	response, err := h.proxyService.UpdateSlaTier(req)
+	response, err := h.proxyService.UpdateSlaTier(c, req)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to update SLA tier", Details: err.Error()})
 		return

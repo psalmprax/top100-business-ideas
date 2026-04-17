@@ -22,7 +22,7 @@ func NewTrainingHandler(proxyService *services.ProxyService) *TrainingHandler {
 
 // ListModules returns all training modules
 func (h *TrainingHandler) ListModules(c *gin.Context) {
-	response, err := h.proxyService.Forward("GET", "/training/modules", nil)
+	response, err := h.proxyService.Forward(c, "GET", "/training/modules", nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch training modules", Details: err.Error()})
 		return
@@ -33,7 +33,7 @@ func (h *TrainingHandler) ListModules(c *gin.Context) {
 // GetModule returns a single training module
 func (h *TrainingHandler) GetModule(c *gin.Context) {
 	id := c.Param("id")
-	response, err := h.proxyService.Forward("GET", fmt.Sprintf("/training/modules/%s", id), nil)
+	response, err := h.proxyService.Forward(c, "GET", fmt.Sprintf("/training/modules/%s", id), nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch training module", Details: err.Error()})
 		return
@@ -49,7 +49,7 @@ func (h *TrainingHandler) CreateModule(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request", Details: err.Error()})
 		return
 	}
-	response, err := h.proxyService.Forward("POST", "/training/modules", req)
+	response, err := h.proxyService.Forward(c, "POST", "/training/modules", req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to create training module", Details: err.Error()})
 		return
@@ -65,7 +65,7 @@ func (h *TrainingHandler) UpdateProgress(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request", Details: err.Error()})
 		return
 	}
-	response, err := h.proxyService.Forward("POST", "/training/progress", req)
+	response, err := h.proxyService.Forward(c, "POST", "/training/progress", req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to update progress", Details: err.Error()})
 		return
@@ -77,7 +77,7 @@ func (h *TrainingHandler) UpdateProgress(c *gin.Context) {
 // GET /api/v1/training/progress/:userId
 func (h *TrainingHandler) GetUserProgress(c *gin.Context) {
 	userID := c.Param("userId")
-	response, err := h.proxyService.Forward("GET", fmt.Sprintf("/training/progress/%s", userID), nil)
+	response, err := h.proxyService.Forward(c, "GET", fmt.Sprintf("/training/progress/%s", userID), nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch progress", Details: err.Error()})
 		return
@@ -87,7 +87,7 @@ func (h *TrainingHandler) GetUserProgress(c *gin.Context) {
 
 // GetTrainingStats returns training statistics
 func (h *TrainingHandler) GetTrainingStats(c *gin.Context) {
-	response, err := h.proxyService.Forward("GET", "/training/stats", nil)
+	response, err := h.proxyService.Forward(c, "GET", "/training/stats", nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch training stats", Details: err.Error()})
 		return
@@ -97,7 +97,7 @@ func (h *TrainingHandler) GetTrainingStats(c *gin.Context) {
 
 func (h *TrainingHandler) DownloadCertificate(c *gin.Context) {
 	id := c.Param("id")
-	response, err := h.proxyService.Forward("GET", fmt.Sprintf("/training/modules/%s/certificate", id), nil)
+	response, err := h.proxyService.Forward(c, "GET", fmt.Sprintf("/training/modules/%s/certificate", id), nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to generate certificate", Details: err.Error()})
 		return
@@ -118,7 +118,7 @@ func NewShadowAIHandler(proxyService *services.ProxyService) *ShadowAIHandler {
 
 // ListDetections returns Shadow AI detections
 func (h *ShadowAIHandler) ListDetections(c *gin.Context) {
-	response, err := h.proxyService.Forward("GET", "/shadow-ai/detections", nil)
+	response, err := h.proxyService.Forward(c, "GET", "/shadow-ai/detections", nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch detections", Details: err.Error()})
 		return
@@ -135,7 +135,7 @@ func (h *ShadowAIHandler) RemediateDetection(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request", Details: err.Error()})
 		return
 	}
-	response, err := h.proxyService.Forward("PUT", fmt.Sprintf("/shadow-ai/detections/%s/remediate", id), req)
+	response, err := h.proxyService.Forward(c, "PUT", fmt.Sprintf("/shadow-ai/detections/%s/remediate", id), req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to remediate detection", Details: err.Error()})
 		return
@@ -145,7 +145,7 @@ func (h *ShadowAIHandler) RemediateDetection(c *gin.Context) {
 
 // GetShadowAIStats returns Shadow AI detection statistics
 func (h *ShadowAIHandler) GetShadowAIStats(c *gin.Context) {
-	response, err := h.proxyService.Forward("GET", "/shadow-ai/stats", nil)
+	response, err := h.proxyService.Forward(c, "GET", "/shadow-ai/stats", nil)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch shadow AI stats", Details: err.Error()})
 		return

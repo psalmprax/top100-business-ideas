@@ -20,7 +20,7 @@ func NewMetricsHandler(ps *services.ProxyService) *MetricsHandler {
 }
 
 func (h *MetricsHandler) GetCurrentMetrics(c *gin.Context) {
-	resp, err := h.proxyService.GetAgentOpsMetrics()
+	resp, err := h.proxyService.GetAgentOpsMetrics(c)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{
 			Error:   "Metrics service unavailable",
@@ -44,7 +44,7 @@ func (h *MetricsHandler) GetCurrentMetrics(c *gin.Context) {
 func (h *MetricsHandler) GetMetricsHistory(c *gin.Context) {
 	period := c.DefaultQuery("period", "24h")
 
-	resp, err := h.proxyService.Forward("GET", "/agent-ops/metrics/history?period="+period, nil)
+	resp, err := h.proxyService.Forward(c, "GET", "/agent-ops/metrics/history?period="+period, nil)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{
 			Error:   "Metrics history service unavailable",
@@ -59,7 +59,7 @@ func (h *MetricsHandler) GetMetricsHistory(c *gin.Context) {
 func (h *MetricsHandler) GetAgentMetrics(c *gin.Context) {
 	agentID := c.Param("id")
 
-	resp, err := h.proxyService.Forward("GET", "/agents/"+agentID+"/history", nil)
+	resp, err := h.proxyService.Forward(c, "GET", "/agents/"+agentID+"/history", nil)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{
 			Error:   "Agent metrics service unavailable",

@@ -4,61 +4,53 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"time"
 
-	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
+	"github.com/rs/zerolog"
+	"github.com/top100-business-ideas/api/internal/pkg/retry"
 )
 
 var Redis *redis.Client
 
-type RedisConfig struct {
-	Host     string
-	Port     int
-	Password string
-	DB       int
-}
-
-func LoadRedisConfig() *RedisConfig {
-	_ = godotenv.Load()
-	port := 6379
-	if p := os.Getenv("REDIS_PORT"); p != "" {
-		fmt.Sscanf(p, "%d", &port)
+func ConnectRedis(ctx context.Context, url string, logger *zerolog.Logger) error {
+	opts, err := redis.ParseURL(url)
+	if err != nil {
+		return fmt.Errorf("unable to parse Redis URL: %w", err)
 	}
-	return &RedisConfig{
-		Host:     getEnv("REDIS_HOST", "localhost"),
-		Port:     port,
-		Password: getEnv("REDIS_PASSWORD", ""),
-		DB:       0,
+
+	// Hardening: Connection Pooling
+	opts.PoolSize = 100
+	opts.MinIdleConns = 10
+	opts.ConnMaxLifetime = 30 * time.Minute
+	opts.PoolTimeout = 30 * time.Second
+
+	policy := retry.RetryPolicy{
+		MaxAttempts: 5,
+		BaseDelay:   200 * time.Millisecond,
+		MaxDelay:    3 * time.Second,
+		Jitter:      true,
 	}
-}
 
-func (c *RedisConfig) Addr() string {
-	return fmt.Sprintf("%s:%d", c.Host, c.Port)
-}
+	err = policy.Do(ctx, func() error {
+		r := redis.NewClient(opts)
+		pingCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+		defer cancel()
 
-func ConnectRedis(cfg *RedisConfig) error {
-	r := redis.NewClient(&redis.Options{
-		Addr:         cfg.Addr(),
-		Password:     cfg.Password,
-		DB:           cfg.DB,
-		PoolSize:     10,
-		MinIdleConns: 5,
-		DialTimeout:  5 * time.Second,
-		ReadTimeout:  3 * time.Second,
-		WriteTimeout: 3 * time.Second,
+		if err := r.Ping(pingCtx).Err(); err != nil {
+			r.Close()
+			return err
+		}
+
+		Redis = r
+		return nil
 	})
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	if err := r.Ping(ctx).Err(); err != nil {
-		r.Close()
+	if err != nil {
 		return fmt.Errorf("unable to connect to Redis: %w", err)
 	}
 
-	Redis = r
+	logger.Info().Msg("Redis connection initialized successfully")
 	return nil
 }
 

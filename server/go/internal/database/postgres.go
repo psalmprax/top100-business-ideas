@@ -7,57 +7,26 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/joho/godotenv"
+	"github.com/rs/zerolog"
+	"github.com/top100-business-ideas/api/internal/pkg/retry"
 )
 
 var Pool *pgxpool.Pool
 
-type Config struct {
-	Host     string
-	Port     int
-	User     string
-	Password string
-	DBName   string
-}
-
-func LoadConfig() *Config {
-	_ = godotenv.Load()
-	port := 5432
-	if p := os.Getenv("DB_PORT"); p != "" {
-		fmt.Sscanf(p, "%d", &port)
-	}
-	return &Config{
-		Host:     getEnv("DB_HOST", "localhost"),
-		Port:     port,
-		User:     getEnv("DB_USER", "postgres"),
-		Password: getEnv("DB_PASSWORD", "postgres"),
-		DBName:   getEnv("DB_NAME", "alphaai"),
-	}
-}
-
-func getEnv(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
-}
-
-func (c *Config) DSN() string {
-	return fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=disable",
-		c.User, c.Password, c.Host, c.Port, c.DBName)
-}
-
-func Connect(cfg *Config) error {
+func Connect(ctx context.Context, dsn string, logger *zerolog.Logger) error {
 	var p *pgxpool.Pool
-	var err error
-	maxRetries := 10
+	maxRetries := 5
 
-	for i := 0; i < maxRetries; i++ {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	policy := retry.RetryPolicy{
+		MaxAttempts: maxRetries,
+		BaseDelay:   500 * time.Millisecond,
+		MaxDelay:    5 * time.Second,
+		Jitter:      true,
+	}
 
-		poolConfig, perr := pgxpool.ParseConfig(cfg.DSN())
+	err := policy.Do(ctx, func() error {
+		poolConfig, perr := pgxpool.ParseConfig(dsn)
 		if perr != nil {
-			cancel()
 			return fmt.Errorf("unable to parse config: %w", perr)
 		}
 
@@ -67,29 +36,33 @@ func Connect(cfg *Config) error {
 		poolConfig.MaxConnLifetime = 1 * time.Hour
 		poolConfig.MaxConnIdleTime = 30 * time.Minute
 		poolConfig.HealthCheckPeriod = 1 * time.Minute
-		
+
 		// Allow tuning via ENV
 		if max := os.Getenv("DB_MAX_CONNS"); max != "" {
 			fmt.Sscanf(max, "%d", &poolConfig.MaxConns)
 		}
 
-		p, err = pgxpool.NewWithConfig(ctx, poolConfig)
-		if err == nil {
-			err = p.Ping(ctx)
-			if err == nil {
-				cancel()
-				Pool = p
-				return nil
-			}
-			p.Close()
+		newPool, perr := pgxpool.NewWithConfig(ctx, poolConfig)
+		if perr != nil {
+			return perr
 		}
 
-		cancel()
-		fmt.Printf("Database not ready, retrying in 2s... (%d/%d): %v\n", i+1, maxRetries, err)
-		time.Sleep(2 * time.Second)
+		if perr := newPool.Ping(ctx); perr != nil {
+			newPool.Close()
+			return perr
+		}
+
+		p = newPool
+		return nil
+	})
+
+	if err != nil {
+		return fmt.Errorf("unable to connect to database after %d attempts: %w", maxRetries, err)
 	}
 
-	return fmt.Errorf("unable to connect to database after %d attempts: %w", maxRetries, err)
+	Pool = p
+	logger.Info().Msg("Database connection pool initialized successfully")
+	return nil
 }
 
 func RunMigrations(ctx context.Context) error {
