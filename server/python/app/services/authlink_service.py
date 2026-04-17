@@ -6,7 +6,8 @@ import logging
 import os
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
-from sqlmodel import Session, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select
 from app.core.models import HardwareChallenge, BiometricSignature, AuthenticationStatus
 
 logger = logging.getLogger(__name__)
@@ -25,22 +26,22 @@ class AuthLinkService:
                 "AUTHLINK_VERIFICATION_KEY not set. Signature verification will use challenge-specific HMAC."
             )
 
-    def create_challenge(self, user_id: str, session: Session) -> HardwareChallenge:
+    async def create_challenge(self, user_id: str, session: AsyncSession) -> HardwareChallenge:
         """Create a new hardware challenge for a user"""
         challenge = HardwareChallenge(
             user_id=user_id, expires_at=datetime.utcnow() + timedelta(minutes=5)
         )
         session.add(challenge)
-        session.commit()
-        session.refresh(challenge)
+        await session.commit()
+        await session.refresh(challenge)
         logger.info(f"Created hardware challenge {challenge.id} for user {user_id}")
         return challenge
 
-    def verify_signature(
-        self, challenge_id: str, signature: str, hardware_id: str, session: Session
+    async def verify_signature(
+        self, challenge_id: str, signature: str, hardware_id: str, session: AsyncSession
     ) -> BiometricSignature:
         """Verify a cryptographically signed biometric proof"""
-        challenge = session.get(HardwareChallenge, challenge_id)
+        challenge = await session.get(HardwareChallenge, challenge_id)
 
         if not challenge:
             raise ValueError("Challenge not found")
@@ -48,7 +49,7 @@ class AuthLinkService:
         if challenge.expires_at < datetime.utcnow():
             challenge.status = AuthenticationStatus.EXPIRED
             session.add(challenge)
-            session.commit()
+            await session.commit()
             raise ValueError("Challenge expired")
 
         # Verify signature using HMAC-SHA256
@@ -78,8 +79,8 @@ class AuthLinkService:
 
         session.add(sig_entry)
         session.add(challenge)
-        session.commit()
-        session.refresh(sig_entry)
+        await session.commit()
+        await session.refresh(sig_entry)
 
         if is_valid:
             logger.info(f"Hardware challenge {challenge_id} verified via {hardware_id}")

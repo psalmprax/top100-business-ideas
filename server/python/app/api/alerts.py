@@ -2,31 +2,33 @@
 
 from typing import List
 from fastapi import APIRouter, HTTPException, Depends
-from sqlmodel import Session, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select
 from datetime import datetime
 import uuid
 
 from app.core.models import AlertConfig, AgentVigilanceAlert
-from app.core.database import get_session
+from app.core.database import get_async_session
 
 router = APIRouter()
 
 
 @router.get("/alerts", response_model=List[AlertConfig])
-async def list_alert_configs(session: Session = Depends(get_session)):
+async def list_alert_configs(session: AsyncSession = Depends(get_async_session)):
     """List all AI alert configurations (Rules)"""
-    return session.exec(select(AlertConfig)).all()
+    result = await session.execute(select(AlertConfig))
+    return result.scalars().all()
 
 
 @router.get("/rules/budget", response_model=List[AlertConfig])
-async def list_budget_rules(session: Session = Depends(get_session)):
+async def list_budget_rules(session: AsyncSession = Depends(get_async_session)):
     """List specifically budget-related alert rules"""
-    rules = session.exec(select(AlertConfig).where(AlertConfig.alert_type == "budget")).all()
-    return rules
+    result = await session.execute(select(AlertConfig).where(AlertConfig.alert_type == "budget"))
+    return result.scalars().all()
 
 
 @router.post("/alerts", response_model=AlertConfig)
-async def create_alert_config(config: dict, session: Session = Depends(get_session)):
+async def create_alert_config(config: dict, session: AsyncSession = Depends(get_async_session)):
     """Create a new AI alert configuration"""
     new_config = AlertConfig(
         id=str(uuid.uuid4()),
@@ -42,15 +44,15 @@ async def create_alert_config(config: dict, session: Session = Depends(get_sessi
         updated_at=datetime.utcnow()
     )
     session.add(new_config)
-    session.commit()
-    session.refresh(new_config)
+    await session.commit()
+    await session.refresh(new_config)
     return new_config
 
 
 @router.put("/alerts/{alert_id}", response_model=AlertConfig)
-async def update_alert_config(alert_id: str, update: dict, session: Session = Depends(get_session)):
+async def update_alert_config(alert_id: str, update: dict, session: AsyncSession = Depends(get_async_session)):
     """Update an alert configuration"""
-    config = session.get(AlertConfig, alert_id)
+    config = await session.get(AlertConfig, alert_id)
     if not config:
         raise HTTPException(status_code=404, detail="Alert config not found")
     
@@ -60,50 +62,51 @@ async def update_alert_config(alert_id: str, update: dict, session: Session = De
     
     config.updated_at = datetime.utcnow()
     session.add(config)
-    session.commit()
-    session.refresh(config)
+    await session.commit()
+    await session.refresh(config)
     return config
 
 
 @router.patch("/alerts/{alert_id}", response_model=AlertConfig)
-async def patch_alert_config(alert_id: str, update: dict, session: Session = Depends(get_session)):
+async def patch_alert_config(alert_id: str, update: dict, session: AsyncSession = Depends(get_async_session)):
     """Toggle or partially update an alert configuration"""
     return await update_alert_config(alert_id, update, session)
 
 
 @router.delete("/alerts/{alert_id}")
-async def delete_alert_config(alert_id: str, session: Session = Depends(get_session)):
+async def delete_alert_config(alert_id: str, session: AsyncSession = Depends(get_async_session)):
     """Delete an alert configuration"""
-    config = session.get(AlertConfig, alert_id)
+    config = await session.get(AlertConfig, alert_id)
     if not config:
         raise HTTPException(status_code=404, detail="Alert config not found")
     
-    session.delete(config)
-    session.commit()
+    await session.delete(config)
+    await session.commit()
     return {"message": "Alert configuration deleted"}
 
 
 @router.get("/vigilance", response_model=List[AgentVigilanceAlert])
-async def list_vigilance_alerts(session: Session = Depends(get_session)):
+async def list_vigilance_alerts(session: AsyncSession = Depends(get_async_session)):
     """List all active agent vigilance alerts (Incidents)"""
-    return session.exec(select(AgentVigilanceAlert).where(AgentVigilanceAlert.resolved == False)).all()
+    result = await session.execute(select(AgentVigilanceAlert).where(AgentVigilanceAlert.resolved == False))
+    return result.scalars().all()
 
 
 @router.post("/vigilance/{alert_id}/resolve")
-async def resolve_vigilance_alert(alert_id: str, session: Session = Depends(get_session)):
+async def resolve_vigilance_alert(alert_id: str, session: AsyncSession = Depends(get_async_session)):
     """Mark a vigilance alert as resolved"""
-    alert = session.get(AgentVigilanceAlert, alert_id)
+    alert = await session.get(AgentVigilanceAlert, alert_id)
     if not alert:
         raise HTTPException(status_code=404, detail="Alert not found")
     
     alert.resolved = True
     session.add(alert)
-    session.commit()
+    await session.commit()
     return {"message": "Alert resolved"}
 
 
 @router.post("/rules/budget", response_model=AlertConfig)
-async def create_budget_rule(rule_data: dict, session: Session = Depends(get_session)):
+async def create_budget_rule(rule_data: dict, session: AsyncSession = Depends(get_async_session)):
     """Create a new budget alert rule"""
     new_rule = AlertConfig(
         id=str(uuid.uuid4()),
@@ -119,6 +122,6 @@ async def create_budget_rule(rule_data: dict, session: Session = Depends(get_ses
         updated_at=datetime.utcnow()
     )
     session.add(new_rule)
-    session.commit()
-    session.refresh(new_rule)
+    await session.commit()
+    await session.refresh(new_rule)
     return new_rule

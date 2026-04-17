@@ -4438,7 +4438,7 @@ export default function AlphaDeepfakeDefense() {
                               onClick={async () => {
                                 try {
                                   const response =
-                                    await extendedApi.deepfake.getSdkDownload();
+                                    await extendedApi.deepfake.getSdkDownload("ios");
                                   toast.success("SDK download link generated");
                                   window.open(response.download_url, "_blank");
                                 } catch (err) {

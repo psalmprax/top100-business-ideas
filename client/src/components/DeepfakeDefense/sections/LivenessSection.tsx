@@ -7,7 +7,8 @@ import {
   ShieldCheck,
   Zap,
   CheckCircle2,
-  XCircle
+  XCircle,
+  History
 } from "lucide-react";
 import { 
   Card, 
@@ -28,7 +29,7 @@ interface LivenessSectionProps {
   scanStage: string;
   setScanStage: (val: string) => void;
   scanProgress: number;
-  setScanProgress: (val: number) => void;
+  setScanProgress: React.Dispatch<React.SetStateAction<number>>;
   advancedResult: any;
   setAdvancedResult: (val: any) => void;
   onShowConfigureDialog: () => void;
@@ -139,7 +140,7 @@ export function LivenessSection({
                         
                         // Fake progress for UI feedback
                         const timer = setInterval(() => {
-                          setScanProgress(p => p < 90 ? p + 2 : p);
+                          setScanProgress((p: number) => (p < 90 ? p + 2 : p));
                         }, 50);
 
                         const videoTrack = stream.getVideoTracks()[0];

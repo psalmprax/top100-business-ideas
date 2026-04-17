@@ -382,14 +382,15 @@ class SelfHealingManager:
 
             # Create a watchdog script that checks health every 60s and logs results
             watchdog_script = (
-                "import time, json, sys, urllib.request; "
+                "import time, json, sys, logging; "
+                "logging.basicConfig(level=logging.INFO); "
                 f'node="{node_id}"; '
                 "while True: "
                 "  try: "
-                f'    urllib.request.urlopen("{node.url if node else "http://localhost:8000"}/health", timeout=5); '
-                '    print(json.dumps({"node": node, "status": "healthy"}), flush=True) '
+                f'    import urllib.request; urllib.request.urlopen("{node.url if node else "http://localhost:8000"}/health", timeout=5); '
+                '    logging.info(json.dumps({"node": node, "status": "healthy"})); '
                 "  except: "
-                '    print(json.dumps({"node": node, "status": "unhealthy"}), flush=True); '
+                '    logging.warning(json.dumps({"node": node, "status": "unhealthy"})); '
                 "  time.sleep(60)"
             )
             proc = subprocess.Popen(

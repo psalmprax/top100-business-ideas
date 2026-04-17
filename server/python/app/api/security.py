@@ -1,13 +1,12 @@
-"""Security and API Key management endpoints"""
-
 from fastapi import APIRouter, HTTPException, Depends
-from sqlmodel import Session, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select
 import uuid
 import secrets
 import hashlib
 from datetime import datetime, timedelta
 
-from app.core.database import get_session
+from app.core.database import get_async_session
 from app.core.models import SecurityKey
 
 router = APIRouter()
@@ -20,12 +19,13 @@ def hash_key(key: str) -> str:
 
 @router.post("/rotate-key")
 async def rotate_api_key(
-    name: str = "Main API Key", session: Session = Depends(get_session)
+    name: str = "Main API Key", session: AsyncSession = Depends(get_async_session)
 ):
     """Rotate the primary organization API key with proper key management"""
-    active_keys = session.exec(
+    result = await session.execute(
         select(SecurityKey).where(SecurityKey.status == "active")
-    ).all()
+    )
+    active_keys = result.scalars().all()
 
     for key in active_keys:
         key.status = "revoked"
@@ -45,8 +45,8 @@ async def rotate_api_key(
         expires_at=datetime.utcnow() + timedelta(days=90),
     )
     session.add(new_security_key)
-    session.commit()
-    session.refresh(new_security_key)
+    await session.commit()
+    await session.refresh(new_security_key)
 
     return {
         "status": "success",
@@ -59,16 +59,17 @@ async def rotate_api_key(
 
 
 @router.get("/keys")
-async def list_api_keys(session: Session = Depends(get_session)):
+async def list_api_keys(session: AsyncSession = Depends(get_async_session)):
     """List all API keys"""
-    keys = session.exec(select(SecurityKey)).all()
+    result = await session.execute(select(SecurityKey))
+    keys = result.scalars().all()
     return [
         {
             "id": k.id,
             "name": k.name,
             "prefix": k.prefix,
             "status": k.status,
-            "created_at": k.created_at.isoformat(),
+            "created_at": k.created_at.isoformat() if k.created_at else None,
             "expires_at": k.expires_at.isoformat() if k.expires_at else None,
         }
         for k in keys
@@ -76,15 +77,15 @@ async def list_api_keys(session: Session = Depends(get_session)):
 
 
 @router.delete("/keys/{key_id}")
-async def revoke_api_key(key_id: str, session: Session = Depends(get_session)):
+async def revoke_api_key(key_id: str, session: AsyncSession = Depends(get_async_session)):
     """Revoke an API key immediately"""
-    key = session.get(SecurityKey, key_id)
+    key = await session.get(SecurityKey, key_id)
     if not key:
         raise HTTPException(status_code=404, detail="Key not found")
 
     key.status = "revoked"
     key.expires_at = datetime.utcnow()
     session.add(key)
-    session.commit()
+    await session.commit()
 
     return {"status": "success", "message": "API key revoked"}

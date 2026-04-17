@@ -85,7 +85,7 @@ export function useAgentOps() {
         healingConfigRes, forecastRes, complianceStatusRes, defaultsRes
       ] = await Promise.all([
         extendedApi.agents.list(),
-        extendedApi.compliance.getAuditLogs(
+        extendedApi.agentOps.getAuditLogs(
           undefined, 
           auditSearchQuery, 
           auditFilterOutcome === "all" ? undefined : auditFilterOutcome
@@ -149,13 +149,13 @@ export function useAgentOps() {
       }));
       setAgents(transformedAgents);
       
-      setAuditLog((Array.isArray(auditRes) ? auditRes : []).map(log => ({
+      setAuditLog((Array.isArray(auditRes) ? auditRes : []).map((log: any) => ({
         ...log,
-        agentId: log.agentId || log.agent_id || "unknown",
-        agentName: log.agentName || log.agent_name || "Unknown Agent",
-        timestamp: new Date(log.timestamp),
-        summary: log.summary || (log.reasoning ? (log.reasoning.length > 60 ? log.reasoning.substring(0, 60) + "..." : log.reasoning) : `Agent ${log.action} based on ${log.intent}`),
-        interactionId: log.interaction_id || log.interactionId,
+        agentId: log.agent_id || log.agentId || "unknown",
+        agentName: log.agent_name || log.agentName || "Unknown Agent",
+        timestamp: log.timestamp ? new Date(log.timestamp) : new Date(),
+        summary: log.details || log.summary || (log.reasoning ? (log.reasoning.length > 60 ? log.reasoning.substring(0, 60) + "..." : log.reasoning) : `Agent ${log.action}`),
+        interactionId: log.interaction_id || log.interactionId || log.id,
       })));
 
       setBudgetRules(rulesRes as any);

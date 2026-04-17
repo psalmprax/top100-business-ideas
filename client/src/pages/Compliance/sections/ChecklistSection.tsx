@@ -33,13 +33,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ConnectionDialog } from "../components/ConnectionDialog";
 
 interface ChecklistSectionProps {
-  articles: any[];
-  loading: boolean;
+  articles?: any[];
+  loading?: boolean;
+  type?: string;
 }
 
 export const ChecklistSection = ({
-  articles,
-  loading,
+  articles = [],
+  loading = false,
 }: ChecklistSectionProps) => {
   const [connectedSystems, setConnectedSystems] = useState<Record<string, any>>({});
   const [scanningArticles, setScanningArticles] = useState<Record<string, boolean>>({});

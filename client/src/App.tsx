@@ -230,7 +230,7 @@ function Router() {
 function PerspectiveWrapper({ children }: { children: React.ReactNode }) {
   const { perspective } = usePerspective();
   return (
-    <div className={`perspective-${perspective} min-h-screen`}>
+    <div className={`perspective-${perspective} min-h-screen noise-overlay`}>
       {children}
       <PerspectiveSwitcher />
     </div>

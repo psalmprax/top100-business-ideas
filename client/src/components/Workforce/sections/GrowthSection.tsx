@@ -34,9 +34,6 @@ interface GrowthSectionProps {
   handleRunAutosearch: () => void;
   handleApproveOutreach: (id: string) => void;
   handleShiftMarketFocus: () => void;
-  // Sub-component helpers
-  RevenueCard: React.ComponentType<any>;
-  AcquisitionWin: React.ComponentType<any>;
 }
 
 export function GrowthSection({
@@ -53,9 +50,7 @@ export function GrowthSection({
   handleRunMarketing,
   handleRunAutosearch,
   handleApproveOutreach,
-  handleShiftMarketFocus,
-  RevenueCard,
-  AcquisitionWin
+  handleShiftMarketFocus
 }: GrowthSectionProps) {
   return (
     <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500">
@@ -104,8 +99,6 @@ export function GrowthSection({
             <SalesSubsection 
               revenueData={revenueData}
               acquisitions={acquisitions}
-              RevenueCard={RevenueCard}
-              AcquisitionWin={AcquisitionWin}
             />
           </TabsContent>
           

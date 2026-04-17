@@ -41,14 +41,8 @@ type ShadowDetection = ShadowAIDetection;
 
 interface ShadowStats {
   total_detections: number;
-  blocked: number;
-  allowed: number;
-  risk_distribution: {
-    critical: number;
-    high: number;
-    medium: number;
-    low: number;
-  };
+  by_risk_level: Record<string, number>;
+  by_status: Record<string, number>;
 }
 
 export default function ShadowAIMonitor() {
@@ -67,7 +61,7 @@ export default function ShadowAIMonitor() {
     try {
       const [detectionsData, statsData] = await Promise.all([
         extendedApi.shadowAI.detections(),
-        extendedApi.shadowAI.getStats(),
+        extendedApi.shadowAI.stats(),
       ]);
       setDetections(detectionsData);
       setStats(statsData);
@@ -143,7 +137,7 @@ export default function ShadowAIMonitor() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-500">
-              {stats?.blocked}
+              {stats?.by_status?.blocked || 0}
             </div>
           </CardContent>
         </Card>
@@ -154,7 +148,7 @@ export default function ShadowAIMonitor() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-500">
-              {stats?.allowed}
+              {stats?.by_status?.allowed || 0}
             </div>
           </CardContent>
         </Card>
@@ -164,8 +158,8 @@ export default function ShadowAIMonitor() {
             <CardTitle className="text-sm font-medium">Critical Risk</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-500">
-              {stats?.risk_distribution.critical}
+            <div className="text-2xl font-bold text-red-600">
+              {stats?.by_risk_level?.critical || 0}
             </div>
           </CardContent>
         </Card>
@@ -256,9 +250,9 @@ export default function ShadowAIMonitor() {
                           {detection.status}
                         </Badge>
                       </TableCell>
-                      <TableCell>{detection.count}</TableCell>
+                      <TableCell>{detection.user_count || 0}</TableCell>
                       <TableCell>
-                        {new Date(detection.detected_at).toLocaleString()}
+                        {detection.detected_at ? new Date(detection.detected_at).toLocaleString() : "Unknown"}
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">

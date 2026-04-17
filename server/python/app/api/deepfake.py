@@ -2,7 +2,8 @@
 
 from typing import List, Dict, Any
 from fastapi import APIRouter, HTTPException, Depends
-from sqlmodel import Session, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select
 from datetime import datetime
 import uuid
 
@@ -20,7 +21,7 @@ from app.core.models import (
 )
 from app.ml.deepfake_detector import deepfake_detector
 from app.services.authlink_service import authlink_service
-from app.core.database import get_session
+from app.core.database import get_async_session
 from app.services.bridging_service import bridging_service
 import logging
 import os
@@ -32,10 +33,10 @@ router = APIRouter()
 
 
 @router.post("/challenge", response_model=HardwareChallenge)
-async def create_auth_challenge(user_id: str, session: Session = Depends(get_session)):
+async def create_auth_challenge(user_id: str, session: AsyncSession = Depends(get_async_session)):
     """Initialize a hardware-backed biometric challenge (FIDO2)"""
     try:
-        challenge = authlink_service.create_challenge(user_id, session)
+        challenge = await authlink_service.create_challenge(user_id, session)
         return challenge
     except Exception as e:
         logger.error(f"Error creating challenge: {e}")
@@ -47,11 +48,11 @@ async def verify_auth_signature(
     challenge_id: str,
     signature: str,
     hardware_id: str,
-    session: Session = Depends(get_session),
+    session: AsyncSession = Depends(get_async_session),
 ):
     """Verify a hardware-signed biometric signature (Proof of Life)"""
     try:
-        sig = authlink_service.verify_signature(
+        sig = await authlink_service.verify_signature(
             challenge_id, signature, hardware_id, session
         )
         return sig
@@ -66,7 +67,7 @@ async def verify_auth_signature(
 
 @router.post("/analyze", response_model=DeepfakeAnalysis)
 async def analyze(
-    request: AnalyzeDeepfakeRequest, session: Session = Depends(get_session)
+    request: AnalyzeDeepfakeRequest, session: AsyncSession = Depends(get_async_session)
 ):
     """Analyze media for deepfake detection and save to DB"""
     # Run the appropriate analysis based on media type
@@ -91,25 +92,26 @@ async def analyze(
     )
 
     session.add(analysis)
-    session.commit()
-    session.refresh(analysis)
+    await session.commit()
+    await session.refresh(analysis)
 
     # Trigger Integrated Vigilance Alert
-    bridging_service.trigger_deepfake_alert(analysis, session)
+    await bridging_service.trigger_deepfake_alert(analysis, session)
     return analysis
 
 
 @router.get("/analyses", response_model=List[DeepfakeAnalysis])
-async def list_analyses(session: Session = Depends(get_session)):
+async def list_analyses(session: AsyncSession = Depends(get_async_session)):
     """List all analyses"""
-    analyses = session.exec(select(DeepfakeAnalysis)).all()
+    result = await session.execute(select(DeepfakeAnalysis))
+    analyses = result.scalars().all()
     return analyses
 
 
 @router.get("/analyses/{analysis_id}", response_model=DeepfakeAnalysis)
-async def get_analysis(analysis_id: str, session: Session = Depends(get_session)):
+async def get_analysis(analysis_id: str, session: AsyncSession = Depends(get_async_session)):
     """Get analysis by ID"""
-    analysis = session.get(DeepfakeAnalysis, analysis_id)
+    analysis = await session.get(DeepfakeAnalysis, analysis_id)
     if not analysis:
         raise HTTPException(status_code=404, detail="Analysis not found")
     return analysis
@@ -117,7 +119,7 @@ async def get_analysis(analysis_id: str, session: Session = Depends(get_session)
 
 @router.post("/analyze/enterprise", response_model=DeepfakeAnalysis)
 async def analyze_enterprise(
-    request: Dict[str, Any], session: Session = Depends(get_session)
+    request: Dict[str, Any], session: AsyncSession = Depends(get_async_session)
 ):
     """Advanced forensic analysis for enterprise using multi-method ensemble"""
     media_url = request.get("media_url", "forensic_buffer")
@@ -153,15 +155,15 @@ async def analyze_enterprise(
     )
 
     # Trigger Integrated Vigilance Alert
-    bridging_service.trigger_deepfake_alert(analysis, session)
+    await bridging_service.trigger_deepfake_alert(analysis, session)
     session.add(analysis)
-    session.commit()
-    session.refresh(analysis)
+    await session.commit()
+    await session.refresh(analysis)
     return analysis
 
 
 @router.get("/detectors")
-async def list_detectors(session: Session = Depends(get_session)):
+async def list_detectors(session: AsyncSession = Depends(get_async_session)):
     """List available deepfake detectors based on actual ML capabilities"""
     from app.ml.deepfake_detector import deepfake_detector
 
@@ -197,11 +199,12 @@ async def list_detectors(session: Session = Depends(get_session)):
 
 
 @router.get("/stats")
-async def get_stats(session: Session = Depends(get_session)):
+async def get_stats(session: AsyncSession = Depends(get_async_session)):
     """Get aggregated statistics from DB with settings-driven ROI metrics"""
     from app.core.models import SystemSetting
 
-    analyses = session.exec(select(DeepfakeAnalysis)).all()
+    result = await session.execute(select(DeepfakeAnalysis))
+    analyses = result.scalars().all()
 
     total = len(analyses)
     real = sum(1 for a in analyses if a.result == AnalysisResult.REAL)
@@ -215,14 +218,17 @@ async def get_stats(session: Session = Depends(get_session)):
     avg_confidence = sum(a.confidence for a in analyses) / total if total > 0 else 0
 
     # REAL-FIRST: Fetch metrics from system settings
-    accuracy_setting = session.exec(
+    result_acc = await session.execute(
         select(SystemSetting).where(SystemSetting.setting_key == "deepfake_accuracy")
-    ).first()
-    fraud_loss_setting = session.exec(
+    )
+    accuracy_setting = result_acc.scalars().first()
+    
+    result_fraud = await session.execute(
         select(SystemSetting).where(
             SystemSetting.setting_key == "avg_deepfake_fraud_loss"
         )
-    ).first()
+    )
+    fraud_loss_setting = result_fraud.scalars().first()
 
     accuracy = float(accuracy_setting.setting_value) if accuracy_setting else 94.5
     avg_fraud_loss = (
@@ -253,7 +259,7 @@ async def upload_training_dataset(
     background_tasks: BackgroundTasks,
     dataset_name: str,
     file: UploadFile = File(...),
-    session: Session = Depends(get_session),
+    session: AsyncSession = Depends(get_async_session),
 ):
     """Upload a training dataset and queue it for processing"""
     # Create upload directory if it doesn't exist
@@ -273,8 +279,8 @@ async def upload_training_dataset(
     )
 
     session.add(job)
-    session.commit()
-    session.refresh(job)
+    await session.commit()
+    await session.refresh(job)
 
     # In a real system, background_tasks.add_task(process_training, job.id)
     return job
@@ -282,24 +288,25 @@ async def upload_training_dataset(
 
 @router.post("/models", response_model=CustomModel)
 async def deploy_custom_model(
-    model: CustomModel, session: Session = Depends(get_session)
+    model: CustomModel, session: AsyncSession = Depends(get_async_session)
 ):
     """Register/Deploy a custom neural model"""
     session.add(model)
-    session.commit()
-    session.refresh(model)
+    await session.commit()
+    await session.refresh(model)
     return model
 
 
 @router.get("/models", response_model=List[CustomModel])
-async def list_custom_models(session: Session = Depends(get_session)):
+async def list_custom_models(session: AsyncSession = Depends(get_async_session)):
     """List all custom deployed models"""
-    models = session.exec(select(CustomModel)).all()
+    result = await session.execute(select(CustomModel))
+    models = result.scalars().all()
     return models
 
 
 @router.delete("/models/{model_id}")
-async def delete_model(model_id: str, session: Session = Depends(get_session)):
+async def delete_model(model_id: str, session: AsyncSession = Depends(get_async_session)):
     """Permanently delete a neural model from the enclave"""
     # In a real-first env, we'd delete from disk/S3 and DB
     # For now, we simulate success for existing models
@@ -307,9 +314,10 @@ async def delete_model(model_id: str, session: Session = Depends(get_session)):
 
 
 @router.get("/threats", response_model=List[DeepfakeThreat])
-async def list_threats(session: Session = Depends(get_session)):
+async def list_threats(session: AsyncSession = Depends(get_async_session)):
     """List all deepfake threats"""
-    threats = session.exec(select(DeepfakeThreat)).all()
+    result = await session.execute(select(DeepfakeThreat))
+    threats = result.scalars().all()
     return threats
 
 

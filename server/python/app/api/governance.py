@@ -24,7 +24,8 @@ from app.core.models import (
     OnPremDeployment,
     AgentAuditLog,
 )
-from app.core.database import get_session
+from app.core.database import get_async_session
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.roi_service import roi_service
 
 router = APIRouter()
@@ -36,11 +37,12 @@ router = APIRouter()
 
 
 @router.get("/compliance/dashboard")
-async def get_compliance_dashboard(session: Session = Depends(get_session)):
+async def get_compliance_dashboard(session: AsyncSession = Depends(get_async_session)):
     """Get comprehensive compliance dashboard data"""
     try:
         # Get compliance articles with real status calculation
-        articles = session.exec(select(ComplianceArticle)).all()
+        result = await session.execute(select(ComplianceArticle))
+        articles = result.scalars().all()
 
         # Calculate overall compliance score
         total_articles = len(articles)
@@ -93,10 +95,11 @@ async def get_compliance_dashboard(session: Session = Depends(get_session)):
 
 
 @router.get("/compliance/articles")
-async def list_compliance_articles(session: Session = Depends(get_session)):
+async def list_compliance_articles(session: AsyncSession = Depends(get_async_session)):
     """Get all compliance articles"""
     try:
-        articles = session.exec(select(ComplianceArticle)).all()
+        result = await session.execute(select(ComplianceArticle))
+        articles = result.scalars().all()
         return articles
     except Exception as e:
         logger.error(f"Compliance Articles Error: {e}")
@@ -108,11 +111,11 @@ async def list_compliance_articles(session: Session = Depends(get_session)):
 
 @router.post("/compliance/assess/{article_id}")
 async def assess_compliance_article(
-    article_id: str, assessment: dict, session: Session = Depends(get_session)
+    article_id: str, assessment: dict, session: AsyncSession = Depends(get_async_session)
 ):
     """Assess compliance for a specific article"""
     try:
-        article = session.get(ComplianceArticle, article_id)
+        article = await session.get(ComplianceArticle, article_id)
         if not article:
             raise HTTPException(status_code=404, detail="Article not found")
 
@@ -121,8 +124,8 @@ async def assess_compliance_article(
         article.updated_at = datetime.utcnow()
 
         session.add(article)
-        session.commit()
-        session.refresh(article)
+        await session.commit()
+        await session.refresh(article)
 
         return article
     except Exception as e:
@@ -140,13 +143,14 @@ async def assess_compliance_article(
 
 
 @router.get("/sla/dashboard")
-async def get_sla_dashboard(session: Session = Depends(get_session)):
+async def get_sla_dashboard(session: AsyncSession = Depends(get_async_session)):
     """Get SLA performance dashboard"""
     try:
         # Current SLA metrics
-        current_sla = session.exec(
+        result = await session.execute(
             select(SLAAgreement).where(SLAAgreement.active == True)
-        ).first()
+        )
+        current_sla = result.scalars().first()
         if not current_sla:
             raise HTTPException(
                 status_code=404,
@@ -154,9 +158,10 @@ async def get_sla_dashboard(session: Session = Depends(get_session)):
             )
 
         # Calculate current metrics from real SLA metric records
-        recent_metrics = session.exec(
+        result = await session.execute(
             select(SLAMetric).order_by(SLAMetric.period_end.desc()).limit(30)
-        ).all()
+        )
+        recent_metrics = result.scalars().all()
 
         if recent_metrics:
             avg_uptime = sum(m.uptime_percentage for m in recent_metrics) / len(
@@ -203,12 +208,13 @@ async def get_sla_dashboard(session: Session = Depends(get_session)):
 
 
 @router.get("/sla/metrics")
-async def get_sla_metrics(session: Session = Depends(get_session)):
+async def get_sla_metrics(session: AsyncSession = Depends(get_async_session)):
     """Get historical SLA metrics"""
     try:
-        metrics = session.exec(
+        result = await session.execute(
             select(SLAMetric).order_by(SLAMetric.period_end.desc()).limit(12)
-        ).all()
+        )
+        metrics = result.scalars().all()
         return metrics
     except Exception as e:
         logger.error(f"SLA Metrics Error: {e}")
@@ -221,10 +227,11 @@ async def get_sla_metrics(session: Session = Depends(get_session)):
 
 
 @router.get("/partners")
-async def list_partners(session: Session = Depends(get_session)):
+async def list_partners(session: AsyncSession = Depends(get_async_session)):
     """List all partner integrations"""
     try:
-        partners = session.exec(select(PartnerIntegration)).all()
+        result = await session.execute(select(PartnerIntegration))
+        partners = result.scalars().all()
         return partners
     except Exception as e:
         logger.error(f"Partners list Error: {e}")
@@ -234,16 +241,16 @@ async def list_partners(session: Session = Depends(get_session)):
 
 
 @router.post("/partners/{partner_id}/sync")
-async def sync_partner_data(partner_id: str, session: Session = Depends(get_session)):
+async def sync_partner_data(partner_id: str, session: AsyncSession = Depends(get_async_session)):
     """Sync data from external partner"""
     try:
-        partner = session.get(PartnerIntegration, partner_id)
+        partner = await session.get(PartnerIntegration, partner_id)
         if not partner:
             raise HTTPException(status_code=404, detail="Partner not found")
 
         partner.last_sync = datetime.utcnow()
         session.add(partner)
-        session.commit()
+        await session.commit()
 
         return {
             "message": f"Successfully synced data from {partner.name}",
@@ -259,27 +266,31 @@ async def sync_partner_data(partner_id: str, session: Session = Depends(get_sess
 
 
 @router.get("/forecast/usage")
-async def get_usage_forecast(session: Session = Depends(get_session)):
+async def get_usage_forecast(session: AsyncSession = Depends(get_async_session)):
     """Get usage forecasting data"""
     try:
-        forecasts = session.exec(
+        result = await session.execute(
             select(UsageForecast).order_by(UsageForecast.forecast_date.desc()).limit(30)
-        ).all()
+        )
+        forecasts = result.scalars().all()
 
         if not forecasts:
             # REAL-FIRST: Fetch baselines from system settings
             from app.core.models import SystemSetting
 
-            token_baseline_setting = session.exec(
+            result_tokens = await session.execute(
                 select(SystemSetting).where(
                     SystemSetting.setting_key == "forecast_token_baseline"
                 )
-            ).first()
-            cost_baseline_setting = session.exec(
+            )
+            token_baseline_setting = result_tokens.scalars().first()
+            
+            result_cost = await session.execute(
                 select(SystemSetting).where(
                     SystemSetting.setting_key == "forecast_cost_per_token"
                 )
-            ).first()
+            )
+            cost_baseline_setting = result_cost.scalars().first()
 
             daily_avg_tokens = (
                 float(token_baseline_setting.setting_value)
@@ -312,7 +323,7 @@ async def get_usage_forecast(session: Session = Depends(get_session)):
             # Persist the forecast so it's not regenerated every time
             for f in forecasts:
                 session.add(f)
-            session.commit()
+            await session.commit()
 
         return forecasts
     except Exception as e:
@@ -321,28 +332,31 @@ async def get_usage_forecast(session: Session = Depends(get_session)):
 
 
 @router.get("/analytics/roi")
-async def get_roi_analytics(session: Session = Depends(get_session)):
+async def get_roi_analytics(session: AsyncSession = Depends(get_async_session)):
     """Get ROI analytics data"""
     try:
-        roi_metrics = session.exec(
+        result = await session.execute(
             select(ROIMetric).order_by(ROIMetric.period_end.desc()).limit(12)
-        ).all()
+        )
+        roi_metrics = result.scalars().all()
 
         if not roi_metrics:
             # Calculate real ROI from audit logs vs labor baseline
             one_month_ago = datetime.utcnow() - timedelta(days=30)
-            logs = session.exec(
+            result_logs = await session.execute(
                 select(AgentAuditLog).where(AgentAuditLog.timestamp >= one_month_ago)
-            ).all()
+            )
+            logs = result_logs.scalars().all()
 
             # REAL-FIRST: Fetch labor savings from system settings
             from app.core.models import SystemSetting
 
-            labor_savings_setting = session.exec(
+            result_labor = await session.execute(
                 select(SystemSetting).where(
                     SystemSetting.setting_key == "roi_labor_savings_per_task"
                 )
-            ).first()
+            )
+            labor_savings_setting = result_labor.scalars().first()
             labor_savings_per_task = (
                 float(labor_savings_setting.setting_value)
                 if labor_savings_setting
@@ -373,7 +387,7 @@ async def get_roi_analytics(session: Session = Depends(get_session)):
 
             for m in roi_metrics:
                 session.add(m)
-            session.commit()
+            await session.commit()
 
         return roi_metrics
     except Exception as e:
@@ -387,10 +401,11 @@ async def get_roi_analytics(session: Session = Depends(get_session)):
 
 
 @router.get("/localization/configs")
-async def get_localization_configs(session: Session = Depends(get_session)):
+async def get_localization_configs(session: AsyncSession = Depends(get_async_session)):
     """Get localization configurations"""
     try:
-        configs = session.exec(select(LocalizationConfig)).all()
+        result = await session.execute(select(LocalizationConfig))
+        configs = result.scalars().all()
         return configs
     except Exception as e:
         logger.error(f"Localization Configs Error: {e}")
@@ -406,10 +421,11 @@ async def get_localization_configs(session: Session = Depends(get_session)):
 
 
 @router.get("/healing/configs")
-async def get_healing_configs(session: Session = Depends(get_session)):
+async def get_healing_configs(session: AsyncSession = Depends(get_async_session)):
     """Get self-healing configurations"""
     try:
-        configs = session.exec(select(HealingConfiguration)).all()
+        result = await session.execute(select(HealingConfiguration))
+        configs = result.scalars().all()
         return configs
     except Exception as e:
         logger.error(f"Healing Configs Error: {e}")
@@ -424,11 +440,11 @@ async def get_healing_configs(session: Session = Depends(get_session)):
 
 
 @router.get("/insights/strategic")
-async def get_strategic_insights(session: Session = Depends(get_session)):
+async def get_strategic_insights(session: AsyncSession = Depends(get_async_session)):
     """Get strategic business insights based on real system data"""
     try:
         # Use the centralized ROI service for real insights
-        return roi_service.generate_strategic_insights(session)
+        return await roi_service.generate_strategic_insights(session)
     except Exception as e:
         logger.error(f"Strategic Insights Error: {e}")
         return []
@@ -440,10 +456,11 @@ async def get_strategic_insights(session: Session = Depends(get_session)):
 
 
 @router.get("/settings")
-async def get_system_settings(session: Session = Depends(get_session)):
+async def get_system_settings(session: AsyncSession = Depends(get_async_session)):
     """Get all system settings"""
     try:
-        settings = session.exec(select(SystemSetting)).all()
+        result = await session.execute(select(SystemSetting))
+        settings = result.scalars().all()
         return settings
     except Exception as e:
         logger.error(f"Settings retrieval Error: {e}")
@@ -454,11 +471,11 @@ async def get_system_settings(session: Session = Depends(get_session)):
 
 @router.put("/settings/{setting_id}")
 async def update_system_setting(
-    setting_id: str, value: str, session: Session = Depends(get_session)
+    setting_id: str, value: str, session: AsyncSession = Depends(get_async_session)
 ):
     """Update a system setting"""
     try:
-        setting = session.get(SystemSetting, setting_id)
+        setting = await session.get(SystemSetting, setting_id)
         if not setting:
             raise HTTPException(status_code=404, detail="Setting not found")
 
@@ -466,7 +483,7 @@ async def update_system_setting(
         setting.updated_at = datetime.utcnow()
 
         session.add(setting)
-        session.commit()
+        await session.commit()
 
         return {"message": f"Setting {setting.setting_key} updated", "value": value}
     except Exception as e:
@@ -475,14 +492,15 @@ async def update_system_setting(
 
 @router.post("/settings/batch")
 async def batch_update_system_settings(
-    settings_data: Dict[str, Any], session: Session = Depends(get_session)
+    settings_data: Dict[str, Any], session: AsyncSession = Depends(get_async_session)
 ):
     """Update multiple system settings at once"""
     try:
         updated_count = 0
         for key, value in settings_data.items():
             statement = select(SystemSetting).where(SystemSetting.setting_key == key)
-            setting = session.exec(statement).first()
+            result = await session.execute(statement)
+            setting = result.scalars().first()
             if setting:
                 setting.setting_value = str(value)
                 setting.updated_at = datetime.utcnow()
@@ -499,7 +517,7 @@ async def batch_update_system_settings(
                 session.add(new_setting)
                 updated_count += 1
 
-        session.commit()
+        await session.commit()
         return {"message": f"Updated {updated_count} settings successfully"}
     except Exception as e:
         logger.error(f"Batch Settings Update Error: {e}")
@@ -508,7 +526,7 @@ async def batch_update_system_settings(
 
 @router.post("/assets/update")
 async def update_brand_assets(
-    asset_data: Dict[str, Any], session: Session = Depends(get_session)
+    asset_data: Dict[str, Any], session: AsyncSession = Depends(get_async_session)
 ):
     """
     Persistently update brand assets (Logo URL, Primary Color, Home URL).
@@ -521,7 +539,8 @@ async def update_brand_assets(
                 statement = select(SystemSetting).where(
                     SystemSetting.setting_key == key
                 )
-                setting = session.exec(statement).first()
+                result = await session.execute(statement)
+                setting = result.scalars().first()
                 if setting:
                     setting.setting_value = asset_data[key]
                 else:
@@ -534,7 +553,7 @@ async def update_brand_assets(
                 session.add(setting)
                 updated.append(key)
 
-        session.commit()
+        await session.commit()
         return {"status": "success", "updated_assets": updated}
     except Exception as e:
         logger.error(f"Asset Update Error: {e}")
@@ -547,10 +566,11 @@ async def update_brand_assets(
 
 
 @router.get("/on-prem/deployments")
-async def list_onprem_deployments(session: Session = Depends(get_session)):
+async def list_onprem_deployments(session: AsyncSession = Depends(get_async_session)):
     """List on-premises deployments"""
     try:
-        deployments = session.exec(select(OnPremDeployment)).all()
+        result = await session.execute(select(OnPremDeployment))
+        deployments = result.scalars().all()
         return deployments
     except Exception as e:
         logger.error(f"On-Prem deployments Error: {e}")
@@ -561,11 +581,11 @@ async def list_onprem_deployments(session: Session = Depends(get_session)):
 
 @router.post("/on-prem/deploy/{deployment_id}")
 async def trigger_onprem_deployment(
-    deployment_id: str, action: str, session: Session = Depends(get_session)
+    deployment_id: str, action: str, session: AsyncSession = Depends(get_async_session)
 ):
     """Trigger on-premises deployment action"""
     try:
-        deployment = session.get(OnPremDeployment, deployment_id)
+        deployment = await session.get(OnPremDeployment, deployment_id)
         if not deployment:
             raise HTTPException(status_code=404, detail="Deployment not found")
 
@@ -578,7 +598,7 @@ async def trigger_onprem_deployment(
 
         deployment.last_health_check = datetime.utcnow()
         session.add(deployment)
-        session.commit()
+        await session.commit()
 
         return {
             "message": f"Deployment action '{action}' completed",
@@ -594,24 +614,29 @@ async def trigger_onprem_deployment(
 
 
 @router.get("/architecture/defaults")
-async def get_architecture_defaults(session: Session = Depends(get_session)):
+async def get_architecture_defaults(session: AsyncSession = Depends(get_async_session)):
     """Fetch governance-approved LLM defaults from persistent settings"""
     try:
-        temp_setting = session.exec(
+        result_temp = await session.execute(
             select(SystemSetting).where(
                 SystemSetting.setting_key == "default_temperature"
             )
-        ).first()
-        token_setting = session.exec(
+        )
+        temp_setting = result_temp.scalars().first()
+        
+        result_token = await session.execute(
             select(SystemSetting).where(
                 SystemSetting.setting_key == "default_max_tokens"
             )
-        ).first()
-        budget_setting = session.exec(
+        )
+        token_setting = result_token.scalars().first()
+        
+        result_budget = await session.execute(
             select(SystemSetting).where(
                 SystemSetting.setting_key == "forecast_cost_per_token"
             )
-        ).first()
+        )
+        budget_setting = result_budget.scalars().first()
 
         return {
             "temperature": float(temp_setting.setting_value) if temp_setting else 0.7,
@@ -629,12 +654,13 @@ async def get_architecture_defaults(session: Session = Depends(get_session)):
 
 
 @router.get("/audit/quorum")
-async def get_audit_quorum(session: Session = Depends(get_session)):
+async def get_audit_quorum(session: AsyncSession = Depends(get_async_session)):
     """Get audit quorum and governance status"""
     try:
-        audit_logs = session.exec(
+        result = await session.execute(
             select(AgentAuditLog).order_by(AgentAuditLog.timestamp.desc()).limit(100)
-        ).all()
+        )
+        audit_logs = result.scalars().all()
 
         total_audits = len(audit_logs)
         pending_approvals = sum(1 for log in audit_logs if log.status == "pending")
@@ -667,7 +693,7 @@ async def get_audit_logs(
     agentId: Optional[str] = None,
     search: Optional[str] = None,
     outcome: Optional[str] = None,
-    session: Session = Depends(get_session),
+    session: AsyncSession = Depends(get_async_session),
 ):
     """Get audit logs with filtering"""
     try:
@@ -678,7 +704,8 @@ async def get_audit_logs(
         if outcome:
             query = query.where(AgentAuditLog.outcome == outcome)
 
-        logs = session.exec(query.limit(200)).all()
+        result = await session.execute(query.limit(200))
+        logs = result.scalars().all()
 
         return [
             {
@@ -699,7 +726,7 @@ async def get_audit_logs(
 
 @router.post("/approval")
 async def create_approval_request(
-    request: Dict[str, Any], session: Session = Depends(get_session)
+    request: Dict[str, Any], session: AsyncSession = Depends(get_async_session)
 ):
     """Create a new approval request"""
     import uuid
@@ -718,7 +745,7 @@ async def create_approval_request(
 
 @router.patch("/approval/{request_id}")
 async def process_approval(
-    request_id: str, request: Dict[str, Any], session: Session = Depends(get_session)
+    request_id: str, request: Dict[str, Any], session: AsyncSession = Depends(get_async_session)
 ):
     """Process an approval request"""
     approved = request.get("approved", False)
@@ -733,7 +760,7 @@ async def process_approval(
 
 
 @router.get("/stats")
-async def get_governance_stats(session: Session = Depends(get_session)):
+async def get_governance_stats(session: AsyncSession = Depends(get_async_session)):
     """Get governance statistics"""
     return {
         "total_policies": 147,
@@ -752,7 +779,7 @@ async def get_governance_stats(session: Session = Depends(get_session)):
 
 
 @router.get("/optimization/workforce/efficiency")
-async def get_workforce_efficiency(session: Session = Depends(get_session)):
+async def get_workforce_efficiency(session: AsyncSession = Depends(get_async_session)):
     """Get workforce efficiency metrics"""
     return {
         "overall_efficiency": 0.78,
@@ -766,7 +793,7 @@ async def get_workforce_efficiency(session: Session = Depends(get_session)):
 
 
 @router.get("/optimization/cost")
-async def get_cost_optimization(session: Session = Depends(get_session)):
+async def get_cost_optimization(session: AsyncSession = Depends(get_async_session)):
     """Get cost optimization recommendations"""
     return {
         "monthly_cost": 12470.50,
@@ -796,7 +823,7 @@ async def get_cost_optimization(session: Session = Depends(get_session)):
 
 
 @router.get("/optimization/recommendations")
-async def get_optimization_recommendations(session: Session = Depends(get_session)):
+async def get_optimization_recommendations(session: AsyncSession = Depends(get_async_session)):
     """Get optimization recommendations"""
     return [
         {

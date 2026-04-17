@@ -8,7 +8,8 @@ from sqlmodel import Session, select
 from datetime import datetime
 
 from app.core.models import SelfHealingEvent
-from app.core.database import get_session
+from app.core.database import get_async_session
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.self_healing_manager import self_healing_manager
 
 router = APIRouter()
@@ -16,38 +17,39 @@ router = APIRouter()
 
 @router.get("/events", response_model=List[SelfHealingEvent])
 async def get_self_healing_events(
-    limit: int = 100, offset: int = 0, session: Session = Depends(get_session)
+    limit: int = 100, offset: int = 0, session: AsyncSession = Depends(get_async_session)
 ):
     """Get self-healing event history"""
-    return session.exec(
+    result = await session.execute(
         select(SelfHealingEvent)
         .order_by(SelfHealingEvent.timestamp.desc())
         .limit(limit)
         .offset(offset)
-    ).all()
+    )
+    return result.scalars().all()
 
 
 @router.post("/events", response_model=SelfHealingEvent)
 async def create_self_healing_event(
-    event: SelfHealingEvent, session: Session = Depends(get_session)
+    event: SelfHealingEvent, session: AsyncSession = Depends(get_async_session)
 ):
     """Create a new self-healing event"""
     event.timestamp = datetime.utcnow()
     session.add(event)
-    session.commit()
-    session.refresh(event)
+    await session.commit()
+    await session.refresh(event)
     return event
 
 
 @router.get("/stats")
-async def get_self_healing_stats(session: Session = Depends(get_session)):
+async def get_self_healing_stats(session: AsyncSession = Depends(get_async_session)):
     """Get self-healing system statistics"""
     return await self_healing_manager.get_stats()
 
 
 @router.get("/metrics/streaming")
 async def get_self_healing_streaming_metrics(
-    request: Request, session: Session = Depends(get_session)
+    request: Request, session: AsyncSession = Depends(get_async_session)
 ):
     """
     Real-time streaming metrics for self-healing dashboard using Server-Sent Events.

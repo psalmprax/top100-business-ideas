@@ -8,7 +8,7 @@ import uuid
 import secrets
 import hashlib
 
-from app.core.database import get_session
+from app.core.database import get_async_session, AsyncSession
 from app.core.models import (
     HardwareChallenge,
     BiometricSignature,
@@ -20,11 +20,12 @@ router = APIRouter()
 
 
 @router.post("/register/begin")
-async def register_begin(user_id: str, session: Session = Depends(get_session)):
+async def register_begin(user_id: str, session: AsyncSession = Depends(get_async_session)):
     """Begin FIDO2 registration challenge"""
-    existing = session.exec(
+    result = await session.execute(
         select(BiometricTemplate).where(BiometricTemplate.user_id == user_id)
-    ).first()
+    )
+    existing = result.scalars().first()
     if existing:
         raise HTTPException(status_code=400, detail="User already registered")
 
@@ -32,8 +33,8 @@ async def register_begin(user_id: str, session: Session = Depends(get_session)):
         user_id=user_id, expires_at=datetime.utcnow() + timedelta(minutes=5)
     )
     session.add(challenge)
-    session.commit()
-    session.refresh(challenge)
+    await session.commit()
+    await session.refresh(challenge)
 
     return {
         "user_id": user_id,
@@ -54,10 +55,10 @@ async def register_complete(
     user_id: str,
     challenge_id: str,
     attestation: Dict[str, Any],
-    session: Session = Depends(get_session),
+    session: AsyncSession = Depends(get_async_session),
 ):
     """Complete FIDO2 registration and store public key"""
-    challenge = session.get(HardwareChallenge, challenge_id)
+    challenge = await session.get(HardwareChallenge, challenge_id)
     if not challenge:
         raise HTTPException(status_code=400, detail="Invalid challenge")
 
@@ -67,7 +68,7 @@ async def register_complete(
     if challenge.expires_at < datetime.utcnow():
         challenge.status = AuthenticationStatus.EXPIRED
         session.add(challenge)
-        session.commit()
+        await session.commit()
         raise HTTPException(status_code=400, detail="Challenge expired")
 
     public_key = attestation.get("publicKey", {})
@@ -80,17 +81,18 @@ async def register_complete(
 
     challenge.status = AuthenticationStatus.VERIFIED
     session.add(challenge)
-    session.commit()
+    await session.commit()
 
     return {"status": "success", "message": "Hardware key registered successfully"}
 
 
 @router.post("/authenticate/begin")
-async def authenticate_begin(user_id: str, session: Session = Depends(get_session)):
+async def authenticate_begin(user_id: str, session: AsyncSession = Depends(get_async_session)):
     """Begin FIDO2 authentication challenge for high-value transaction"""
-    template = session.exec(
+    result = await session.execute(
         select(BiometricTemplate).where(BiometricTemplate.user_id == user_id)
-    ).first()
+    )
+    template = result.scalars().first()
     if not template:
         raise HTTPException(status_code=404, detail="User not registered")
 
@@ -98,8 +100,8 @@ async def authenticate_begin(user_id: str, session: Session = Depends(get_sessio
         user_id=user_id, expires_at=datetime.utcnow() + timedelta(minutes=5)
     )
     session.add(challenge)
-    session.commit()
-    session.refresh(challenge)
+    await session.commit()
+    await session.refresh(challenge)
 
     return {
         "challenge": challenge.challenge,
@@ -114,17 +116,17 @@ async def authenticate_complete(
     user_id: str,
     challenge_id: str,
     assertion: Dict[str, Any],
-    session: Session = Depends(get_session),
+    session: AsyncSession = Depends(get_async_session),
 ):
     """Complete FIDO2 authentication and verify signature"""
-    challenge = session.get(HardwareChallenge, challenge_id)
+    challenge = await session.get(HardwareChallenge, challenge_id)
     if not challenge or challenge.user_id != user_id:
         raise HTTPException(status_code=400, detail="Invalid challenge")
 
     if challenge.expires_at < datetime.utcnow():
         challenge.status = AuthenticationStatus.EXPIRED
         session.add(challenge)
-        session.commit()
+        await session.commit()
         raise HTTPException(status_code=400, detail="Challenge expired")
 
     sig = BiometricSignature(
@@ -137,7 +139,7 @@ async def authenticate_complete(
 
     challenge.status = AuthenticationStatus.VERIFIED
     session.add(challenge)
-    session.commit()
+    await session.commit()
 
     return {
         "status": "authorized",
@@ -149,14 +151,15 @@ async def authenticate_complete(
 
 
 @router.get("/security-policy")
-async def get_policy(session: Session = Depends(get_session)):
+async def get_policy(session: AsyncSession = Depends(get_async_session)):
     """Get enterprise zero-trust security policy from DB"""
     from app.core.models import SystemSetting
     from sqlmodel import select
 
-    settings = session.exec(
+    result = await session.execute(
         select(SystemSetting).where(SystemSetting.category == "security")
-    ).all()
+    )
+    settings = result.scalars().all()
 
     if settings:
         policy = {s.setting_key: s.setting_value for s in settings}

@@ -41,15 +41,31 @@ class Settings:
         self.PORT = int(os.getenv("PORT", str(self.PORT)))
         self.ENVIRONMENT = os.getenv("ENVIRONMENT", self.ENVIRONMENT)
         self.SECRET_KEY = os.getenv("SECRET_KEY", self.SECRET_KEY)
+        
         if not self.SECRET_KEY:
-            raise ValueError("SECRET_KEY environment variable must be set")
-        self.DATABASE_URL = os.getenv("DATABASE_URL", self.DATABASE_URL)
-        self.REDIS_URL = os.getenv("REDIS_URL", self.REDIS_URL)
+            raise ValueError("SECRET_KEY environment variable must be set for production security")
+            
+        self.DATABASE_URL = os.getenv("DATABASE_URL", "")
+        if not self.DATABASE_URL:
+            raise ValueError("FATAL: DATABASE_URL must be specified for data persistence")
+            
+        self.REDIS_URL = os.getenv("REDIS_URL", "")
+        if not self.REDIS_URL:
+            if self.ENVIRONMENT == "production":
+                raise ValueError("FATAL: REDIS_URL is required for production security (Token Blacklist/Rate Limiting)")
+            import logging
+            logging.warning("REDIS_URL not set. Token blacklist and rate limiting will use in-memory fallback (not for production).")
+
+        # Inventory critical AI Keys
         self.OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", self.OPENAI_API_KEY)
         self.ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", self.ANTHROPIC_API_KEY)
         self.GROQ_API_KEY = os.getenv("GROQ_API_KEY", self.GROQ_API_KEY)
         self.DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", self.DEEPSEEK_API_KEY)
         self.GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", self.GOOGLE_API_KEY)
+        
+        if self.ENVIRONMENT != "development" and not any([self.OPENAI_API_KEY, self.ANTHROPIC_API_KEY]):
+            import logging
+            logging.error("Vigilance Warning: No major LLM keys (OpenAI/Anthropic) available. Multi-cloud failover is compromised.")
 
 
 settings = Settings()

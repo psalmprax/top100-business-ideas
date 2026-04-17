@@ -1,5 +1,3 @@
-"""Real-time streaming endpoints"""
-
 import asyncio
 import json
 import logging
@@ -7,9 +5,10 @@ from datetime import datetime
 from typing import AsyncGenerator
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
-from sqlmodel import Session, select, func
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select, func
 
-from app.core.database import get_session
+from app.core.database import get_async_session
 from app.core.models import Agent, AgentStatus, LLMUsageLog, SelfHealingEvent
 from app.services.self_healing_manager import self_healing_manager
 
@@ -17,25 +16,30 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-async def generate_metrics_stream(session: Session) -> AsyncGenerator[str, None]:
+async def generate_metrics_stream(session: AsyncSession) -> AsyncGenerator[str, None]:
     """Generate real-time metrics stream using Server-Sent Events"""
     try:
         while True:
             # Get current metrics
-            agents = session.exec(select(Agent)).all()
+            result_agents = await session.execute(select(Agent))
+            agents = result_agents.scalars().all()
             total_agents = len(agents)
             running = sum(1 for a in agents if a.status == AgentStatus.RUNNING)
             stopped = sum(1 for a in agents if a.status == AgentStatus.STOPPED)
             error = sum(1 for a in agents if a.status == AgentStatus.ERROR)
 
-            total_requests = session.exec(select(func.count(LLMUsageLog.id))).one()
-            total_cost = session.exec(select(func.sum(LLMUsageLog.cost))).one() or 0.0
+            result_requests = await session.execute(select(func.count(LLMUsageLog.id)))
+            total_requests = result_requests.scalar() or 0
+            
+            result_cost = await session.execute(select(func.sum(LLMUsageLog.cost)))
+            total_cost = result_cost.scalar() or 0.0
 
-            recent_events = session.exec(
+            result_events = await session.execute(
                 select(SelfHealingEvent)
                 .order_by(SelfHealingEvent.timestamp.desc())
                 .limit(10)
-            ).all()
+            )
+            recent_events = result_events.scalars().all()
 
             # Get self-healing status
             healing_status = await self_healing_manager.get_stats()
@@ -79,7 +83,7 @@ async def generate_metrics_stream(session: Session) -> AsyncGenerator[str, None]
 
 @router.get("/self-healing/metrics/streaming")
 async def get_self_healing_streaming_metrics(
-    request: Request, session: Session = Depends(get_session)
+    request: Request, session: AsyncSession = Depends(get_async_session)
 ):
     """
     Real-time streaming metrics for self-healing dashboard using Server-Sent Events.

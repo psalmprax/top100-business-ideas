@@ -175,7 +175,7 @@ export default function AlphaAgentOpsConnected() {
     async function fetchLogs() {
       setLogsLoading(true);
       try {
-        const data = await extendedApi.agentOps.getAuditLogs(undefined, 50);
+        const data = await extendedApi.agentOps.getAuditLogs(undefined, undefined, undefined, 50);
         setAuditLogs(Array.isArray(data) ? data : []);
       } catch (err) {
         setAuditLogs([]);

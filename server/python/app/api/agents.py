@@ -1,8 +1,7 @@
-"""Agent management endpoints"""
-
 from typing import List
 from fastapi import APIRouter, HTTPException, Depends
-from sqlmodel import Session, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select, func
 from datetime import datetime
 
 from app.core.models import (
@@ -14,22 +13,23 @@ from app.core.models import (
     AgentType,
     LLMUsageLog
 )
-from app.core.database import get_session
+from app.core.database import get_async_session
 
 router = APIRouter()
 
 
 @router.get("", response_model=List[Agent])
-async def list_agents(session: Session = Depends(get_session)):
+async def list_agents(session: AsyncSession = Depends(get_async_session)):
     """List all agents"""
-    agents = session.exec(select(Agent)).all()
+    result = await session.execute(select(Agent))
+    agents = result.scalars().all()
     return agents
 
 
 @router.get("/{agent_id}", response_model=Agent)
-async def get_agent(agent_id: str, session: Session = Depends(get_session)):
+async def get_agent(agent_id: str, session: AsyncSession = Depends(get_async_session)):
     """Get agent by ID"""
-    agent = session.get(Agent, agent_id)
+    agent = await session.get(Agent, agent_id)
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
     return agent
@@ -37,7 +37,7 @@ async def get_agent(agent_id: str, session: Session = Depends(get_session)):
 
 @router.post("", response_model=Agent)
 async def create_agent(
-    agent_data: AgentCreate, session: Session = Depends(get_session)
+    agent_data: AgentCreate, session: AsyncSession = Depends(get_async_session)
 ):
     """Create a new agent"""
     new_agent = Agent.model_validate(agent_data)
@@ -46,17 +46,17 @@ async def create_agent(
     new_agent.updated_at = datetime.utcnow()
 
     session.add(new_agent)
-    session.commit()
-    session.refresh(new_agent)
+    await session.commit()
+    await session.refresh(new_agent)
     return new_agent
 
 
 @router.put("/{agent_id}", response_model=Agent)
 async def update_agent(
-    agent_id: str, agent_data: AgentUpdate, session: Session = Depends(get_session)
+    agent_id: str, agent_data: AgentUpdate, session: AsyncSession = Depends(get_async_session)
 ):
     """Update an agent"""
-    db_agent = session.get(Agent, agent_id)
+    db_agent = await session.get(Agent, agent_id)
     if not db_agent:
         raise HTTPException(status_code=404, detail="Agent not found")
 
@@ -66,27 +66,28 @@ async def update_agent(
 
     db_agent.updated_at = datetime.utcnow()
     session.add(db_agent)
-    session.commit()
-    session.refresh(db_agent)
+    await session.commit()
+    await session.refresh(db_agent)
     return db_agent
 
 
 @router.delete("/{agent_id}")
-async def delete_agent(agent_id: str, session: Session = Depends(get_session)):
+async def delete_agent(agent_id: str, session: AsyncSession = Depends(get_async_session)):
     """Delete an agent"""
-    agent = session.get(Agent, agent_id)
+    agent = await session.get(Agent, agent_id)
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
 
-    session.delete(agent)
-    session.commit()
+    await session.delete(agent)
+    await session.commit()
     return {"message": "Agent deleted successfully"}
 
 
 @router.get("/metrics/agents")
-async def get_agent_metrics(session: Session = Depends(get_session)):
+async def get_agent_metrics(session: AsyncSession = Depends(get_async_session)):
     """Get aggregated agent metrics from DB"""
-    agents = session.exec(select(Agent)).all()
+    result = await session.execute(select(Agent))
+    agents = result.scalars().all()
 
     total_agents = len(agents)
     running = sum(1 for a in agents if a.status == AgentStatus.RUNNING)
@@ -94,9 +95,14 @@ async def get_agent_metrics(session: Session = Depends(get_session)):
     error_count = sum(1 for a in agents if a.status == AgentStatus.ERROR)
 
     # Strategic: Cross-reference with real LLM usage logs for accurate cost
-    total_requests = session.exec(select(func.count(LLMUsageLog.id))).one()
-    total_tokens = session.exec(select(func.sum(LLMUsageLog.total_tokens))).one() or 0
-    total_cost = session.exec(select(func.sum(LLMUsageLog.cost))).one() or 0.0
+    total_requests_res = await session.execute(select(func.count(LLMUsageLog.id)))
+    total_requests = total_requests_res.scalar() or 0
+    
+    total_tokens_res = await session.execute(select(func.sum(LLMUsageLog.total_tokens)))
+    total_tokens = total_tokens_res.scalar() or 0
+    
+    total_cost_res = await session.execute(select(func.sum(LLMUsageLog.cost)))
+    total_cost = total_cost_res.scalar() or 0.0
 
     avg_cpu = total_requests / total_agents if total_agents > 0 else 0
     avg_memory = (
@@ -117,9 +123,9 @@ async def get_agent_metrics(session: Session = Depends(get_session)):
 
 
 @router.get("/metrics/agents/{agent_id}/history")
-async def get_agent_history(agent_id: str, session: Session = Depends(get_session)):
+async def get_agent_history(agent_id: str, session: AsyncSession = Depends(get_async_session)):
     """Get agent metrics history"""
-    agent = session.get(Agent, agent_id)
+    agent = await session.get(Agent, agent_id)
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
 
@@ -146,7 +152,7 @@ async def get_agent_history(agent_id: str, session: Session = Depends(get_sessio
 
 @router.post("/bulk/{action}")
 async def bulk_agent_action(
-    action: str, agent_ids: List[str], session: Session = Depends(get_session)
+    action: str, agent_ids: List[str], session: AsyncSession = Depends(get_async_session)
 ):
     """Perform bulk action on multiple agents"""
     if action not in ["pause", "restart", "terminate"]:
@@ -159,21 +165,22 @@ async def bulk_agent_action(
     }
 
     statement = select(Agent).where(Agent.id.in_(agent_ids))
-    agents = session.exec(statement).all()
+    result = await session.execute(statement)
+    agents = result.scalars().all()
 
     for agent in agents:
         agent.status = status_map[action]
         agent.updated_at = datetime.utcnow()
         session.add(agent)
 
-    session.commit()
+    await session.commit()
     return {"message": f"Bulk {action} completed for {len(agents)} agents"}
 
 
 @router.post("/{agent_id}/optimize")
-async def optimize_agent_memory(agent_id: str, session: Session = Depends(get_session)):
+async def optimize_agent_memory(agent_id: str, session: AsyncSession = Depends(get_async_session)):
     """Optimize agent memory by clearing transient state and recording optimization"""
-    agent = session.get(Agent, agent_id)
+    agent = await session.get(Agent, agent_id)
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
 
@@ -185,8 +192,8 @@ async def optimize_agent_memory(agent_id: str, session: Session = Depends(get_se
 
     agent.updated_at = datetime.utcnow()
     session.add(agent)
-    session.commit()
-    session.refresh(agent)
+    await session.commit()
+    await session.refresh(agent)
     return {
         "message": f"Memory optimized for agent {agent_id}",
         "optimization_count": agent.metrics.get("optimization_count", 0),
@@ -196,12 +203,12 @@ async def optimize_agent_memory(agent_id: str, session: Session = Depends(get_se
 
 @router.patch("/{agent_id}/hint")
 async def inject_agent_hint(
-    agent_id: str, hint: dict, session: Session = Depends(get_session)
+    agent_id: str, hint: dict, session: AsyncSession = Depends(get_async_session)
 ):
     """Inject a governance hint/instruction into an agent's operational context"""
     from app.core.models import AgentAuditLog
 
-    db_agent = session.get(Agent, agent_id)
+    db_agent = await session.get(Agent, agent_id)
     if not db_agent:
         raise HTTPException(status_code=404, detail="Agent not found")
 
@@ -219,17 +226,17 @@ async def inject_agent_hint(
     )
     
     session.add(audit_entry)
-    session.commit()
+    await session.commit()
     
     return {"status": "success", "hint": hint_text, "logged_at": datetime.utcnow().isoformat()}
 
 
 @router.post("/{agent_id}/roi")
-async def get_agent_roi(agent_id: str, session: Session = Depends(get_session)):
+async def get_agent_roi(agent_id: str, session: AsyncSession = Depends(get_async_session)):
     """Get calculated ROI and Downtime-to-Dollar loss for an agent"""
     from app.services.roi_service import roi_service
 
-    agent = session.get(Agent, agent_id)
+    agent = await session.get(Agent, agent_id)
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
 
@@ -245,9 +252,9 @@ async def get_agent_roi(agent_id: str, session: Session = Depends(get_session)):
 
 
 @router.post("/{agent_id}/clone", response_model=Agent)
-async def clone_agent(agent_id: str, session: Session = Depends(get_session)):
+async def clone_agent(agent_id: str, session: AsyncSession = Depends(get_async_session)):
     """Clone an existing agent configuration"""
-    source_agent = session.get(Agent, agent_id)
+    source_agent = await session.get(Agent, agent_id)
     if not source_agent:
         raise HTTPException(status_code=404, detail="Agent not found")
 
@@ -264,13 +271,13 @@ async def clone_agent(agent_id: str, session: Session = Depends(get_session)):
     new_agent.updated_at = datetime.utcnow()
 
     session.add(new_agent)
-    session.commit()
-    session.refresh(new_agent)
+    await session.commit()
+    await session.refresh(new_agent)
     return new_agent
 
 
 @router.post("/skills/install")
-async def install_skill(request: SkillInstall, session: Session = Depends(get_session)):
+async def install_skill(request: SkillInstall, session: AsyncSession = Depends(get_async_session)):
     """
     Install a skill from the marketplace.
     In a real production environment, this would pull from a secure registry.
@@ -278,9 +285,10 @@ async def install_skill(request: SkillInstall, session: Session = Depends(get_se
     """
     # 1. Validate skill existence (mocked against the marketplace catalog in frontend)
     # 2. Check if a 'Control' agent exists to receive the skill, or create one
-    system_agent = session.exec(
+    system_agent_res = await session.execute(
         select(Agent).where(Agent.name == "System Orchestrator")
-    ).first()
+    )
+    system_agent = system_agent_res.scalars().first()
 
     if not system_agent:
         # Auto-provision a system agent if missing
@@ -289,10 +297,12 @@ async def install_skill(request: SkillInstall, session: Session = Depends(get_se
             type=AgentType.automation,
             tier="strategic",
             status=AgentStatus.RUNNING,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
         )
         session.add(system_agent)
-        session.commit()
-        session.refresh(system_agent)
+        await session.commit()
+        await session.refresh(system_agent)
 
     # 3. Update agent config with new skill
     if not system_agent.config:
@@ -305,7 +315,7 @@ async def install_skill(request: SkillInstall, session: Session = Depends(get_se
         system_agent.updated_at = datetime.utcnow()
 
         session.add(system_agent)
-        session.commit()
+        await session.commit()
 
     return {
         "message": f"Skill {request.skill_id} installed successfully",

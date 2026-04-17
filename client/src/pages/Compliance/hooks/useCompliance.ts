@@ -242,63 +242,68 @@ export const useCompliance = () => {
     }
   };
 
-  useEffect(() => {
-    async function fetchExtendedData() {
-      if (!isAuthenticated) {
-        setIsLoading(false);
-        return;
-      }
-      try {
-        const [
-          trainingData, edgeData, shadowData, vendorData, connectionsData,
-          scansData, modelsData, incidentsData, roiData, forecastData, logs,
-          shStats, shEvents
-        ] = await Promise.all([
-          extendedApi.training.modules().catch(() => []),
-          extendedApi.edge.deployments().catch(() => []),
-          extendedApi.shadowAI.detections().catch(() => []),
-          extendedApi.vendors.list().catch(() => []),
-          extendedApi.compliance.listConnections().catch(() => []),
-          extendedApi.compliance.listScans().catch(() => []),
-          extendedApi.compliance.listModels().catch(() => []),
-          extendedApi.complianceAudit.listIncidents().catch(() => []),
-          extendedApi.governance.analytics.getROI().catch(() => null),
-          extendedApi.governance.forecast.getUsage().catch(() => []),
-          extendedApi.compliance.getAuditLogs().catch(() => []),
-          extendedApi.selfHealing.stats().catch(() => null),
-          extendedApi.selfHealing.events().catch(() => [])
-        ]);
-
-        if (modelsData) setModels(modelsData.map((m: any) => ({
-          ...m,
-          lastAudit: m.lastAudit ? new Date(m.lastAudit) : undefined,
-        })));
-        if (trainingData) setTrainingModules(trainingData);
-        if (edgeData) setEdgeDeployments(edgeData);
-        if (shadowData) setShadowAIDetections(shadowData);
-        if (vendorData) setVendors(vendorData);
-        if (incidentsData) setIncidents(incidentsData.map((i: any) => ({
-          ...i,
-          date: new Date(i.created_at || Date.now()) as any,
-        })));
-        if (connectionsData) setComplianceConnections(connectionsData);
-        if (scansData) setAudits(scansData.map((s: any) => ({
-          id: s.id,
-          modelId: s.article_id,
-          type: s.scan_type?.toLowerCase().includes("red") ? "red_team" : "penetration",
-          status: s.status,
-          findings: s.results?.metrics?.anomalies_detected || 0,
-          criticalFindings: s.results?.metrics?.threat_level === "critical" ? 1 : 0,
-          date: new Date(s.created_at),
-        })));
-        if (logs) setAuditLogs(logs);
-        if (shStats) setSelfHealingStats(shStats);
-        if (shEvents) setSelfHealingEvents(shEvents);
-      } finally {
-        setIsLoading(false);
-      }
+  const refresh = async () => {
+    if (!isAuthenticated) {
+      setIsLoading(false);
+      return;
     }
-    fetchExtendedData();
+    try {
+      const [
+        trainingData, edgeData, shadowData, vendorData, connectionsData,
+        scansData, modelsData, incidentsData, roiData, forecastData, logs,
+        shStats, shEvents
+      ] = await Promise.all([
+        extendedApi.training.modules().catch(() => []),
+        extendedApi.edge.deployments().catch(() => []),
+        extendedApi.shadowAI.detections().catch(() => []),
+        extendedApi.vendors.list().catch(() => []),
+        extendedApi.compliance.listConnections().catch(() => []),
+        extendedApi.compliance.listScans().catch(() => []),
+        extendedApi.compliance.listModels().catch(() => []),
+        extendedApi.complianceAudit.listIncidents().catch(() => []),
+        extendedApi.governance.analytics.getROI().catch(() => null),
+        extendedApi.governance.forecast.getUsage().catch(() => []),
+        extendedApi.compliance.getAuditLogs().catch(() => []),
+        extendedApi.selfHealing.stats().catch(() => null),
+        extendedApi.selfHealing.events().catch(() => [])
+      ]);
+
+      if (modelsData) setModels(modelsData.map((m: any) => ({
+        ...m,
+        lastAudit: m.lastAudit ? new Date(m.lastAudit) : undefined,
+      })));
+      if (trainingData) setTrainingModules(trainingData);
+      if (edgeData) setEdgeDeployments(edgeData);
+      if (shadowData) setShadowAIDetections(shadowData);
+      if (vendorData) setVendors(vendorData);
+      if (incidentsData) setIncidents(incidentsData.map((i: any) => ({
+        ...i,
+        date: i.created_at ? new Date(i.created_at) : new Date(),
+      })));
+      if (connectionsData) setComplianceConnections(connectionsData);
+      if (scansData) setAudits(scansData.map((s: any) => ({
+        id: s.id,
+        modelId: s.article_id,
+        type: s.scan_type?.toLowerCase().includes("red") ? "red_team" : "penetration",
+        status: s.status,
+        findings: s.results?.metrics?.anomalies_detected || 0,
+        criticalFindings: s.results?.metrics?.threat_level === "critical" ? 1 : 0,
+        date: s.created_at ? new Date(s.created_at) : new Date(),
+      })));
+      if (roiData) setRoiMetrics(roiData);
+      if (forecastData) setVelocityTrends(forecastData);
+      if (logs) setAuditLogs(logs);
+      if (shStats) setSelfHealingStats(shStats);
+      if (shEvents) setSelfHealingEvents(shEvents);
+    } catch (err) {
+      console.error("Error refreshing compliance data:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    refresh();
   }, [isAuthenticated]);
 
   // Derived Stats
@@ -425,7 +430,7 @@ export const useCompliance = () => {
       setSelectedAuditConnection, setAuditSearch, setAuditFilterType, setReportType,
       handleExportReport, handleDownload, handleToggleGuardrail, handleEURegister, setShowVendorDialog,
       setShowUploadDialog, setShowEdgeLogDialog, setSelectedEdgeDevice, setArtifactType,
-      setSelectedFile, setIsUploading, handleUpdateChecklistItem, handleUpdatePolicy
+      setSelectedFile, setIsUploading, handleUpdateChecklistItem, handleUpdatePolicy, refresh
     },
     refs: { fileInputRef }
   };

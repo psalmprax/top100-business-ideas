@@ -1,39 +1,39 @@
-"""Webhook management endpoints"""
-
 from typing import List
 from fastapi import APIRouter, HTTPException, Depends
-from sqlmodel import Session, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select
 
 from app.core.models import WebhookConfig, WebhookExecution
-from app.core.database import get_session
+from app.core.database import get_async_session
 from app.services.webhook_service import webhook_service
 
 router = APIRouter()
 
 
 @router.get("", response_model=List[WebhookConfig])
-async def list_webhooks(session: Session = Depends(get_session)):
+async def list_webhooks(session: AsyncSession = Depends(get_async_session)):
     """List all webhook configurations"""
-    return session.exec(select(WebhookConfig)).all()
+    result = await session.execute(select(WebhookConfig))
+    return result.scalars().all()
 
 
 @router.post("", response_model=WebhookConfig)
 async def create_webhook(
-    webhook: WebhookConfig, session: Session = Depends(get_session)
+    webhook: WebhookConfig, session: AsyncSession = Depends(get_async_session)
 ):
     """Create a new webhook configuration"""
     session.add(webhook)
-    session.commit()
-    session.refresh(webhook)
+    await session.commit()
+    await session.refresh(webhook)
     return webhook
 
 
 @router.put("/{webhook_id}", response_model=WebhookConfig)
 async def update_webhook(
-    webhook_id: str, webhook_update: dict, session: Session = Depends(get_session)
+    webhook_id: str, webhook_update: dict, session: AsyncSession = Depends(get_async_session)
 ):
     """Update an existing webhook configuration"""
-    webhook = session.get(WebhookConfig, webhook_id)
+    webhook = await session.get(WebhookConfig, webhook_id)
     if not webhook:
         raise HTTPException(status_code=404, detail="Webhook not found")
 
@@ -41,39 +41,40 @@ async def update_webhook(
         setattr(webhook, key, value)
 
     session.add(webhook)
-    session.commit()
-    session.refresh(webhook)
+    await session.commit()
+    await session.refresh(webhook)
     return webhook
 
 
 @router.delete("/{webhook_id}")
-async def delete_webhook(webhook_id: str, session: Session = Depends(get_session)):
+async def delete_webhook(webhook_id: str, session: AsyncSession = Depends(get_async_session)):
     """Delete a webhook configuration"""
-    webhook = session.get(WebhookConfig, webhook_id)
+    webhook = await session.get(WebhookConfig, webhook_id)
     if not webhook:
         raise HTTPException(status_code=404, detail="Webhook not found")
 
-    session.delete(webhook)
-    session.commit()
+    await session.delete(webhook)
+    await session.commit()
     return {"message": "Webhook deleted successfully"}
 
 
 @router.get("/{webhook_id}/executions", response_model=List[WebhookExecution])
 async def get_webhook_executions(
-    webhook_id: str, session: Session = Depends(get_session)
+    webhook_id: str, session: AsyncSession = Depends(get_async_session)
 ):
     """Get execution history for a webhook"""
-    return session.exec(
+    result = await session.execute(
         select(WebhookExecution).where(WebhookExecution.webhook_id == webhook_id)
-    ).all()
+    )
+    return result.scalars().all()
 
 
 @router.post("/{webhook_id}/test")
-async def test_webhook(webhook_id: str, session: Session = Depends(get_session)):
+async def test_webhook(webhook_id: str, session: AsyncSession = Depends(get_async_session)):
     """Test a webhook configuration by sending a test payload"""
-    webhook = session.get(WebhookConfig, webhook_id)
+    webhook = await session.get(WebhookConfig, webhook_id)
     if not webhook:
         raise HTTPException(status_code=404, detail="Webhook not found")
 
-    result = await webhook_service.test_webhook(webhook)
+    result = await webhook_service.test_webhook_async(session, webhook)
     return result

@@ -49,6 +49,15 @@ DATABASE_URL = settings.DATABASE_URL
 
 def get_sync_engine():
     """Create synchronous engine for migrations and seeding with connection pooling"""
+    connect_args = {}
+    if DATABASE_URL.startswith("sqlite"):
+        # SQLite doesn't support pool_size or max_overflow with the default StaticPool
+        return create_engine(
+            DATABASE_URL,
+            echo=False,
+            connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
+        )
+    
     return create_engine(
         DATABASE_URL,
         echo=False,
@@ -76,14 +85,20 @@ def init_async_engine():
         elif async_url.startswith("postgresql"):
             async_url = async_url.replace("postgresql", "postgresql+asyncpg")
 
-        async_engine = create_async_engine(
-            async_url,
-            echo=False,
-            pool_size=20,
-            max_overflow=10,
-            pool_pre_ping=True,
-            pool_recycle=3600,
-        )
+        kwargs = {
+            "echo": False,
+        }
+        if not async_url.startswith("sqlite"):
+            kwargs.update({
+                "pool_size": 20,
+                "max_overflow": 10,
+                "pool_pre_ping": True,
+                "pool_recycle": 3600,
+            })
+        else:
+            kwargs["connect_args"] = {"check_same_thread": False}
+
+        async_engine = create_async_engine(async_url, **kwargs)
         AsyncSessionLocal = async_sessionmaker(
             async_engine, class_=AsyncSession, expire_on_commit=False
         )
@@ -171,10 +186,17 @@ def init_db():
                 raise e
 
 
-def get_session():
-    """Dependency for getting database sessions"""
-    from sqlmodel import Session as SQLModelSession
+async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
+    """Async dependency for getting database sessions"""
+    if AsyncSessionLocal is None:
+        init_async_engine()
+    
+    async with AsyncSessionLocal() as session:
+        yield session
 
+
+def get_session():
+    """Dependency for getting database sessions (Sync)"""
     with SessionLocal() as session:
         yield session
 

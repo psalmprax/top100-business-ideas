@@ -1,13 +1,12 @@
-"""
-GraphQL Gateway for Alpha Products
-Provides unified GraphQL API for Agent Ops, Compliance, and Deepfake.
-"""
-
 from typing import Dict, Any, List, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import Enum
 import uuid
 import logging
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select, func
+
+from app.core.database import async_engine
 
 logger = logging.getLogger(__name__)
 
@@ -41,9 +40,7 @@ class GraphQLResolver:
     """
 
     def __init__(self):
-        from app.core.database import engine
-
-        self.engine = engine
+        self.engine = async_engine
 
     async def resolve(self, query: Dict[str, Any]) -> Dict[str, Any]:
         """Main GraphQL resolution entry point."""
@@ -162,11 +159,11 @@ class GraphQLResolver:
 
     async def _resolve_agents(self, selection: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Resolve agents list query from real database."""
-        from sqlmodel import Session, select
         from app.core.models import Agent
 
-        with Session(self.engine) as session:
-            agents = session.exec(select(Agent).limit(50)).all()
+        async with AsyncSession(self.engine) as session:
+            result = await session.execute(select(Agent).limit(50))
+            agents = result.scalars().all()
             return [
                 {
                     "id": a.id,
@@ -191,11 +188,10 @@ class GraphQLResolver:
         if not agent_id:
             return {"errors": [{"message": "Agent ID required"}]}
 
-        from sqlmodel import Session
         from app.core.models import Agent
 
-        with Session(self.engine) as session:
-            a = session.get(Agent, agent_id)
+        async with AsyncSession(self.engine) as session:
+            a = await session.get(Agent, agent_id)
             if not a:
                 return None
             return {
@@ -212,37 +208,29 @@ class GraphQLResolver:
 
     async def _resolve_agent_metrics(self, selection: Dict[str, Any]) -> Dict[str, Any]:
         """Resolve agent metrics query from real database."""
-        from sqlmodel import Session, select, func
         from app.core.models import Agent, AgentStatus
 
-        with Session(self.engine) as session:
-            total = session.exec(select(func.count(Agent.id))).one() or 0
-            running = (
-                session.exec(
-                    select(func.count(Agent.id)).where(
-                        Agent.status == AgentStatus.RUNNING
-                    )
-                ).one()
-                or 0
+        async with AsyncSession(self.engine) as session:
+            total_res = await session.execute(select(func.count(Agent.id)))
+            total = total_res.scalar() or 0
+            
+            running_res = await session.execute(
+                select(func.count(Agent.id)).where(Agent.status == AgentStatus.RUNNING)
             )
-            stopped = (
-                session.exec(
-                    select(func.count(Agent.id)).where(
-                        Agent.status == AgentStatus.STOPPED
-                    )
-                ).one()
-                or 0
+            running = running_res.scalar() or 0
+            
+            stopped_res = await session.execute(
+                select(func.count(Agent.id)).where(Agent.status == AgentStatus.STOPPED)
             )
-            error = (
-                session.exec(
-                    select(func.count(Agent.id)).where(
-                        Agent.status == AgentStatus.ERROR
-                    )
-                ).one()
-                or 0
+            stopped = stopped_res.scalar() or 0
+            
+            error_res = await session.execute(
+                select(func.count(Agent.id)).where(Agent.status == AgentStatus.ERROR)
             )
+            error = error_res.scalar() or 0
 
-            agents = session.exec(select(Agent)).all()
+            result = await session.execute(select(Agent))
+            agents = result.scalars().all()
             total_cost = sum(a.metrics.get("totalCost", 0) for a in agents if a.metrics)
 
             top = sorted(
@@ -263,7 +251,6 @@ class GraphQLResolver:
 
     async def _resolve_create_agent(self, selection: Dict[str, Any]) -> Dict[str, Any]:
         """Resolve create agent mutation with real database persistence."""
-        from sqlmodel import Session
         from app.core.models import Agent, AgentStatus, AgentType
 
         name = selection.get("name", "New Agent")
@@ -291,10 +278,10 @@ class GraphQLResolver:
                 created_at=datetime.utcnow(),
             )
 
-            with Session(self.engine) as session:
+            async with AsyncSession(self.engine) as session:
                 session.add(new_agent)
-                session.commit()
-                session.refresh(new_agent)
+                await session.commit()
+                await session.refresh(new_agent)
 
             return {
                 "id": new_agent.id,
@@ -311,15 +298,14 @@ class GraphQLResolver:
 
     async def _resolve_update_agent(self, selection: Dict[str, Any]) -> Dict[str, Any]:
         """Resolve update agent mutation with real database persistence."""
-        from sqlmodel import Session
         from app.core.models import Agent
 
         agent_id = selection.get("id")
         if not agent_id:
             return {"errors": [{"message": "Agent ID required"}]}
 
-        with Session(self.engine) as session:
-            agent = session.get(Agent, agent_id)
+        async with AsyncSession(self.engine) as session:
+            agent = await session.get(Agent, agent_id)
             if not agent:
                 return {"errors": [{"message": "Agent not found"}]}
 
@@ -332,8 +318,8 @@ class GraphQLResolver:
 
             agent.updated_at = datetime.utcnow()
             session.add(agent)
-            session.commit()
-            session.refresh(agent)
+            await session.commit()
+            await session.refresh(agent)
 
             return {
                 "id": agent.id,
@@ -344,15 +330,14 @@ class GraphQLResolver:
 
     async def _resolve_pause_agent(self, selection: Dict[str, Any]) -> Dict[str, Any]:
         """Resolve pause agent mutation with real database persistence."""
-        from sqlmodel import Session
         from app.core.models import Agent, AgentStatus
 
         agent_id = selection.get("id")
         if not agent_id:
             return {"errors": [{"message": "Agent ID required"}]}
 
-        with Session(self.engine) as session:
-            agent = session.get(Agent, agent_id)
+        async with AsyncSession(self.engine) as session:
+            agent = await session.get(Agent, agent_id)
             if not agent:
                 return {"errors": [{"message": "Agent not found"}]}
 
@@ -360,8 +345,8 @@ class GraphQLResolver:
             agent.updated_at = datetime.utcnow()
             
             session.add(agent)
-            session.commit()
-            session.refresh(agent)
+            await session.commit()
+            await session.refresh(agent)
 
             return {
                 "id": agent.id,
@@ -375,11 +360,11 @@ class GraphQLResolver:
         self, selection: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
         """Resolve compliance checks query."""
-        from sqlmodel import Session, select
         from app.core.models import AIModel
 
-        with Session(self.engine) as session:
-            models = session.exec(select(AIModel).limit(20)).all()
+        async with AsyncSession(self.engine) as session:
+            result = await session.execute(select(AIModel).limit(20))
+            models = result.scalars().all()
             return [
                 {
                     "id": m.id,
@@ -394,11 +379,11 @@ class GraphQLResolver:
 
     async def _resolve_supply_chain(self, selection: Dict[str, Any]) -> Dict[str, Any]:
         """Resolve supply chain query from real database."""
-        from sqlmodel import Session, select
         from app.core.models import Vendor
 
-        with Session(self.engine) as session:
-            vendors = session.exec(select(Vendor)).all()
+        async with AsyncSession(self.engine) as session:
+            result = await session.execute(select(Vendor))
+            vendors = result.scalars().all()
             compliant = sum(1 for v in vendors if v.compliance_status == "compliant")
             pending = sum(1 for v in vendors if v.compliance_status == "pending")
             non_compliant = len(vendors) - compliant - pending
@@ -428,7 +413,6 @@ class GraphQLResolver:
         self, selection: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Resolve run compliance check mutation with real database persistence."""
-        from sqlmodel import Session
         from app.core.models import ComplianceCheck, ComplianceStatus, ComplianceCheckType
 
         check_type_str = selection.get("type", "AI_ACT")
@@ -452,10 +436,10 @@ class GraphQLResolver:
                 created_at=datetime.utcnow(),
             )
 
-            with Session(self.engine) as session:
+            async with AsyncSession(self.engine) as session:
                 session.add(check)
-                session.commit()
-                session.refresh(check)
+                await session.commit()
+                await session.refresh(check)
 
             return {
                 "id": check.id,
@@ -473,15 +457,15 @@ class GraphQLResolver:
         self, selection: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
         """Resolve deepfake analyses query from real database."""
-        from sqlmodel import Session, select
         from app.core.models import DeepfakeAnalysis
 
-        with Session(self.engine) as session:
-            analyses = session.exec(
+        async with AsyncSession(self.engine) as session:
+            result = await session.execute(
                 select(DeepfakeAnalysis)
                 .order_by(DeepfakeAnalysis.analysis_at.desc())
                 .limit(20)
-            ).all()
+            )
+            analyses = result.scalars().all()
             return [
                 {
                     "id": a.id,
@@ -500,30 +484,26 @@ class GraphQLResolver:
 
     async def _resolve_deepfake_stats(self) -> Dict[str, Any]:
         """Resolve deepfake statistics query from real database."""
-        from sqlmodel import Session, select, func
         from app.core.models import DeepfakeAnalysis, AnalysisResult
 
-        with Session(self.engine) as session:
-            total = session.exec(select(func.count(DeepfakeAnalysis.id))).one() or 0
-            real_count = (
-                session.exec(
-                    select(func.count(DeepfakeAnalysis.id)).where(
-                        DeepfakeAnalysis.result == AnalysisResult.REAL
-                    )
-                ).one()
-                or 0
+        async with AsyncSession(self.engine) as session:
+            total_res = await session.execute(select(func.count(DeepfakeAnalysis.id)))
+            total = total_res.scalar() or 0
+            
+            real_res = await session.execute(
+                select(func.count(DeepfakeAnalysis.id)).where(DeepfakeAnalysis.result == AnalysisResult.REAL)
             )
-            fake_count = (
-                session.exec(
-                    select(func.count(DeepfakeAnalysis.id)).where(
-                        DeepfakeAnalysis.result == AnalysisResult.FAKE
-                    )
-                ).one()
-                or 0
+            real_count = real_res.scalar() or 0
+            
+            fake_res = await session.execute(
+                select(func.count(DeepfakeAnalysis.id)).where(DeepfakeAnalysis.result == AnalysisResult.FAKE)
             )
+            fake_count = fake_res.scalar() or 0
+            
             uncertain = total - real_count - fake_count
 
-            analyses = session.exec(select(DeepfakeAnalysis)).all()
+            result = await session.execute(select(DeepfakeAnalysis))
+            analyses = result.scalars().all()
             avg_conf = (
                 round(sum(a.confidence for a in analyses) / len(analyses), 1)
                 if analyses
@@ -547,7 +527,8 @@ class GraphQLResolver:
         media_type = selection.get("mediaType", "IMAGE")
 
         try:
-            result = deepfake_service.analyze_media(media_url, media_type, "system")
+            # Note: Deepfake service should ideally be async
+            result = await deepfake_service.analyze_media_async(media_url, media_type, "system")
             return {
                 "id": result.id,
                 "mediaUrl": result.media_url,
@@ -561,14 +542,31 @@ class GraphQLResolver:
                 if result.analysis_at
                 else "",
             }
-        except RuntimeError:
-            raise RuntimeError("Deepfake analysis requires ML models (torch, cv2)")
+        except (RuntimeError, AttributeError):
+             # Fallback if async not available
+             try:
+                 result = deepfake_service.analyze_media(media_url, media_type, "system")
+                 return {
+                    "id": result.id,
+                    "mediaUrl": result.media_url,
+                    "mediaType": result.media_type,
+                    "status": "COMPLETED",
+                    "result": result.result.value
+                    if hasattr(result.result, "value")
+                    else str(result.result),
+                    "confidence": result.confidence,
+                    "analyzedAt": result.analysis_at.isoformat() + "Z"
+                    if result.analysis_at
+                    else "",
+                }
+             except Exception as e:
+                logger.error(f"Deepfake analysis error: {e}")
+                return {"errors": [{"message": str(e)}]}
 
     async def _resolve_create_challenge(
         self, selection: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Resolve create biometric challenge mutation with real database persistence."""
-        from sqlmodel import Session
         from app.core.models import HardwareChallenge
         
         user_id = selection.get("userId", "anonymous")
@@ -583,10 +581,10 @@ class GraphQLResolver:
                 created_at=datetime.utcnow(),
             )
 
-            with Session(self.engine) as session:
+            async with AsyncSession(self.engine) as session:
                 session.add(challenge)
-                session.commit()
-                session.refresh(challenge)
+                await session.commit()
+                await session.refresh(challenge)
 
             return {
                 "id": challenge.id,

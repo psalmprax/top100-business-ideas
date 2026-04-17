@@ -1,12 +1,11 @@
-"""Strategic venture insights endpoints"""
-
 from typing import List, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import Session, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select
 from datetime import datetime
 import logging
 
-from app.core.database import get_session
+from app.core.database import get_async_session
 from app.core.models import BusinessIdea
 
 router = APIRouter()
@@ -15,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 @router.get("/insights", response_model=List[BusinessIdea])
 async def get_business_ideas(
-    limit: int = 50, offset: int = 0, session: Session = Depends(get_session)
+    limit: int = 50, offset: int = 0, session: AsyncSession = Depends(get_async_session)
 ):
     """Fetch all persistent business ideas from the database with pagination"""
     try:
@@ -29,7 +28,8 @@ async def get_business_ideas(
         statement = (
             select(BusinessIdea).order_by(BusinessIdea.rank).offset(offset).limit(limit)
         )
-        results = session.exec(statement).all()
+        result = await session.execute(statement)
+        results = result.scalars().all()
 
         logger.info(
             f"Retrieved {len(results)} business ideas (offset: {offset}, limit: {limit})"
@@ -48,7 +48,7 @@ async def get_business_ideas(
 
 @router.post("/realize/{idea_id}")
 async def realize_business_impact(
-    idea_id: int, session: Session = Depends(get_session)
+    idea_id: int, session: AsyncSession = Depends(get_async_session)
 ):
     """Convert a business idea into a realized impact log"""
     try:
@@ -59,7 +59,7 @@ async def realize_business_impact(
             )
 
         # Fetch the idea
-        idea = session.get(BusinessIdea, idea_id)
+        idea = await session.get(BusinessIdea, idea_id)
         if not idea:
             logger.warning(f"Business idea not found: {idea_id}")
             raise HTTPException(status_code=404, detail="Business Idea not found")

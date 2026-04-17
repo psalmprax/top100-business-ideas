@@ -14,13 +14,16 @@ from app.core.models import (
     SelfHealingEvent,
     HealingConfiguration,
     ComplianceAuditLog,
+    BiasReport,
+    DeepfakeAnalysis,
 )
+from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 
 # from app.ml.compliance_analyzer import compliance_analyzer (Lazy loaded below)
 from app.connectors.github_connector import github_connector
 from app.services.reporting import reporting_service
-from app.core.database import get_session, engine
+from app.core.database import get_async_session, AsyncSessionLocal
 from app.core.models import ComplianceChecklistItem, AgentAuditLog
 
 from app.services.compliance_service import compliance_service
@@ -31,15 +34,16 @@ router = APIRouter()
 
 # Stats endpoint MUST come before /{check_id} to avoid route conflicts
 @router.get("/stats")
-async def get_compliance_stats(session: Session = Depends(get_session)):
+async def get_compliance_stats(session: AsyncSession = Depends(get_async_session)):
     """Get aggregated compliance status (HIPAA, SOX, GDPR) derived from real audit logs"""
     status_map = {}
     for c_type in ["HIPAA", "SOX", "GDPR"]:
-        latest = session.exec(
+        result = await session.execute(
             select(ComplianceAuditLog)
             .where(ComplianceAuditLog.compliance_type == c_type)
             .order_by(ComplianceAuditLog.timestamp.desc())
-        ).first()
+        )
+        latest = result.scalars().first()
 
         if latest:
             raw_status = latest.status.upper()
@@ -56,21 +60,23 @@ async def get_compliance_stats(session: Session = Depends(get_session)):
 
 
 @router.get("", response_model=List[ComplianceCheck])
-async def list_checks(session: Session = Depends(get_session)):
+async def list_checks(session: AsyncSession = Depends(get_async_session)):
     """List all compliance checks"""
-    checks = session.exec(select(ComplianceCheck)).all()
+    result = await session.execute(select(ComplianceCheck))
+    checks = result.scalars().all()
     return checks
 
 
 @router.get("/incidents", response_model=List[ComplianceIncident])
-async def list_compliance_incidents(session: Session = Depends(get_session)):
+async def list_compliance_incidents(session: AsyncSession = Depends(get_async_session)):
     """List all reported compliance incidents (Art 61/62)"""
-    return session.exec(select(ComplianceIncident)).all()
+    result = await session.execute(select(ComplianceIncident))
+    return result.scalars().all()
 
 
 @router.post("/incidents", response_model=ComplianceIncident)
 async def report_compliance_incident(
-    request: dict, session: Session = Depends(get_session)
+    request: dict, session: AsyncSession = Depends(get_async_session)
 ):
     """Report a new compliance, forensic or bias incident (Art 61/62)"""
     import uuid
@@ -86,14 +92,14 @@ async def report_compliance_incident(
         affected_systems=request.get("affected_systems", []),
     )
     session.add(incident)
-    session.commit()
-    session.refresh(incident)
+    await session.commit()
+    await session.refresh(incident)
     return incident
 
 
 @router.post("/incidents/article-71", response_model=ComplianceIncident)
 async def report_article_71_incident(
-    request: dict, session: Session = Depends(get_session)
+    request: dict, session: AsyncSession = Depends(get_async_session)
 ):
     """
     Report a serious incident as per EU AI Act Article 71.
@@ -109,9 +115,9 @@ async def report_article_71_incident(
 
 
 @router.patch("/incidents/{incident_id}/resolve", response_model=ComplianceIncident)
-async def resolve_incident(incident_id: str, session: Session = Depends(get_session)):
+async def resolve_incident(incident_id: str, session: AsyncSession = Depends(get_async_session)):
     """Mark a compliance incident as resolved"""
-    incident = session.get(ComplianceIncident, incident_id)
+    incident = await session.get(ComplianceIncident, incident_id)
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
 
@@ -119,15 +125,15 @@ async def resolve_incident(incident_id: str, session: Session = Depends(get_sess
     incident.resolved_at = datetime.utcnow()
 
     session.add(incident)
-    session.commit()
-    session.refresh(incident)
+    await session.commit()
+    await session.refresh(incident)
     return incident
 
 
 @router.get("/{check_id}", response_model=ComplianceCheck)
-async def get_check(check_id: str, session: Session = Depends(get_session)):
+async def get_check(check_id: str, session: AsyncSession = Depends(get_async_session)):
     """Get compliance check by ID"""
-    check = session.get(ComplianceCheck, check_id)
+    check = await session.get(ComplianceCheck, check_id)
     if not check:
         raise HTTPException(status_code=404, detail="Compliance check not found")
     return check
@@ -135,11 +141,11 @@ async def get_check(check_id: str, session: Session = Depends(get_session)):
 
 @router.get("/{check_id}/report")
 async def get_report(
-    check_id: str, format: str = "json", session: Session = Depends(get_session)
+    check_id: str, format: str = "json", session: AsyncSession = Depends(get_async_session)
 ):
     """Export compliance check as Annex IV Technical Folder"""
     try:
-        check = session.get(ComplianceCheck, check_id)
+        check = await session.get(ComplianceCheck, check_id)
         if not check:
             raise HTTPException(status_code=404, detail="Compliance check not found")
 
@@ -156,7 +162,7 @@ async def get_report(
 
 @router.post("/check", response_model=ComplianceCheck)
 async def run_check(
-    request: RunComplianceCheckRequest, session: Session = Depends(get_session)
+    request: RunComplianceCheckRequest, session: AsyncSession = Depends(get_async_session)
 ):
     """Run a compliance check and save to DB"""
     # NEW: Evidence Mapping - If GitHub URL is provided, scan for evidence
@@ -205,8 +211,8 @@ async def run_check(
     )
 
     session.add(check)
-    session.commit()
-    session.refresh(check)
+    await session.commit()
+    await session.refresh(check)
     return check
 
 
@@ -244,7 +250,7 @@ async def get_categories():
 
 @router.post("/audit/sox")
 async def run_sox_audit(
-    session: Session = Depends(get_session), x_user_id: Optional[str] = Header(None)
+    session: AsyncSession = Depends(get_async_session), x_user_id: Optional[str] = Header(None)
 ):
     """Run a SOX §404 financial integrity audit across all agents"""
     user_id = x_user_id or "system_admin"
@@ -253,7 +259,7 @@ async def run_sox_audit(
 
 @router.post("/audit/hipaa")
 async def run_hipaa_audit(
-    session: Session = Depends(get_session), x_user_id: Optional[str] = Header(None)
+    session: AsyncSession = Depends(get_async_session), x_user_id: Optional[str] = Header(None)
 ):
     """Run a HIPAA data privacy and security audit"""
     user_id = x_user_id or "system_admin"
@@ -261,17 +267,18 @@ async def run_hipaa_audit(
 
 
 @router.get("/healing", response_model=List[HealingConfiguration])
-async def list_healing_configs(session: Session = Depends(get_session)):
+async def list_healing_configs(session: AsyncSession = Depends(get_async_session)):
     """List all self-healing configurations"""
-    return session.exec(select(HealingConfiguration)).all()
+    result = await session.execute(select(HealingConfiguration))
+    return result.scalars().all()
 
 
 @router.patch("/healing/{config_id}", response_model=HealingConfiguration)
 async def update_healing_config(
-    config_id: str, update: dict, session: Session = Depends(get_session)
+    config_id: str, update: dict, session: AsyncSession = Depends(get_async_session)
 ):
     """Update a healing configuration (e.g., toggle active status)"""
-    config = session.get(HealingConfiguration, config_id)
+    config = await session.get(HealingConfiguration, config_id)
     if not config:
         raise HTTPException(status_code=404, detail="Healing config not found")
 
@@ -280,19 +287,20 @@ async def update_healing_config(
             setattr(config, key, value)
 
     session.add(config)
-    session.commit()
-    session.refresh(config)
+    await session.commit()
+    await session.refresh(config)
     return config
 
 
 @router.get("/healing/events", response_model=List[SelfHealingEvent])
-async def list_healing_events(session: Session = Depends(get_session)):
+async def list_healing_events(session: AsyncSession = Depends(get_async_session)):
     """List recent self-healing events"""
-    return session.exec(select(SelfHealingEvent)).all()
+    result = await session.execute(select(SelfHealingEvent))
+    return result.scalars().all()
 
 
 @router.post("/eu-register", response_model=dict)
-async def register_ai_system(request: dict, session: Session = Depends(get_session)):
+async def register_ai_system(request: dict, session: AsyncSession = Depends(get_async_session)):
     """
     Certified EU AI Act Handshake (Art. 51/60).
     Registers a High-Risk AI system in the EU database (certified mock).
@@ -320,7 +328,7 @@ async def register_ai_system(request: dict, session: Session = Depends(get_sessi
         },
     )
     session.add(audit_log)
-    session.commit()
+    await session.commit()
 
     return {
         "status": "success",
@@ -344,7 +352,7 @@ async def register_ai_system(request: dict, session: Session = Depends(get_sessi
 async def list_checklists(
     category: Optional[str] = None,
     section: Optional[str] = None,
-    session: Session = Depends(get_session),
+    session: AsyncSession = Depends(get_async_session),
 ):
     """Retrieve persistent checklist items with segment-specific filtering"""
     try:
@@ -354,7 +362,8 @@ async def list_checklists(
         if section:
             query = query.where(ComplianceChecklistItem.section == section)
 
-        items = session.exec(query).all()
+        result = await session.execute(query)
+        items = result.scalars().all()
         return items
     except Exception as e:
         logger.error(f"Checklist Retrieval Error: {e}")
@@ -363,11 +372,11 @@ async def list_checklists(
 
 @router.post("/checklists/{item_id}", response_model=ComplianceChecklistItem)
 async def update_checklist_item(
-    item_id: str, assessment: dict, session: Session = Depends(get_session)
+    item_id: str, assessment: dict, session: AsyncSession = Depends(get_async_session)
 ):
     """Update a persistent checklist item with audit trail integration"""
     try:
-        item = session.get(ComplianceChecklistItem, item_id)
+        item = await session.get(ComplianceChecklistItem, item_id)
         if not item:
             raise HTTPException(status_code=404, detail="Checklist item not found")
 
@@ -386,9 +395,8 @@ async def update_checklist_item(
             metadata_json={"item_id": item_id, "category": item.category},
         )
         session.add(audit_log)
-        session.add(item)
-        session.commit()
-        session.refresh(item)
+        await session.commit()
+        await session.refresh(item)
         return item
     except Exception as e:
         logger.error(f"Checklist Update Error: {e}")
@@ -402,15 +410,16 @@ async def update_checklist_item(
 
 @router.get("/bias/reports")
 async def get_bias_reports(
-    scope: str = "global", session: Session = Depends(get_session)
+    scope: str = "global", session: AsyncSession = Depends(get_async_session)
 ):
     """Get bias detection reports for Article 10 compliance"""
     try:
         from app.ml.bias_detector import bias_detector
 
-        reports = session.exec(
+        result = await session.execute(
             select(BiasReport).order_by(BiasReport.created_at.desc()).limit(50)
-        ).all()
+        )
+        reports = result.scalars().all()
 
         if not reports:
             # Generate synthetic initial data
@@ -437,7 +446,7 @@ async def get_bias_reports(
 
 @router.post("/bias/scan")
 async def trigger_bias_scan(
-    scope: str = "global", session: Session = Depends(get_session)
+    scope: str = "global", session: AsyncSession = Depends(get_async_session)
 ):
     """Trigger bias detection scan across models"""
     return {
@@ -450,7 +459,7 @@ async def trigger_bias_scan(
 
 
 @router.get("/enterprise/audits")
-async def get_enterprise_audits(session: Session = Depends(get_session)):
+async def get_enterprise_audits(session: AsyncSession = Depends(get_async_session)):
     """Get enterprise-level compliance audits"""
     return [
         {
@@ -484,7 +493,7 @@ async def get_enterprise_audits(session: Session = Depends(get_session)):
 
 
 @router.get("/metrics/live")
-async def get_live_compliance_metrics(session: Session = Depends(get_session)):
+async def get_live_compliance_metrics(session: AsyncSession = Depends(get_async_session)):
     """Get live compliance metrics dashboard data"""
     return {
         "overall_compliance": 0.87,
@@ -499,7 +508,7 @@ async def get_live_compliance_metrics(session: Session = Depends(get_session)):
 
 @router.post("/policy/update")
 async def update_compliance_policy(
-    request: Dict[str, Any], session: Session = Depends(get_session)
+    request: Dict[str, Any], session: AsyncSession = Depends(get_async_session)
 ):
     """Update global compliance policies"""
     return {
@@ -510,10 +519,31 @@ async def update_compliance_policy(
 
 
 @router.delete("/vendors/{vendor_id}")
-async def delete_vendor(vendor_id: str, session: Session = Depends(get_session)):
+async def delete_vendor(vendor_id: str, session: AsyncSession = Depends(get_async_session)):
     """Remove a vendor from compliance monitoring"""
     return {
         "status": "success",
         "vendor_id": vendor_id,
         "removed_at": datetime.utcnow().isoformat(),
     }
+
+
+@router.delete("/gdpr/forgotten/{user_id}")
+async def right_to_be_forgotten(
+    user_id: str, session: AsyncSession = Depends(get_async_session)
+):
+    """
+    Trigger GDPR Article 17 'Right to be Forgotten' for a specific user ID.
+    Purges biometric templates, audit trails, and forensic traces.
+    """
+    try:
+        from app.services.compliance_service import compliance_service
+
+        return await compliance_service.delete_user_data(session, user_id)
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        logger.error(f"GDPR Forgotten Error: {e}")
+        raise HTTPException(
+            status_code=500, detail="Failed to execute data deletion request."
+        )

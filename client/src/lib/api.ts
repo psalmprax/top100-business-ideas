@@ -4,6 +4,8 @@
  * All data comes from real backend endpoints - no mock/simulated data.
  */
 
+import { nanoid } from 'nanoid';
+
 const API_URL = import.meta.env.VITE_API_URL || "";
 
 export interface LLMMetrics {
@@ -141,6 +143,10 @@ async function apiRequest<T>(
   const headers: Record<string, string> = {
     ...((options.headers as Record<string, string>) || {}),
   };
+
+  // Hardening (Standard 1.13): Global RequestID for E2E Tracing
+  const requestId = nanoid();
+  headers["X-Request-ID"] = requestId;
 
   // Only set Content-Type to JSON if the body is NOT FormData
   if (!(options.body instanceof FormData) && !headers["Content-Type"]) {
@@ -913,7 +919,7 @@ export interface EdgeDeployment {
 
 // Shadow AI types
 export interface ShadowAIDetection {
-  detection_id?: string;
+  id: string;
   tool_name: string;
   vendor: string;
   department: string;
@@ -921,6 +927,15 @@ export interface ShadowAIDetection {
   user_count?: number;
   detected_at?: string;
   status: string;
+}
+
+export interface AuditEntry {
+  id: string;
+  agent_id: string;
+  action: string;
+  outcome: string;
+  details: string;
+  timestamp: string;
 }
 
 // Mobile SDK types
@@ -1392,7 +1407,18 @@ export const extendedApi = {
         body: JSON.stringify(guardrails),
         strict: true,
       }),
-
+    getAuditLogs: (
+      agentId?: string,
+      search?: string,
+      outcome?: string,
+      limit: number = 50
+    ) => {
+      let url = `/api/v1/agent-ops/audit?limit=${limit}`;
+      if (agentId) url += `&agent_id=${agentId}`;
+      if (search) url += `&search=${encodeURIComponent(search)}`;
+      if (outcome) url += `&outcome=${outcome}`;
+      return apiRequest<any[]>(url);
+    },
     connectSystem: (
       article_id: string,
       connection_type: string,
@@ -1575,7 +1601,7 @@ export const extendedApi = {
       let url = "/api/v1/shadow-ai/detections?";
       if (riskLevel) url += `risk_level=${riskLevel}&`;
       if (status) url += `status=${status}`;
-      return apiRequest<ShadowAIDetection[]>(url);
+      return apiRequest<ShadowAIDetection[]>(url).then(data => data.map(d => ({ ...d, id: d.id })));
     },
     create: (detection: ShadowAIDetection) =>
       apiRequest<ShadowAIDetection>("/api/v1/shadow-ai/detections", {
@@ -1922,10 +1948,18 @@ export const extendedApi = {
         next_30_days_cost_est: number;
         trend: string;
       }>(`/api/v1/agents/${agentId || "default"}/forecast`),
-    getAuditLogs: (agentId?: string, limit: number = 50) =>
-      apiRequest<any>(
-        `/api/v1/agent-ops/audit?${agentId ? `agentId=${agentId}&` : ""}limit=${limit}`
-      ),
+    getAuditLogs: (
+      agentId?: string,
+      search?: string,
+      outcome?: string,
+      limit: number = 50
+    ) => {
+      let url = `/api/v1/agent-ops/audit?limit=${limit}`;
+      if (agentId) url += `&agent_id=${agentId}`;
+      if (search) url += `&search=${encodeURIComponent(search)}`;
+      if (outcome) url += `&outcome=${outcome}`;
+      return apiRequest<AuditEntry[]>(url);
+    },
     runHipaaAudit: (system?: string) =>
       apiRequest<any>("/api/v1/agent-ops/compliance/hipaa", {
         method: "POST",
@@ -2638,6 +2672,29 @@ export const extendedApi = {
           }
         ),
     },
+    getAuditQuorum: () => apiRequest<any>("/api/v1/agent-ops/governance/audit-quorum"),
+    getAuditLogs: () => apiRequest<any[]>("/api/v1/agent-ops/audit"),
+    getGovernanceStats: () => apiRequest<any>("/api/v1/agent-ops/governance/stats"),
+    createApprovalRequest: (request: any) =>
+      apiRequest<any>("/api/v1/agent-ops/governance/approvals", {
+        method: "POST",
+        body: JSON.stringify(request),
+      }),
+    processApproval: (requestId: string, approved: boolean, details: string) =>
+      apiRequest<any>(`/api/v1/agent-ops/governance/approvals/${requestId}`, {
+        method: "POST",
+        body: JSON.stringify({ approved, details }),
+      }),
+  },
+  optimization: {
+    getWorkforceEfficiency: () =>
+      apiRequest<any>("/api/v1/workforce/efficiency"),
+    getLLMPerformance: (agentId: string, days: number) =>
+      apiRequest<any>(`/api/v1/agent-ops/llm/performance?agent_id=${agentId}&days=${days}`),
+    optimizeAgent: (agentId: string) =>
+      apiRequest<any>(`/api/v1/agent-ops/optimize/${agentId}`, {
+        method: "POST",
+      }),
   },
 };
 

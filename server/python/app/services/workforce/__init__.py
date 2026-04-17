@@ -9,6 +9,8 @@ from app.services.workforce.base import BaseWorkforceService
 from app.services.workforce.lead_sourcing import LeadSourcingService
 from app.services.workforce.outreach import OutreachService
 from app.services.workforce.goals import GoalsService
+from app.services.workforce.operations import OperationsService
+from app.services.workforce.cashclaw import CashClawService
 
 
 class WorkforceService:
@@ -18,6 +20,8 @@ class WorkforceService:
         self.lead_sourcing = LeadSourcingService()
         self.outreach = OutreachService()
         self.goals = GoalsService()
+        self.operations = OperationsService()
+        self.cashclaw = CashClawService()
 
     # Delegate methods to specific services for backward compatibility
     async def run_autosearch(self, config):
@@ -34,6 +38,41 @@ class WorkforceService:
 
     async def get_status(self, session):
         return await self.goals.get_status(session)
+
+    # Operations & Persistence
+    async def get_fiscal_requests(self, session):
+        return await self.operations.get_fiscal_requests(session)
+
+    async def create_fiscal_request(self, purpose, amount, priority, session):
+        return await self.operations.create_fiscal_request(purpose, amount, priority, session)
+
+    async def approve_fiscal_request(self, id, status, session):
+        return await self.operations.approve_fiscal_request(id, status, session)
+
+    async def get_jobs(self, session):
+        return await self.operations.get_jobs(session)
+
+    async def get_acquisitions(self, session):
+        return await self.operations.get_acquisitions(session)
+
+    async def get_content_drafts(self, session):
+        return await self.operations.get_content_drafts(session)
+
+    async def get_skills(self, session):
+        return await self.operations.get_skills(session)
+
+    async def get_ventures(self, session):
+        return await self.goals.list_ventures(session)
+
+    async def get_goals(self, session):
+        return await self.goals.list_goals(session)
+
+    async def update_goal_value(self, goal_id, value, session):
+        return await self.goals.update_goal(goal_id, {"current_value": value}, session)
+
+    # Recovery
+    async def recover_revenue(self, criteria, session):
+        return await self.cashclaw.run_recovery_cycle(criteria, session)
 
 
 # Singleton instance for backward compatibility

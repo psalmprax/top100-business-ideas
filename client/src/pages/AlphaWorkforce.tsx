@@ -160,7 +160,19 @@ const AlphaWorkforce = () => {
       setJobFeed(jobs);
       setAcquisitions(winList || []);
       setContentDrafts(drafts || []);
-      setPlatformDecisions(decisionsData || {});
+      setCashclawData(earnings || {
+        balance: 0,
+        activeJobs: 0,
+        skillsActive: 0,
+        leakedRevenue: 0,
+      });
+      const decisionsMap: Record<number, string> = {};
+      if (Array.isArray(decisionsData)) {
+        decisionsData.forEach((d: any) => {
+          decisionsMap[d.id] = d.status || d.decision;
+        });
+      }
+      setPlatformDecisions(decisionsMap);
       setExecutionHistory(historyData || []);
 
       if (Array.isArray(fetchedIntegrations)) {
@@ -551,8 +563,6 @@ const AlphaWorkforce = () => {
               handleRunAutosearch={handleRunAutosearch}
               handleApproveOutreach={handleApproveOutreach}
               handleShiftMarketFocus={handleShiftMarketFocus}
-              RevenueCard={() => null} // These are now internal to sections
-              AcquisitionWin={() => null}
               isRunningMarketing={isRunningMarketing}
             />
           </TabsContent>

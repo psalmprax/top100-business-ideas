@@ -104,7 +104,7 @@ export default function ActionableAI() {
 
     const fetchLogs = async () => {
       try {
-        const data = await extendedApi.agentOps.getAuditLogs(undefined, 20);
+        const data = await extendedApi.agentOps.getAuditLogs(undefined, undefined, undefined, 20);
         if (Array.isArray(data)) {
           setMissionLogs(
             data.map(

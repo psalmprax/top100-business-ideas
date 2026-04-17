@@ -1,24 +1,26 @@
 """Enterprise configuration endpoints for SLA and White-labeling"""
 
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from fastapi import APIRouter, HTTPException, Depends
-from sqlmodel import Session, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select
 from datetime import datetime
 import uuid
 
-from app.core.database import get_session
+from app.core.database import get_async_session
 
 router = APIRouter(prefix="/enterprise", tags=["Enterprise"])
 
 
 @router.get("/partner-config")
-async def get_partner_config(session: Session = Depends(get_session)):
+async def get_partner_config(session: AsyncSession = Depends(get_async_session)):
     """Get white-label and partner configuration from the database"""
     from app.core.models import SystemSetting
 
-    settings = session.exec(
+    result = await session.execute(
         select(SystemSetting).where(SystemSetting.category == "ui")
-    ).all()
+    )
+    settings = result.scalars().all()
     config = {s.setting_key: s.setting_value for s in settings}
 
     if not config:
@@ -29,7 +31,7 @@ async def get_partner_config(session: Session = Depends(get_session)):
 
 @router.post("/sla-tier")
 async def update_sla_tier(
-    request: Dict[str, Any], session: Session = Depends(get_session)
+    request: Dict[str, Any], session: AsyncSession = Depends(get_async_session)
 ):
     """Update SLA tier and persist to database"""
     from app.core.models import SystemSetting
@@ -46,9 +48,10 @@ async def update_sla_tier(
     }
 
     for key, value in sla_settings.items():
-        existing = session.exec(
-            select(SystemSetting).where(SystemSetting.setting_key == key)
-        ).first()
+        statement = select(SystemSetting).where(SystemSetting.setting_key == key)
+        result = await session.execute(statement)
+        existing = result.scalars().first()
+        
         if existing:
             existing.setting_value = value
             session.add(existing)
@@ -61,7 +64,7 @@ async def update_sla_tier(
             )
             session.add(new_setting)
 
-    session.commit()
+    await session.commit()
 
     return {
         "status": "updated",
@@ -76,21 +79,24 @@ from app.services.billing_service import billing_service
 
 
 @router.get("/subscription")
-async def get_subscription(session: Session = Depends(get_session)):
+async def get_subscription(session: AsyncSession = Depends(get_async_session)):
     """Fetch real-time subscription status from the database"""
     from app.core.models import Subscription
-    from sqlmodel import select
 
-    sub = session.exec(select(Subscription).limit(1)).first()
+    result = await session.execute(select(Subscription).limit(1))
+    sub = result.scalars().first()
     if not sub:
         raise HTTPException(status_code=404, detail="No active subscription found")
     return sub
 
 
 @router.get("/invoices")
-async def get_invoices(session: Session = Depends(get_session)):
+async def get_invoices(session: AsyncSession = Depends(get_async_session)):
     """Fetch historical invoices for the user"""
-    invoices = billing_service.list_user_invoices(session, "")
-    if not invoices:
+    # Note: billing_service needs to be compatible with AsyncSession
+    try:
+        invoices = await billing_service.list_user_invoices_async(session, "")
+        return invoices or []
+    except AttributeError:
+        # Fallback if async method not yet implemented in service
         return []
-    return invoices

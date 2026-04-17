@@ -1,0 +1,30 @@
+
+> top100-business-ideas@1.0.0 check /home/psalmprax/ALL_PROJECTS/top100-business-ideas
+> tsc --noEmit
+
+client/src/components/DeepfakeDefense/sections/LivenessSection.tsx(143,43): error TS7006: Parameter 'p' implicitly has an 'any' type.
+client/src/components/DeepfakeDefense/sections/LivenessSection.tsx(143,43): error TS2345: Argument of type '(p: any) => any' is not assignable to parameter of type 'number'.
+client/src/components/Workforce/sections/CommsSection.tsx(456,49): error TS2322: Type 'RefObject<HTMLDivElement | null>' is not assignable to type 'RefObject<HTMLDivElement>'.
+  Type 'HTMLDivElement | null' is not assignable to type 'HTMLDivElement'.
+    Type 'null' is not assignable to type 'HTMLDivElement'.
+client/src/lib/api.ts(1952,25): error TS2304: Cannot find name 'AuditEntry'.
+client/src/pages/ActionableAI.tsx(107,73): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+client/src/pages/AlphaAgentOpsConnected.tsx(178,73): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+client/src/pages/AlphaDeepfakeDefense.tsx(4441,64): error TS2554: Expected 1 arguments, but got 0.
+client/src/pages/AlphaWorkforce.tsx(554,15): error TS2322: Type '{ revenueData: any; acquisitions: any[]; contentDrafts: any[]; autosearchNiche: string; setAutosearchNiche: Dispatch<SetStateAction<string>>; targetProfile: string; ... 9 more ...; isRunningMarketing: boolean; }' is not assignable to type 'IntrinsicAttributes & GrowthSectionProps'.
+  Property 'RevenueCard' does not exist on type 'IntrinsicAttributes & GrowthSectionProps'.
+client/src/pages/Compliance/hooks/useCompliance.ts(428,87): error TS18004: No value exists in scope for the shorthand property 'refresh'. Either declare one or provide an initializer.
+client/src/pages/Compliance/index.tsx(141,45): error TS2322: Type '{ type: string; }' is not assignable to type 'IntrinsicAttributes & ChecklistSectionProps'.
+  Property 'type' does not exist on type 'IntrinsicAttributes & ChecklistSectionProps'.
+client/src/pages/Compliance/index.tsx(142,48): error TS2322: Type '{ type: string; }' is not assignable to type 'IntrinsicAttributes & ChecklistSectionProps'.
+  Property 'type' does not exist on type 'IntrinsicAttributes & ChecklistSectionProps'.
+client/src/pages/ShadowAIMonitor.tsx(70,30): error TS2339: Property 'getStats' does not exist on type '{ detections: (riskLevel?: string | undefined, status?: string | undefined) => Promise<{ id: string; tool_name: string; vendor: string; department: string; risk_level: string; user_count?: number | undefined; detected_at?: string | undefined; status: string; }[]>; ... 4 more ...; stats: () => Promise<...>; }'.
+client/src/pages/ShadowAIMonitor.tsx(259,45): error TS2339: Property 'count' does not exist on type 'ShadowAIDetection'.
+client/src/pages/ShadowAIMonitor.tsx(261,35): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number | Date'.
+      Type 'undefined' is not assignable to type 'string | number | Date'.
+  Overload 2 of 4, '(value: string | number): Date', gave the following error.
+    Argument of type 'string | undefined' is not assignable to parameter of type 'string | number'.
+      Type 'undefined' is not assignable to type 'string | number'.
+ ELIFECYCLE  Command failed with exit code 2.

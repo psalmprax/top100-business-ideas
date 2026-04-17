@@ -1,4 +1,4 @@
-from sqlmodel import Session, select
+from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
 from app.core.models import AlertConfig, DeepfakeAnalysis
 import uuid
@@ -9,7 +9,7 @@ class BridgingService:
     Connects independent modules (Deepfake, Compliance) to the AgentOps Alerting system.
     """
 
-    def trigger_deepfake_alert(self, analysis: DeepfakeAnalysis, session: Session):
+    async def trigger_deepfake_alert(self, analysis: DeepfakeAnalysis, session: AsyncSession):
         """
         Creates a system alert when a high-confidence deepfake is detected.
         """
@@ -29,7 +29,7 @@ class BridgingService:
                 updated_at=datetime.utcnow()
             )
             session.add(alert)
-            session.commit()
+            await session.commit()
             return alert
         return None
 
