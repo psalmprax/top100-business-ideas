@@ -211,4 +211,17 @@ func SetupAgentOpsRoutes(
 		training.GET("/stats", trainingHandler.GetTrainingStats)
 		training.GET("/modules/:id/certificate", trainingHandler.DownloadCertificate)
 	}
+
+	// Shadow AI detection endpoints
+	shadowAI := protected.Group("/shadow-ai")
+	shadowAI.Use(productAccessMiddleware("compliance"))
+	{
+		shadowAI.GET("/detections", trainingHandler.ListDetections)
+		shadowAI.GET("/stats", trainingHandler.GetShadowAIStats)
+
+		shadowAI.Use(requireRoleMiddleware("management"))
+		{
+			shadowAI.PUT("/detections/:id/remediate", trainingHandler.RemediateDetection)
+		}
+	}
 }

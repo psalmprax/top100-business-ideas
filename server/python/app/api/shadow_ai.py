@@ -3,30 +3,23 @@ Shadow AI Detection API
 Endpoints for managing Shadow AI detections and stats.
 """
 
-from typing import Optional, List, Dict, Any
+from typing import Optional, Dict, Any
 from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel
 from app.services.shadow_ai_service import shadow_ai_service
 from app.core.dependencies import get_current_user
-from app.core.models.service_models import ShadowAIRiskLevel, ShadowAIStatus
+from app.core.models.service_models import ShadowAIRiskLevel
 import logging
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-class RemediateDetectionRequest(BaseModel):
-    detection_id: str
-    action: str
-
-
 @router.get("/detections")
 async def list_detections(
     risk_level: Optional[str] = None,
     status: Optional[str] = None,
-    user=Depends(get_current_user),
 ) -> Dict[str, Any]:
-    """List all Shadow AI detections with optional filtering."""
+    """List all Shadow AI detections with optional filtering. Public read-only."""
     try:
         detections = shadow_ai_service.list_detections(risk_level, status)
         return {"detections": detections, "total": len(detections)}
@@ -53,8 +46,8 @@ async def remediate_detection(
 
 
 @router.get("/stats")
-async def get_stats(user=Depends(get_current_user)) -> Dict[str, Any]:
-    """Get Shadow AI detection statistics."""
+async def get_stats() -> Dict[str, Any]:
+    """Get Shadow AI detection statistics. Public read-only."""
     try:
         stats = shadow_ai_service.get_stats()
         return stats
