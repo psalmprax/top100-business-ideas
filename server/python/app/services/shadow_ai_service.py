@@ -199,6 +199,22 @@ class ShadowAIService:
 
             return False
 
+    def approve_detection(self, detection_id: str) -> Optional[Dict[str, Any]]:
+        """Approve a Shadow AI detection (mark as allowed)."""
+        with Session(engine) as session:
+            detection = session.exec(
+                select(ShadowAIDetection).where(
+                    ShadowAIDetection.detection_id == detection_id
+                )
+            ).first()
+
+            if detection:
+                detection.status = ShadowAIStatus.APPROVED
+                session.commit()
+                return detection.to_dict()
+
+            return None
+
 
 # Singleton instance
 shadow_ai_service = ShadowAIService()

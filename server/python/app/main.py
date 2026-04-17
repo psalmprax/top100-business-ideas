@@ -4,7 +4,7 @@ FastAPI application for AI/ML processing
 """
 
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 import sys
@@ -22,17 +22,18 @@ logger = logging.getLogger(__name__)
 # Real-First Hardening: Dependency Inventory
 # Instead of masking missing libraries with MagicMock, we inventory them for the Vigilance dashboard.
 DEPENDENCY_STATUS = {}
-for mod in ["numpy", "torch", "transformers", "cv2", "PIL"]:
-    try:
-        __import__(mod)
-        DEPENDENCY_STATUS[mod] = "INSTALLED"
-    except ImportError:
-        DEPENDENCY_STATUS[mod] = "MISSING"
-        # We only mock if strictly necessary for the server to BOOT,
-        # but we log the technical debt.
-        logger.warning(
-            f"Technical Debt Detected: AI/ML library '{mod}' is MISSION CRITICAL but MISSING."
-        )
+if os.getenv("ENVIRONMENT") != "testing":
+    for mod in ["numpy", "torch", "transformers", "cv2", "PIL"]:
+        try:
+            __import__(mod)
+            DEPENDENCY_STATUS[mod] = "INSTALLED"
+        except ImportError:
+            DEPENDENCY_STATUS[mod] = "MISSING"
+            # We only mock if strictly necessary for the server to BOOT,
+            # but we log the technical debt.
+            logger.warning(
+                f"Technical Debt Detected: AI/ML library '{mod}' is MISSION CRITICAL but MISSING."
+            )
 
 from app.api import (
     agents,
@@ -47,6 +48,7 @@ from app.api import (
     alerts,
     intelligence,
     telemetry,
+    shadow_ai,
 )
 from app.api.routers import (
     webhooks_router,
@@ -138,33 +140,124 @@ app.add_middleware(RateLimitMiddleware, window=60, limit=200)
 # Register Global Resilience Exception Handler
 app.add_exception_handler(Exception, resilience_exception_handler)
 
+from app.core.dependencies import get_current_user
+
 # Include routers
 app.include_router(health.router, prefix="/health", tags=["Health"])
-app.include_router(agents.router, prefix="/agents", tags=["Agents"])
-app.include_router(compliance.router, prefix="/compliance", tags=["Compliance"])
-app.include_router(deepfake.router, prefix="/deepfake", tags=["Deepfake"])
-app.include_router(enterprise.router, tags=["Enterprise"])
+
+# Protected Routers
 app.include_router(
-    auth_verify.router, prefix="/auth/verify", tags=["Liveness Authentication"]
+    agents.router,
+    prefix="/agents",
+    tags=["Agents"],
+    dependencies=[Depends(get_current_user)],
 )
-app.include_router(webhooks_router, prefix="/webhooks", tags=["Webhooks"])
-app.include_router(multi_cloud_router, prefix="/multi-cloud", tags=["Multi-Cloud"])
-app.include_router(self_healing_router, prefix="/self-healing", tags=["Self-Healing"])
-app.include_router(agent_ops_router, prefix="/agent-ops", tags=["Agent Operations"])
-app.include_router(budget_router, prefix="/budget", tags=["Budget Management"])
-app.include_router(workforce_router, prefix="/workforce", tags=["Workforce"])
 app.include_router(
-    governance.router, prefix="/governance", tags=["Governance & Advanced Features"]
+    compliance.router,
+    prefix="/compliance",
+    tags=["Compliance"],
+    dependencies=[Depends(get_current_user)],
 )
-app.include_router(venture.router, prefix="/venture", tags=["Venture"])
-app.include_router(security.router, prefix="/security", tags=["Security"])
-app.include_router(alerts.router, prefix="/agents", tags=["Alerts & Rules"])
-app.include_router(intelligence.router, prefix="/intelligence", tags=["Intelligence"])
+app.include_router(
+    deepfake.router,
+    prefix="/deepfake",
+    tags=["Deepfake"],
+    dependencies=[Depends(get_current_user)],
+)
+app.include_router(
+    enterprise.router, tags=["Enterprise"], dependencies=[Depends(get_current_user)]
+)
+app.include_router(
+    auth_verify.router,
+    prefix="/auth/verify",
+    tags=["Liveness Authentication"],
+    dependencies=[Depends(get_current_user)],
+)
+app.include_router(
+    webhooks_router,
+    prefix="/webhooks",
+    tags=["Webhooks"],
+    dependencies=[Depends(get_current_user)],
+)
+app.include_router(
+    multi_cloud_router,
+    prefix="/multi-cloud",
+    tags=["Multi-Cloud"],
+    dependencies=[Depends(get_current_user)],
+)
+app.include_router(
+    self_healing_router,
+    prefix="/self-healing",
+    tags=["Self-Healing"],
+    dependencies=[Depends(get_current_user)],
+)
+app.include_router(
+    agent_ops_router,
+    prefix="/agent-ops",
+    tags=["Agent Operations"],
+    dependencies=[Depends(get_current_user)],
+)
+app.include_router(
+    budget_router,
+    prefix="/budget",
+    tags=["Budget Management"],
+    dependencies=[Depends(get_current_user)],
+)
+app.include_router(
+    workforce_router,
+    prefix="/workforce",
+    tags=["Workforce"],
+    dependencies=[Depends(get_current_user)],
+)
+app.include_router(
+    governance.router,
+    prefix="/governance",
+    tags=["Governance & Advanced Features"],
+    dependencies=[Depends(get_current_user)],
+)
+app.include_router(
+    venture.router,
+    prefix="/venture",
+    tags=["Venture"],
+    dependencies=[Depends(get_current_user)],
+)
+app.include_router(
+    security.router,
+    prefix="/security",
+    tags=["Security"],
+    dependencies=[Depends(get_current_user)],
+)
+app.include_router(
+    alerts.router,
+    prefix="/agents",
+    tags=["Alerts & Rules"],
+    dependencies=[Depends(get_current_user)],
+)
+app.include_router(
+    intelligence.router,
+    prefix="/intelligence",
+    tags=["Intelligence"],
+    dependencies=[Depends(get_current_user)],
+)
+app.include_router(
+    shadow_ai.router,
+    prefix="/shadow-ai",
+    tags=["Shadow AI"],
+    dependencies=[Depends(get_current_user)],
+)
 from app.api import sentinel
 
-app.include_router(sentinel.router, prefix="/api/v1/sentinel", tags=["Sentinel"])
 app.include_router(
-    telemetry.router, prefix="/telemetry", tags=["Telemetry & Optimization"]
+    sentinel.router,
+    prefix="/api/v1/sentinel",
+    tags=["Sentinel"],
+    dependencies=[Depends(get_current_user)],
+)
+app.include_router(
+    telemetry.router,
+    prefix="/telemetry",
+    tags=["Telemetry & Optimization"],
+    dependencies=[Depends(get_current_user)],
 )
 
 # Global Exception Shield
