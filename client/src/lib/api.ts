@@ -4,7 +4,7 @@
  * All data comes from real backend endpoints - no mock/simulated data.
  */
 
-import { nanoid } from 'nanoid';
+import { nanoid } from "nanoid";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 
@@ -22,7 +22,14 @@ export interface LLMProviderConfig {
   name: string;
   provider: "deepseek" | "google" | "openai" | "anthropic" | "meta" | "local";
   model: string;
-  status: "active" | "degraded" | "down";
+  status:
+    | "active"
+    | "degraded"
+    | "down"
+    | "loading"
+    | "ready"
+    | "failed"
+    | "fallback";
   isPrimary: boolean;
   failoverPriority: number;
   apiKeySet: boolean;
@@ -33,9 +40,9 @@ export interface Vendor {
   id: string;
   name: string;
   type: string;
-  riskLevel: string;
-  complianceStatus: string;
-  lastAssessment: Date | string;
+  risk_level: string;
+  compliance_status: string;
+  last_assessment: Date | string;
 }
 
 export interface Incident {
@@ -44,10 +51,50 @@ export interface Incident {
   description: string;
   severity: string;
   date: Date | string;
-  affectedSystems?: string[];
-  affected_systems?: string[]; // Backend compatibility
+  affected_systems: string[]; // Standardized to snake_case for backend compatibility
   status: "open" | "investigating" | "resolved" | "closed";
   article72?: boolean;
+}
+
+// Compliance API types
+export interface ComplianceConnection {
+  id: string;
+  article_id: string;
+  connection_type: string;
+  config: Record<string, unknown>;
+  status: "active" | "inactive" | "pending";
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface ComplianceSectionMetrics {
+  label: string;
+  value: number;
+  status: "stable" | "compliant" | "active" | "degraded";
+}
+
+export interface ComplianceEvent {
+  title: string;
+  description: string;
+  severity: "low" | "medium" | "high";
+  timestamp: string;
+}
+
+export interface ComplianceLiveMetrics {
+  sections: ComplianceSectionMetrics[];
+  events: ComplianceEvent[];
+}
+
+export interface ComplianceArticle {
+  article: string;
+  title: string;
+  description: string;
+  risk: "unacceptable" | "high" | "limited" | "minimal";
+  status: "compliant" | "in_progress" | "not_started";
+  evidence: string;
+  remediation: string;
+  integration_type: string;
+  scan_type: string;
 }
 
 export interface BusinessIdea {
@@ -85,7 +132,7 @@ export interface Claim {
   claim_id_string: string;
   payer: string;
   amount: number;
-  status: string;
+  status: "pending" | "recovered" | "failed";
   risk: string;
   created_at?: string;
   updated_at?: string;
@@ -307,12 +354,9 @@ async function apiBlobRequest(
 // ============================================================================
 
 export interface AuthResponse {
-  accessToken?: string;
-  access_token?: string; // Handle backend snake_case
-  refreshToken?: string;
-  refresh_token?: string; // Handle backend snake_case
-  expiresIn?: number;
-  expires_in?: number; // Handle backend snake_case
+  access_token: string;
+  refresh_token?: string;
+  expires_in?: number;
   user?: User;
   requiresProductSelection?: boolean;
   availableProducts?: string[];
@@ -369,14 +413,21 @@ export interface Agent {
     | "openai"
     | "metagpt"
     | "pydanticai";
-  status: "active" | "paused" | "error" | "stopped";
+  status:
+    | "RUNNING"
+    | "STOPPED"
+    | "ERROR"
+    | "PAUSED"
+    | "active"
+    | "paused"
+    | "stopped";
   budget: number;
-  dailySpend: number;
+  daily_spend: number;
   tier: "strategic" | "tactical" | "industrial";
   config: {
     provider: string;
     model: string;
-    maxTokens: number;
+    max_tokens: number;
     temperature: number;
     rules?: any[];
   };
@@ -388,24 +439,23 @@ export interface Agent {
   control_webhook?: string;
   persistent_memory?: boolean;
   metrics?: {
-    tasksTotal?: number;
-    tasksComplete?: number;
-    tasksFailed?: number;
+    tasks_total?: number;
+    tasks_completed?: number;
+    tasks_failed?: number;
     uptime?: number;
-    totalRequests?: number;
-    totalTokens?: number;
-    totalCost?: number;
-    avgLatencyMs?: number;
-    errorRate?: number;
-    loopCount?: number;
-    cacheHits?: number;
-    loopsPrevented?: number;
-    costSaved?: number;
+    total_requests?: number;
+    total_tokens?: number;
+    total_cost?: number;
+    avg_latency_ms?: number;
+    error_rate?: number;
+    loop_count?: number;
+    cache_hits?: number;
+    loops_prevented?: number;
+    cost_saved?: number;
   };
-  createdAt: string | Date;
-  lastActiveAt?: string | Date;
-  created_at?: string;
-  updated_at?: string;
+  created_at: string | Date;
+  updated_at?: string | Date;
+  last_active_at?: string | Date;
 }
 
 export const agentsApi = {
@@ -465,7 +515,9 @@ export interface Rule {
   name: string;
   type: string;
   enabled: boolean;
-  config: Record<string, unknown>;
+  config?: any;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export const rulesApi = {
@@ -501,16 +553,28 @@ export const rulesApi = {
 // ============================================================================
 
 export interface Metrics {
-  totalTokens: number;
-  totalCost: number;
-  activeAgents: number;
-  tasksCompleted: number;
-  tasksFailed: number;
-  uptime: number;
-  computeLoad: number;
-  p99Latency: number;
-  missionsToday: number;
-  hourlyData: Array<{ hour: string; tokens: number; cost: number }>;
+  total_tokens?: number;
+  total_cost?: number;
+  active_agents?: number;
+  tasks_completed?: number;
+  tasks_failed?: number;
+  throughput?: number;
+  avg_latency_ms?: number;
+  error_rate?: number;
+  compute_load?: number;
+  p99_latency?: number;
+  missions_today?: number;
+  last_updated?: string;
+  // Legacy support for older components
+  totalTokens?: number;
+  totalCost?: number;
+  tasksCompleted?: number;
+  tasksFailed?: number;
+  activeAgents?: number;
+  computeLoad?: number;
+  p99Latency?: number;
+  missionsToday?: number;
+  hourly_data?: Array<{ hour: string; tokens: number; cost: number }>;
 }
 
 export const metricsApi = {
@@ -531,7 +595,13 @@ export interface ComplianceCheck {
   id: string;
   article: string;
   title: string;
-  status: "compliant" | "non_compliant" | "pending";
+  status:
+    | "passed"
+    | "failed"
+    | "pending"
+    | "review"
+    | "compliant"
+    | "non_compliant";
   evidence?: string;
   lastChecked?: string;
 }
@@ -539,9 +609,9 @@ export interface ComplianceCheck {
 export interface ComplianceReport {
   id: string;
   name: string;
-  overallScore: number;
+  overall_score: number;
   checks: ComplianceCheck[];
-  createdAt: string;
+  created_at: string;
 }
 
 export const complianceApi = {
@@ -660,7 +730,7 @@ export const deepfakeApi = {
 
 export interface Subscription {
   id: string;
-  plan: "developer" | "growth" | "enterprise";
+  plan: "free" | "pro" | "enterprise";
   status: "active" | "canceled" | "past_due";
   currentPeriodEnd: string;
   cancelAtPeriodEnd: boolean;
@@ -763,18 +833,14 @@ export interface User {
 
 export interface BiasReport {
   id: string;
-  model?: string;
-  modelId?: string;
-  category: string;
-  bias_score: number;
-  score?: number;
+  model_id: string;
+  bias_category: string;
+  disparate_impact: number;
+  statistical_significance: number;
   severity: "low" | "medium" | "high" | "critical";
-  findings: string[];
-  recommendations: string[];
+  status: string;
+  details: string;
   created_at: string;
-  date?: string;
-  type?: string;
-  status: "pending" | "reviewed" | "mitigated";
 }
 
 export const userApi = {
@@ -795,7 +861,7 @@ export const userApi = {
 
   apiKeys: () =>
     apiRequest<
-      Array<{ id: string; name: string; key: string; createdAt: string }>
+      Array<{ id: string; name: string; key: string; created_at: string }>
     >("/api/v1/user/api-keys"),
 
   createApiKey: (name: string) =>
@@ -803,7 +869,7 @@ export const userApi = {
       id: string;
       key: string;
       status?: string;
-      createdAt?: string;
+      created_at?: string;
     }>("/api/v1/user/api-keys", {
       method: "POST",
       body: JSON.stringify({ name }),
@@ -875,7 +941,12 @@ export interface TrainingModule {
   content: string;
   quiz_questions: Record<string, unknown>[];
   created_at?: string;
-  status?: "not_started" | "in_progress" | "completed";
+  status?:
+    | "not_started"
+    | "in_progress"
+    | "completed"
+    | "certified"
+    | "expired";
   progress?: number;
 }
 
@@ -905,16 +976,55 @@ export interface WhiteLabelConfig {
   updated_at?: string;
 }
 
+export interface AuditEntry {
+  id: string;
+  agent_id: string;
+  actor?: string; // Display name, optional
+  action: string;
+  outcome: string;
+  details: string;
+  timestamp: string;
+}
+
+// Red Team / Penetration Scan types
+export interface ComplianceScan {
+  id: string;
+  article_id: string;
+  scan_type: string;
+  status: string;
+  results?: {
+    metrics?: {
+      anomalies_detected?: number;
+      threat_level?: string;
+      compliance_rate?: number;
+    };
+  };
+  created_at?: string;
+}
+
 // Edge deployment types
 export interface EdgeDeployment {
   device_id: string;
   location: string;
   device_type: string;
-  status: string;
+  status: "active" | "inactive" | "maintenance" | "error";
   firmware_version?: string;
   last_seen?: string;
   metadata?: Record<string, unknown>;
   created_at?: string;
+}
+
+// SLA metrics types
+export interface SLATierInfo {
+  tier: string;
+  active: boolean;
+}
+
+export interface SLAMetric {
+  period: string;
+  uptime: number;
+  latency: number;
+  breaches: number;
 }
 
 // Shadow AI types
@@ -923,19 +1033,56 @@ export interface ShadowAIDetection {
   tool_name: string;
   vendor: string;
   department: string;
-  risk_level: string;
+  risk_level: "low" | "medium" | "high" | "critical";
   user_count?: number;
   detected_at?: string;
-  status: string;
+  status: "detected" | "investigating" | "remediated" | "approved";
 }
 
-export interface AuditEntry {
+export interface ShadowAIStats {
+  total_detections: number;
+  high_risk: number;
+  medium_risk: number;
+  low_risk: number;
+  approved: number;
+  blocked: number;
+  by_category: Record<string, number>;
+  by_status: Record<string, number>;
+  by_risk_level: Record<string, number>;
+}
+
+export interface ShadowAIReportTool {
+  tool_name: string;
+  vendor: string;
+  department: string;
+  user_count: number;
+  risk_level: string;
+}
+
+export interface ShadowAIReport {
+  summary: {
+    total_detections: number;
+    high_risk: number;
+    departments_affected: number;
+    blocked_tools: number;
+  };
+  recommendations: string[];
+  top_tools: ShadowAIReportTool[];
+}
+
+export interface ComplianceScan {
   id: string;
-  agent_id: string;
-  action: string;
-  outcome: string;
-  details: string;
-  timestamp: string;
+  article_id: string;
+  scan_type: string;
+  status: string;
+  results?: {
+    metrics?: {
+      anomalies_detected?: number;
+      threat_level?: string;
+      compliance_rate?: number;
+    };
+  };
+  created_at?: string;
 }
 
 // Mobile SDK types
@@ -1039,6 +1186,15 @@ export interface DuressAlert {
   created_at?: string;
 }
 
+// Biometric types (Deepfake Defense)
+export interface BiometricTemplate {
+  id: string;
+  label: string;
+  biometric_type: string;
+  hardware_id: string;
+  enrolled_at: string;
+}
+
 // Alert Config types (Agent Ops UC 4)
 export interface AlertConfig {
   id?: string;
@@ -1095,7 +1251,14 @@ export interface WorkforceOutreach {
   recipient_role?: string;
   subject: string;
   body: string;
-  status: "PENDING_APPROVAL" | "APPROVED" | "SENT" | "DISCARDED";
+  status:
+    | "PENDING_APPROVAL"
+    | "APPROVED"
+    | "SENT"
+    | "REPLIED"
+    | "CONVERTED"
+    | "DISCARDED"
+    | "DRAFT";
   niche: string;
   profile: string;
   score: number;
@@ -1107,7 +1270,7 @@ export interface Task {
   id: string;
   title: string;
   description?: string;
-  status: "pending" | "in_progress" | "completed";
+  status: "pending" | "in_progress" | "completed" | "cancelled";
   priority?: "low" | "medium" | "high";
   due_date?: string;
   assigned_to?: string;
@@ -1121,7 +1284,7 @@ export interface Client {
   name: string;
   email: string;
   company?: string;
-  status: string;
+  status: "prospect" | "active" | "inactive" | "churned";
   created_at?: string;
   updated_at?: string;
 }
@@ -1360,7 +1523,8 @@ export const extendedApi = {
       }),
     getEnterpriseAudits: () =>
       apiRequest<any[]>("/api/v1/compliance/enterprise/audits"),
-    getLiveMetrics: () => apiRequest<any>("/api/v1/compliance/metrics/live"),
+    getLiveMetrics: () =>
+      apiRequest<ComplianceLiveMetrics>("/api/v1/compliance/metrics/live"),
     updatePolicy: (policyData: any) =>
       apiRequest<any>("/api/v1/compliance/policy/update", {
         method: "POST",
@@ -1372,7 +1536,6 @@ export const extendedApi = {
         method: "DELETE",
         strict: true,
       }),
-    get: () => apiRequest<any[]>("/api/v1/compliance/incidents"),
     updateIncidentStatus: (incidentId: string, status: string) =>
       apiRequest<any>(`/api/v1/compliance/incidents/${incidentId}`, {
         method: "PATCH",
@@ -1400,6 +1563,17 @@ export const extendedApi = {
     testNotification: (channel: string = "slack") =>
       apiRequest<any>(`/api/v1/notifications/test?channel=${channel}`, {
         method: "POST",
+      }),
+    updateSsoConfig: (config: any) =>
+      apiRequest<any>("/api/v1/compliance/sso/update", {
+        method: "POST",
+        body: JSON.stringify(config),
+        strict: true,
+      }),
+    verifyProxy: (url: string) =>
+      apiRequest<{ status: string }>("/api/v1/compliance/proxy/verify", {
+        method: "POST",
+        body: JSON.stringify({ url }),
       }),
     updateGuardrails: (modelId: string, guardrails: any) =>
       apiRequest<any>(`/api/v1/compliance/models/${modelId}/guardrails`, {
@@ -1435,8 +1609,10 @@ export const extendedApi = {
         body: JSON.stringify({ article_id: articleId, scan_type: scanType }),
         strict: true,
       }),
-    getArticles: () => apiRequest<any[]>("/api/v1/compliance/articles"),
-    listConnections: () => apiRequest<any[]>("/api/v1/compliance/connections"),
+    getArticles: () =>
+      apiRequest<ComplianceArticle[]>("/api/v1/compliance/articles"),
+    listConnections: () =>
+      apiRequest<ComplianceConnection[]>("/api/v1/compliance/connections"),
     listScans: (article_id?: string) => {
       const url = article_id
         ? `/api/v1/compliance/scans/${article_id}`
@@ -1601,7 +1777,9 @@ export const extendedApi = {
       let url = "/api/v1/shadow-ai/detections?";
       if (riskLevel) url += `risk_level=${riskLevel}&`;
       if (status) url += `status=${status}`;
-      return apiRequest<ShadowAIDetection[]>(url).then(data => data.map(d => ({ ...d, id: d.id })));
+      return apiRequest<ShadowAIDetection[]>(url).then(data =>
+        data.map(d => ({ ...d, id: d.id }))
+      );
     },
     create: (detection: ShadowAIDetection) =>
       apiRequest<ShadowAIDetection>("/api/v1/shadow-ai/detections", {
@@ -1623,12 +1801,28 @@ export const extendedApi = {
           method: "PUT",
         }
       ),
-    stats: () =>
-      apiRequest<{
-        total_detections: number;
-        by_risk_level: Record<string, number>;
-        by_status: Record<string, number>;
-      }>("/api/v1/shadow-ai/stats"),
+    stats: () => apiRequest<ShadowAIStats>("/api/v1/shadow-ai/stats"),
+    detect: (url: string, sourceIp?: string, userEmail?: string) =>
+      apiRequest<{ status: string; detection?: ShadowAIDetection }>(
+        "/api/v1/shadow-ai/detect",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            url,
+            source_ip: sourceIp,
+            user_email: userEmail,
+          }),
+        }
+      ),
+    scanLogs: (logs: string[]) =>
+      apiRequest<{ detected: any[]; count: number }>(
+        "/api/v1/shadow-ai/scan-logs",
+        {
+          method: "POST",
+          body: JSON.stringify(logs),
+        }
+      ),
+    getReport: () => apiRequest<ShadowAIReport>("/api/v1/shadow-ai/report"),
   },
 
   // Mobile SDK (Deepfake UC 5)
@@ -1907,7 +2101,7 @@ export const extendedApi = {
         body: JSON.stringify(incidentData),
         strict: true,
       }),
-    listIncidents: () => apiRequest<any[]>("/api/v1/compliance/incidents"),
+    listIncidents: () => apiRequest<Incident[]>("/api/v1/compliance/incidents"),
     runBiasScan: (model_id: string) =>
       apiRequest<any>("/api/v1/compliance/bias-scan", {
         method: "POST",
@@ -2124,8 +2318,7 @@ export const extendedApi = {
   },
 
   enterprise: {
-    getSlaTier: () =>
-      apiRequest<{ tier: string; active: boolean }>("/api/v1/enterprise/sla"),
+    getSlaTier: () => apiRequest<SLATierInfo>("/api/v1/enterprise/sla"),
     updateSlaTier: (tier: string) =>
       apiRequest<any>("/api/v1/enterprise/sla", {
         method: "PUT",
@@ -2407,6 +2600,11 @@ export const extendedApi = {
       apiRequest<any>(`/api/v1/vendors/${id}`, {
         method: "DELETE",
       }),
+    audit: (id: string) =>
+      apiRequest<any>(`/api/v1/vendors/${id}/audit`, {
+        method: "POST",
+      }),
+    getRiskReport: () => apiRequest<any>("/api/v1/vendors/report"),
   },
   agents: {
     list: () => apiRequest<any[]>("/agents"),
@@ -2547,14 +2745,18 @@ export const extendedApi = {
         body: JSON.stringify(model),
         strict: true,
       }),
-    listBiometrics: () => apiRequest<any[]>("/api/v1/deepfake/biometrics"),
+    listBiometrics: () =>
+      apiRequest<BiometricTemplate[]>("/api/v1/deepfake/biometrics"),
     revokeBiometric: (id: string) =>
-      apiRequest<any>(`/api/v1/deepfake/biometrics/${id}/revoke`, {
-        method: "DELETE",
-        strict: true,
-      }),
+      apiRequest<BiometricTemplate>(
+        `/api/v1/deepfake/biometrics/${id}/revoke`,
+        {
+          method: "DELETE",
+          strict: true,
+        }
+      ),
     enrollBiometric: (data: any) =>
-      apiRequest<any>("/api/v1/deepfake/biometrics", {
+      apiRequest<BiometricTemplate>("/api/v1/deepfake/biometrics", {
         method: "POST",
         body: JSON.stringify(data),
         strict: true,
@@ -2608,7 +2810,8 @@ export const extendedApi = {
     sla: {
       getDashboard: () =>
         apiRequest<any>("/agent-ops/governance/sla/dashboard"),
-      getMetrics: () => apiRequest<any[]>("/agent-ops/governance/sla/metrics"),
+      getMetrics: () =>
+        apiRequest<SLAMetric[]>("/agent-ops/governance/sla/metrics"),
     },
     partners: {
       list: () => apiRequest<any[]>("/agent-ops/governance/partners"),
@@ -2672,9 +2875,11 @@ export const extendedApi = {
           }
         ),
     },
-    getAuditQuorum: () => apiRequest<any>("/api/v1/agent-ops/governance/audit-quorum"),
+    getAuditQuorum: () =>
+      apiRequest<any>("/api/v1/agent-ops/governance/audit-quorum"),
     getAuditLogs: () => apiRequest<any[]>("/api/v1/agent-ops/audit"),
-    getGovernanceStats: () => apiRequest<any>("/api/v1/agent-ops/governance/stats"),
+    getGovernanceStats: () =>
+      apiRequest<any>("/api/v1/agent-ops/governance/stats"),
     createApprovalRequest: (request: any) =>
       apiRequest<any>("/api/v1/agent-ops/governance/approvals", {
         method: "POST",
@@ -2690,7 +2895,9 @@ export const extendedApi = {
     getWorkforceEfficiency: () =>
       apiRequest<any>("/api/v1/workforce/efficiency"),
     getLLMPerformance: (agentId: string, days: number) =>
-      apiRequest<any>(`/api/v1/agent-ops/llm/performance?agent_id=${agentId}&days=${days}`),
+      apiRequest<any>(
+        `/api/v1/agent-ops/llm/performance?agent_id=${agentId}&days=${days}`
+      ),
     optimizeAgent: (agentId: string) =>
       apiRequest<any>(`/api/v1/agent-ops/optimize/${agentId}`, {
         method: "POST",

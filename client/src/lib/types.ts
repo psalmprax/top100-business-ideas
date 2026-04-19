@@ -9,8 +9,8 @@
 
 export interface BaseEntity {
   id: string;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }
 
 export interface User extends BaseEntity {
@@ -18,7 +18,7 @@ export interface User extends BaseEntity {
   name: string;
   avatar?: string;
   role: "admin" | "user" | "viewer";
-  organizationId?: string;
+  organization_id?: string;
   mfa_enabled?: boolean;
 }
 
@@ -55,20 +55,27 @@ export interface Agent {
   status: AgentStatus;
   config: AgentConfig;
   metrics: AgentMetrics;
-  createdAt: Date;
-  lastActiveAt: Date;
+  created_at: Date;
+  last_active_at: Date;
 }
 
 export type AgentType = "langgraph" | "crewai" | "autogen" | "custom";
-export type AgentStatus = "active" | "paused" | "error" | "stopped";
+export type AgentStatus =
+  | "RUNNING"
+  | "STOPPED"
+  | "ERROR"
+  | "PAUSED"
+  | "active"
+  | "paused"
+  | "stopped";
 export type Provider = "openai" | "anthropic" | "google" | "custom";
 
 export interface AgentConfig {
   provider: Provider;
   model: string;
-  maxTokens: number;
+  max_tokens: number;
   temperature: number;
-  reasoningBudget?: number;
+  reasoning_budget?: number;
   rules: AgentRule[];
 }
 
@@ -87,13 +94,18 @@ export type AgentRuleType =
   | "pii_filter";
 
 export interface AgentMetrics {
-  totalRequests: number;
-  totalTokens: number;
-  totalCost: number;
-  avgLatencyMs: number;
-  errorRate: number;
-  loopCount: number;
-  cacheHits: number;
+  total_requests: number;
+  total_tokens: number;
+  total_cost: number;
+  avg_latency_ms: number;
+  error_rate: number;
+  loop_count: number;
+  cache_hits: number;
+  tasks_total?: number;
+  tasks_completed?: number;
+  tasks_failed?: number;
+  compute_load?: number;
+  p99_latency?: number;
 }
 
 // ============================================================================
@@ -185,9 +197,9 @@ export type AlertSeverity = "info" | "warning" | "critical";
 // ============================================================================
 
 export interface AuthToken {
-  accessToken: string;
-  refreshToken: string;
-  expiresAt: number;
+  access_token: string;
+  refresh_token: string;
+  expires_at: number;
 }
 
 export interface LoginRequest {
@@ -212,9 +224,9 @@ export interface Subscription {
   id: string;
   plan: Plan;
   status: SubscriptionStatus;
-  currentPeriodStart: Date;
-  currentPeriodEnd: Date;
-  cancelAtPeriodEnd: boolean;
+  current_period_start: Date;
+  current_period_end: Date;
+  cancel_at_period_end: boolean;
 }
 
 export type SubscriptionStatus =
@@ -228,8 +240,8 @@ export interface Invoice {
   amount: number;
   currency: string;
   status: "paid" | "pending" | "failed";
-  paidAt?: Date;
-  createdAt: Date;
+  paid_at?: Date;
+  created_at: Date;
 }
 
 export interface UsageRecord {
@@ -240,12 +252,12 @@ export interface UsageRecord {
 }
 
 export interface UsageSummary {
-  totalRequests: number;
-  totalTokens: number;
-  totalCost: number;
+  total_requests: number;
+  total_tokens: number;
+  total_cost: number;
   period: UsagePeriod;
-  startDate: Date;
-  endDate: Date;
+  start_date: Date;
+  end_date: Date;
 }
 
 export type UsagePeriod = "daily" | "monthly" | "yearly";
@@ -260,7 +272,7 @@ export interface ComplianceCheck {
   status: ComplianceStatus;
   score: number;
   findings: ComplianceFinding[];
-  checkedAt: Date;
+  checked_at: Date;
 }
 
 export type ComplianceCheckType =
@@ -281,11 +293,11 @@ export type FindingSeverity = "low" | "medium" | "high" | "critical";
 
 export interface DeepfakeAnalysis {
   id: string;
-  mediaUrl: string;
-  mediaType: MediaType;
+  media_url: string;
+  media_type: MediaType;
   result: AnalysisResult;
   confidence: number;
-  analysisAt: Date;
+  analysis_at: Date;
   details: DeepfakeDetails;
 }
 
@@ -305,11 +317,11 @@ export interface DeepfakeDetails {
 
 export interface TestRun {
   id: string;
-  ventureId: string;
+  venture_id: string;
   type: TestType;
   status: TestStatus;
-  startedAt: Date;
-  completedAt?: Date;
+  started_at: Date;
+  completed_at?: Date;
   results: TestResult[];
   coverage?: TestCoverage;
 }
@@ -337,21 +349,21 @@ export interface TestCoverage {
 
 export interface ProxyRequest {
   id: string;
-  agentId: string;
+  agent_id: string;
   prompt: string;
   model: string;
-  maxTokens: number;
+  max_tokens: number;
   metadata: Record<string, unknown>;
 }
 
 export interface ProxyResponse {
   id: string;
-  requestId: string;
+  request_id: string;
   response: string;
   tokens: number;
   cost: number;
   cached: boolean;
-  latencyMs: number;
+  latency_ms: number;
 }
 
 export interface RateLimitConfig {
