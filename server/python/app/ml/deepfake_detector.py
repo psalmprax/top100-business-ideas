@@ -22,6 +22,48 @@ except ImportError:
     TORCH_AVAILABLE = False
     logger.warning("PyTorch not available - ML-based deepfake detection disabled")
 
+if not TORCH_AVAILABLE:
+    class nn:
+        class Module:
+            def __init__(self, *args, **kwargs):
+                pass
+            def __call__(self, *args, **kwargs):
+                return self
+            def to(self, *args, **kwargs):
+                return self
+            def eval(self, *args, **kwargs):
+                return self
+            def parameters(self, *args, **kwargs):
+                return []
+        
+        class Sequential(Module): pass
+        class Conv2d(Module): pass
+        class BatchNorm2d(Module): pass
+        class ReLU(Module): pass
+        class MaxPool2d(Module): pass
+        class AdaptiveAvgPool2d(Module): pass
+        class Flatten(Module): pass
+        class Linear(Module): pass
+        class Dropout(Module): pass
+
+if not TORCH_AVAILABLE:
+    class torch:
+        def device(self, *args, **kwargs): return "cpu"
+        def load(self, *args, **kwargs): return {}
+        def from_numpy(self, *args, **kwargs): return None
+        class no_grad:
+            def __enter__(self): pass
+            def __exit__(self, *args): pass
+        def softmax(self, *args, **kwargs): return None
+        class optim:
+            class Adam:
+                def __init__(self, *args, **kwargs): pass
+                def step(self): pass
+                def zero_grad(self): pass
+        class tensor:
+            def __init__(self, *args, **kwargs): pass
+            def to(self, *args, **kwargs): return self
+
 try:
     import cv2
 
