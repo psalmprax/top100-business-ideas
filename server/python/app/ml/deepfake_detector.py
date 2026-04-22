@@ -50,7 +50,10 @@ if not TORCH_AVAILABLE:
     class torch:
         def device(self, *args, **kwargs): return "cpu"
         def load(self, *args, **kwargs): return {}
+        def save(self, *args, **kwargs): pass
         def from_numpy(self, *args, **kwargs): return None
+        class cuda:
+            def is_available(): return False
         class no_grad:
             def __enter__(self): pass
             def __exit__(self, *args): pass
@@ -63,6 +66,7 @@ if not TORCH_AVAILABLE:
         class tensor:
             def __init__(self, *args, **kwargs): pass
             def to(self, *args, **kwargs): return self
+        Tensor = tensor
 
 try:
     import cv2
