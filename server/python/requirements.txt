@@ -65,7 +65,7 @@ ddgs>=9.0.0
 hermes-agent @ git+https://github.com/NousResearch/hermes-agent.git@v2026.4.8#egg=hermes-agent
 
 # Local AgentOps SDK
--e ../../packages/agentops-sdk-python
+-e ./packages/agentops-sdk-python
 
 # Missing dependencies for tools and scraping
 beautifulsoup4>=4.12.3

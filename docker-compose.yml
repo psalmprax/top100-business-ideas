@@ -46,8 +46,8 @@ services:
   # Python AI/ML Backend
   python-backend:
     build:
-      context: ./server/python
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: server/python/Dockerfile
     ports:
       - "7002:8000"
     environment:

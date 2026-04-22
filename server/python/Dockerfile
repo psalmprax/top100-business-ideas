@@ -13,14 +13,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
-COPY requirements.txt .
+COPY server/python/requirements.txt .
+COPY packages/agentops-sdk-python ./packages/agentops-sdk-python
 
 # Install Python dependencies
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # Copy source code
-COPY . .
+COPY server/python .
 
 EXPOSE 8000
 
