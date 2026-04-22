@@ -4,25 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// AuthHandler defines the interface for auth handlers
-type AuthHandler interface {
-	Login(c *gin.Context)
-	Register(c *gin.Context)
-	RefreshToken(c *gin.Context)
-	RequestPasswordReset(c *gin.Context)
-	ResetPassword(c *gin.Context)
-	Me(c *gin.Context)
-	Logout(c *gin.Context)
-}
 
-// UserHandler defines the interface for user handlers
-type UserHandler interface {
-	UpdateProfile(c *gin.Context)
-	UpdatePassword(c *gin.Context)
-	ListAPIKeys(c *gin.Context)
-	CreateAPIKey(c *gin.Context)
-	DeleteAPIKey(c *gin.Context)
-}
 
 // SetupAuthRoutes sets up authentication and user routes
 func SetupAuthRoutes(v1 *gin.RouterGroup, authHandler AuthHandler, userHandler UserHandler, authMiddleware gin.HandlerFunc) {

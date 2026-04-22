@@ -4,32 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// WorkforceHandler defines the interface for digital workforce operations
-type WorkforceHandler interface {
-	GetStatus(c *gin.Context)
-	ListDecisions(c *gin.Context)
-	ListTraces(c *gin.Context)
-	RequestApproval(c *gin.Context)
-	HandleCallback(c *gin.Context)
-	RecoverRevenue(c *gin.Context)
-	RunCampaign(c *gin.Context)
-	SourceLeads(c *gin.Context)
-	AnalyzeInsights(c *gin.Context)
-	HandleInbound(c *gin.Context)
-	ProvideFeedback(c *gin.Context)
-	GetSkills(c *gin.Context)
-	GetJobs(c *gin.Context)
-	GetAcquisitions(c *gin.Context)
-	GetContentDrafts(c *gin.Context)
-	RunAutosearch(c *gin.Context)
-	GetOutreachDrafts(c *gin.Context)
-	ApproveOutreach(c *gin.Context)
-	GetInvoices(c *gin.Context)
-	ActivateReferral(c *gin.Context)
-	GetReferralStats(c *gin.Context)
-	ToggleAutonomy(c *gin.Context)
-	DeployCheck(c *gin.Context)
-}
+
 
 // SetupWorkforceRoutes sets up digital workforce management routes
 func SetupWorkforceRoutes(

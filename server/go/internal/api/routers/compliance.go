@@ -4,45 +4,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// ComplianceHandler defines the interface for compliance handlers
-type ComplianceHandler interface {
-	GetStats(c *gin.Context)
-	ListChecks(c *gin.Context)
-	GetCheck(c *gin.Context)
-	RunCheck(c *gin.Context)
-	GetCategories(c *gin.Context)
-	GenerateDocumentation(c *gin.Context)
-	ListAuditLogs(c *gin.Context)
-	UpdateIncidentStatus(c *gin.Context)
-	UploadArtifact(c *gin.Context)
-	ListArtifacts(c *gin.Context)
-	GetROIMetrics(c *gin.Context)
-	GetVelocityTrends(c *gin.Context)
-	GetDeadlines(c *gin.Context)
-	GetEnterpriseAudits(c *gin.Context)
-	GetModelBreakdown(c *gin.Context)
-	GetModelAudits(c *gin.Context)
-	GetModelHandshakes(c *gin.Context)
-	GetRegionalReports(c *gin.Context)
-	GetFinancialMetrics(c *gin.Context)
-	ListChecklists(c *gin.Context)
-	UpdateChecklistItem(c *gin.Context)
-	ListModels(c *gin.Context)
-	RegisterModel(c *gin.Context)
-	GetBiasReports(c *gin.Context)
-	TriggerBiasScan(c *gin.Context)
-	RedTeamAudit(c *gin.Context)
-	ExportReport(c *gin.Context)
-	EURegister(c *gin.Context)
-	UpdateSSOConfig(c *gin.Context)
-	VerifyProxy(c *gin.Context)
-	ListConnections(c *gin.Context)
-	ConnectSystem(c *gin.Context)
-	RunGeneralScan(c *gin.Context)
-	ListScans(c *gin.Context)
-	DeleteVendor(c *gin.Context)
-}
-
 // SetupComplianceRoutes sets up compliance routes
 func SetupComplianceRoutes(
 	protected *gin.RouterGroup,

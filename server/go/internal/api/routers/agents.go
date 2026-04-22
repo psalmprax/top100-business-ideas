@@ -4,29 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// AgentOpsHandler defines the interface for agent operations handlers
-type AgentOpsHandler interface {
-	ListAgents(c *gin.Context)
-	GetAgentLogs(c *gin.Context)
-	GetForecast(c *gin.Context)
-	CreateAgent(c *gin.Context)
-	UpdateAgent(c *gin.Context)
-	DeleteAgent(c *gin.Context)
-	StopAgent(c *gin.Context)
-	RestartAgent(c *gin.Context)
-	CloneConfig(c *gin.Context)
-	OptimizeMemory(c *gin.Context)
-	GetAgentMetrics(c *gin.Context)
-	GetAgentHistory(c *gin.Context)
-	ProxyToPython(c *gin.Context)
-	GetAuditLogs(c *gin.Context)
-	ListLLMConfigs(c *gin.Context)
-	SyncLinguisticPackage(c *gin.Context)
-	RunForensics(c *gin.Context)
-	ProvisionClient(c *gin.Context)
-	ListVentureInsights(c *gin.Context)
-	AnalyzeVentureScenario(c *gin.Context)
-}
+
 
 // SetupAgentRoutes sets up agent operations routes
 func SetupAgentRoutes(

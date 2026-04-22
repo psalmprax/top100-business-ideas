@@ -4,70 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// PanicHandler defines the interface for panic handlers
-type PanicHandler interface {
-	Lock(c *gin.Context)
-	Reset(c *gin.Context)
-}
 
-// DeepfakeHandler defines the interface for deepfake handlers
-type DeepfakeHandler interface {
-	Analyze(c *gin.Context)
-	Upload(c *gin.Context)
-	ListAnalyses(c *gin.Context)
-	GetAnalysis(c *gin.Context)
-	GetStats(c *gin.Context)
-	CreateChallenge(c *gin.Context)
-	VerifyAuthSignature(c *gin.Context)
-	AnalyzeEnterprise(c *gin.Context)
-	ListDetectors(c *gin.Context)
-	GetDuressConfig(c *gin.Context)
-	UpdateDuressConfig(c *gin.Context)
-}
-
-// DenialDefenseHandler defines the interface for denial defense handlers
-type DenialDefenseHandler interface {
-	ListClaims(c *gin.Context)
-	GetStats(c *gin.Context)
-	CreateClaim(c *gin.Context)
-	UpdateClaim(c *gin.Context)
-}
-
-// EnterpriseHandler defines the interface for enterprise handlers
-type EnterpriseHandler interface {
-	GetPartnerConfig(c *gin.Context)
-	UpdateSlaTier(c *gin.Context)
-}
-
-// RulesHandler defines the interface for rules handlers
-type RulesHandler interface {
-	ListRules(c *gin.Context)
-	CreateRule(c *gin.Context)
-	UpdateRule(c *gin.Context)
-	DeleteRule(c *gin.Context)
-	ToggleRule(c *gin.Context)
-}
-
-// MetricsHandler defines the interface for metrics handlers
-type MetricsHandler interface {
-	GetCurrentMetrics(c *gin.Context)
-	GetMetricsHistory(c *gin.Context)
-	GetAgentMetrics(c *gin.Context)
-}
-
-// BillingHandler defines the interface for billing handlers
-type BillingHandler interface {
-	GetSubscription(c *gin.Context)
-	GetInvoices(c *gin.Context)
-	CreateCheckout(c *gin.Context)
-	CancelSubscription(c *gin.Context)
-	UpdatePaymentMethod(c *gin.Context)
-}
-
-// WSHandler defines the interface for websocket handlers
-type WSHandler interface {
-	HandleWebSocket(c *gin.Context)
-}
 
 // SetupPanicRoutes sets up administrative panic routes
 func SetupPanicRoutes(v1 *gin.RouterGroup, panicHandler PanicHandler) {

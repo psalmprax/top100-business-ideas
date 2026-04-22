@@ -7,6 +7,218 @@ import (
 	"github.com/top100-business-ideas/api/internal/middleware"
 )
 
+// ComplianceHandler defines the interface for compliance handlers
+type ComplianceHandler interface {
+	GetStats(c *gin.Context)
+	ListChecks(c *gin.Context)
+	GetCheck(c *gin.Context)
+	RunCheck(c *gin.Context)
+	GetCategories(c *gin.Context)
+	GenerateDocumentation(c *gin.Context)
+	ListAuditLogs(c *gin.Context)
+	UpdateIncidentStatus(c *gin.Context)
+	UploadArtifact(c *gin.Context)
+	ListArtifacts(c *gin.Context)
+	GetROIMetrics(c *gin.Context)
+	GetVelocityTrends(c *gin.Context)
+	GetDeadlines(c *gin.Context)
+	GetEnterpriseAudits(c *gin.Context)
+	GetModelBreakdown(c *gin.Context)
+	GetModelAudits(c *gin.Context)
+	GetModelHandshakes(c *gin.Context)
+	GetRegionalReports(c *gin.Context)
+	GetFinancialMetrics(c *gin.Context)
+	ListChecklists(c *gin.Context)
+	UpdateChecklistItem(c *gin.Context)
+	ListModels(c *gin.Context)
+	RegisterModel(c *gin.Context)
+	UpdateGuardrails(c *gin.Context)
+	GetBiasReports(c *gin.Context)
+	TriggerBiasScan(c *gin.Context)
+	RedTeamAudit(c *gin.Context)
+	ExportReport(c *gin.Context)
+	EURegister(c *gin.Context)
+	UpdateSSOConfig(c *gin.Context)
+	VerifyProxy(c *gin.Context)
+	ListConnections(c *gin.Context)
+	ConnectSystem(c *gin.Context)
+	RunGeneralScan(c *gin.Context)
+	ListScans(c *gin.Context)
+	DeleteVendor(c *gin.Context)
+}
+
+// AgentOpsHandler defines the interface for agent operations handlers
+type AgentOpsHandler interface {
+	ListAgents(c *gin.Context)
+	GetAgentLogs(c *gin.Context)
+	GetForecast(c *gin.Context)
+	CreateAgent(c *gin.Context)
+	UpdateAgent(c *gin.Context)
+	DeleteAgent(c *gin.Context)
+	StopAgent(c *gin.Context)
+	RestartAgent(c *gin.Context)
+	CloneConfig(c *gin.Context)
+	OptimizeMemory(c *gin.Context)
+	GetAgentMetrics(c *gin.Context)
+	GetAgentHistory(c *gin.Context)
+	ProxyToPython(c *gin.Context)
+	GetAuditLogs(c *gin.Context)
+	ListLLMConfigs(c *gin.Context)
+	SyncLinguisticPackage(c *gin.Context)
+	RunForensics(c *gin.Context)
+	ProvisionClient(c *gin.Context)
+	ListVentureInsights(c *gin.Context)
+	AnalyzeVentureScenario(c *gin.Context)
+}
+
+// ProxyHandler defines the interface for proxy handlers
+type ProxyHandler interface {
+	ProxyToPython(c *gin.Context)
+}
+
+// PanicHandler interface
+type PanicHandler interface {
+	Lock(c *gin.Context)
+	Reset(c *gin.Context)
+}
+
+// DeepfakeHandler interface
+type DeepfakeHandler interface {
+	Analyze(c *gin.Context)
+	Upload(c *gin.Context)
+	ListAnalyses(c *gin.Context)
+	GetAnalysis(c *gin.Context)
+	GetStats(c *gin.Context)
+	CreateChallenge(c *gin.Context)
+	VerifyAuthSignature(c *gin.Context)
+	AnalyzeEnterprise(c *gin.Context)
+	ListDetectors(c *gin.Context)
+	GetDuressConfig(c *gin.Context)
+	UpdateDuressConfig(c *gin.Context)
+}
+
+// DenialDefenseHandler interface
+type DenialDefenseHandler interface {
+	ListClaims(c *gin.Context)
+	GetStats(c *gin.Context)
+	CreateClaim(c *gin.Context)
+	UpdateClaim(c *gin.Context)
+}
+
+// EnterpriseHandler interface
+type EnterpriseHandler interface {
+	GetPartnerConfig(c *gin.Context)
+	UpdateSlaTier(c *gin.Context)
+}
+
+// RulesHandler interface
+type RulesHandler interface {
+	ListRules(c *gin.Context)
+	CreateRule(c *gin.Context)
+	UpdateRule(c *gin.Context)
+	DeleteRule(c *gin.Context)
+	ToggleRule(c *gin.Context)
+}
+
+// MetricsHandler interface
+type MetricsHandler interface {
+	GetCurrentMetrics(c *gin.Context)
+	GetMetricsHistory(c *gin.Context)
+	GetAgentMetrics(c *gin.Context)
+}
+
+// BillingHandler interface
+type BillingHandler interface {
+	GetSubscription(c *gin.Context)
+	GetInvoices(c *gin.Context)
+	CreateCheckout(c *gin.Context)
+	CancelSubscription(c *gin.Context)
+	UpdatePaymentMethod(c *gin.Context)
+}
+
+// WSHandler interface
+type WSHandler interface {
+	HandleWebSocket(c *gin.Context)
+}
+
+// AuthHandler interface
+type AuthHandler interface {
+	Login(c *gin.Context)
+	Register(c *gin.Context)
+	RefreshToken(c *gin.Context)
+	RequestPasswordReset(c *gin.Context)
+	ResetPassword(c *gin.Context)
+	Me(c *gin.Context)
+	Logout(c *gin.Context)
+}
+
+// UserHandler interface
+type UserHandler interface {
+	UpdateProfile(c *gin.Context)
+	UpdatePassword(c *gin.Context)
+	ListAPIKeys(c *gin.Context)
+	CreateAPIKey(c *gin.Context)
+	DeleteAPIKey(c *gin.Context)
+}
+
+// WorkforceHandler interface
+type WorkforceHandler interface {
+	GetStatus(c *gin.Context)
+	ListDecisions(c *gin.Context)
+	ListTraces(c *gin.Context)
+	RequestApproval(c *gin.Context)
+	HandleCallback(c *gin.Context)
+	RecoverRevenue(c *gin.Context)
+	RunCampaign(c *gin.Context)
+	SourceLeads(c *gin.Context)
+	AnalyzeInsights(c *gin.Context)
+	HandleInbound(c *gin.Context)
+	ProvideFeedback(c *gin.Context)
+	GetSkills(c *gin.Context)
+	GetJobs(c *gin.Context)
+	GetAcquisitions(c *gin.Context)
+	GetContentDrafts(c *gin.Context)
+	RunAutosearch(c *gin.Context)
+	GetOutreachDrafts(c *gin.Context)
+	ApproveOutreach(c *gin.Context)
+	GetInvoices(c *gin.Context)
+	ActivateReferral(c *gin.Context)
+	GetReferralStats(c *gin.Context)
+	ToggleAutonomy(c *gin.Context)
+	DeployCheck(c *gin.Context)
+}
+
+// VendorHandler interface
+type VendorHandler interface {
+	ListVendors(c *gin.Context)
+	AddVendor(c *gin.Context)
+	DeleteVendor(c *gin.Context)
+	AuditVendor(c *gin.Context)
+	GetRiskReport(c *gin.Context)
+}
+
+// IntelligenceHandler interface
+type IntelligenceHandler interface {
+	// Generic Intelligence
+	GetStrategicInsights(c *gin.Context)
+	GetMarketTrends(c *gin.Context)
+	GetRiskAssessment(c *gin.Context)
+	GetOptimizationRules(c *gin.Context)
+	// Hermes Specific
+	HermesSuggestFix(c *gin.Context)
+	HermesValidateStrategy(c *gin.Context)
+}
+
+// MLHandler interface
+type MLHandler interface {
+	ProxyML(c *gin.Context)
+	Infer(c *gin.Context)
+	ListModels(c *gin.Context)
+	ClassifyAgentOperation(c *gin.Context)
+	CheckCompliance(c *gin.Context)
+	DetectDeepfake(c *gin.Context)
+}
+
 // HandlerContainer holds all handler implementations
 type HandlerContainer struct {
 	PanicHandler         PanicHandler
@@ -54,6 +266,9 @@ type HandlerContainer struct {
 		ScanLogs(c *gin.Context)
 		GetReport(c *gin.Context)
 		RemediateDetection(c *gin.Context)
+		CreateDetection(c *gin.Context)
+		BlockTool(c *gin.Context)
+		AllowTool(c *gin.Context)
 	}
 	TrainingHandler interface {
 		ListModules(c *gin.Context)
@@ -82,28 +297,9 @@ type HandlerContainer struct {
 		GetOnPremDeployments(c *gin.Context)
 		DeployOnPrem(c *gin.Context)
 	}
-	MLHandler interface {
-		ProxyML(c *gin.Context)
-		Infer(c *gin.Context)
-		ListModels(c *gin.Context)
-		ClassifyAgentOperation(c *gin.Context)
-		CheckCompliance(c *gin.Context)
-		DetectDeepfake(c *gin.Context)
-	}
-	WorkforceHandler     WorkforceHandler
-	VendorHandler        VendorHandler
-}
-
-// IntelligenceHandler interface
-type IntelligenceHandler interface {
-	// Generic Intelligence
-	GetStrategicInsights(c *gin.Context)
-	GetMarketTrends(c *gin.Context)
-	GetRiskAssessment(c *gin.Context)
-	GetOptimizationRules(c *gin.Context)
-	// Hermes Specific
-	HermesSuggestFix(c *gin.Context)
-	HermesValidateStrategy(c *gin.Context)
+	MLHandler        MLHandler
+	WorkforceHandler WorkforceHandler
+	VendorHandler    VendorHandler
 }
 
 // MiddlewareContainer holds all middleware functions

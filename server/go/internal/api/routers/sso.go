@@ -4,10 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// ProxyHandler defines the interface for proxy handlers
-type ProxyHandler interface {
-	ProxyToPython(c *gin.Context)
-}
+
 
 // SetupSSORoutes sets up SSO and identity routes
 func SetupSSORoutes(v1 *gin.RouterGroup, agentOpsHandler ProxyHandler, authMiddleware gin.HandlerFunc) {
