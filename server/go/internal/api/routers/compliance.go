@@ -33,6 +33,14 @@ type ComplianceHandler interface {
 	TriggerBiasScan(c *gin.Context)
 	RedTeamAudit(c *gin.Context)
 	ExportReport(c *gin.Context)
+	EURegister(c *gin.Context)
+	UpdateSSOConfig(c *gin.Context)
+	VerifyProxy(c *gin.Context)
+	ListConnections(c *gin.Context)
+	ConnectSystem(c *gin.Context)
+	RunGeneralScan(c *gin.Context)
+	ListScans(c *gin.Context)
+	DeleteVendor(c *gin.Context)
 }
 
 // SetupComplianceRoutes sets up compliance routes
@@ -86,5 +94,15 @@ func SetupComplianceRoutes(
 		compliance.POST("/remediate", agentOpsHandler.ProxyToPython)
 		compliance.POST("/audit/sox", agentOpsHandler.ProxyToPython)
 		compliance.POST("/audit/hipaa", agentOpsHandler.ProxyToPython)
+		compliance.POST("/eu-register", complianceHandler.EURegister)
+		compliance.POST("/sso/update", complianceHandler.UpdateSSOConfig)
+		compliance.POST("/proxy/verify", complianceHandler.VerifyProxy)
+		compliance.GET("/connections", complianceHandler.ListConnections)
+		compliance.POST("/connect", complianceHandler.ConnectSystem)
+		compliance.POST("/scan", complianceHandler.RunGeneralScan)
+		compliance.GET("/scans/:id", complianceHandler.ListScans)
+
+		// Vendors under compliance as expected by frontend
+		compliance.DELETE("/vendors/:id", complianceHandler.DeleteVendor)
 	}
 }

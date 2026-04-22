@@ -25,6 +25,8 @@ class ComplianceStatus(str, Enum):
     FAILED = "failed"
     PENDING = "pending"
     REVIEW = "review"
+    COMPLIANT = "compliant"
+    NON_COMPLIANT = "non_compliant"
 
 
 class ComplianceCheck(SQLModel, table=True):

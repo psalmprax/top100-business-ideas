@@ -541,6 +541,7 @@ class ComplianceService:
             status="open",
             reported_by=request.get("reported_by", "external_webhook"),
             affected_systems=request.get("affected_systems", ["production_mesh"]),
+            article72=True,
         )
         session.add(incident)
 

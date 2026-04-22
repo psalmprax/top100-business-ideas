@@ -302,7 +302,7 @@ func (h *ComplianceHandler) GetBiasReports(c *gin.Context) {
 
 func (h *ComplianceHandler) TriggerBiasScan(c *gin.Context) {
 	var req struct {
-		ModelID string `json:"modelId"`
+		ModelID string `json:"model_id"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request body"})
@@ -546,6 +546,102 @@ func (h *ComplianceHandler) UpdateIncidentStatus(c *gin.Context) {
 	response, err := h.proxyService.Forward(c, "PATCH", path, req)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to update incident status", Details: err.Error()})
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+func (h *ComplianceHandler) UpdateSSOConfig(c *gin.Context) {
+	var req interface{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request body"})
+		return
+	}
+
+	response, err := h.proxyService.Forward(c, "POST", "/compliance/sso/update", req)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to update SSO config", Details: err.Error()})
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+func (h *ComplianceHandler) VerifyProxy(c *gin.Context) {
+	var req interface{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request body"})
+		return
+	}
+
+	response, err := h.proxyService.Forward(c, "POST", "/compliance/proxy/verify", req)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Proxy verification failed", Details: err.Error()})
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+func (h *ComplianceHandler) ListConnections(c *gin.Context) {
+	response, err := h.proxyService.Forward(c, "GET", "/compliance/connections", nil)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to list connections", Details: err.Error()})
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+func (h *ComplianceHandler) ConnectSystem(c *gin.Context) {
+	var req interface{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request body"})
+		return
+	}
+
+	response, err := h.proxyService.Forward(c, "POST", "/compliance/connect", req)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "System connection failed", Details: err.Error()})
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+func (h *ComplianceHandler) RunGeneralScan(c *gin.Context) {
+	var req interface{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request body"})
+		return
+	}
+
+	response, err := h.proxyService.Forward(c, "POST", "/compliance/scan", req)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Compliance scan failed", Details: err.Error()})
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+func (h *ComplianceHandler) ListScans(c *gin.Context) {
+	id := c.Param("id")
+	response, err := h.proxyService.Forward(c, "GET", "/compliance/scans/"+id, nil)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to list scans", Details: err.Error()})
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+func (h *ComplianceHandler) DeleteVendor(c *gin.Context) {
+	id := c.Param("id")
+	response, err := h.proxyService.Forward(c, "DELETE", "/vendors/"+id, nil)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to delete vendor", Details: err.Error()})
 		return
 	}
 

@@ -47,6 +47,9 @@ class ShadowAIDetection(SQLModel, table=True):
             "user_count": self.user_count,
             "detected_at": self.detected_at.isoformat() if self.detected_at else None,
             "status": self.status,
+            "remediated_at": self.remediated_at.isoformat() if self.remediated_at else None,
+            "category": getattr(self, "category", "Unknown"),
+            "description": getattr(self, "description", ""),
         }
 
 
