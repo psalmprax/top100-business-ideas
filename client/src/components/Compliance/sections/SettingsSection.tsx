@@ -61,7 +61,7 @@ export function SettingsSection() {
   async function handleSaveSso() {
     setSaving(true);
     try {
-      await extendedApi.post("/api/v1/compliance/sso/update", ssoConfig);
+      await extendedApi.compliance.updateSsoConfig(ssoConfig);
       toast.success("SSO configuration updated successfully");
     } catch (err) {
       toast.error("Failed to update SSO settings");
@@ -85,12 +85,7 @@ export function SettingsSection() {
   async function handleVerifyProxy() {
     setSaving(true);
     try {
-      const result = await extendedApi.post<{ status: string }>(
-        "/api/v1/compliance/proxy/verify",
-        {
-          url: proxy,
-        }
-      );
+      const result = await extendedApi.compliance.verifyProxy(proxy);
       setGatewayStatus(result?.status === "healthy" ? "active" : "inactive");
       toast.success(
         result?.status === "healthy"
@@ -108,7 +103,7 @@ export function SettingsSection() {
   async function handleTestAlerts() {
     setSaving(true);
     try {
-      await extendedApi.post("/api/v1/notifications/test", {});
+      await extendedApi.compliance.testNotification();
       toast.success("Test alert sent to all channels");
     } catch (err) {
       toast.error("Failed to send test alerts");

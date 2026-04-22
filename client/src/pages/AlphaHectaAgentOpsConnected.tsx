@@ -51,21 +51,21 @@ function mapAgent(apiAgent: Agent) {
         : apiAgent.config,
     metrics: apiAgent.metrics
       ? {
-          totalRequests: apiAgent.metrics.tasksTotal || 0,
-          totalTokens: 0,
-          totalCost: apiAgent.dailySpend || 0,
-          avgLatencyMs: 0,
-          errorRate: 0,
-          loopCount: 0,
-          cacheHits: 0,
-          loopsPrevented: 0,
-          costSaved: 0,
+          total_requests: apiAgent.metrics.tasks_total || 0,
+          total_tokens: apiAgent.metrics.total_tokens || 0,
+          total_cost: apiAgent.daily_spend || 0,
+          avg_latency_ms: apiAgent.metrics.avg_latency_ms || 0,
+          error_rate: apiAgent.metrics.error_rate || 0,
+          loop_count: apiAgent.metrics.loop_count || 0,
+          cache_hits: apiAgent.metrics.cache_hits || 0,
+          loops_prevented: apiAgent.metrics.loops_prevented || 0,
+          cost_saved: apiAgent.metrics.cost_saved || 0,
         }
       : undefined,
   };
 }
 
-export default function AlphaAgentOpsConnected() {
+export default function AlphaHectaAgentOpsConnected() {
   const [activeTab, setActiveTab] = useState("overview");
   const [agents, setAgents] = useState<Agent[]>([]);
   const [rules, setRules] = useState<Rule[]>([]);
@@ -175,7 +175,12 @@ export default function AlphaAgentOpsConnected() {
     async function fetchLogs() {
       setLogsLoading(true);
       try {
-        const data = await extendedApi.agentOps.getAuditLogs(undefined, undefined, undefined, 50);
+        const data = await extendedApi.agentOps.getAuditLogs(
+          undefined,
+          undefined,
+          undefined,
+          50
+        );
         setAuditLogs(Array.isArray(data) ? data : []);
       } catch (err) {
         setAuditLogs([]);
@@ -236,13 +241,13 @@ export default function AlphaAgentOpsConnected() {
         tier: data.tier,
         persistent_memory: data.persistent_memory,
         environment: data.environment,
-        status: "active",
+        status: "running",
         config: {
           provider: data.provider,
           model: data.model,
           temperature: data.temperature,
-          maxTokens: data.maxTokens
-        }
+          max_tokens: data.max_tokens,
+        },
       });
       const updatedAgents = await agentsApi.list();
       setAgents(updatedAgents);
@@ -346,7 +351,11 @@ export default function AlphaAgentOpsConnected() {
                 : "text-slate-400 hover:text-white"
             }`}
           >
-            {tab === "roi" ? "ROI Analysis" : tab === "infra" ? "Infrastructure" : tab.charAt(0).toUpperCase() + tab.slice(1)}
+            {tab === "roi"
+              ? "ROI Analysis"
+              : tab === "infra"
+                ? "Infrastructure"
+                : tab.charAt(0).toUpperCase() + tab.slice(1)}
           </button>
         ))}
       </div>
@@ -370,7 +379,7 @@ export default function AlphaAgentOpsConnected() {
                 ) : (
                   <>
                     <div className="text-2xl font-bold">
-                      {metrics?.totalTokens?.toLocaleString() || "0"}
+                      {(metrics?.total_tokens || 0).toLocaleString()}
                     </div>
                     <p className="text-sm text-slate-400">this month</p>
                   </>
@@ -392,7 +401,7 @@ export default function AlphaAgentOpsConnected() {
                 ) : (
                   <>
                     <div className="text-2xl font-bold">
-                      ${metrics?.totalCost?.toFixed(2) || "0.00"}
+                      ${(metrics?.total_cost || 0).toFixed(2)}
                     </div>
                     <p className="text-sm text-green-400">
                       -12% from last month
@@ -433,9 +442,16 @@ export default function AlphaAgentOpsConnected() {
                   <Skeleton className="h-8 w-24" />
                 ) : (
                   <>
-                    <div className="text-2xl font-bold">{metrics?.tasksCompleted || 0}</div>
+                    <div className="text-2xl font-bold">
+                      {metrics?.tasks_completed || 0}
+                    </div>
                     <p className="text-sm text-green-400">
-                      ${roiData?.total_savings_usd?.toLocaleString() || ((metrics?.tasksCompleted || 0) * 12.50).toFixed(2)} Secured
+                      $
+                      {roiData?.total_savings_usd?.toLocaleString() ||
+                        ((metrics?.tasks_completed || 0) * 12.5).toFixed(
+                          2
+                        )}{" "}
+                      Secured
                     </p>
                   </>
                 )}
@@ -488,7 +504,7 @@ export default function AlphaAgentOpsConnected() {
                 <div className="space-y-3">
                   {agents.map(agent => {
                     const budgetPercent =
-                      (agent.dailySpend / agent.budget) * 100;
+                      ((agent.daily_spend || 0) / agent.budget) * 100;
                     return (
                       <div
                         key={agent.id}
@@ -506,7 +522,8 @@ export default function AlphaAgentOpsConnected() {
                         <div className="flex items-center gap-6">
                           <div className="text-right">
                             <p className="font-medium">
-                              ${agent.dailySpend.toFixed(2)} / ${agent.budget}
+                              ${(agent.daily_spend || 0).toFixed(2)} / $
+                              {agent.budget}
                             </p>
                             <Progress
                               value={Math.min(budgetPercent, 100)}
@@ -527,11 +544,11 @@ export default function AlphaAgentOpsConnected() {
                             onClick={() =>
                               handleAgentAction(
                                 agent.id,
-                                agent.status === "active" ? "stop" : "start"
+                                agent.status === "running" ? "stop" : "start"
                               )
                             }
                           >
-                            {agent.status === "active" ? (
+                            {agent.status === "running" ? (
                               <Pause className="w-4 h-4" />
                             ) : (
                               <Play className="w-4 h-4" />
@@ -594,7 +611,7 @@ export default function AlphaAgentOpsConnected() {
                       </div>
                       <div>
                         <p className="text-slate-400">Daily Spend</p>
-                        <p>${agent.dailySpend.toFixed(2)}</p>
+                        <p>${(agent.daily_spend || 0).toFixed(2)}</p>
                       </div>
                     </div>
                   </div>
@@ -679,35 +696,53 @@ export default function AlphaAgentOpsConnected() {
           <div className="grid md:grid-cols-3 gap-4">
             <Card className="bg-slate-800 border-slate-700">
               <CardHeader>
-                <CardTitle className="text-sm font-medium text-slate-400">Total Value Secured</CardTitle>
+                <CardTitle className="text-sm font-medium text-slate-400">
+                  Total Value Secured
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-green-400">
                   ${roiData?.total_savings_usd?.toLocaleString() || "0.00"}
                 </div>
-                <p className="text-xs text-slate-500 mt-1">Direct losses prevented</p>
+                <p className="text-xs text-slate-500 mt-1">
+                  Direct losses prevented
+                </p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800 border-slate-700">
               <CardHeader>
-                <CardTitle className="text-sm font-medium text-slate-400">Efficiency Multiplier</CardTitle>
+                <CardTitle className="text-sm font-medium text-slate-400">
+                  Efficiency Multiplier
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-blue-400">
-                  {roiData?.efficiency_gain ? (roiData.efficiency_gain * 100).toFixed(1) : "0.0"}%
+                  {roiData?.efficiency_gain
+                    ? (roiData.efficiency_gain * 100).toFixed(1)
+                    : "0.0"}
+                  %
                 </div>
-                <p className="text-xs text-slate-500 mt-1">Workforce acceleration</p>
+                <p className="text-xs text-slate-500 mt-1">
+                  Workforce acceleration
+                </p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800 border-slate-700">
               <CardHeader>
-                <CardTitle className="text-sm font-medium text-slate-400">Budget Compliance</CardTitle>
+                <CardTitle className="text-sm font-medium text-slate-400">
+                  Budget Compliance
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-yellow-400">
-                  {roiData?.budget_variance ? (100 - Math.abs(roiData.budget_variance * 100)).toFixed(1) : "98.5"}%
+                  {roiData?.budget_variance
+                    ? (100 - Math.abs(roiData.budget_variance * 100)).toFixed(1)
+                    : "98.5"}
+                  %
                 </div>
-                <p className="text-xs text-slate-500 mt-1">Within governance limits</p>
+                <p className="text-xs text-slate-500 mt-1">
+                  Within governance limits
+                </p>
               </CardContent>
             </Card>
           </div>
@@ -721,22 +756,31 @@ export default function AlphaAgentOpsConnected() {
                 <div className="flex justify-between items-center p-4 rounded-lg bg-slate-700/30 border border-slate-600">
                   <div>
                     <h4 className="font-bold">Human Labor Equivalent</h4>
-                    <p className="text-sm text-slate-400">Agents doing work of industrial workforce</p>
+                    <p className="text-sm text-slate-400">
+                      Agents doing work of industrial workforce
+                    </p>
                   </div>
                   <div className="text-right">
                     <div className="text-xl font-bold text-blue-400">
-                      {roiData?.labor_equivalent || Math.floor((metrics?.tasksCompleted || 0) / 12)} FTEs
+                      {roiData?.labor_equivalent ||
+                        Math.floor((metrics?.tasks_completed || 0) / 12)}{" "}
+                      FTEs
                     </div>
                   </div>
                 </div>
                 <div className="flex justify-between items-center p-4 rounded-lg bg-slate-700/30 border border-slate-600">
                   <div>
                     <h4 className="font-bold">Operational Speedup</h4>
-                    <p className="text-sm text-slate-400">Reduction in task latency vs manual processing</p>
+                    <p className="text-sm text-slate-400">
+                      Reduction in task latency vs manual processing
+                    </p>
                   </div>
                   <div className="text-right">
                     <div className="text-xl font-bold text-green-400">
-                      {roiData?.speedup_perc ? (roiData.speedup_perc * 100).toFixed(0) : "85"}% Faster
+                      {roiData?.speedup_perc
+                        ? (roiData.speedup_perc * 100).toFixed(0)
+                        : "85"}
+                      % Faster
                     </div>
                   </div>
                 </div>
@@ -760,13 +804,26 @@ export default function AlphaAgentOpsConnected() {
               <CardContent>
                 <div className="space-y-4">
                   {infraStatus?.clusters?.map((cluster: any, idx: number) => (
-                    <div key={idx} className="flex justify-between items-center">
-                      <span className="text-sm font-medium">{cluster.region}</span>
+                    <div
+                      key={idx}
+                      className="flex justify-between items-center"
+                    >
+                      <span className="text-sm font-medium">
+                        {cluster.region}
+                      </span>
                       <div className="flex items-center gap-2">
-                        <Badge className={cluster.status === "healthy" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-100"}>
+                        <Badge
+                          className={
+                            cluster.status === "healthy"
+                              ? "bg-green-500/20 text-green-400"
+                              : "bg-red-500/20 text-red-100"
+                          }
+                        >
                           {cluster.status}
                         </Badge>
-                        <span className="text-xs text-slate-400 font-mono">{cluster.latency_ms}ms</span>
+                        <span className="text-xs text-slate-400 font-mono">
+                          {cluster.latency_ms}ms
+                        </span>
                       </div>
                     </div>
                   )) || (
@@ -792,7 +849,8 @@ export default function AlphaAgentOpsConnected() {
                   </div>
                   <h4 className="font-bold">Active Shield: Vigilance</h4>
                   <p className="text-sm text-slate-400 mt-2 px-6">
-                    Autonomous node recovery and drift remediation is currently active across all regions.
+                    Autonomous node recovery and drift remediation is currently
+                    active across all regions.
                   </p>
                 </div>
               </CardContent>
@@ -845,8 +903,8 @@ export default function AlphaAgentOpsConnected() {
         </Card>
       )}
       {/* Dialogs */}
-      <NewAgentDialog 
-        open={isNewAgentDialogOpen} 
+      <NewAgentDialog
+        open={isNewAgentDialogOpen}
         onOpenChange={setIsNewAgentDialogOpen}
         onSave={submitCreateAgent}
       />

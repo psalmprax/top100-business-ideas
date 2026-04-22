@@ -13,10 +13,10 @@ import secrets
 class AgentStatus(str, Enum):
     """Agent status enum"""
 
-    RUNNING = "RUNNING"
-    STOPPED = "STOPPED"
-    ERROR = "ERROR"
-    PAUSED = "PAUSED"
+    RUNNING = "running"
+    STOPPED = "stopped"
+    ERROR = "error"
+    PAUSED = "paused"
 
 
 class AgentType(str, Enum):
@@ -55,7 +55,7 @@ class Agent(SQLModel, table=True):
     budget: float = Field(default=10.0)
     daily_spend: float = Field(default=0.0)
     metrics: Dict[str, Any] = Field(
-        default={"costSaved": 0.0, "loopsPrevented": 0, "totalRequests": 0},
+        default={"cost_saved": 0.0, "loops_prevented": 0, "total_requests": 0},
         sa_column=Column(JSON),
     )
     status: AgentStatus = Field(default=AgentStatus.STOPPED)

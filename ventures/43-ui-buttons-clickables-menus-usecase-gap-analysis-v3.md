@@ -1,7 +1,7 @@
 # UI/Buttons/Clickables/Menus Use Case Gap Analysis - v3 (FINAL)
 
 **Date:** 2026-03-19  
-**Project:** top100-business-ideas (AlphaAI Product Suite)  
+**Project:** top100-business-ideas (AlphaHecta Product Suite)  
 **Scope:** Client UI Components, E2E Tests, and Extended Use Case Scenarios  
 **Version:** v3 - Final Comprehensive Analysis
 
@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-This document provides a comprehensive gap analysis of UI/buttons/clickables/menus use cases across the AlphaAI product suite. The analysis compares the documented use case scenarios against the implemented UI components and existing E2E test coverage.
+This document provides a comprehensive gap analysis of UI/buttons/clickables/menus use cases across the AlphaHecta product suite. The analysis compares the documented use case scenarios against the implemented UI components and existing E2E test coverage.
 
 ### Coverage Status Overview
 
@@ -184,7 +184,7 @@ This document provides a comprehensive gap analysis of UI/buttons/clickables/men
 
 ---
 
-### 2.2 AlphaAI Act Compliance (/products/ai-compliance) - CRITICAL GAPS
+### 2.2 AlphaHecta Act Compliance (/products/ai-compliance) - CRITICAL GAPS
 
 **Extended Use Cases Documented (22 use cases):**
 
@@ -375,7 +375,7 @@ This document provides a comprehensive gap analysis of UI/buttons/clickables/men
 - [`client/src/pages/Settings.tsx`](client/src/pages/Settings.tsx) - User Settings
 - [`client/src/pages/Billing.tsx`](client/src/pages/Billing.tsx) - Subscription
 - [`client/src/pages/AlphaAgentOps.tsx`](client/src/pages/AlphaAgentOps.tsx) - AgentOps Product
-- [`client/src/pages/AlphaAIActCompliance.tsx`](client/src/pages/AlphaAIActCompliance.tsx) - AI Compliance
+- [`client/src/pages/AlphaHectaActCompliance.tsx`](client/src/pages/AlphaHectaActCompliance.tsx) - AI Compliance
 - [`client/src/pages/AlphaDeepfakeDefense.tsx`](client/src/pages/AlphaDeepfakeDefense.tsx) - Deepfake Defense
 - [`client/src/pages/AlphaWorkforce.tsx`](client/src/pages/AlphaWorkforce.tsx) - Workforce
 - [`client/src/test/e2e.spec.ts`](client/src/test/e2e.spec.ts) - Original E2E tests

@@ -21,7 +21,7 @@ func SystemLock() gin.HandlerFunc {
 			
 			c.AbortWithStatusJSON(http.StatusServiceUnavailable, gin.H{
 				"error":   "System Lock Active",
-				"message": "The AlphaAI infrastructure is currently under defensive lockdown. All agentic operations are suspended.",
+				"message": "The AlphaHecta infrastructure is currently under defensive lockdown. All agentic operations are suspended.",
 			})
 			return
 		}

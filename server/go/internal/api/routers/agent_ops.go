@@ -36,7 +36,13 @@ func SetupAgentOpsRoutes(
 	shadowAIHandler interface {
 		ListDetections(c *gin.Context)
 		GetShadowAIStats(c *gin.Context)
+		AutoDetect(c *gin.Context)
+		ScanLogs(c *gin.Context)
+		GetReport(c *gin.Context)
 		RemediateDetection(c *gin.Context)
+		CreateDetection(c *gin.Context)
+		BlockTool(c *gin.Context)
+		AllowTool(c *gin.Context)
 	},
 	trainingHandler interface {
 		ListModules(c *gin.Context)
@@ -223,9 +229,15 @@ func SetupAgentOpsRoutes(
 	{
 		shadowAI.GET("/detections", shadowAIHandler.ListDetections)
 		shadowAI.GET("/stats", shadowAIHandler.GetShadowAIStats)
+		shadowAI.POST("/detect", shadowAIHandler.AutoDetect)
+		shadowAI.POST("/scan-logs", shadowAIHandler.ScanLogs)
+		shadowAI.GET("/report", shadowAIHandler.GetReport)
 
 		shadowAI.Use(requireRoleMiddleware("management"))
 		{
+			shadowAI.POST("/detections", shadowAIHandler.CreateDetection)
+			shadowAI.POST("/block/:id", shadowAIHandler.BlockTool)
+			shadowAI.POST("/allow/:id", shadowAIHandler.AllowTool)
 			shadowAI.PUT("/detections/:id/remediate", shadowAIHandler.RemediateDetection)
 		}
 	}

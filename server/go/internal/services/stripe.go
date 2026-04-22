@@ -277,7 +277,7 @@ func (s *StripeService) ConstructWebhookEvent(payload []byte, signature string) 
 	return event, nil
 }
 
-// Predefined plans for AlphaAI products
+// Predefined plans for AlphaHecta products
 var Plans = map[string]struct {
 	Name       string
 	PriceID    string

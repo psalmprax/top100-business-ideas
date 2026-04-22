@@ -20,20 +20,20 @@ export interface AIArticle {
     title: string;
     description: string;
     requirements: string[];
-    riskLevel?: 'unacceptable' | 'high' | 'limited' | 'minimal';
+    risk_level?: 'unacceptable' | 'high' | 'limited' | 'minimal';
 }
 
 export interface ComplianceScan {
     id: string;
     status: 'pending' | 'running' | 'completed' | 'failed';
-    startedAt: Date;
-    completedAt?: Date;
+    started_at: Date;
+    completed_at?: Date;
     results: ComplianceResult[];
 }
 
 export interface ComplianceResult {
-    articleId: string;
-    articleNumber: number;
+    article_id: string;
+    article_number: number;
     status: 'compliant' | 'non_compliant' | 'needs_review';
     score: number;
     findings: Finding[];
@@ -51,16 +51,16 @@ export interface ModelInfo {
     id: string;
     name: string;
     version: string;
-    riskCategory: 'unacceptable' | 'high' | 'limited' | 'minimal';
-    lastTrained: Date;
-    trainingData?: TrainingDataInfo;
+    risk_category: 'unacceptable' | 'high' | 'limited' | 'minimal';
+    last_trained: Date;
+    training_data?: TrainingDataInfo;
 }
 
 export interface TrainingDataInfo {
     size: number;
     sources: string[];
-    dateRange: { start: Date; end: Date };
-    biasAssessment?: string;
+    date_range: { start: Date; end: Date };
+    bias_assessment?: string;
 }
 
 export interface IntegrationConfig {
@@ -71,13 +71,13 @@ export interface IntegrationConfig {
 
 export interface ComplianceReport {
     id: string;
-    generatedAt: Date;
+    generated_at: Date;
     summary: {
-        totalArticles: number;
+        total_articles: number;
         compliant: number;
-        nonCompliant: number;
-        needsReview: number;
-        overallScore: number;
+        non_compliant: number;
+        needs_review: number;
+        overall_score: number;
     };
     articles: ComplianceResult[];
 }
@@ -120,17 +120,17 @@ export class RegulensClient {
     /**
      * Get specific article by number
      */
-    async getArticle(articleNumber: number): Promise<AIArticle> {
-        const response = await this.client.get(`/compliance/articles/${articleNumber}`);
+    async getArticle(article_number: number): Promise<AIArticle> {
+        const response = await this.client.get(`/compliance/articles/${article_number}`);
         return response.data;
     }
 
     /**
      * Run compliance scan on a model or system
      */
-    async runScan(modelId: string, options?: { articles?: number[] }): Promise<ComplianceScan> {
+    async runScan(model_id: string, options?: { articles?: number[] }): Promise<ComplianceScan> {
         const response = await this.client.post('/compliance/scans', {
-            modelId,
+            model_id,
             articles: options?.articles,
         });
         return response.data;
@@ -139,8 +139,8 @@ export class RegulensClient {
     /**
      * Get scan results
      */
-    async getScanResults(scanId: string): Promise<ComplianceScan> {
-        const response = await this.client.get(`/compliance/scans/${scanId}`);
+    async getScanResults(scan_id: string): Promise<ComplianceScan> {
+        const response = await this.client.get(`/compliance/scans/${scan_id}`);
         return response.data;
     }
 
@@ -155,7 +155,7 @@ export class RegulensClient {
     /**
      * Register a model for compliance tracking
      */
-    async registerModel(model: Omit<ModelInfo, 'id' | 'lastTrained'>): Promise<ModelInfo> {
+    async registerModel(model: Omit<ModelInfo, 'id' | 'last_trained'>): Promise<ModelInfo> {
         const response = await this.client.post('/models', model);
         return response.data;
     }
@@ -163,8 +163,8 @@ export class RegulensClient {
     /**
      * Get model information
      */
-    async getModel(modelId: string): Promise<ModelInfo> {
-        const response = await this.client.get(`/models/${modelId}`);
+    async getModel(model_id: string): Promise<ModelInfo> {
+        const response = await this.client.get(`/models/${model_id}`);
         return response.data;
     }
 
@@ -179,8 +179,8 @@ export class RegulensClient {
     /**
      * Update model training data info
      */
-    async updateTrainingData(modelId: string, trainingData: TrainingDataInfo): Promise<void> {
-        await this.client.patch(`/models/${modelId}/training-data`, trainingData);
+    async updateTrainingData(model_id: string, training_data: TrainingDataInfo): Promise<void> {
+        await this.client.patch(`/models/${model_id}/training-data`, training_data);
     }
 
     /**
@@ -201,16 +201,16 @@ export class RegulensClient {
     /**
      * Test integration
      */
-    async testIntegration(integrationId: string): Promise<{ success: boolean; message: string }> {
-        const response = await this.client.post(`/integrations/${integrationId}/test`);
+    async testIntegration(integration_id: string): Promise<{ success: boolean; message: string }> {
+        const response = await this.client.post(`/integrations/${integration_id}/test`);
         return response.data;
     }
 
     /**
      * Generate compliance report
      */
-    async generateReport(modelId: string): Promise<ComplianceReport> {
-        const response = await this.client.post(`/reports/generate`, { modelId });
+    async generateReport(model_id: string): Promise<ComplianceReport> {
+        const response = await this.client.post(`/reports/generate`, { model_id });
         return response.data;
     }
 
@@ -230,12 +230,12 @@ export class RegulensClient {
     /**
      * Get risk assessment for a model
      */
-    async getRiskAssessment(modelId: string): Promise<{
+    async getRiskAssessment(model_id: string): Promise<{
         category: 'unacceptable' | 'high' | 'limited' | 'minimal';
         factors: string[];
         mitigationSuggestions: string[];
     }> {
-        const response = await this.client.get(`/models/${modelId}/risk-assessment`);
+        const response = await this.client.get(`/models/${model_id}/risk-assessment`);
         return response.data;
     }
 }

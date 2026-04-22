@@ -37,6 +37,7 @@ __all__ = [
     "AgentAuditLog",
     "AgentVigilanceAlert",
     "AgentMemorySegment",
+    "LLMUsageLog",
     "OnPremDeployment",
     # Auth models
     "Token",

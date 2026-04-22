@@ -75,7 +75,7 @@ top100-business-ideas/
 │   ├── src/
 │   │   ├── pages/            # Page components
 │   │   │   ├── AlphaAgentOps.tsx
-│   │   │   ├── AlphaAIActCompliance.tsx
+│   │   │   ├── AlphaHectaActCompliance.tsx
 │   │   │   └── AlphaDeepfakeDefense.tsx
 │   │   ├── lib/              # API client, types, utilities
 │   │   └── components/       # UI components

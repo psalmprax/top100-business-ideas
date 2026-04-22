@@ -34,8 +34,8 @@ func NewEmailService() *EmailService {
 		SMTPPort:  port,
 		Username:  os.Getenv("SMTP_USER"),
 		Password:  os.Getenv("SMTP_PASS"),
-		FromEmail: getEnv("SMTP_FROM", "noreply@alphaai.com"),
-		FromName:  getEnv("SMTP_NAME", "AlphaAI"),
+		FromEmail: getEnv("SMTP_FROM", "noreply@alphahecta.com"),
+		FromName:  getEnv("SMTP_NAME", "AlphaHecta"),
 	}
 }
 
@@ -81,7 +81,7 @@ func (e *EmailService) SendEmail(to, subject, htmlBody, textBody string) error {
 
 // SendWelcomeEmail sends a welcome email to new users
 func (e *EmailService) SendWelcomeEmail(name, email, loginURL string) error {
-	subject := "Welcome to AlphaAI!"
+	subject := "Welcome to AlphaHecta!"
 
 	htmlBody := fmt.Sprintf(`
 <!DOCTYPE html>
@@ -92,21 +92,21 @@ func (e *EmailService) SendWelcomeEmail(name, email, loginURL string) error {
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%); padding: 40px 20px; text-align: center; border-radius: 10px 10px 0 0;">
-        <h1 style="color: white; margin: 0;">AlphaAI</h1>
+        <h1 style="color: white; margin: 0;">AlphaHecta</h1>
     </div>
     <div style="background: #f9f9f9; padding: 40px 20px; border-radius: 0 0 10px 10px;">
         <h2>Welcome, %s!</h2>
-        <p>Thank you for signing up for AlphaAI. We're excited to have you on board!</p>
+        <p>Thank you for signing up for AlphaHecta. We're excited to have you on board!</p>
         <p>Your account has been created with email: <strong>%s</strong></p>
         <p style="margin-top: 30px;">
             <a href="%s" style="display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px;">Log in to your account</a>
         </p>
         <p style="color: #666; font-size: 14px; margin-top: 30px;">
-            If you have any questions, please contact us at support@alphaai.com
+            If you have any questions, please contact us at support@alphahecta.com
         </p>
     </div>
     <div style="text-align: center; padding: 20px; color: #999; font-size: 12px;">
-        <p>&copy; AlphaAI. All rights reserved.</p>
+        <p>&copy; AlphaHecta. All rights reserved.</p>
     </div>
 </body>
 </html>`, name, email, loginURL)
@@ -148,7 +148,7 @@ func (e *EmailService) SendPasswordResetEmail(name, email, resetURL string, expi
 
 // SendInvoiceEmail sends an invoice email
 func (e *EmailService) SendInvoiceEmail(name, email, invoiceID, amount, date, downloadURL string) error {
-	subject := fmt.Sprintf("Invoice %s from AlphaAI", invoiceID)
+	subject := fmt.Sprintf("Invoice %s from AlphaHecta", invoiceID)
 
 	htmlBody := fmt.Sprintf(`
 <!DOCTYPE html>

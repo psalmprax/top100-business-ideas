@@ -50,7 +50,7 @@ test.describe("Authentication", () => {
 
     // Fill in login credentials
     await page.fill('input[type="email"]', "admin@example.com");
-    await page.fill('input[type="password"]', "AlphaAI@2026");
+    await page.fill('input[type="password"]', "AlphaHecta@2026");
 
     // Take screenshot before submitting
     await page.screenshot({ path: "debug-before-form-submit.png" });

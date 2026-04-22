@@ -6,6 +6,7 @@ import {
   ReactNode,
 } from "react";
 import { authApi, type User } from "../lib/api";
+import { storage } from "../lib/storage";
 
 interface AuthContextType {
   user: User | null;
@@ -36,7 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const checkAuth = async () => {
-    const token = localStorage.getItem("auth_token");
+    const token = storage.get<string | null>("auth_token", null);
 
     if (!token) {
       setIsLoading(false);
@@ -54,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         error.message.includes("Unauthorized") ||
         error.message.includes("not found")
       ) {
-        localStorage.removeItem("auth_token");
+        storage.remove("auth_token");
         setUser(null);
       }
     } finally {
@@ -69,21 +70,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (productId != undefined) {
         const data = await authApi.login(email, password, productId);
 
-        const requiresSelection =
-          data.requiresProductSelection ||
-          (data as any).requires_product_selection;
+        const requiresSelection = data.requires_product_selection;
         if (requiresSelection) {
-          const availableProducts =
-            data.availableProducts || (data as any).available_products;
+          const availableProducts = data.available_products;
           return {
             requiresSelection: true,
             availableProducts,
           };
         }
 
-        const token = data.accessToken || data.access_token;
+        const token = data.access_token;
         if (token && data.user) {
-          localStorage.setItem("auth_token", token);
+          storage.set("auth_token", token);
           setUser(data.user);
         }
         return {};
@@ -94,13 +92,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const data = await authApi.login(email, password, loginProductId);
 
-      const requiresSelection =
-        data.requiresProductSelection ||
-        (data as any).requires_product_selection;
+      const requiresSelection = data.requires_product_selection;
       if (requiresSelection) {
         // Auto-select first available product and retry login
-        const availableProducts =
-          data.availableProducts || (data as any).available_products;
+        const availableProducts = data.available_products;
         if (availableProducts && availableProducts.length > 0) {
           const firstProduct = availableProducts[0];
           console.log("[Auth] Auto-selecting product:", firstProduct);
@@ -112,9 +107,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         };
       }
 
-      const token = data.accessToken || data.access_token;
+      const token = data.access_token;
       if (token && data.user) {
-        localStorage.setItem("auth_token", token);
+        storage.set("auth_token", token);
         setUser(data.user);
       }
       return {};
@@ -125,7 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         error.message.includes("401") ||
         error.message.includes("Unauthorized")
       ) {
-        localStorage.removeItem("auth_token");
+        storage.remove("auth_token");
         setUser(null);
       }
       throw error;
@@ -135,12 +130,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (email: string, password: string, name: string) => {
     try {
       const data = await authApi.register(email, password, name);
-      if (data.accessToken && data.user) {
-        localStorage.setItem("auth_token", data.accessToken);
-        setUser(data.user);
-      } else if (data.access_token && data.user) {
-        // Handle snake_case response from backend
-        localStorage.setItem("auth_token", data.access_token);
+      if (data.access_token && data.user) {
+        storage.set("auth_token", data.access_token);
         setUser(data.user);
       }
     } catch (error: any) {
@@ -154,7 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
-      localStorage.removeItem("auth_token");
+      storage.remove("auth_token");
       setUser(null);
     }
   };
@@ -173,12 +164,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email: "demo@sentinel.dev",
       name: "Functional Test Admin",
       role: "admin",
-      subscriptionTier: "enterprise",
+      subscription_tier: "enterprise",
       company: "Sentinel Development",
-      allowedProducts: ["*"],
+      allowed_products: ["*"],
     };
-    localStorage.setItem("auth_token", "demo-token-for-testing");
-    localStorage.setItem("demo_mode", "true");
+    storage.set("auth_token", "demo-token-for-testing");
+    storage.set("demo_mode", "true");
     setUser(demoUser);
   };
 
@@ -197,8 +188,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user) return false;
     if (isManagement) return true;
     return (
-      user.allowedProducts?.includes("*") ||
-      user.allowedProducts?.includes(productId)
+      user.allowed_products?.includes("*") ||
+      user.allowed_products?.includes(productId)
     );
   };
 

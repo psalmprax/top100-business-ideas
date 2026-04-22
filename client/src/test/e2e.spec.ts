@@ -1,11 +1,11 @@
 /**
- * AlphaAI - E2E Tests
+ * AlphaHecta - E2E Tests
  * Comprehensive tests for the company website and products
  */
 
 import { test, expect } from '@playwright/test';
 
-test.describe('AlphaAI Company Website', () => {
+test.describe('AlphaHecta Company Website', () => {
 
     test.describe('Homepage', () => {
         test.beforeEach(async ({ page }) => {
@@ -14,7 +14,7 @@ test.describe('AlphaAI Company Website', () => {
 
         test('should load the homepage', async ({ page }) => {
             // Check page title
-            await expect(page).toHaveTitle(/AlphaAI/);
+            await expect(page).toHaveTitle(/AlphaHecta/);
 
             // Check hero section
             await expect(page.locator('h1')).toContainText('Enterprise AI Solutions');
@@ -24,7 +24,7 @@ test.describe('AlphaAI Company Website', () => {
         });
 
         test('should display company logo', async ({ page }) => {
-            const logo = page.locator('header').getByText('AlphaAI');
+            const logo = page.locator('header').getByText('AlphaHecta');
             await expect(logo).toBeVisible();
         });
 
@@ -112,18 +112,18 @@ test.describe('AlphaAI Company Website', () => {
 
     test.describe('Legacy Routes', () => {
 
-        test('should redirect /ventures/alpha-agent-ops to /products/agent-ops', async ({ page }) => {
-            await page.goto('/ventures/alpha-agent-ops');
+        test('should redirect /ventures/alpha-hecta-agent-ops to /products/agent-ops', async ({ page }) => {
+            await page.goto('/ventures/alpha-hecta-agent-ops');
             await expect(page).toHaveURL(/\/products\/agent-ops/);
         });
 
-        test('should redirect /ventures/alpha-ai-act-compliance to /products/ai-compliance', async ({ page }) => {
-            await page.goto('/ventures/alpha-ai-act-compliance');
+        test('should redirect /ventures/alpha-hecta-act-compliance to /products/ai-compliance', async ({ page }) => {
+            await page.goto('/ventures/alpha-hecta-act-compliance');
             await expect(page).toHaveURL(/\/products\/ai-compliance/);
         });
 
-        test('should redirect /ventures/alpha-deepfake-defense to /products/deepfake-defense', async ({ page }) => {
-            await page.goto('/ventures/alpha-deepfake-defense');
+        test('should redirect /ventures/alpha-hecta-deepfake-defense to /products/deepfake-defense', async ({ page }) => {
+            await page.goto('/ventures/alpha-hecta-deepfake-defense');
             await expect(page).toHaveURL(/\/products\/deepfake-defense/);
         });
     });
@@ -1617,10 +1617,10 @@ test.describe('AlphaAI Company Website', () => {
     });
 
     // ============================================================================
-    // NEW TESTS: AlphaAgentOps Integration Tests
+    // NEW TESTS: AlphaHectaAgentOps Integration Tests
     // ============================================================================
 
-    test.describe('AlphaAgentOps Integration Tests', () => {
+    test.describe('AlphaHectaAgentOps Integration Tests', () => {
 
         // ========================================================================
         // Kill-Switch Tests - Pause/Resume Agents
@@ -1981,7 +1981,7 @@ test.describe('AlphaAI Company Website', () => {
     });
 
     // Alpha AI Act Compliance - Deep Integration Tests
-    test.describe('AlphaAIActCompliance - Deep Integration Tests', () => {
+    test.describe('AlphaHectaActCompliance - Deep Integration Tests', () => {
         // Tab Navigation Tests
         test('should navigate through all compliance tabs', async ({ page }) => {
             await page.goto('/products/ai-compliance');
@@ -2101,7 +2101,7 @@ test.describe('AlphaAI Company Website', () => {
         });
     });
 
-    test.describe('AlphaDeepfakeDefense - Deep Integration Tests', () => {
+    test.describe('AlphaHectaDeepfakeDefense - Deep Integration Tests', () => {
         // Tab Navigation Tests
         test('should navigate through all deepfake defense tabs', async ({ page }) => {
             await page.goto('/products/deepfake-defense');

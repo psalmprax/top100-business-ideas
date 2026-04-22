@@ -126,10 +126,10 @@ class LLMService:
             agent = session.get(DB_Agent, UUID(agent_id))
             if agent:
                 m = dict(agent.metrics) if agent.metrics else {}
-                m["totalRequests"] = m.get("totalRequests", 0) + 1
-                m["totalTokens"] = m.get("totalTokens", 0) + tokens
-                m["totalCost"] = round(m.get("totalCost", 0.0) + cost, 6)
-                m["avgLatencyMs"] = latency
+                m["total_requests"] = m.get("total_requests", 0) + 1
+                m["total_tokens"] = m.get("total_tokens", 0) + tokens
+                m["total_cost"] = round(m.get("total_cost", 0.0) + cost, 6)
+                m["avg_latency_ms"] = latency
                 agent.metrics = m
                 agent.daily_spend = round((agent.daily_spend or 0.0) + cost, 6)
                 session.add(agent)

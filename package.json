@@ -1,5 +1,5 @@
 {
-  "name": "top100-business-ideas",
+  "name": "alpha-hecta",
   "version": "1.0.0",
   "type": "module",
   "license": "MIT",
@@ -14,7 +14,7 @@
     "test:ui": "vitest --ui",
     "test:e2e": "playwright test",
     "test:coverage": "vitest --coverage",
-    "lint": "eslint src --ext .ts,.tsx"
+    "lint": "eslint client/src --ext .ts,.tsx"
   },
   "dependencies": {
     "@livenesslink/sdk": "workspace:*",

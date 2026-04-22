@@ -1,4 +1,4 @@
-# AlphaAI Requirements - Milestone 1: Platform Hardening
+# AlphaHecta Requirements - Milestone 1: Platform Hardening
 
 **Generated:** 2026-04-09  
 **Source:** GSD Workflow - New Project Initialization (Auto Mode)

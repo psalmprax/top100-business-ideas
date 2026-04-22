@@ -318,6 +318,22 @@ func (h *ComplianceHandler) TriggerBiasScan(c *gin.Context) {
 	c.Data(http.StatusOK, "application/json", response)
 }
 
+func (h *ComplianceHandler) RedTeamAudit(c *gin.Context) {
+	var req interface{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request body"})
+		return
+	}
+
+	response, err := h.proxyService.Forward(c, "POST", "/compliance/red-team", req)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Red team audit failed", Details: err.Error()})
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json", response)
+}
+
 func (h *ComplianceHandler) EURegister(c *gin.Context) {
 	var req struct {
 		ModelID string `json:"model_id"`
@@ -392,7 +408,7 @@ func (h *ComplianceHandler) GetDeadlines(c *gin.Context) {
 }
 
 func (h *ComplianceHandler) GetEnterpriseAudits(c *gin.Context) {
-	response, err := h.proxyService.Forward(c, "GET", "/compliance/enterprise-audits", nil)
+	response, err := h.proxyService.Forward(c, "GET", "/compliance/enterprise/audits", nil)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch enterprise audits", Details: err.Error()})
 		return
@@ -533,16 +549,5 @@ func (h *ComplianceHandler) UpdateIncidentStatus(c *gin.Context) {
 		return
 	}
 
-	c.Data(http.StatusOK, "application/json", response)
-}
-
-// DeleteVendor deletes a vendor via Python proxy
-func (h *ComplianceHandler) DeleteVendor(c *gin.Context) {
-	id := c.Param("id")
-	response, err := h.proxyService.Forward(c, "DELETE", fmt.Sprintf("/vendors/%s", id), nil)
-	if err != nil {
-		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to delete vendor", Details: err.Error()})
-		return
-	}
 	c.Data(http.StatusOK, "application/json", response)
 }

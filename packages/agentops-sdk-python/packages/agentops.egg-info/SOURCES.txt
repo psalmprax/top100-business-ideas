@@ -1,0 +1,7 @@
+pyproject.toml
+packages/agentops/__init__.py
+packages/agentops.egg-info/PKG-INFO
+packages/agentops.egg-info/SOURCES.txt
+packages/agentops.egg-info/dependency_links.txt
+packages/agentops.egg-info/requires.txt
+packages/agentops.egg-info/top_level.txt

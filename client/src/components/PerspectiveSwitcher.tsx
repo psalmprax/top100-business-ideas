@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 export function PerspectiveSwitcher() {
   const { perspective, setPerspective } = usePerspective();
   const modes: { id: LayoutPerspective; icon: any; label: string; color: string }[] = [
-    { id: "alpha", icon: Shield, label: "ALPHA (V1)", color: "#3b82f6" },
+    { id: "alpha", icon: Shield, label: "ALPHAHECTA (V1)", color: "#3b82f6" },
     { id: "sigma", icon: Zap, label: "SIGMA (V2)", color: "#A855F7" },
     { id: "omega", icon: Activity, label: "OMEGA (V3)", color: "#00ff00" },
   ];

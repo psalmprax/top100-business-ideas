@@ -30,6 +30,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -604,7 +605,16 @@ export default function DenialDefense() {
                         Maximize revenue lift by pushing CPT boundaries
                       </div>
                     </div>
-                    <Badge>HIGH RISK</Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-red-500/10 text-red-500 border-none">HIGH RISK</Badge>
+                      <Switch 
+                        checked={storage.get("dd_aggressive", false)}
+                        onCheckedChange={(checked) => {
+                          storage.set("dd_aggressive", checked);
+                          toast.info(`Aggressive mode ${checked ? "armed" : "disarmed"}`);
+                        }}
+                      />
+                    </div>
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
@@ -615,7 +625,16 @@ export default function DenialDefense() {
                         Automatically appeal if recovery projection exceeds $500
                       </div>
                     </div>
-                    <Badge variant="outline">ENABLED</Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="border-cyan-500/30 text-cyan-400">ENABLED</Badge>
+                      <Switch 
+                        checked={storage.get("dd_auto_appeal", true)}
+                        onCheckedChange={(checked) => {
+                          storage.set("dd_auto_appeal", checked);
+                          toast.info(`Auto-appeal ${checked ? "enabled" : "disabled"}`);
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
                 <div className="pt-4 border-t border-white/5">

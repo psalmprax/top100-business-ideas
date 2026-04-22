@@ -181,4 +181,4 @@ The extended API (`client/src/lib/api.ts`) provides comprehensive coverage:
 The gap analysis is complete and all features have been implemented.
 
 *Analysis Date: 2026-03-18*  
-*Data Sources: AlphaAgentOps.tsx, AlphaAIActCompliance.tsx, AlphaDeepfakeDefense.tsx, client/src/lib/api.ts*
+*Data Sources: AlphaAgentOps.tsx, AlphaHectaActCompliance.tsx, AlphaDeepfakeDefense.tsx, client/src/lib/api.ts*

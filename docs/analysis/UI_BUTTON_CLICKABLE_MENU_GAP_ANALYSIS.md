@@ -1,7 +1,7 @@
 # UI/Button/Clickable/Menu Use Case Gap Analysis
 
 **Date:** 2026-04-02
-**Scope:** All product pages (AlphaAI, AgentOps, Deepfake Defense, AI Compliance, Denial Defense, Actionable AI, Freelancer Workflow Bot, Workforce, Billing, Settings)
+**Scope:** All product pages (AlphaHecta, AgentOps, Deepfake Defense, AI Compliance, Denial Defense, Actionable AI, Freelancer Workflow Bot, Workforce, Billing, Settings)
 **Priority Rule:** Real implementation first; dummies/simulations/placeholders only as fallback when real implementation fails
 
 ---
@@ -23,7 +23,7 @@
 | --------------------- | -------------------------- | ------------- | ------------ | ----------- | ---------- |
 | AlphaAgentOps         | ~130                       | 130 (100%)    | 0            | 0           | 0          |
 | AlphaDeepfakeDefense  | ~95                        | 95 (100%)     | 0            | 0           | 0          |
-| AlphaAIActCompliance  | ~85                        | 85 (100%)     | 0            | 0           | 0          |
+| AlphaHectaActCompliance  | ~85                        | 85 (100%)     | 0            | 0           | 0          |
 | AlphaWorkforce        | ~70                        | 70 (100%)     | 0            | 0           | 0          |
 | FreelancerWorkflowBot | ~55                        | 55 (100%)     | 0            | 0           | 0          |
 | DenialDefense         | ~35                        | 35 (100%)     | 0            | 0           | 0          |
@@ -228,7 +228,7 @@
 
 ---
 
-### 3. AlphaAIActCompliance
+### 3. AlphaHectaActCompliance
 
 #### 3.1 Dashboard Tab
 

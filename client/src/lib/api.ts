@@ -9,11 +9,11 @@ import { nanoid } from "nanoid";
 const API_URL = import.meta.env.VITE_API_URL || "";
 
 export interface LLMMetrics {
-  p95LatencyMs: number;
-  avgLatencyMs: number;
+  p95_latency_ms: number;
+  avg_latency_ms: number;
   throughput: number; // tokens/sec
-  errorRate: number;
-  costPer1k: number;
+  error_rate: number;
+  cost_per_1k: number;
   uptime: number;
 }
 
@@ -30,9 +30,9 @@ export interface LLMProviderConfig {
     | "ready"
     | "failed"
     | "fallback";
-  isPrimary: boolean;
-  failoverPriority: number;
-  apiKeySet: boolean;
+  is_primary: boolean;
+  failover_priority: number;
+  api_key_set: boolean;
   metrics: LLMMetrics;
 }
 
@@ -40,9 +40,13 @@ export interface Vendor {
   id: string;
   name: string;
   type: string;
+  category: string;
   risk_level: string;
   compliance_status: string;
+  status: string;
   last_assessment: Date | string;
+  website?: string;
+  contact_email?: string;
 }
 
 export interface Incident {
@@ -132,7 +136,7 @@ export interface Claim {
   claim_id_string: string;
   payer: string;
   amount: number;
-  status: "pending" | "recovered" | "failed";
+  status: "pending" | "recovered" | "failed" | "New" | "Scrubbed";
   risk: string;
   created_at?: string;
   updated_at?: string;
@@ -358,8 +362,8 @@ export interface AuthResponse {
   refresh_token?: string;
   expires_in?: number;
   user?: User;
-  requiresProductSelection?: boolean;
-  availableProducts?: string[];
+  requires_product_selection?: boolean;
+  available_products?: string[];
 }
 
 export const authApi = {
@@ -413,14 +417,7 @@ export interface Agent {
     | "openai"
     | "metagpt"
     | "pydanticai";
-  status:
-    | "RUNNING"
-    | "STOPPED"
-    | "ERROR"
-    | "PAUSED"
-    | "active"
-    | "paused"
-    | "stopped";
+  status: "running" | "stopped" | "error" | "paused";
   budget: number;
   daily_spend: number;
   tier: "strategic" | "tactical" | "industrial";
@@ -491,16 +488,16 @@ export const agentsApi = {
 
   logs: (id: string) => apiRequest<AgentLog[]>(`/agents/${id}/logs`),
 
-  installSkill: (skillId: string) =>
+  installSkill: (skill_id: string) =>
     apiRequest<{ message: string }>("/api/v1/agent-ops/skills/install", {
       method: "POST",
-      body: JSON.stringify({ skillId }),
+      body: JSON.stringify({ skill_id }),
     }),
 };
 
 export interface AgentLog {
   id: string;
-  agentId: string;
+  agent_id: string;
   level: "info" | "warn" | "error";
   message: string;
   timestamp: string;
@@ -553,28 +550,23 @@ export const rulesApi = {
 // ============================================================================
 
 export interface Metrics {
-  total_tokens?: number;
-  total_cost?: number;
-  active_agents?: number;
-  tasks_completed?: number;
-  tasks_failed?: number;
-  throughput?: number;
+  bias_score: number;
+  fairness_index: number;
+  anomalies_detected: number;
+  data_integrity: number;
+  safety_score: number;
   avg_latency_ms?: number;
   error_rate?: number;
   compute_load?: number;
   p99_latency?: number;
   missions_today?: number;
-  last_updated?: string;
-  // Legacy support for older components
-  totalTokens?: number;
-  totalCost?: number;
-  tasksCompleted?: number;
-  tasksFailed?: number;
-  activeAgents?: number;
-  computeLoad?: number;
-  p99Latency?: number;
-  missionsToday?: number;
+  last_updated: string;
   hourly_data?: Array<{ hour: string; tokens: number; cost: number }>;
+  total_tokens?: number;
+  total_cost?: number;
+  tasks_completed?: number;
+  tasks_failed?: number;
+  active_agents?: number;
 }
 
 export const metricsApi = {
@@ -603,7 +595,7 @@ export interface ComplianceCheck {
     | "compliant"
     | "non_compliant";
   evidence?: string;
-  lastChecked?: string;
+  last_checked?: string;
 }
 
 export interface ComplianceReport {
@@ -650,6 +642,21 @@ export const complianceApi = {
       method: "POST",
       body: JSON.stringify(assessment),
     }),
+
+  getVendors: () => apiRequest<Vendor[]>("/api/v1/compliance/vendors"),
+
+  addVendor: (vendor: Partial<Vendor>) =>
+    apiRequest<Vendor>("/api/v1/compliance/vendors", {
+      method: "POST",
+      body: JSON.stringify(vendor),
+    }),
+
+  auditVendors: () =>
+    apiRequest<any>("/api/v1/compliance/vendors/audit", {
+      method: "POST",
+    }),
+
+  getVendorStats: () => apiRequest<any>("/api/v1/compliance/vendors/stats"),
 };
 
 // ============================================================================
@@ -732,8 +739,8 @@ export interface Subscription {
   id: string;
   plan: "free" | "pro" | "enterprise";
   status: "active" | "canceled" | "past_due";
-  currentPeriodEnd: string;
-  cancelAtPeriodEnd: boolean;
+  current_period_end: string;
+  cancel_at_period_end: boolean;
 }
 
 export interface Invoice {
@@ -741,7 +748,7 @@ export interface Invoice {
   amount: number;
   status: "paid" | "open" | "void";
   date: string;
-  pdfUrl: string;
+  pdf_url: string;
 }
 
 export const billingApi = {
@@ -811,23 +818,23 @@ export interface User {
   email: string;
   name: string;
   role: string;
-  subscriptionTier?: string;
+  subscription_tier?: string;
   company?: string;
-  allowedProducts: string[];
+  allowed_products: string[];
   mfa_enabled?: boolean;
   notifications?: {
-    emailAlerts: boolean;
-    slackIntegration: boolean;
-    weeklyDigest: boolean;
-    securityAlerts: boolean;
-    productUpdates: boolean;
+    email_alerts: boolean;
+    slack_integration: boolean;
+    weekly_digest: boolean;
+    security_alerts: boolean;
+    product_updates: boolean;
   };
   preferences?: {
     theme: string;
     language: string;
     timezone: string;
-    defaultModel: string;
-    autoSave: boolean;
+    default_model: string;
+    auto_save: boolean;
   };
 }
 
@@ -1070,20 +1077,7 @@ export interface ShadowAIReport {
   top_tools: ShadowAIReportTool[];
 }
 
-export interface ComplianceScan {
-  id: string;
-  article_id: string;
-  scan_type: string;
-  status: string;
-  results?: {
-    metrics?: {
-      anomalies_detected?: number;
-      threat_level?: string;
-      compliance_rate?: number;
-    };
-  };
-  created_at?: string;
-}
+// Duplicate removed
 
 // Mobile SDK types
 export interface MobileSDKConfig {
@@ -1335,7 +1329,7 @@ export interface WorkforceStatus {
     time: string;
     framework: string;
   }>;
-  strategyRefinements: Array<{
+  strategy_refinements: Array<{
     id: string;
     topic: string;
     content: string;
@@ -1516,9 +1510,10 @@ export const extendedApi = {
       }),
     getBiasReports: (scope: string = "global") =>
       apiRequest<any[]>(`/api/v1/compliance/bias/reports?scope=${scope}`),
-    triggerBiasScan: (scope: string = "global") =>
-      apiRequest<any>(`/api/v1/compliance/bias/scan?scope=${scope}`, {
+    triggerBiasScan: (model_id: string = "global") =>
+      apiRequest<any>("/api/v1/compliance/bias/scan", {
         method: "POST",
+        body: JSON.stringify({ model_id }),
         strict: true,
       }),
     getEnterpriseAudits: () =>
@@ -2079,12 +2074,12 @@ export const extendedApi = {
         method: "POST",
         body: JSON.stringify({ transaction_id: transactionId, amount }),
       }),
-    redTeam: (modelId: string) =>
+    redTeam: (model_id: string) =>
       apiRequest<{ status: string; audit_id: string }>(
         "/api/v1/compliance/red-team",
         {
           method: "POST",
-          body: JSON.stringify({ model_id: modelId }),
+          body: JSON.stringify({ model_id }),
         }
       ),
     euRegister: (modelId: string) =>
@@ -2590,21 +2585,21 @@ export const extendedApi = {
   },
 
   vendors: {
-    list: () => apiRequest<any[]>("/api/v1/vendors"),
-    create: (vendor: any) =>
-      apiRequest<any>("/api/v1/vendors", {
+    list: () => apiRequest<Vendor[]>("/api/v1/compliance/vendors"),
+    create: (vendor: Partial<Vendor>) =>
+      apiRequest<Vendor>("/api/v1/compliance/vendors", {
         method: "POST",
         body: JSON.stringify(vendor),
       }),
     delete: (id: string) =>
-      apiRequest<any>(`/api/v1/vendors/${id}`, {
+      apiRequest<any>(`/api/v1/compliance/vendors/${id}`, {
         method: "DELETE",
       }),
-    audit: (id: string) =>
-      apiRequest<any>(`/api/v1/vendors/${id}/audit`, {
+    audit: () =>
+      apiRequest<any>("/api/v1/compliance/vendors/audit", {
         method: "POST",
       }),
-    getRiskReport: () => apiRequest<any>("/api/v1/vendors/report"),
+    getRiskReport: () => apiRequest<any>("/api/v1/compliance/vendors/stats"),
   },
   agents: {
     list: () => apiRequest<any[]>("/agents"),

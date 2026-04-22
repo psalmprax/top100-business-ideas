@@ -1,4 +1,4 @@
-# Project: AlphaAI - Enterprise AI Solutions
+# Project: AlphaHecta - Enterprise AI Solutions
 
 ## 🎯 Vision
 To provide a production-grade, "Real-First" architecture for enterprise AI applications, ensuring that all UI interactions are backed by persistent, authenticated, and verifiable backend data rather than simulations.
@@ -13,9 +13,9 @@ To provide a production-grade, "Real-First" architecture for enterprise AI appli
 1. **AgentOps (Sentinel):** Autonomous workforce management and monitoring.
 2. **AI Compliance Hub:** EU AI Act compliance and risk assessment automation.
 3. **Deepfake Defense:** Media authenticity detection and biometric protection.
-4. **Alpha Workforce:** Decentralized autonomous corporate management.
+4. **AlphaHecta Workforce:** Decentralized autonomous corporate management.
 5. **DenialDefense:** AI-powered revenue cycle recovery and claims processing.
-6. **Alpha Marketplace:** Gated agent skill discovery and deployment.
+6. **AlphaHecta Marketplace:** Gated agent skill discovery and deployment.
 
 ## 📜 Principles
 - **Real-First:** No mock data in production-ready components.

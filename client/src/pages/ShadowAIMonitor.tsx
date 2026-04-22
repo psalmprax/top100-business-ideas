@@ -240,9 +240,9 @@ export default function ShadowAIMonitor() {
                       <TableCell>
                         <Badge
                           variant={
-                            detection.status === "blocked"
+                            detection.status === "remediated"
                               ? "destructive"
-                              : detection.status === "allowed"
+                              : detection.status === "approved"
                                 ? "default"
                                 : "outline"
                           }
@@ -252,11 +252,13 @@ export default function ShadowAIMonitor() {
                       </TableCell>
                       <TableCell>{detection.user_count || 0}</TableCell>
                       <TableCell>
-                        {detection.detected_at ? new Date(detection.detected_at).toLocaleString() : "Unknown"}
+                        {detection.detected_at
+                          ? new Date(detection.detected_at).toLocaleString()
+                          : "Unknown"}
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
-                          {detection.status !== "blocked" && (
+                          {detection.status !== "remediated" && (
                             <Button
                               size="sm"
                               variant="destructive"
@@ -265,7 +267,7 @@ export default function ShadowAIMonitor() {
                               <X className="w-3 h-3 mr-1" /> Block
                             </Button>
                           )}
-                          {detection.status !== "allowed" && (
+                          {detection.status !== "approved" && (
                             <Button
                               size="sm"
                               variant="default"

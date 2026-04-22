@@ -1,7 +1,7 @@
 # UI/Buttons/Clickables/Menus Use Case Gap Analysis - Per Usecase
 
 **Date:** 2026-04-05
-**Project:** Top 100 Business Ideas / AlphaAI Platform
+**Project:** Top 100 Business Ideas / AlphaHecta Platform
 **Scope:** All Alpha Product Pages
 **Priority Rule:** Real implementation FIRST; dummies/simulations/placeholders as FALLBACK only when real implementation fails
 
@@ -23,7 +23,7 @@
 | Product Page          | Total Interactive Elements | ✅ Real        | ⚠️ Partial   | ❌ Dummy     | 🚫 Missing |
 | --------------------- | -------------------------- | -------------- | ------------ | ------------ | ---------- |
 | AlphaAgentOps         | ~150                       | 142 (95%)      | 5 (3%)       | 3 (2%)       | 0          |
-| AlphaAIActCompliance  | ~90                        | 85 (94%)       | 3 (3%)       | 2 (3%)       | 0          |
+| AlphaHectaActCompliance  | ~90                        | 85 (94%)       | 3 (3%)       | 2 (3%)       | 0          |
 | AlphaDeepfakeDefense  | ~100                       | 95 (95%)       | 3 (3%)       | 2 (2%)       | 0          |
 | AlphaWorkforce        | ~75                        | 72 (96%)       | 2 (3%)       | 1 (1%)       | 0          |
 | FreelancerWorkflowBot | ~60                        | 57 (95%)       | 2 (3%)       | 1 (2%)       | 0          |
@@ -66,7 +66,7 @@
 
 **Coverage: 18/22 REAL (82%) | 3 PARTIAL (14%) | 1 DUMMY (4%)**
 
-### AlphaAIActCompliance (ReguLens) - Per Use Case
+### AlphaHectaActCompliance (ReguLens) - Per Use Case
 
 | UC#  | Use Case                 | Description           | UI Element(s)          | Handler Status | Gap                             |
 | ---- | ------------------------ | --------------------- | ---------------------- | -------------- | ------------------------------- |
@@ -181,7 +181,7 @@
 | 3   | AlphaAgentOps         | -        | Update Assets button    | No handler               | P1       | Add handler or remove            |
 | 4   | AlphaAgentOps         | -        | Configure Stream button | Toast only, no dialog    | P1       | Implement config dialog          |
 | 5   | AlphaWorkforce        | UC14-17  | Slack/Telegram/Discord  | Saves to state, not API  | P1       | Wire to backend API              |
-| 6   | AlphaAIActCompliance  | UC15     | Some policy toggles     | Local state only         | P1       | Wire to settings API             |
+| 6   | AlphaHectaActCompliance  | UC15     | Some policy toggles     | Local state only         | P1       | Wire to settings API             |
 
 ### 🟡 PARTIAL GAPS - BACKEND STUB/NEEDS WORK
 
@@ -209,8 +209,8 @@
 | 7   | AlphaAgentOps        | Advanced Filter Dialog          | ✅ Full implementation                               |
 | 8   | AlphaAgentOps        | GDPR/MiCA Switches              | ✅ Wired to settings API                             |
 | 9   | AlphaAgentOps        | Zero-Knowledge/PII Switches     | ✅ Wired to settings API                             |
-| 10  | AlphaAIActCompliance | Delete Vendor                   | ✅ Uses `extendedApi.compliance.deleteVendor()`      |
-| 11  | AlphaAIActCompliance | Export Conformity Report        | ✅ Uses API                                          |
+| 10  | AlphaHectaActCompliance | Delete Vendor                   | ✅ Uses `extendedApi.compliance.deleteVendor()`      |
+| 11  | AlphaHectaActCompliance | Export Conformity Report        | ✅ Uses API                                          |
 | 12  | AlphaDeepfakeDefense | Liveness Settings toggles       | ✅ Wired to API                                      |
 | 13  | AlphaDeepfakeDefense | Proxy Save                      | ✅ Wired to API                                      |
 

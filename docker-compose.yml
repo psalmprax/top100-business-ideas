@@ -16,12 +16,12 @@ services:
       - ADMIN_SECRET=${ADMIN_SECRET:?ADMIN_SECRET must be set}
       - JWT_EXPIRY=24h
       - PYTHON_BACKEND_URL=http://python-backend:8000
-      - DATABASE_URL=postgresql://postgres:postgres@top100-business-ideas-db-1:5432/alphaai
+      - DATABASE_URL=postgresql://postgres:postgres@top100-business-ideas-db-1:5432/alphahecta
       - DB_HOST=top100-business-ideas-db-1
       - DB_PORT=5432
       - DB_USER=postgres
       - DB_PASSWORD=postgres
-      - DB_NAME=alphaai
+      - DB_NAME=alphahecta
       - REDIS_HOST=top100-business-ideas-redis-1
       - REDIS_PORT=6379
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
@@ -55,12 +55,12 @@ services:
       - PORT=8000
       - ENVIRONMENT=development
       - SECRET_KEY=${SECRET_KEY:?SECRET_KEY must be set}
-      - DATABASE_URL=postgresql://postgres:postgres@top100-business-ideas-db-1:5432/alphaai
+      - DATABASE_URL=postgresql://postgres:postgres@top100-business-ideas-db-1:5432/alphahecta
       - DB_HOST=top100-business-ideas-db-1
       - DB_PORT=5432
       - DB_USER=postgres
       - DB_PASSWORD=postgres
-      - DB_NAME=alphaai
+      - DB_NAME=alphahecta
       - REDIS_HOST=top100-business-ideas-redis-1
       - REDIS_PORT=6379
       - SEED_DATABASE=${SEED_DATABASE:-false}
@@ -106,7 +106,7 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=alphaai
+      - POSTGRES_DB=alphahecta
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:

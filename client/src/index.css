@@ -85,7 +85,7 @@
   --sidebar-ring: oklch(0.65 0.2 250);
 }
 
-/* Perspective: ALPHA (V1) - Enterprise Compliance */
+/* Perspective: ALPHAHECTA (V1) - Enterprise Compliance */
 :root.perspective-alpha {
   --primary: oklch(0.65 0.2 250); /* Blue */
   --accent: oklch(0.75 0.18 75); /* Orange/Amber */

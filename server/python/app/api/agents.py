@@ -141,10 +141,10 @@ async def get_agent_history(agent_id: str, session: AsyncSession = Depends(get_a
         "history": [
             {
                 "timestamp": current_time,
-                "cpu": metrics.get("totalRequests", 0),
-                "memory": metrics.get("totalTokens", 0),
-                "cost": metrics.get("totalCost", 0),
-                "latency_ms": metrics.get("avgLatencyMs", 0),
+                "cpu": metrics.get("total_requests", 0),
+                "memory": metrics.get("total_tokens", 0),
+                "cost": metrics.get("total_cost", 0),
+                "latency_ms": metrics.get("avg_latency_ms", 0),
             }
         ],
     }

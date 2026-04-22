@@ -1,4 +1,4 @@
-# ViralForge Hardening & Quality Standard Prompt
+# AlphaHecta Hardening & Quality Standard Prompt
 
 Use this prompt to audit and upgrade any repository to "Top-Notch" production standards.
 

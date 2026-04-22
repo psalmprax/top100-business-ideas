@@ -49,6 +49,7 @@ from app.api import (
     intelligence,
     telemetry,
     shadow_ai,
+    vendors,
 )
 from app.api.routers import (
     webhooks_router,
@@ -243,6 +244,12 @@ app.include_router(
     shadow_ai.router,
     prefix="/shadow-ai",
     tags=["Shadow AI"],
+    dependencies=[Depends(get_current_user)],
+)
+app.include_router(
+    vendors.router,
+    prefix="/vendors",
+    tags=["Vendors"],
     dependencies=[Depends(get_current_user)],
 )
 from app.api import sentinel

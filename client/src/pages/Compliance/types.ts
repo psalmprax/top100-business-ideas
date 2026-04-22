@@ -1,9 +1,10 @@
-import { 
-  type TrainingModule, 
-  type EdgeDeployment, 
-  type ShadowAIDetection, 
-  type Vendor, 
-  type Incident 
+import {
+  type TrainingModule,
+  type EdgeDeployment,
+  type ShadowAIDetection,
+  type Vendor,
+  type Incident,
+  type BiasReport,
 } from "@/lib/api";
 
 export interface AIModel {
@@ -28,16 +29,6 @@ export interface ArticleStatus {
   evidence?: string;
 }
 
-export interface BiasReport {
-  id: string;
-  modelId: string;
-  biasCategory: string;
-  disparateImpact: number;
-  statisticalSignificance: number;
-  status: "passed" | "warning" | "failed";
-  details: string;
-}
-
 export interface AuditReport {
   id: string;
   modelId: string;
@@ -58,10 +49,10 @@ export interface DocumentationPackage {
 
 export type CategoryType = "gov" | "reg" | "tech" | "ops" | "infra" | "fin";
 
-export { 
-  type TrainingModule, 
-  type EdgeDeployment, 
-  type ShadowAIDetection, 
-  type Vendor, 
-  type Incident 
+export {
+  type TrainingModule,
+  type EdgeDeployment,
+  type ShadowAIDetection,
+  type Vendor,
+  type Incident,
 };

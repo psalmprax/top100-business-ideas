@@ -2,12 +2,15 @@
 Shadow AI Detection & Remediation Service
 Monitors and identifies unsanctioned AI tool usage across the enterprise.
 Uses database persistence - no demo data on startup.
+Auto-detection capabilities for finding Shadow AI in network traffic.
 """
 
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 import uuid
 import logging
+import re
+import os
 from sqlmodel import Session, select, func
 from app.core.database import engine
 from app.core.models.service_models import (
@@ -17,6 +20,60 @@ from app.core.models.service_models import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Known Shadow AI tool signatures for auto-detection
+SHADOW_AI_SIGNATURES = {
+    "chatgpt": {
+        "pattern": r"(chatgpt|openai|gpt-3|gpt-4|chat\.openai\.com)",
+        "risk": "HIGH",
+        "category": "Generative AI",
+    },
+    "claude": {
+        "pattern": r"(claude\.ai|anthropic|claude-3)",
+        "risk": "HIGH",
+        "category": "Generative AI",
+    },
+    "midjourney": {
+        "pattern": r"(midjourney|discord\.com.*MJ)",
+        "risk": "MEDIUM",
+        "category": "Image Generation",
+    },
+    "notion-ai": {
+        "pattern": r"(notion\.ai|notion.so.*ai)",
+        "risk": "MEDIUM",
+        "category": "Productivity",
+    },
+    "github-copilot": {
+        "pattern": r"(github\.com.*copilot|copilot\.github)",
+        "risk": "MEDIUM",
+        "category": "Code Assistant",
+    },
+    "bard": {
+        "pattern": r"(bard\.google|gemini\.google)",
+        "risk": "HIGH",
+        "category": "Generative AI",
+    },
+    "character-ai": {
+        "pattern": r"(character\.ai)",
+        "risk": "MEDIUM",
+        "category": "Chatbot",
+    },
+    "perplexity": {
+        "pattern": r"(perplexity\.ai)",
+        "risk": "MEDIUM",
+        "category": "Search AI",
+    },
+    "jasper-ai": {
+        "pattern": r"(jasper\.ai)",
+        "risk": "MEDIUM",
+        "category": "Marketing AI",
+    },
+    "copy-ai": {
+        "pattern": r"(copy\.ai)",
+        "risk": "MEDIUM",
+        "category": "Copywriting",
+    },
+}
 
 
 class ShadowAIService:
@@ -214,6 +271,104 @@ class ShadowAIService:
                 return detection.to_dict()
 
             return None
+
+    def auto_detect(
+        self, url: str, source_ip: str = None, user_email: str = None
+    ) -> Optional[Dict[str, Any]]:
+        """Auto-detect Shadow AI from URL/hostname and optionally source IP or user."""
+        url_lower = url.lower()
+
+        for tool_name, signature in SHADOW_AI_SIGNATURES.items():
+            if re.search(signature["pattern"], url_lower):
+                risk_level = signature["risk"]
+                category = signature["category"]
+
+                # Check if already detected
+                existing = self.list_detections(status="DETECTED")
+                for d in existing:
+                    if d.get("tool_name", "").lower() == tool_name:
+                        logger.info(f"Shadow AI already detected: {tool_name}")
+                        return None
+
+                # Add new detection
+                return self.add_detection(
+                    tool_name=tool_name,
+                    vendor=category,
+                    department="Auto-Detected",
+                    risk_level=risk_level,
+                    user_count=1,
+                )
+
+        return None
+
+    def scan_proxy_logs(self, log_entries: List[str]) -> List[Dict[str, Any]]:
+        """Scan proxy/web server logs for Shadow AI usage."""
+        detected = []
+
+        for entry in log_entries:
+            result = self.auto_detect(entry)
+            if result:
+                detected.append(result)
+
+        return detected
+
+    def generate_detection_report(self) -> Dict[str, Any]:
+        """Generate a comprehensive detection report."""
+        with Session(engine) as session:
+            all_detections = session.exec(select(ShadowAIDetection)).all()
+
+            by_status = {
+                "detected": len(
+                    [d for d in all_detections if d.status == ShadowAIStatus.DETECTED]
+                ),
+                "investigating": len(
+                    [
+                        d
+                        for d in all_detections
+                        if d.status == ShadowAIStatus.INVESTIGATING
+                    ]
+                ),
+                "remediated": len(
+                    [d for d in all_detections if d.status == ShadowAIStatus.REMEDIATED]
+                ),
+                "approved": len(
+                    [d for d in all_detections if d.status == ShadowAIStatus.APPROVED]
+                ),
+            }
+
+            by_risk = {
+                "critical": len(
+                    [
+                        d
+                        for d in all_detections
+                        if d.risk_level == ShadowAIRiskLevel.CRITICAL
+                    ]
+                ),
+                "high": len(
+                    [
+                        d
+                        for d in all_detections
+                        if d.risk_level == ShadowAIRiskLevel.HIGH
+                    ]
+                ),
+                "medium": len(
+                    [
+                        d
+                        for d in all_detections
+                        if d.risk_level == ShadowAIRiskLevel.MEDIUM
+                    ]
+                ),
+                "low": len(
+                    [d for d in all_detections if d.risk_level == ShadowAIRiskLevel.LOW]
+                ),
+            }
+
+            return {
+                "total_detections": len(all_detections),
+                "by_status": by_status,
+                "by_risk": by_risk,
+                "generated_at": datetime.utcnow().isoformat(),
+            }
 
 
 # Singleton instance

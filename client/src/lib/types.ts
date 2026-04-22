@@ -60,14 +60,23 @@ export interface Agent {
 }
 
 export type AgentType = "langgraph" | "crewai" | "autogen" | "custom";
-export type AgentStatus =
-  | "RUNNING"
-  | "STOPPED"
-  | "ERROR"
-  | "PAUSED"
+export type AgentStatus = "running" | "stopped" | "error" | "paused";
+
+export type ComplianceStatus =
+  | "passed"
+  | "failed"
+  | "pending"
+  | "review"
+  | "compliant"
+  | "non_compliant"
+  | "verifying"
   | "active"
-  | "paused"
-  | "stopped";
+  | "inactive";
+
+export type IncidentStatus = "open" | "investigating" | "resolved" | "closed";
+
+export type TrainingStatus = "queued" | "training" | "completed" | "failed";
+
 export type Provider = "openai" | "anthropic" | "google" | "custom";
 
 export interface AgentConfig {
@@ -190,7 +199,13 @@ export type AlertType =
   | "loop_detected"
   | "error"
   | "compliance";
-export type AlertSeverity = "info" | "warning" | "critical";
+export type AlertSeverity =
+  | "info"
+  | "warning"
+  | "critical"
+  | "low"
+  | "medium"
+  | "high";
 
 // ============================================================================
 // Authentication Types
@@ -280,7 +295,6 @@ export type ComplianceCheckType =
   | "deepfake"
   | "privacy"
   | "security";
-export type ComplianceStatus = "passed" | "failed" | "pending" | "review";
 
 export interface ComplianceFinding {
   rule: string;

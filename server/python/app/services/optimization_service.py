@@ -19,7 +19,7 @@ class OptimizationService:
         since = datetime.utcnow() - timedelta(days=days)
         with Session(engine) as session:
             statement = select(LLMUsageLog).where(
-                (LLMUsageLog.agent_id == agent_id) & (LLMUsageLog.created_at >= since)
+                (LLMUsageLog.agent_id == agent_id) & (LLMUsageLog.timestamp >= since)
             )
             logs = session.exec(statement).all()
             

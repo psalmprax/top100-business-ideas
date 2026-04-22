@@ -46,7 +46,7 @@ const ICON_MAP: Record<string, any> = {
   Brain,
 };
 
-export default function AlphaAgentOps() {
+export default function AlphaHectaAgentOps() {
   const { isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
   const { perspective } = usePerspective();

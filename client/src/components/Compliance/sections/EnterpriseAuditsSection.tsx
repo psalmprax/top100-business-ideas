@@ -28,11 +28,20 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { extendedApi } from "@/lib/api";
+import { extendedApi, type AuditEntry } from "@/lib/api";
 import { toast } from "sonner";
 
+interface EnterpriseAuditLog {
+  id: string;
+  type: "SOX" | "HIPAA";
+  status: "pass" | "fail" | "in_progress";
+  controls_tested?: string;
+  created_at?: string;
+  date?: string;
+}
+
 export function EnterpriseAuditsSection() {
-  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [auditLogs, setAuditLogs] = useState<EnterpriseAuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [runningType, setRunningType] = useState<string | null>(null);
   const [soxScore, setSoxScore] = useState(0);
@@ -58,7 +67,20 @@ export function EnterpriseAuditsSection() {
     setLoading(true);
     try {
       const data = await extendedApi.compliance.getEnterpriseAudits();
-      setAuditLogs(data || []);
+      const mapped: EnterpriseAuditLog[] = (data || []).map((log: any) => ({
+        id: log.id || `audit-${Math.random().toString(36).slice(2, 9)}`,
+        type: log.type === "SOX" || log.type === "HIPAA" ? log.type : "SOX",
+        status:
+          log.status === "pass" ||
+          log.status === "fail" ||
+          log.status === "in_progress"
+            ? log.status
+            : "pass",
+        controls_tested: log.controls_tested,
+        created_at: log.created_at,
+        date: log.date,
+      }));
+      setAuditLogs(mapped);
     } catch (err) {
       console.error("Failed to fetch enterprise audits", err);
     } finally {
@@ -73,8 +95,15 @@ export function EnterpriseAuditsSection() {
         try {
           const res =
             type === "SOX"
-              ? await extendedApi.post("/api/v1/compliance/audit/sox")
-              : await extendedApi.post("/api/v1/compliance/audit/hipaa");
+              ? await extendedApi.complianceAudit.sox(
+                  "txn-" + Date.now(),
+                  100000
+                )
+              : await extendedApi.complianceAudit.hipaa(
+                  "user-" + Date.now(),
+                  "access",
+                  "data"
+                );
           resolve(res);
           loadAuditLogs();
         } catch (err) {
@@ -252,7 +281,9 @@ export function EnterpriseAuditsSection() {
                       {log.controls_tested || "Automated Set"}
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground font-mono">
-                      {new Date(log.created_at || log.date).toLocaleString()}
+                      {new Date(
+                        log.created_at || log.date || Date.now()
+                      ).toLocaleString()}
                     </TableCell>
                     <TableCell className="text-right">
                       <Button

@@ -19,7 +19,7 @@ class Settings:
 
     # Database - use actual container name from docker-compose
     DATABASE_URL: str = (
-        "postgresql://postgres:postgres@top100-business-ideas-db-1:5432/alphaai"
+        "postgresql://postgres:postgres@top100-business-ideas-db-1:5432/alphahecta"
     )
 
     # Redis

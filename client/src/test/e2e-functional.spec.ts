@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('AlphaAI - Functional Interaction Scenarios', () => {
+test.describe('AlphaHecta - Functional Interaction Scenarios', () => {
 
     test.describe('Home Page - Intelligence Hub Gaps', () => {
         test.beforeEach(async ({ page }) => {
@@ -673,7 +673,7 @@ test.describe('AlphaAI - Functional Interaction Scenarios', () => {
     // ============================================================================
     // ALPHA WORKFORCE - ADDITIONAL TESTS FOR GAPS
     // ============================================================================
-    test.describe('Alpha Workforce - Additional UI Gaps', () => {
+    test.describe('AlphaHecta Workforce - Additional UI Gaps', () => {
         test.beforeEach(async ({ page }) => {
             await page.goto('/products/workforce');
         });
@@ -852,7 +852,7 @@ test.describe('AlphaAI - Functional Interaction Scenarios', () => {
     // ============================================================================
     // ALPHA WORKFORCE - ADDITIONAL GAPS COVERAGE
     // ============================================================================
-    test.describe('Alpha Workforce - Additional Gaps Coverage', () => {
+    test.describe('AlphaHecta Workforce - Additional Gaps Coverage', () => {
         test.beforeEach(async ({ page }) => {
             await page.goto('/products/workforce');
             if (page.url().includes('/login')) {
@@ -864,7 +864,7 @@ test.describe('AlphaAI - Functional Interaction Scenarios', () => {
         });
 
         test('should click strategy refinement button', async ({ page }) => {
-            await expect(page.getByText('Alpha Workforce')).toBeVisible({ timeout: 10000 });
+            await expect(page.getByText('AlphaHecta Workforce')).toBeVisible({ timeout: 10000 });
 
             const strategyBtn = page.locator('button').filter({ hasText: /strategy|refinement/i }).first();
             if (await strategyBtn.isVisible()) {
@@ -873,7 +873,7 @@ test.describe('AlphaAI - Functional Interaction Scenarios', () => {
         });
 
         test('should click marketing generator button', async ({ page }) => {
-            await expect(page.getByText('Alpha Workforce')).toBeVisible({ timeout: 10000 });
+            await expect(page.getByText('AlphaHecta Workforce')).toBeVisible({ timeout: 10000 });
 
             const marketingBtn = page.locator('button').filter({ hasText: /marketing|generator|content/i }).first();
             if (await marketingBtn.isVisible()) {
@@ -882,7 +882,7 @@ test.describe('AlphaAI - Functional Interaction Scenarios', () => {
         });
 
         test('should click sales offer deploy button', async ({ page }) => {
-            await expect(page.getByText('Alpha Workforce')).toBeVisible({ timeout: 10000 });
+            await expect(page.getByText('AlphaHecta Workforce')).toBeVisible({ timeout: 10000 });
 
             const salesBtn = page.locator('button').filter({ hasText: /sales|offer|deploy/i }).first();
             if (await salesBtn.isVisible()) {
@@ -968,7 +968,7 @@ test.describe('AlphaAI - Functional Interaction Scenarios', () => {
     // ============================================================================
     // ALPHA WORKFORCE - ADDITIONAL GAP COVERAGE
     // ============================================================================
-    test.describe('Alpha Workforce - Additional Gap Coverage', () => {
+    test.describe('AlphaHecta Workforce - Additional Gap Coverage', () => {
         test.beforeEach(async ({ page }) => {
             await page.goto('/products/workforce');
             if (page.url().includes('/login')) {
@@ -980,7 +980,7 @@ test.describe('AlphaAI - Functional Interaction Scenarios', () => {
         });
 
         test('should update board directives', async ({ page }) => {
-            await expect(page.getByText('Alpha Workforce')).toBeVisible({ timeout: 10000 });
+            await expect(page.getByText('AlphaHecta Workforce')).toBeVisible({ timeout: 10000 });
 
             const directivesBtn = page.locator('button').filter({ hasText: /board directives/i });
             if (await directivesBtn.isVisible()) {
@@ -989,7 +989,7 @@ test.describe('AlphaAI - Functional Interaction Scenarios', () => {
         });
 
         test('should shift market focus', async ({ page }) => {
-            await expect(page.getByText('Alpha Workforce')).toBeVisible({ timeout: 10000 });
+            await expect(page.getByText('AlphaHecta Workforce')).toBeVisible({ timeout: 10000 });
 
             const focusBtn = page.locator('button').filter({ hasText: /market focus/i });
             if (await focusBtn.isVisible()) {
@@ -998,7 +998,7 @@ test.describe('AlphaAI - Functional Interaction Scenarios', () => {
         });
 
         test('should force re-evaluation', async ({ page }) => {
-            await expect(page.getByText('Alpha Workforce')).toBeVisible({ timeout: 10000 });
+            await expect(page.getByText('AlphaHecta Workforce')).toBeVisible({ timeout: 10000 });
 
             const reevalBtn = page.locator('button').filter({ hasText: /re-evaluation/i });
             if (await reevalBtn.isVisible()) {
@@ -1007,7 +1007,7 @@ test.describe('AlphaAI - Functional Interaction Scenarios', () => {
         });
 
         test('should test variant B', async ({ page }) => {
-            await expect(page.getByText('Alpha Workforce')).toBeVisible({ timeout: 10000 });
+            await expect(page.getByText('AlphaHecta Workforce')).toBeVisible({ timeout: 10000 });
 
             const variantBtn = page.locator('button').filter({ hasText: /variant/i });
             if (await variantBtn.isVisible()) {
@@ -1016,7 +1016,7 @@ test.describe('AlphaAI - Functional Interaction Scenarios', () => {
         });
 
         test('should deploy global offer', async ({ page }) => {
-            await expect(page.getByText('Alpha Workforce')).toBeVisible({ timeout: 10000 });
+            await expect(page.getByText('AlphaHecta Workforce')).toBeVisible({ timeout: 10000 });
 
             const deployBtn = page.locator('button').filter({ hasText: /global offer/i });
             if (await deployBtn.isVisible()) {
@@ -1025,7 +1025,7 @@ test.describe('AlphaAI - Functional Interaction Scenarios', () => {
         });
 
         test('should generate content batch', async ({ page }) => {
-            await expect(page.getByText('Alpha Workforce')).toBeVisible({ timeout: 10000 });
+            await expect(page.getByText('AlphaHecta Workforce')).toBeVisible({ timeout: 10000 });
 
             const contentBtn = page.locator('button').filter({ hasText: /generate.*content/i });
             if (await contentBtn.isVisible()) {
@@ -1034,7 +1034,7 @@ test.describe('AlphaAI - Functional Interaction Scenarios', () => {
         });
 
         test('should test sovereign escalation', async ({ page }) => {
-            await expect(page.getByText('Alpha Workforce')).toBeVisible({ timeout: 10000 });
+            await expect(page.getByText('AlphaHecta Workforce')).toBeVisible({ timeout: 10000 });
 
             const escalationBtn = page.locator('button').filter({ hasText: /sovereign escalation/i });
             if (await escalationBtn.isVisible()) {
@@ -1043,7 +1043,7 @@ test.describe('AlphaAI - Functional Interaction Scenarios', () => {
         });
 
         test('should rebalance liquidity', async ({ page }) => {
-            await expect(page.getByText('Alpha Workforce')).toBeVisible({ timeout: 10000 });
+            await expect(page.getByText('AlphaHecta Workforce')).toBeVisible({ timeout: 10000 });
 
             const rebalanceBtn = page.locator('button').filter({ hasText: /rebalance/i });
             if (await rebalanceBtn.isVisible()) {
@@ -1052,7 +1052,7 @@ test.describe('AlphaAI - Functional Interaction Scenarios', () => {
         });
 
         test('should unlock fleet scaling', async ({ page }) => {
-            await expect(page.getByText('Alpha Workforce')).toBeVisible({ timeout: 10000 });
+            await expect(page.getByText('AlphaHecta Workforce')).toBeVisible({ timeout: 10000 });
 
             const unlockBtn = page.locator('button').filter({ hasText: /unlock.*fleet/i });
             if (await unlockBtn.isVisible()) {
@@ -1061,7 +1061,7 @@ test.describe('AlphaAI - Functional Interaction Scenarios', () => {
         });
 
         test('should broadcast message', async ({ page }) => {
-            await expect(page.getByText('Alpha Workforce')).toBeVisible({ timeout: 10000 });
+            await expect(page.getByText('AlphaHecta Workforce')).toBeVisible({ timeout: 10000 });
 
             const broadcastBtn = page.locator('button').filter({ hasText: /broadcast/i });
             if (await broadcastBtn.isVisible()) {
@@ -1346,7 +1346,7 @@ test.describe('AlphaAI - Functional Interaction Scenarios', () => {
     // ============================================================================
     // ALPHA AI LANDING PAGE - ADDITIONAL GAP COVERAGE
     // ============================================================================
-    test.describe('AlphaAI Landing - Additional Gap Coverage', () => {
+    test.describe('AlphaHecta Landing - Additional Gap Coverage', () => {
         test.beforeEach(async ({ page }) => {
             await page.goto('/');
         });
@@ -2639,7 +2639,7 @@ test.describe('AlphaAI - Functional Interaction Scenarios', () => {
     // ============================================================================
     // ALPHA WORKFORCE TESTS
     // ============================================================================
-    test.describe('Alpha Workforce - 100% Coverage', () => {
+    test.describe('AlphaHecta Workforce - 100% Coverage', () => {
         test('Autonomous mode toggle', async ({ page }) => {
             await page.goto('/products/workforce');
             if (page.url().includes('/login')) {
@@ -2796,7 +2796,7 @@ test.describe('AlphaAI - Functional Interaction Scenarios', () => {
     // TAB CLICK FUNCTIONAL TESTS - COVERING GAP
     // ============================================================================
     test.describe('Tab Click Functional Tests - 100% Coverage', () => {
-        test('AlphaAgentOps - Click all visible tabs', async ({ page }) => {
+        test('AlphaHectaAgentOps - Click all visible tabs', async ({ page }) => {
             await page.goto('/products/agent-ops');
 
             // Click Overview tab
@@ -2884,7 +2884,7 @@ test.describe('AlphaAI - Functional Interaction Scenarios', () => {
             }
         });
 
-        test('AlphaAICompliance - Click all visible tabs', async ({ page }) => {
+        test('AlphaHectaCompliance - Click all visible tabs', async ({ page }) => {
             await page.goto('/products/ai-compliance');
 
             const tabs = ['Dashboard', 'Compliance', 'Models', 'Bias Scan', 'Red Team', 'Incidents', 'Documentation', 'Training'];
@@ -2897,7 +2897,7 @@ test.describe('AlphaAI - Functional Interaction Scenarios', () => {
             }
         });
 
-        test('AlphaDeepfakeDefense - Click all visible tabs', async ({ page }) => {
+        test('AlphaHectaDeepfakeDefense - Click all visible tabs', async ({ page }) => {
             await page.goto('/products/deepfake-defense');
 
             const tabs = ['Dashboard', 'Detectors', 'Models', 'Liveness', 'Training', 'Incidents', 'Audits', 'Reports', 'Vendors', 'Settings'];
@@ -2910,7 +2910,7 @@ test.describe('AlphaAI - Functional Interaction Scenarios', () => {
             }
         });
 
-        test('AlphaWorkforce - Click all visible tabs', async ({ page }) => {
+        test('AlphaHectaWorkforce - Click all visible tabs', async ({ page }) => {
             await page.goto('/products/workforce');
 
             // Click Autonomous Mode toggle
@@ -3271,7 +3271,7 @@ test.describe('AlphaAI - Functional Interaction Scenarios', () => {
     // ============================================================================
     // ALPHA AGENT OPS MISSING USE CASES - COVERING GAP
     // ============================================================================
-    test.describe('AlphaAgentOps Extended Use Cases - 100% Coverage', () => {
+    test.describe('AlphaHectaAgentOps Extended Use Cases - 100% Coverage', () => {
         test('UC9: Usage Forecasting', async ({ page }) => {
             await page.goto('/products/agent-ops');
 
@@ -3357,7 +3357,7 @@ test.describe('AlphaAI - Functional Interaction Scenarios', () => {
     // ============================================================================
     // ALPHA AI COMPLIANCE MISSING USE CASES - COVERING GAP
     // ============================================================================
-    test.describe('AlphaAICompliance Extended Use Cases - 100% Coverage', () => {
+    test.describe('AlphaHectaCompliance Extended Use Cases - 100% Coverage', () => {
         test('Risk Assessment section', async ({ page }) => {
             await page.goto('/products/ai-compliance');
 

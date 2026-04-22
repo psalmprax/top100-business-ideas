@@ -130,7 +130,7 @@ All identified gaps have been addressed with new E2E tests added:
 | 13 | Search Agents Input | Input | Search | ✅ COVERED |
 | 14 | Refresh Button | Icon Button | Reload data | ✅ COVERED |
 
-#### AI Compliance ([`client/src/pages/AlphaAIActCompliance.tsx`](client/src/pages/AlphaAIActCompliance.tsx))
+#### AI Compliance ([`client/src/pages/AlphaHectaActCompliance.tsx`](client/src/pages/AlphaHectaActCompliance.tsx))
 
 | # | UI Element | Type | Use Case | E2E Test Status |
 |---|------------|------|----------|-----------------|

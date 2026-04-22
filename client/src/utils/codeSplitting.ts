@@ -13,39 +13,39 @@ const createLazy = (
 };
 
 // Heavy dashboard components - load on demand
-export const AlphaAgentOpsDashboard = createLazy(
-  () => import("../pages/AlphaAgentOps")
+export const AlphaHectaAgentOpsDashboard = createLazy(
+  () => import("../pages/AlphaHectaAgentOps")
 );
 
-export const AlphaWorkforceDashboard = createLazy(
-  () => import("../pages/AlphaWorkforce")
+export const AlphaHectaWorkforceDashboard = createLazy(
+  () => import("../pages/AlphaHectaWorkforce")
 );
 
 // AI Act Compliance - use existing RegionalCompliance as fallback
-export const AlphaAIActComplianceDashboard = createLazy(
+export const AlphaHectaActComplianceDashboard = createLazy(
   () => import("../pages/RegionalCompliance")
 );
 
-export const AlphaDeepfakeDefenseDashboard = createLazy(
-  () => import("../pages/AlphaDeepfakeDefense")
+export const AlphaHectaDeepfakeDefenseDashboard = createLazy(
+  () => import("../pages/AlphaHectaDeepfakeDefense")
 );
 
 // ML/AI components - use existing components as fallbacks
 export const MLModelRegistry = createLazy(
-  () => import("../pages/AlphaAgentOps")
+  () => import("../pages/AlphaHectaAgentOps")
 );
 
 export const DeepfakeAnalysisTool = createLazy(
-  () => import("../pages/AlphaDeepfakeDefense")
+  () => import("../pages/AlphaHectaDeepfakeDefense")
 );
 
 // Chart components - use existing chart
 export const AdvancedAnalytics = createLazy(
-  () => import("../pages/AlphaAgentOps")
+  () => import("../pages/AlphaHectaAgentOps")
 );
 
 export const ComplianceReporting = createLazy(
-  () => import("../pages/AlphaAgentOps")
+  () => import("../pages/AlphaHectaAgentOps")
 );
 
 // Administrative components - use Settings as fallback

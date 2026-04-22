@@ -1,6 +1,6 @@
 """Deepfake detection endpoints"""
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
@@ -18,6 +18,8 @@ from app.core.models import (
     CustomModel,
     TrainingStatus,
     DeepfakeThreat,
+    BiometricTemplate,
+    TravelKiosk,
 )
 from app.ml.deepfake_detector import deepfake_detector
 from app.services.authlink_service import authlink_service
@@ -319,6 +321,58 @@ async def list_threats(session: AsyncSession = Depends(get_async_session)):
     result = await session.execute(select(DeepfakeThreat))
     threats = result.scalars().all()
     return threats
+
+
+@router.get("/biometrics", response_model=List[BiometricTemplate])
+async def list_biometrics(
+    user_id: Optional[str] = None, session: AsyncSession = Depends(get_async_session)
+):
+    """List enrolled biometric templates for users"""
+    if user_id:
+        result = await session.execute(
+            select(BiometricTemplate).where(BiometricTemplate.user_id == uuid.UUID(user_id))
+        )
+    else:
+        result = await session.execute(select(BiometricTemplate))
+    
+    return result.scalars().all()
+
+
+@router.post("/biometrics", response_model=BiometricTemplate)
+async def enroll_biometric(
+    template: Dict[str, Any], session: AsyncSession = Depends(get_async_session)
+):
+    """Enroll a new biometric template for liveness comparison"""
+    import uuid
+    new_template = BiometricTemplate(
+        id=uuid.uuid4(),
+        user_id=uuid.UUID(template.get("user_id", str(uuid.uuid4()))),
+        type=template.get("type", "face"),
+        template_hash=template.get("template_hash", "hash_placeholder"),
+        cancellable=template.get("cancellable", True)
+    )
+    session.add(new_template)
+    await session.commit()
+    await session.refresh(new_template)
+    return new_template
+
+
+@router.delete("/biometrics/{biometric_id}/revoke")
+async def revoke_biometric(
+    biometric_id: str, session: AsyncSession = Depends(get_async_session)
+):
+    """Permanently revoke and purge a biometric template (Right to be Forgotten)"""
+    try:
+        template = await session.get(BiometricTemplate, uuid.UUID(biometric_id))
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid biometric ID")
+    
+    if not template:
+        raise HTTPException(status_code=404, detail="Biometric template not found")
+    
+    await session.delete(template)
+    await session.commit()
+    return {"status": "purged", "biometric_id": biometric_id}
 
 
 @router.get("/sdk/download/{platform}")

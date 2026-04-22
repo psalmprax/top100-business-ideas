@@ -12,7 +12,7 @@ async function loginAndNavigate(
   await page.waitForLoadState("domcontentloaded");
 
   await page.getByTestId("input-email").fill("admin@example.com");
-  await page.getByTestId("input-password").fill("AlphaAI@2026");
+  await page.getByTestId("input-password").fill("AlphaHecta@2026");
   await page.getByTestId("btn-signin").click();
 
   await page.waitForURL("**/products/agent-ops", { timeout: 20000 });

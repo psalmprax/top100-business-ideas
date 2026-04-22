@@ -4,11 +4,11 @@ const BASE_URL = "http://149.104.110.122:7000";
 const API_URL = "http://149.104.110.122:7002";
 
 async function loginAndNavigate(page: any, tabName?: string) {
-  await page.goto(`${BASE_URL}/login?product=alpha-workforce`);
+  await page.goto(`${BASE_URL}/login?product=alpha-hecta-workforce`);
   await page.waitForLoadState("domcontentloaded");
 
   await page.getByTestId("input-email").fill("admin@example.com");
-  await page.getByTestId("input-password").fill("AlphaAI@2026");
+  await page.getByTestId("input-password").fill("AlphaHecta@2026");
   await page.getByTestId("btn-signin").click();
 
   // Check if redirected to workforce or another page
@@ -29,7 +29,7 @@ async function loginAndNavigate(page: any, tabName?: string) {
   }
 }
 
-test.describe("AlphaWorkforce API Response Validation", () => {
+test.describe("AlphaHectaWorkforce API Response Validation", () => {
   test.skip("should validate workforce endpoints return data", async ({
     request,
   }) => {
@@ -37,15 +37,15 @@ test.describe("AlphaWorkforce API Response Validation", () => {
   });
 });
 
-test.describe("AlphaWorkforce Header and Navigation", () => {
+test.describe("AlphaHectaWorkforce Header and Navigation", () => {
   test.beforeEach(async ({ page }) => {
     await loginAndNavigate(page);
   });
 
-  test("should render AlphaWorkforce header with branding", async ({
+  test("should render AlphaHectaWorkforce header with branding", async ({
     page,
   }) => {
-    await expect(page.getByText("Alpha Workforce")).toBeVisible({
+    await expect(page.getByText("AlphaHecta Workforce")).toBeVisible({
       timeout: 15000,
     });
     await expect(page.getByText("Autonomous Corporate Management")).toBeVisible(
@@ -53,7 +53,7 @@ test.describe("AlphaWorkforce Header and Navigation", () => {
     );
     await expect(page.getByText("Deploy Swarm")).toBeVisible({ timeout: 5000 });
     console.log(
-      "✅ Header: Alpha Workforce branding, status, Deploy Swarm button"
+      "✅ Header: AlphaHecta Workforce branding, status, Deploy Swarm button"
     );
   });
 
@@ -94,7 +94,7 @@ test.describe("AlphaWorkforce Header and Navigation", () => {
   });
 });
 
-test.describe("AlphaWorkforce Boardroom Tab", () => {
+test.describe("AlphaHectaWorkforce Boardroom Tab", () => {
   test.beforeEach(async ({ page }) => {
     await loginAndNavigate(page, "Boardroom");
   });
@@ -121,7 +121,7 @@ test.describe("AlphaWorkforce Boardroom Tab", () => {
   });
 });
 
-test.describe("AlphaWorkforce CEO Tab", () => {
+test.describe("AlphaHectaWorkforce CEO Tab", () => {
   test.beforeEach(async ({ page }) => {
     await loginAndNavigate(page, "CEO");
   });
@@ -141,7 +141,7 @@ test.describe("AlphaWorkforce CEO Tab", () => {
   });
 });
 
-test.describe("AlphaWorkforce Growth Tab", () => {
+test.describe("AlphaHectaWorkforce Growth Tab", () => {
   test.beforeEach(async ({ page }) => {
     await loginAndNavigate(page, "Growth");
   });
@@ -178,7 +178,7 @@ test.describe("AlphaWorkforce Growth Tab", () => {
   });
 });
 
-test.describe("AlphaWorkforce Ops Tab", () => {
+test.describe("AlphaHectaWorkforce Ops Tab", () => {
   test.beforeEach(async ({ page }) => {
     await loginAndNavigate(page, "Ops");
   });
@@ -200,7 +200,7 @@ test.describe("AlphaWorkforce Ops Tab", () => {
   });
 });
 
-test.describe("AlphaWorkforce Finance Tab", () => {
+test.describe("AlphaHectaWorkforce Finance Tab", () => {
   test.beforeEach(async ({ page }) => {
     await loginAndNavigate(page, "Finance");
   });
@@ -227,7 +227,7 @@ test.describe("AlphaWorkforce Finance Tab", () => {
   });
 });
 
-test.describe("AlphaWorkforce CashClaw Tab", () => {
+test.describe("AlphaHectaWorkforce CashClaw Tab", () => {
   test.beforeEach(async ({ page }) => {
     await loginAndNavigate(page, "CashClaw");
   });
@@ -250,7 +250,7 @@ test.describe("AlphaWorkforce CashClaw Tab", () => {
   });
 });
 
-test.describe("AlphaWorkforce Workforce Tab", () => {
+test.describe("AlphaHectaWorkforce Workforce Tab", () => {
   test.beforeEach(async ({ page }) => {
     await loginAndNavigate(page, "Workforce");
   });
@@ -272,7 +272,7 @@ test.describe("AlphaWorkforce Workforce Tab", () => {
   });
 });
 
-test.describe("AlphaWorkforce Discourse Tab", () => {
+test.describe("AlphaHectaWorkforce Discourse Tab", () => {
   test.beforeEach(async ({ page }) => {
     await loginAndNavigate(page, "Discourse");
   });
@@ -297,7 +297,7 @@ test.describe("AlphaWorkforce Discourse Tab", () => {
   });
 });
 
-test.describe("AlphaWorkforce Autonomous Mode Toggle", () => {
+test.describe("AlphaHectaWorkforce Autonomous Mode Toggle", () => {
   test.beforeEach(async ({ page }) => {
     await loginAndNavigate(page);
   });
@@ -316,7 +316,7 @@ test.describe("AlphaWorkforce Autonomous Mode Toggle", () => {
   });
 });
 
-test.describe("AlphaWorkforce Deploy Swarm Button", () => {
+test.describe("AlphaHectaWorkforce Deploy Swarm Button", () => {
   test.beforeEach(async ({ page }) => {
     await loginAndNavigate(page);
   });

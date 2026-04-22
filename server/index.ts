@@ -75,8 +75,20 @@ app.use(
         ],
       },
     },
+    crossOriginEmbedderPolicy: false,
+    crossOriginOpenerPolicy: false, // Disabled: HTTP only
+    originAgentCluster: false,
+    hsts: false,
   })
 );
+
+// Remove problematic headers that cause warnings on HTTP
+app.use((_req, res, next) => {
+  res.removeHeader("Cross-Origin-Opener-Policy");
+  res.removeHeader("Origin-Agent-Cluster");
+  res.removeHeader("Cross-Origin-Resource-Policy");
+  next();
+});
 app.use(compression());
 app.use(
   cors({

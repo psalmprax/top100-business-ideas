@@ -51,8 +51,8 @@ interface Plan {
 
 const plans: Plan[] = [
   {
-    id: "developer",
-    name: "Developer",
+    id: "free",
+    name: "Free",
     price: 0,
     interval: "forever",
     features: [
@@ -190,8 +190,8 @@ export default function Billing() {
     toast.info(`Fetching secure document ${id}...`);
     // In production, this would open the pdfUrl from the invoice object
     const invoice = invoiceHistory.find(inv => inv.id === id);
-    if (invoice && invoice.pdfUrl) {
-      window.open(invoice.pdfUrl, "_blank");
+    if (invoice && invoice.pdf_url) {
+      window.open(invoice.pdf_url, "_blank");
     }
   };
 
@@ -241,9 +241,9 @@ export default function Billing() {
                     </h3>
                     <p className="text-sm text-slate-400">
                       Renews on:{" "}
-                      {subscription?.currentPeriodEnd
+                      {subscription?.current_period_end
                         ? new Date(
-                            subscription.currentPeriodEnd
+                            subscription.current_period_end
                           ).toLocaleDateString()
                         : "N/A"}
                     </p>
@@ -255,36 +255,35 @@ export default function Billing() {
                     >
                       {subscription?.status || "Active"}
                     </Badge>
-                    {subscription?.plan &&
-                      subscription.plan !== "developer" && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300"
-                          onClick={async () => {
-                            if (
-                              window.confirm(
-                                "Are you sure you want to cancel your subscription? Access will continue until the end of your billing period."
-                              )
-                            ) {
-                              try {
-                                await billingApi.cancel();
-                                toast.success(
-                                  "Subscription cancelled. Access continues until period end."
-                                );
-                                const sub = await billingApi.subscription();
-                                setSubscription(sub);
-                              } catch (err: any) {
-                                toast.error(
-                                  err.message || "Failed to cancel subscription"
-                                );
-                              }
+                    {subscription?.plan && subscription.plan !== "free" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                        onClick={async () => {
+                          if (
+                            window.confirm(
+                              "Are you sure you want to cancel your subscription? Access will continue until the end of your billing period."
+                            )
+                          ) {
+                            try {
+                              await billingApi.cancel();
+                              toast.success(
+                                "Subscription cancelled. Access continues until period end."
+                              );
+                              const sub = await billingApi.subscription();
+                              setSubscription(sub);
+                            } catch (err: any) {
+                              toast.error(
+                                err.message || "Failed to cancel subscription"
+                              );
                             }
-                          }}
-                        >
-                          Cancel Subscription
-                        </Button>
-                      )}
+                          }
+                        }}
+                      >
+                        Cancel Subscription
+                      </Button>
+                    )}
                   </div>
                 </div>
               </CardContent>

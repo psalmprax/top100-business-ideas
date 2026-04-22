@@ -1,6 +1,6 @@
 /**
  * GraphQL Query Interface
- * Interactive GraphQL explorer for the AlphaAI platform
+ * Interactive GraphQL explorer for the AlphaHecta platform
  */
 
 import { useState } from "react";
@@ -29,8 +29,8 @@ const SAMPLE_QUERIES = [
     id
     name
     status
-    dailySpend
-    dailyBudget
+    daily_spend
+    budget
   }
 }`,
   },
@@ -42,7 +42,7 @@ const SAMPLE_QUERIES = [
     type
     status
     score
-    checkedAt
+    checked_at
   }
 }`,
   },
@@ -51,10 +51,10 @@ const SAMPLE_QUERIES = [
     query: `query {
   deepfakeAnalyses {
     id
-    mediaType
+    media_type
     result
     confidence
-    analysisAt
+    analysis_at
   }
 }`,
   },
@@ -62,10 +62,10 @@ const SAMPLE_QUERIES = [
     label: "User Stats",
     query: `query {
   trainingStats {
-    totalModules
-    totalEnrolled
+    total_modules
+    total_enrolled
     completed
-    completionRate
+    completion_rate
   }
 }`,
   },
@@ -125,7 +125,7 @@ export default function GraphQLInterface() {
         <div className="mb-8">
           <h1 className="text-display-hero mb-2">GraphQL Explorer</h1>
           <p className="text-slate-400">
-            Query the AlphaAI platform using GraphQL
+            Query the AlphaHecta platform using GraphQL
           </p>
         </div>
 
@@ -305,8 +305,8 @@ export default function GraphQLInterface() {
                         "id",
                         "name",
                         "status",
-                        "dailySpend",
-                        "dailyBudget",
+                        "daily_spend",
+                        "budget",
                         "model",
                       ],
                     },
@@ -316,15 +316,15 @@ export default function GraphQLInterface() {
                     },
                     {
                       type: "DeepfakeAnalysis",
-                      fields: ["id", "mediaType", "result", "confidence"],
+                      fields: ["id", "media_type", "result", "confidence"],
                     },
                     {
                       type: "TrainingStats",
                       fields: [
-                        "totalModules",
-                        "totalEnrolled",
+                        "total_modules",
+                        "total_enrolled",
                         "completed",
-                        "completionRate",
+                        "completion_rate",
                       ],
                     },
                     {

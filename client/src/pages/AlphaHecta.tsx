@@ -1,5 +1,5 @@
 /**
- * AlphaAI - AI-Powered Enterprise Solutions
+ * AlphaHecta - AI-Powered Enterprise Solutions
  * Company landing page showcasing products
  */
 
@@ -95,8 +95,8 @@ const products = [
     url: "/products/deepfake-defense",
   },
   {
-    id: "alpha-workforce",
-    name: "Alpha Workforce",
+    id: "alpha-hecta-workforce",
+    name: "AlphaHecta Workforce",
     tagline: "Autonomous Company + CashClaw",
     description:
       "Deploy an entire C-Suite of AI Executives that run your business autonomously AND earn revenue via CashClaw freelance integration.",
@@ -239,7 +239,7 @@ function LeadGenDialog({
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
             Enter your details and our team will prepare a personalized
-            walkthrough of the Alpha suite.
+            walkthrough of the AlphaHecta suite.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 pt-4">
@@ -270,16 +270,16 @@ function LeadGenDialog({
 import { useAuth } from "@/contexts/AuthContext";
 import { usePerspective } from "@/contexts/PerspectiveContext";
 
-export default function AlphaAI() {
+export default function AlphaHecta() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isManagement, hasProductAccess, isAuthenticated } = useAuth();
   const { perspective } = usePerspective();
 
   const publicProducts = products.filter(
-    p => p.id !== "alpha-workforce" && p.id !== "market-intelligence"
+    p => p.id !== "alpha-hecta-workforce" && p.id !== "market-intelligence"
   );
   const internalTools = products.filter(
-    p => p.id === "alpha-workforce" || p.id === "market-intelligence"
+    p => p.id === "alpha-hecta-workforce" || p.id === "market-intelligence"
   );
 
   const [platformStats, setPlatformStats] = useState({
@@ -305,7 +305,7 @@ export default function AlphaAI() {
         ]);
 
         setPlatformStats({
-          agentsOnline: agents.filter((a: Agent) => a.status === "active")
+          agentsOnline: agents.filter((a: Agent) => a.status === "running")
             .length,
           threatsBlocked: safety?.threats_detected || 0,
           complianceScore: compliance?.overall_score || 0,
@@ -332,7 +332,7 @@ export default function AlphaAI() {
                 <Zap className="h-5 w-5 text-white" />
               </div>
               <span className="text-product-title text-white text-lg">
-                Alpha<span>AI</span>
+                AlphaHecta
               </span>
             </div>
 
@@ -468,25 +468,37 @@ export default function AlphaAI() {
         >
           <div
             className={`absolute top-0 left-1/4 w-72 h-72 rounded-full blur-[120px] animate-pulse transition-colors duration-1000 ${
-              perspective === "alpha" ? "bg-blue-500/15" : 
-              perspective === "sigma" ? "bg-purple-500/15" : 
-              perspective === "omega" ? "bg-emerald-500/15" : "bg-blue-500/15"
+              perspective === "alpha"
+                ? "bg-blue-500/15"
+                : perspective === "sigma"
+                  ? "bg-purple-500/15"
+                  : perspective === "omega"
+                    ? "bg-emerald-500/15"
+                    : "bg-blue-500/15"
             }`}
             style={{ animationDuration: "4s" }}
           />
           <div
             className={`absolute bottom-0 right-1/4 w-96 h-96 rounded-full blur-[140px] animate-pulse transition-colors duration-1000 ${
-              perspective === "alpha" ? "bg-purple-600/10" : 
-              perspective === "sigma" ? "bg-blue-600/10" : 
-              perspective === "omega" ? "bg-indigo-600/10" : "bg-purple-600/10"
+              perspective === "alpha"
+                ? "bg-purple-600/10"
+                : perspective === "sigma"
+                  ? "bg-blue-600/10"
+                  : perspective === "omega"
+                    ? "bg-indigo-600/10"
+                    : "bg-purple-600/10"
             }`}
             style={{ animationDuration: "6s", animationDelay: "1s" }}
           />
           <div
             className={`absolute top-1/3 right-1/3 w-64 h-64 rounded-full blur-[100px] animate-pulse transition-colors duration-1000 ${
-              perspective === "alpha" ? "bg-emerald-500/8" : 
-              perspective === "sigma" ? "bg-amber-500/8" : 
-              perspective === "omega" ? "bg-red-500/8" : "bg-emerald-500/8"
+              perspective === "alpha"
+                ? "bg-emerald-500/8"
+                : perspective === "sigma"
+                  ? "bg-amber-500/8"
+                  : perspective === "omega"
+                    ? "bg-red-500/8"
+                    : "bg-emerald-500/8"
             }`}
             style={{ animationDuration: "5s", animationDelay: "2s" }}
           />
@@ -506,11 +518,17 @@ export default function AlphaAI() {
         />
         <div className="container mx-auto relative z-10">
           <div className="text-center max-w-4xl mx-auto">
-            <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-kicker mb-8 border backdrop-blur-sm transition-all duration-500 ${
-              perspective === "alpha" ? "bg-blue-500/10 text-blue-500 border-blue-500/20" : 
-              perspective === "sigma" ? "bg-purple-500/10 text-purple-500 border-purple-500/20" : 
-              perspective === "omega" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-blue-500/10 text-blue-500 border-blue-500/20"
-            }`}>
+            <div
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-kicker mb-8 border backdrop-blur-sm transition-all duration-500 ${
+                perspective === "alpha"
+                  ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
+                  : perspective === "sigma"
+                    ? "bg-purple-500/10 text-purple-500 border-purple-500/20"
+                    : perspective === "omega"
+                      ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                      : "bg-blue-500/10 text-blue-500 border-blue-500/20"
+              }`}
+            >
               <Zap className="h-4 w-4" />
               Now available: Enterprise tier with custom SLAs
             </div>
@@ -692,7 +710,7 @@ export default function AlphaAI() {
                 </h2>
               </div>
               <p className="text-subheadline max-w-xl">
-                Proprietary AlphaAI workforce and intelligence tools reserved
+                Proprietary AlphaHecta workforce and intelligence tools reserved
                 for executive operations and strategic analysis.
               </p>
             </div>
@@ -769,7 +787,7 @@ export default function AlphaAI() {
                 Coming <span className="text-primary">Soon</span>
               </h2>
               <p className="text-body">
-                Our R&D department is working on the next generation of AlphaAI
+                Our R&D department is working on the next generation of AlphaHecta
                 ventures. Join the waitlist to get early access to these
                 cutting-edge solutions.
               </p>
@@ -845,7 +863,7 @@ export default function AlphaAI() {
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-section-headline mb-6">
-                Why Enterprises Choose AlphaAI
+                Why Enterprises Choose AlphaHecta
               </h2>
               <div className="space-y-6">
                 <div className="flex gap-4">
@@ -992,7 +1010,7 @@ export default function AlphaAI() {
             Ready to Transform Your AI Operations?
           </h2>
           <p className="text-subheadline text-white/80 mb-8 max-w-2xl mx-auto">
-            Join 500+ enterprises already using AlphaAI to power their AI
+            Join 500+ enterprises already using AlphaHecta to power their AI
             initiatives
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -1128,9 +1146,9 @@ export default function AlphaAI() {
       <section id="about" className="py-20 px-4">
         <div className="container mx-auto">
           <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-section-headline mb-6">About AlphaAI</h2>
+            <h2 className="text-section-headline mb-6">About AlphaHecta</h2>
             <p className="text-body-lg mb-8">
-              AlphaAI is a leading enterprise AI platform trusted by Fortune 500
+              AlphaHecta is a leading enterprise AI platform trusted by Fortune 500
               companies worldwide. We specialize in autonomous agent operations,
               AI compliance, and deepfake defense solutions.
             </p>
@@ -1160,10 +1178,10 @@ export default function AlphaAI() {
               <div className="flex h-6 w-6 items-center justify-center rounded bg-gradient-to-br from-blue-500 to-purple-600">
                 <Zap className="h-3 w-3 text-white" />
               </div>
-              <span className="text-card-title">AlphaAI</span>
+              <span className="text-card-title">AlphaHecta</span>
             </div>
             <p className="text-body-sm text-muted-foreground">
-              © 2026 AlphaAI Inc. All rights reserved.
+              © 2026 AlphaHecta Inc. All rights reserved.
             </p>
             <div className="flex items-center gap-6">
               <button
@@ -1171,7 +1189,7 @@ export default function AlphaAI() {
                   const w = window.open("", "_blank", "width=700,height=600");
                   if (w) {
                     w.document.write(
-                      `<!DOCTYPE html><html><head><title>Privacy Policy - AlphaAI</title><meta charset="utf-8"><style>body{font-family:system-ui,sans-serif;padding:2rem;max-width:700px;margin:0 auto;background:#0f172a;color:#e2e8f0;line-height:1.7}h1{font-size:1.5rem;margin-bottom:1rem;border-bottom:1px solid #334155;padding-bottom:.5rem}h2{font-size:1.1rem;margin-top:1.5rem;color:#94a3b8}p,li{font-size:.9rem;color:#94a3b8}ul{padding-left:1.5rem}</style></head><body><h1>Privacy Policy</h1><p><strong>Effective Date:</strong> March 1, 2026</p><h2>1. Data Collection</h2><p>AlphaAI collects account information (name, email), usage analytics, and API request logs to provide and improve our services.</p><h2>2. Data Usage</h2><p>We use collected data to: provide AI services, improve model accuracy, ensure security, and comply with legal obligations.</p><h2>3. Data Protection</h2><p>All data is encrypted at rest (AES-256) and in transit (TLS 1.3). We undergo annual SOC 2 Type II audits.</p><h2>4. Third Parties</h2><p>We do not sell user data. We share data only with sub-processors listed in our DPA, under strict contractual obligations.</p><h2>5. Your Rights</h2><p>You may request data export, correction, or deletion at any time via settings or by contacting privacy@alphaai.com.</p><h2>6. Contact</h2><p>For privacy inquiries: privacy@alphaai.com</p></body></html>`
+                      `<!DOCTYPE html><html><head><title>Privacy Policy - AlphaHecta</title><meta charset="utf-8"><style>body{font-family:system-ui,sans-serif;padding:2rem;max-width:700px;margin:0 auto;background:#0f172a;color:#e2e8f0;line-height:1.7}h1{font-size:1.5rem;margin-bottom:1rem;border-bottom:1px solid #334155;padding-bottom:.5rem}h2{font-size:1.1rem;margin-top:1.5rem;color:#94a3b8}p,li{font-size:.9rem;color:#94a3b8}ul{padding-left:1.5rem}</style></head><body><h1>Privacy Policy</h1><p><strong>Effective Date:</strong> March 1, 2026</p><h2>1. Data Collection</h2><p>AlphaHecta collects account information (name, email), usage analytics, and API request logs to provide and improve our services.</p><h2>2. Data Usage</h2><p>We use collected data to: provide AI services, improve model accuracy, ensure security, and comply with legal obligations.</p><h2>3. Data Protection</h2><p>All data is encrypted at rest (AES-256) and in transit (TLS 1.3). We undergo annual SOC 2 Type II audits.</p><h2>4. Third Parties</h2><p>We do not sell user data. We share data only with sub-processors listed in our DPA, under strict contractual obligations.</p><h2>5. Your Rights</h2><p>You may request data export, correction, or deletion at any time via settings or by contacting privacy@alphahecta.com.</p><h2>6. Contact</h2><p>For privacy inquiries: privacy@alphahecta.com</p></body></html>`
                     );
                   }
                 }}
@@ -1185,7 +1203,7 @@ export default function AlphaAI() {
                   const w = window.open("", "_blank", "width=700,height=600");
                   if (w) {
                     w.document.write(
-                      `<!DOCTYPE html><html><head><title>Terms of Service - AlphaAI</title><meta charset="utf-8"><style>body{font-family:system-ui,sans-serif;padding:2rem;max-width:700px;margin:0 auto;background:#0f172a;color:#e2e8f0;line-height:1.7}h1{font-size:1.5rem;margin-bottom:1rem;border-bottom:1px solid #334155;padding-bottom:.5rem}h2{font-size:1.1rem;margin-top:1.5rem;color:#94a3b8}p,li{font-size:.9rem;color:#94a3b8}ul{padding-left:1.5rem}</style></head><body><h1>Terms of Service</h1><p><strong>Effective Date:</strong> March 1, 2026</p><h2>1. Acceptance</h2><p>By using AlphaAI services, you agree to these terms. If you are using on behalf of an organization, you represent authority to bind that organization.</p><h2>2. Services</h2><p>AlphaAI provides AI-powered compliance, security, and workforce automation services. Services are provided as described in your subscription plan.</p><h2>3. Usage Limits</h2><p>Usage is subject to fair use policies and plan-specific rate limits. Excessive usage may require plan upgrades.</p><h2>4. Liability</h2><p>Services are provided "as-is." AlphaAI's liability is limited to the fees paid in the preceding 12 months. Enterprise SLA terms apply under separate agreement.</p><h2>5. Termination</h2><p>Either party may terminate with 30 days written notice. Upon termination, data export is available for 60 days.</p><h2>6. Contact</h2><p>For legal inquiries: legal@alphaai.com</p></body></html>`
+                      `<!DOCTYPE html><html><head><title>Terms of Service - AlphaHecta</title><meta charset="utf-8"><style>body{font-family:system-ui,sans-serif;padding:2rem;max-width:700px;margin:0 auto;background:#0f172a;color:#e2e8f0;line-height:1.7}h1{font-size:1.5rem;margin-bottom:1rem;border-bottom:1px solid #334155;padding-bottom:.5rem}h2{font-size:1.1rem;margin-top:1.5rem;color:#94a3b8}p,li{font-size:.9rem;color:#94a3b8}ul{padding-left:1.5rem}</style></head><body><h1>Terms of Service</h1><p><strong>Effective Date:</strong> March 1, 2026</p><h2>1. Acceptance</h2><p>By using AlphaHecta services, you agree to these terms. If you are using on behalf of an organization, you represent authority to bind that organization.</p><h2>2. Services</h2><p>AlphaHecta provides AI-powered compliance, security, and workforce automation services. Services are provided as described in your subscription plan.</p><h2>3. Usage Limits</h2><p>Usage is subject to fair use policies and plan-specific rate limits. Excessive usage may require plan upgrades.</p><h2>4. Liability</h2><p>Services are provided "as-is." AlphaHecta's liability is limited to the fees paid in the preceding 12 months. Enterprise SLA terms apply under separate agreement.</p><h2>5. Termination</h2><p>Either party may terminate with 30 days written notice. Upon termination, data export is available for 60 days.</p><h2>6. Contact</h2><p>For legal inquiries: legal@alphahecta.com</p></body></html>`
                     );
                   }
                 }}
@@ -1197,7 +1215,7 @@ export default function AlphaAI() {
               <button
                 onClick={() => {
                   toast.info(
-                    "Contact us at support@alphaai.com or use the lead capture form."
+                    "Contact us at support@alphahecta.com or use the lead capture form."
                   );
                 }}
                 className="text-body-sm text-muted-foreground hover:text-foreground"

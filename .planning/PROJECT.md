@@ -1,4 +1,4 @@
-# Project: AlphaAI - Enterprise AI Solutions
+# Project: AlphaHecta - Enterprise AI Solutions
 
 ## 🎯 Vision
 To provide a production-grade, "Real-First" architecture for enterprise AI applications, ensuring that all UI interactions are backed by persistent, authenticated, and verifiable backend data rather than simulations.

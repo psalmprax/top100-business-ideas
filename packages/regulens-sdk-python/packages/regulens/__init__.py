@@ -107,7 +107,7 @@ class RegulensClient:
             Scan information
         """
         data = {
-            "modelId": model_id,
+            "model_id": model_id,
         }
         if articles:
             data["articles"] = articles
@@ -142,7 +142,7 @@ class RegulensClient:
         return self._request("POST", "/models", json={
             "name": name,
             "version": version,
-            "riskCategory": risk_category,
+            "risk_category": risk_category,
         })
     
     def get_model(self, model_id: str) -> Dict[str, Any]:
@@ -179,7 +179,7 @@ class RegulensClient:
     
     def generate_report(self, model_id: str) -> Dict[str, Any]:
         """Generate a compliance report."""
-        return self._request("POST", "/reports/generate", json={"modelId": model_id})
+        return self._request("POST", "/reports/generate", json={"model_id": model_id})
     
     def get_compliance_summary(self) -> Dict[str, Any]:
         """Get compliance summary dashboard."""

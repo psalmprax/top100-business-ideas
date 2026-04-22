@@ -153,7 +153,7 @@ The 19-extended-use-cases-template.md defines **10 core use cases** per venture:
 | Settings | 16 | 16 | 100% |
 | Billing | 11 | 11 | 100% |
 | AlphaAgentOps | 14 | 14 | 100% |
-| AlphaAIActCompliance | 8 | 8 | 100% |
+| AlphaHectaActCompliance | 8 | 8 | 100% |
 | AlphaDeepfakeDefense | 6 | 6 | 100% |
 | AlphaWorkforce | 10 | 10 | 100% |
 

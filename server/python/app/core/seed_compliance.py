@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from sqlmodel import Session
 from app.core.database import engine
-from app.core.models import ComplianceChecklistItem
+from app.core.models import ComplianceChecklistItem, Vendor
 
 def seed_compliance():
     from sqlmodel import SQLModel
@@ -138,14 +138,63 @@ def seed_compliance():
         ),
     ]
 
+    vendors = [
+        Vendor(
+            name="OpenAI",
+            type="llm",
+            category="primary_ai",
+            risk_level="low",
+            status="vetted",
+            website="https://openai.com",
+            contact_email="compliance@openai.com",
+        ),
+        Vendor(
+            name="Anthropic",
+            type="llm",
+            category="primary_ai",
+            risk_level="low",
+            status="vetted",
+            website="https://anthropic.com",
+            contact_email="legal@anthropic.com",
+        ),
+        Vendor(
+            name="Pinecone",
+            type="vector_db",
+            category="supporting_infra",
+            risk_level="low",
+            status="vetted",
+            website="https://pinecone.io",
+        ),
+        Vendor(
+            name="Cloudflare",
+            type="infra",
+            category="edge_infra",
+            risk_level="low",
+            status="vetted",
+            website="https://cloudflare.com",
+        ),
+        Vendor(
+            name="Custom Logic Hub",
+            type="software",
+            category="third_party",
+            risk_level="high",
+            status="pending",
+            website="https://example-logic.com",
+        ),
+    ]
+
     with Session(engine) as session:
         # Clear existing items if any
         # session.query(ComplianceChecklistItem).delete() 
         
         for item in items:
             session.add(item)
+            
+        for vendor in vendors:
+            session.add(vendor)
+            
         session.commit()
-        print(f"Seeded {len(items)} compliance checklist items.")
+        print(f"Seeded {len(items)} items and {len(vendors)} vendors.")
 
 if __name__ == "__main__":
     seed_compliance()

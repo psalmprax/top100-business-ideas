@@ -186,13 +186,13 @@ export function AgentSettingsDialog({
               <Label>Max Tokens</Label>
               <Input
                 type="number"
-                value={editedAgent.config.maxTokens}
+                value={editedAgent.config.max_tokens}
                 onChange={e =>
                   setEditedAgent(prev => ({
                     ...prev,
                     config: {
                       ...prev.config,
-                      maxTokens: parseInt(e.target.value) || 0,
+                      max_tokens: parseInt(e.target.value) || 0,
                     },
                   }))
                 }

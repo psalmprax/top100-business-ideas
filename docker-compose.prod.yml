@@ -55,6 +55,7 @@ services:
       - PORT=8000
       - ENVIRONMENT=production
       - SECRET_KEY=${SECRET_KEY}
+      - SESSION_SECRET_KEY=${SESSION_SECRET_KEY}
       - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
       - REDIS_URL=redis://redis:6379
       - SEED_DATABASE=false
@@ -71,7 +72,7 @@ services:
     environment:
       - POSTGRES_USER=${DB_USER:-postgres}
       - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
-      - POSTGRES_DB=${DB_NAME:-alphaai}
+      - POSTGRES_DB=${DB_NAME:-alphahecta}
     volumes:
       - postgres_prod_data:/var/lib/postgresql/data
     restart: always

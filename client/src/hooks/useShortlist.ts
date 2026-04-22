@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { storage } from "../lib/storage";
 
 const SHORTLIST_KEY = "business-ideas-shortlist";
 
@@ -9,9 +10,9 @@ export function useShortlist() {
   // Load from localStorage on mount
   useEffect(() => {
     try {
-      const stored = localStorage.getItem(SHORTLIST_KEY);
-      if (stored) {
-        setShortlist(JSON.parse(stored));
+      const stored = storage.get<number[]>(SHORTLIST_KEY, []);
+      if (stored.length > 0) {
+        setShortlist(stored);
       }
     } catch (err) {
       console.error("Failed to load shortlist:", err);
@@ -23,7 +24,7 @@ export function useShortlist() {
   useEffect(() => {
     if (isLoaded) {
       try {
-        localStorage.setItem(SHORTLIST_KEY, JSON.stringify(shortlist));
+        storage.set(SHORTLIST_KEY, shortlist);
       } catch (err) {
         console.error("Failed to save shortlist:", err);
       }

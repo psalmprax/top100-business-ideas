@@ -1,11 +1,5 @@
-import { 
-  ArrowDownRight, 
-  ArrowUpRight 
-} from "lucide-react";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
+import { ArrowDownRight, ArrowUpRight } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { DashboardAgent } from "./types";
 
@@ -31,7 +25,7 @@ export function MetricCard({
       <CardContent className="p-5">
         <div className="flex items-center justify-between">
           <div
-            className={`p-2.5 rounded-xl transition-all duration-500 group-hover:scale-110 ${color.includes('primary') ? 'bg-primary/10 text-primary border-primary/20' : color.includes('accent') ? 'bg-accent/10 text-accent border-accent/20' : color} backdrop-blur-sm border`}
+            className={`p-2.5 rounded-xl transition-all duration-500 group-hover:scale-110 ${color.includes("primary") ? "bg-primary/10 text-primary border-primary/20" : color.includes("accent") ? "bg-accent/10 text-accent border-accent/20" : color} backdrop-blur-sm border`}
           >
             <Icon className="w-5 h-5" />
           </div>
@@ -64,9 +58,16 @@ export function MetricCard({
   );
 }
 
-export function AgentStatusBadge({ status }: { status: DashboardAgent["status"] }) {
-  const statusConfig = {
-    active: { color: "bg-green-500", label: "Active" },
+export function AgentStatusBadge({
+  status,
+}: {
+  status: DashboardAgent["status"];
+}) {
+  const statusConfig: Record<
+    DashboardAgent["status"],
+    { color: string; label: string }
+  > = {
+    running: { color: "bg-green-500", label: "Running" },
     paused: { color: "bg-yellow-500", label: "Paused" },
     error: { color: "bg-red-500", label: "Error" },
     stopped: { color: "bg-gray-500", label: "Stopped" },
@@ -80,7 +81,13 @@ export function AgentStatusBadge({ status }: { status: DashboardAgent["status"] 
   );
 }
 
-export function BudgetProgress({ spent, limit }: { spent: number; limit: number }) {
+export function BudgetProgress({
+  spent,
+  limit,
+}: {
+  spent: number;
+  limit: number;
+}) {
   const percentage = Math.min((spent / limit) * 100, 100);
   const isWarning = percentage >= 75;
   const isCritical = percentage >= 90;

@@ -17,12 +17,20 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { extendedApi } from "@/lib/api";
+import { extendedApi, type ComplianceScan } from "@/lib/api";
 import { toast } from "sonner";
+
+interface RedTeamAudit {
+  id: string;
+  target: string;
+  vulnerabilities: number;
+  status: string;
+  date: string;
+}
 
 export function RedTeamSection() {
   const [isRunning, setIsRunning] = useState(false);
-  const [audits, setAudits] = useState<any[]>([]);
+  const [audits, setAudits] = useState<RedTeamAudit[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,10 +40,17 @@ export function RedTeamSection() {
   async function loadAudits() {
     setLoading(true);
     try {
-      const data = await extendedApi.compliance
-        .listScans("system-core")
-        .catch(() => []);
-      setAudits(data || []);
+      const scans = await extendedApi.compliance.listScans("system-core");
+      const mapped: RedTeamAudit[] = (scans || []).map((s: ComplianceScan) => ({
+        id: s.id,
+        target: s.article_id,
+        vulnerabilities: s.results?.metrics?.anomalies_detected || 0,
+        status: s.status,
+        date: s.created_at
+          ? new Date(s.created_at).toLocaleDateString()
+          : "Unknown",
+      }));
+      setAudits(mapped);
     } catch (err) {
       console.error("Failed to fetch red team audits", err);
       setAudits([]);
@@ -50,6 +65,7 @@ export function RedTeamSection() {
       toast.info("Starting adversarial penetration test...");
       const result = await extendedApi.complianceAudit.redTeam("system-core");
       toast.success("Audit initiated: " + result.audit_id);
+      loadAudits();
     } catch (err) {
       toast.error("Failed to start red team audit");
     } finally {

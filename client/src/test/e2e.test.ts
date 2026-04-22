@@ -91,7 +91,7 @@ describe('Navigation E2E Tests', () => {
 describe('Alpha Agent Ops - E2E Tests', () => {
     test('should load agent ops dashboard', async () => {
         const page = await createPage();
-        await page.goto(`${BASE_URL}/ventures/alpha-agent-ops`);
+        await page.goto(`${BASE_URL}/ventures/alpha-hecta-agent-ops`);
 
         await expect(page.locator('h1')).toContainText(/Agent Ops/i);
         await page.close();
@@ -99,7 +99,7 @@ describe('Alpha Agent Ops - E2E Tests', () => {
 
     test('should display agent metrics', async () => {
         const page = await createPage();
-        await page.goto(`${BASE_URL}/ventures/alpha-agent-ops/dashboard`);
+        await page.goto(`${BASE_URL}/ventures/alpha-hecta-agent-ops/dashboard`);
 
         // Wait for metrics to load
         await page.waitForSelector('[data-testid="metrics-grid"]', { timeout: VENTURE_TIMEOUT });
@@ -113,7 +113,7 @@ describe('Alpha Agent Ops - E2E Tests', () => {
 
     test('should create new agent rule', async () => {
         const page = await createPage();
-        await page.goto(`${BASE_URL}/ventures/alpha-agent-ops/rules`);
+        await page.goto(`${BASE_URL}/ventures/alpha-hecta-agent-ops/rules`);
 
         // Click add rule button
         await page.click('[data-testid="add-rule-button"]');
@@ -140,7 +140,7 @@ describe('Alpha Agent Ops - E2E Tests', () => {
 describe('Alpha AI Act Compliance - E2E Tests', () => {
     test('should load compliance dashboard', async () => {
         const page = await createPage();
-        await page.goto(`${BASE_URL}/ventures/alpha-ai-act-compliance`);
+        await page.goto(`${BASE_URL}/ventures/alpha-hecta-act-compliance`);
 
         await expect(page.locator('h1')).toContainText(/AI Act/i);
         await page.close();
@@ -148,7 +148,7 @@ describe('Alpha AI Act Compliance - E2E Tests', () => {
 
     test('should run compliance check', async () => {
         const page = await createPage();
-        await page.goto(`${BASE_URL}/ventures/alpha-ai-act-compliance/checks`);
+        await page.goto(`${BASE_URL}/ventures/alpha-hecta-act-compliance/checks`);
 
         // Click run check button
         await page.click('[data-testid="run-check-button"]');
@@ -175,7 +175,7 @@ describe('Alpha AI Act Compliance - E2E Tests', () => {
 describe('Alpha Deepfake Defense - E2E Tests', () => {
     test('should load deepfake dashboard', async () => {
         const page = await createPage();
-        await page.goto(`${BASE_URL}/ventures/alpha-deepfake-defense`);
+        await page.goto(`${BASE_URL}/ventures/alpha-hecta-deepfake-defense`);
 
         await expect(page.locator('h1')).toContainText(/Deepfake/i);
         await page.close();
@@ -183,7 +183,7 @@ describe('Alpha Deepfake Defense - E2E Tests', () => {
 
     test('should upload and analyze media', async () => {
         const page = await createPage();
-        await page.goto(`${BASE_URL}/ventures/alpha-deepfake-defense/analyze`);
+        await page.goto(`${BASE_URL}/ventures/alpha-hecta-deepfake-defense/analyze`);
 
         // Upload test image
         const fileInput = await page.locator('[data-testid="file-input"]');

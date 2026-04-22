@@ -36,7 +36,7 @@ top100-business-ideas/
 
 **client/src/**:
 - **components/ui/**: 60+ low-level primitives using Radix UI and Tailwind 4.
-- **pages/**: Integrated dashboards for specific AlphaAI products (AgentOps, Sentinel, DeepfakeDefense, ComplianceHub).
+- **pages/**: Integrated dashboards for specific AlphaHecta products (AgentOps, Sentinel, DeepfakeDefense, ComplianceHub).
 - **lib/api.ts**: The "Nexus" for frontend-backend communication, containing clients for all proxied backends.
 
 **server/index.ts**:
@@ -49,7 +49,7 @@ top100-business-ideas/
 - Complex logic for ML inference, deepfake verification, and semantic compliance audits. Contains 35+ specialized service modules.
 
 **packages/**:
-- A polyglot SDK repository providing language-specific bindings for the core AlphaAI platform capabilities (Go, Python, PHP, Java, etc.).
+- A polyglot SDK repository providing language-specific bindings for the core AlphaHecta platform capabilities (Go, Python, PHP, Java, etc.).
 
 **ventures/**:
 - A data-rich repository of "Startup Opportunity Maps", "Gap Analyses", and "customer validation" templates for 100+ business ideas.

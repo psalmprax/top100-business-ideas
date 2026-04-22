@@ -1,17 +1,30 @@
 import { useState, useEffect } from "react";
-import { 
-  Cloud, 
-  Smartphone, 
-  Settings2, 
-  RefreshCw, 
+import {
+  Cloud,
+  Smartphone,
+  Settings2,
+  RefreshCw,
   Activity,
   History,
   Zap,
-  CheckCircle2
+  CheckCircle2,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { extendedApi, type EdgeDeployment } from "@/lib/api";
@@ -55,7 +68,9 @@ export function EdgeAISection() {
     return (
       <div className="flex flex-col items-center justify-center p-20">
         <RefreshCw className="w-8 h-8 animate-spin text-primary" />
-        <p className="mt-4 text-muted-foreground text-sm font-medium">Attaching to global edge network...</p>
+        <p className="mt-4 text-muted-foreground text-sm font-medium">
+          Attaching to global edge network...
+        </p>
       </div>
     );
   }
@@ -68,7 +83,10 @@ export function EdgeAISection() {
             <Smartphone className="w-5 h-5 text-blue-500" />
             Edge Hub & Local Scans
           </h3>
-          <p className="text-sm text-muted-foreground">Monitoring on-device AI deployments and Article 14 human-oversight triggers</p>
+          <p className="text-sm text-muted-foreground">
+            Monitoring on-device AI deployments and Article 14 human-oversight
+            triggers
+          </p>
         </div>
         <Button size="sm" variant="outline" onClick={loadDeployments}>
           <RefreshCw className="w-4 h-4 mr-2" /> Refresh Status
@@ -78,29 +96,41 @@ export function EdgeAISection() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card className="bg-blue-500/5 border-blue-500/10">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium text-blue-600 uppercase">Device Connectivity</CardTitle>
+            <CardTitle className="text-xs font-medium text-blue-600 uppercase">
+              Device Connectivity
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">94.2%</div>
-            <p className="text-[10px] text-muted-foreground">12 Active / 1 Degraded</p>
+            <p className="text-[10px] text-muted-foreground">
+              12 Active / 1 Degraded
+            </p>
           </CardContent>
         </Card>
         <Card className="bg-emerald-500/5 border-emerald-500/10">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium text-emerald-600 uppercase">Sync Status</CardTitle>
+            <CardTitle className="text-xs font-medium text-emerald-600 uppercase">
+              Sync Status
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">In Sync</div>
-            <p className="text-[10px] text-muted-foreground">All devices running Policy v4.2.1</p>
+            <p className="text-[10px] text-muted-foreground">
+              All devices running Policy v4.2.1
+            </p>
           </CardContent>
         </Card>
         <Card className="bg-indigo-500/5 border-indigo-500/10">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-medium text-indigo-600 uppercase">Local Inference</CardTitle>
+            <CardTitle className="text-xs font-medium text-indigo-600 uppercase">
+              Local Inference
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">8.4k</div>
-            <p className="text-[10px] text-muted-foreground">Requests audited locally today</p>
+            <p className="text-[10px] text-muted-foreground">
+              Requests audited locally today
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -111,7 +141,9 @@ export function EdgeAISection() {
             <Activity className="w-5 h-5 text-primary" />
             Real-time Edge Fleet
           </CardTitle>
-          <CardDescription>Status and policy alignment across mobile, IoT, and on-prem nodes.</CardDescription>
+          <CardDescription>
+            Status and policy alignment across mobile, IoT, and on-prem nodes.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -127,14 +159,19 @@ export function EdgeAISection() {
             <TableBody>
               {deployments.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
+                  <TableCell
+                    colSpan={5}
+                    className="text-center py-10 text-muted-foreground"
+                  >
                     No edge devices provisioned.
                   </TableCell>
                 </TableRow>
               ) : (
-                deployments.map((d) => (
+                deployments.map(d => (
                   <TableRow key={d.device_id}>
-                    <TableCell className="font-mono text-[11px] font-bold">{d.device_id}</TableCell>
+                    <TableCell className="font-mono text-[11px] font-bold">
+                      {d.device_id}
+                    </TableCell>
                     <TableCell className="text-xs">{d.location}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className="text-[10px]">
@@ -143,22 +180,31 @@ export function EdgeAISection() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1.5 text-xs capitalize">
-                        <div className={`h-2 w-2 rounded-full ${
-                          d.status === 'online' ? 'bg-emerald-500' : 
-                          d.status === 'degraded' ? 'bg-amber-500' : 'bg-red-500'
-                        }`} />
+                        <div
+                          className={`h-2 w-2 rounded-full ${
+                            d.status === "active"
+                              ? "bg-emerald-500"
+                              : d.status === "maintenance"
+                                ? "bg-amber-500"
+                                : "bg-red-500"
+                          }`}
+                        />
                         {d.status}
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
+                      <Button
+                        size="sm"
+                        variant="ghost"
                         className="h-8 gap-1.5"
                         onClick={() => handleSync(d.device_id)}
                         disabled={syncingId === d.device_id}
                       >
-                        {syncingId === d.device_id ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
+                        {syncingId === d.device_id ? (
+                          <RefreshCw className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Zap className="w-3 h-3" />
+                        )}
                         Sync
                       </Button>
                     </TableCell>
@@ -169,7 +215,7 @@ export function EdgeAISection() {
           </Table>
         </CardContent>
       </Card>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="bg-muted/20 border-border/50">
           <CardHeader className="pb-2">
@@ -178,23 +224,23 @@ export function EdgeAISection() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-             <div className="space-y-1">
-                <div className="flex justify-between text-[11px] font-medium">
-                  <span>Local PII Scrubbing</span>
-                  <span className="text-emerald-500">Active</span>
-                </div>
-                <Progress value={100} className="h-1" />
-             </div>
-             <div className="space-y-1">
-                <div className="flex justify-between text-[11px] font-medium">
-                  <span>Offline Audit Buffer</span>
-                  <span className="text-amber-500">42% Capacity</span>
-                </div>
-                <Progress value={42} className="h-1 shadow-none" />
-             </div>
+            <div className="space-y-1">
+              <div className="flex justify-between text-[11px] font-medium">
+                <span>Local PII Scrubbing</span>
+                <span className="text-emerald-500">Active</span>
+              </div>
+              <Progress value={100} className="h-1" />
+            </div>
+            <div className="space-y-1">
+              <div className="flex justify-between text-[11px] font-medium">
+                <span>Offline Audit Buffer</span>
+                <span className="text-amber-500">42% Capacity</span>
+              </div>
+              <Progress value={42} className="h-1 shadow-none" />
+            </div>
           </CardContent>
         </Card>
-        
+
         <Card className="bg-muted/20 border-border/50">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-bold flex items-center gap-2">
@@ -204,13 +250,30 @@ export function EdgeAISection() {
           <CardContent>
             <div className="space-y-2">
               {[
-                { time: "2 min ago", device: "iPad-Pro-Scan-1", action: "Policy Sync" },
-                { time: "14 min ago", device: "Local-Gateway-EU", action: "Heartbeat" },
-                { time: "1h ago", device: "IoT-Edge-Node-4", action: "Audit Push" }
+                {
+                  time: "2 min ago",
+                  device: "iPad-Pro-Scan-1",
+                  action: "Policy Sync",
+                },
+                {
+                  time: "14 min ago",
+                  device: "Local-Gateway-EU",
+                  action: "Heartbeat",
+                },
+                {
+                  time: "1h ago",
+                  device: "IoT-Edge-Node-4",
+                  action: "Audit Push",
+                },
               ].map((h, i) => (
-                <div key={i} className="flex justify-between items-center text-[10px] p-2 rounded bg-background/40">
+                <div
+                  key={i}
+                  className="flex justify-between items-center text-[10px] p-2 rounded bg-background/40"
+                >
                   <span className="font-bold">{h.device}</span>
-                  <span className="text-muted-foreground">{h.action} &middot; {h.time}</span>
+                  <span className="text-muted-foreground">
+                    {h.action} &middot; {h.time}
+                  </span>
                 </div>
               ))}
             </div>

@@ -20,6 +20,7 @@ class InteractionStatus(str, Enum):
 
 class WorkforceInteraction(SQLModel, table=True):
     """Persistent storage for Workforce Agent interactions for learning"""
+
     __tablename__ = "workforce_interactions"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -40,10 +41,12 @@ class OutreachStatus(str, Enum):
     REPLIED = "REPLIED"
     CONVERTED = "CONVERTED"
     DISCARDED = "DISCARDED"
+    DRAFT = "DRAFT"
 
 
 class WorkforceOutreach(SQLModel, table=True):
     """Persistent storage for Outreach message previews for human-in-the-loop approval"""
+
     __tablename__ = "workforce_outreach"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -60,12 +63,15 @@ class WorkforceOutreach(SQLModel, table=True):
         default=None, foreign_key="workforce_interactions.id"
     )
     is_auto_trigger: bool = Field(default=False)
+    approved_at: Optional[datetime] = Field(default=None)
+    sent_at: Optional[datetime] = Field(default=None)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class WorkforceMessage(SQLModel, table=True):
     """Persistent storage for multi-agent and user-to-agent dialogue"""
+
     __tablename__ = "workforce_messages"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -82,6 +88,7 @@ class WorkforceMessage(SQLModel, table=True):
 
 class WorkforceSkill(SQLModel, table=True):
     """Persistent storage for the Workforce Skills Marketplace"""
+
     __tablename__ = "workforce_skills"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -103,6 +110,7 @@ class WorkforceSkill(SQLModel, table=True):
 
 class WorkforceJob(SQLModel, table=True):
     """Persistent storage for the Live Job Feed"""
+
     __tablename__ = "workforce_jobs"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -137,6 +145,7 @@ class WorkforceContent(SQLModel, table=True):
 
 class WorkforceVenture(SQLModel, table=True):
     """Persistent Business Unit / Venture performance tracking"""
+
     __tablename__ = "workforce_ventures"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -150,6 +159,7 @@ class WorkforceVenture(SQLModel, table=True):
 
 class FiscalRequest(SQLModel, table=True):
     """Persistent spending approval request"""
+
     __tablename__ = "fiscal_requests"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -269,13 +279,17 @@ class BotSetting(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
+
 class RevenueRecovery(SQLModel, table=True):
     """Persistent storage for revenue recovery events (CashClaw)"""
+
     __tablename__ = "revenue_recoveries"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     amount: float = Field(default=0.0)
     source: str = Field(default="Unknown")
-    status: str = Field(default="pending")  # recovered, pending, failed
+    status: str = Field(
+        default="pending"
+    )  # pending, recovered, failed (aligned with Go)
     metadata_json: Dict[str, Any] = Field(default={}, sa_column=Column(JSON))
     created_at: datetime = Field(default_factory=datetime.utcnow)

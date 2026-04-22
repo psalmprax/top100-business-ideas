@@ -2,7 +2,7 @@
  * Simple namespaced localStorage utility for Alpha Sentinel
  */
 
-const PREFIX = 'alpha_sentinel_';
+const PREFIX = "alpha_hecta_";
 
 export const storage = {
     set: (key: string, value: any) => {

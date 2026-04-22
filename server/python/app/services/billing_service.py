@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import Optional, List, Dict, Any
 from sqlmodel import Session, select
 from app.core.database import engine
-from app.core.models import Agent, AlertConfig, Subscription, Invoice, User, AgentVigilanceAlert, AgentAuditLog
+from app.core.models import Agent, AlertConfig, Subscription, Invoice, User, AgentVigilanceAlert, AgentAuditLog, FiscalRequest
 
 logger = logging.getLogger(__name__)
 

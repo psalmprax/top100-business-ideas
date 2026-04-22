@@ -3,7 +3,7 @@ Shadow AI Detection API
 Endpoints for managing Shadow AI detections and stats.
 """
 
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from fastapi import APIRouter, HTTPException, Depends
 from app.services.shadow_ai_service import shadow_ai_service
 from app.core.dependencies import get_current_user
@@ -56,26 +56,32 @@ async def get_stats() -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=str(e))
 
 
+from pydantic import BaseModel
+
+class AddDetectionRequest(BaseModel):
+    tool_name: str
+    vendor: str
+    department: str
+    risk_level: str
+    user_count: int = 1
+
 @router.post("/detections")
 async def add_detection(
-    tool_name: str,
-    vendor: str,
-    department: str,
-    risk_level: str,
-    user_count: int = 1,
+    request: AddDetectionRequest,
     user=Depends(get_current_user),
 ) -> Dict[str, Any]:
     """Add a new Shadow AI detection (for testing/manual entry)."""
     try:
+        risk_level = request.risk_level
         if risk_level.upper() not in [e.name for e in ShadowAIRiskLevel]:
             raise HTTPException(status_code=400, detail="Invalid risk level")
 
         detection = shadow_ai_service.add_detection(
-            tool_name=tool_name,
-            vendor=vendor,
-            department=department,
+            tool_name=request.tool_name,
+            vendor=request.vendor,
+            department=request.department,
             risk_level=risk_level.upper(),
-            user_count=user_count,
+            user_count=request.user_count,
         )
         return {"status": "success", "detection": detection}
     except HTTPException:
@@ -112,4 +118,43 @@ async def allow_tool(tool_id: str, user=Depends(get_current_user)) -> Dict[str, 
         raise
     except Exception as e:
         logger.error(f"Error allowing tool: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/detect")
+async def auto_detect_url(
+    url: str,
+    source_ip: Optional[str] = None,
+    user_email: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Auto-detect Shadow AI from URL."""
+    try:
+        result = shadow_ai_service.auto_detect(url, source_ip, user_email)
+        if result:
+            return {"status": "detected", "detection": result}
+        return {"status": "clean", "message": "No Shadow AI detected"}
+    except Exception as e:
+        logger.error(f"Error auto-detecting: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/scan-logs")
+async def scan_logs(logs: List[str], user=Depends(get_current_user)) -> Dict[str, Any]:
+    """Scan proxy logs for Shadow AI usage."""
+    try:
+        detected = shadow_ai_service.scan_proxy_logs(logs)
+        return {"detected": detected, "count": len(detected)}
+    except Exception as e:
+        logger.error(f"Error scanning logs: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/report")
+async def get_report() -> Dict[str, Any]:
+    """Get comprehensive detection report."""
+    try:
+        report = shadow_ai_service.generate_detection_report()
+        return report
+    except Exception as e:
+        logger.error(f"Error generating report: {e}")
         raise HTTPException(status_code=500, detail=str(e))

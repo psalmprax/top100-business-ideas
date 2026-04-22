@@ -66,7 +66,7 @@ async def resilience_exception_handler(request: Request, exc: Exception):
         content={
             "status": "error",
             "error_id": error_id,
-            "message": "AlphaAI Resilience Shield intercepted a critical fault.",
+            "message": "AlphaHecta Resilience Shield intercepted a critical fault.",
             "instruction": "This event has been logged to the Self-Healing audit trail."
         }
     )

@@ -92,7 +92,7 @@ export function V1_IntelligenceDashboard(props: LayoutProps) {
       <div className="relative pt-20 pb-16 px-6 rounded-3xl overflow-hidden border border-white/5" style={{ background: "oklch(0.12 0.02 265)" }}>
         <div className="max-w-3xl relative z-10">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold mb-6">
-            <Zap className="w-3 h-3" /> 2026 ALPHA VENTURE REPORT
+            <Zap className="w-3 h-3" /> 2026 ALPHAHECTA VENTURE REPORT
           </div>
           <h1 className="text-5xl md:text-6xl font-black text-white mb-6 leading-[1.1] font-display">
             Intelligence <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-emerald-400 to-amber-400">Workspace</span>

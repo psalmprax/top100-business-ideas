@@ -12,6 +12,13 @@ import {
 import { VentureCard } from "@/components/VentureCard";
 import * as React from "react";
 import { useState } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface LayoutProps {
   ideas: BusinessIdea[];
@@ -100,10 +107,22 @@ export function V3_CyberIntelligence(props: LayoutProps) {
             </div>
             <div className="md:w-64 space-y-4">
               <label className="text-[10px] font-black uppercase tracking-tighter">_FILTER_BY_CAT</label>
-              <div className="relative border-2 border-black p-3 hover:bg-[#00ff00] transition-all cursor-pointer">
-                <span className="text-xs font-bold uppercase">{props.selectedCategory === 'all' ? 'ALL_CATEGORIES' : props.selectedCategory}</span>
-                <Plus className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4" />
-              </div>
+              <Select
+                value={props.selectedCategory}
+                onValueChange={props.setSelectedCategory}
+              >
+                <SelectTrigger className="w-full bg-transparent border-2 border-black rounded-none h-auto p-3 text-xs font-bold uppercase hover:bg-[#00ff00] transition-all flex items-center justify-between outline-none">
+                  <SelectValue placeholder="SELECT_CATEGORY" />
+                </SelectTrigger>
+                <SelectContent className="bg-white border-2 border-black rounded-none shadow-[10px_10px_0px_#000000]">
+                  <SelectItem value="all" className="font-bold text-xs">ALL_CATEGORIES</SelectItem>
+                  <SelectItem value="SaaS" className="font-bold text-xs">SAAS_PLATFORMS</SelectItem>
+                  <SelectItem value="FinTech" className="font-bold text-xs">FINANCIAL_TECH</SelectItem>
+                  <SelectItem value="HealthTech" className="font-bold text-xs">HEALTH_RESOURCES</SelectItem>
+                  <SelectItem value="AI/ML" className="font-bold text-xs">INTELLIGENCE_NODES</SelectItem>
+                  <SelectItem value="Marketplace" className="font-bold text-xs">MARKET_PROTOCOLS</SelectItem>
+                </SelectContent>
+              </Select>
               <button 
                 onClick={props.clearFilters}
                 className="w-full py-4 bg-black text-[#00ff00] text-xs font-black uppercase hover:bg-[#00ff00] hover:text-black transition-all"

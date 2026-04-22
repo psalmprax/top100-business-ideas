@@ -5,7 +5,8 @@ import {
   Image as ImageIcon, 
   Video, 
   Mic,
-  Activity
+  Activity,
+  Upload
 } from "lucide-react";
 import { 
   Card, 
@@ -68,6 +69,19 @@ export function DetectorsSection({
         </Button>
       </CardHeader>
       <CardContent className="pt-6">
+        <div 
+          className="mb-8 p-10 border-2 border-dashed border-primary/20 rounded-2xl bg-primary/5 flex flex-col items-center justify-center gap-4 hover:border-primary/40 hover:bg-primary/10 transition-all cursor-pointer group"
+          onClick={onShowTestDialog}
+        >
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform border border-primary/20">
+            <Upload className="w-8 h-8 text-primary" />
+          </div>
+          <div className="text-center">
+            <h4 className="text-sm font-black uppercase tracking-widest text-white mb-1">Forensic Drop Zone</h4>
+            <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">Drag media files here or click to initiate deep-scan</p>
+          </div>
+        </div>
+
         <div className="flex items-center gap-4 mb-6">
           <Select value={mediaType} onValueChange={setMediaType}>
             <SelectTrigger className="w-48 bg-background/50 border-border/50">

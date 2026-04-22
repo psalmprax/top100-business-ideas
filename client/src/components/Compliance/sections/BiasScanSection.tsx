@@ -158,18 +158,18 @@ export function BiasScanSection() {
               ) : (
                 biasReports.map((report, i) => (
                   <TableRow key={i}>
-                    <TableCell className="font-medium">{report.modelId || "Global Cluster"}</TableCell>
-                    <TableCell className="text-xs capitalize">{report.type || "Comprehensive"}</TableCell>
+                    <TableCell className="font-medium">{report.model_id || "Global Cluster"}</TableCell>
+                    <TableCell className="text-xs capitalize">{report.bias_category || "Comprehensive"}</TableCell>
                     <TableCell>
                       <Badge 
-                        variant={report.score && report.score < 0.8 ? "destructive" : "outline"} 
+                        variant={report.disparate_impact < 0.8 ? "destructive" : "outline"} 
                         className="text-[10px]"
                       >
-                        {report.score ? `Score: ${report.score}` : "Verified"}
+                        Score: {report.disparate_impact}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
-                      {new Date(report.date || report.created_at).toLocaleDateString()}
+                      {report.created_at ? new Date(report.created_at).toLocaleDateString() : "N/A"}
                     </TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="sm" className="h-8 text-xs">

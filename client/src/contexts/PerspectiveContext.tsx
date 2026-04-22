@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { storage } from "../lib/storage";
 
 export type LayoutPerspective = "alpha" | "sigma" | "omega";
 
@@ -11,8 +12,7 @@ const PerspectiveContext = createContext<PerspectiveContextType | undefined>(und
 
 export function PerspectiveProvider({ children }: { children: React.ReactNode }) {
   const [perspective, setPerspective] = useState<LayoutPerspective>(() => {
-    const stored = localStorage.getItem("app_perspective");
-    return (stored as LayoutPerspective) || "alpha";
+    return storage.get<LayoutPerspective>("app_perspective", "alpha");
   });
 
   useEffect(() => {
@@ -22,7 +22,7 @@ export function PerspectiveProvider({ children }: { children: React.ReactNode })
     root.classList.add(`perspective-${perspective}`);
     
     // Persist selection
-    localStorage.setItem("app_perspective", perspective);
+    storage.set("app_perspective", perspective);
   }, [perspective]);
 
   return (

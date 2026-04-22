@@ -1,14 +1,14 @@
 # UI/Buttons/Clickables/Menus Use Case Gap Analysis
 
 **Date:** 2026-03-18  
-**Project:** top100-business-ideas (AlphaAI Product Suite)  
+**Project:** top100-business-ideas (AlphaHecta Product Suite)  
 **Scope:** Client UI Components, E2E Tests, and Use Case Scenarios
 
 ---
 
 ## 1. Executive Summary
 
-This document provides a comprehensive gap analysis of UI/buttons/clickables/menus use cases across the AlphaAI product suite. The analysis compares the documented use case scenarios against the implemented UI components and existing E2E test coverage.
+This document provides a comprehensive gap analysis of UI/buttons/clickables/menus use cases across the AlphaHecta product suite. The analysis compares the documented use case scenarios against the implemented UI components and existing E2E test coverage.
 
 ### Coverage Overview
 
@@ -261,7 +261,7 @@ This document provides a comprehensive gap analysis of UI/buttons/clickables/men
 | SSO Configuration | Connect Okta/AD | ❌ NOT TESTED |
 | Agent Creation | Deploy new agent | ❌ NOT TESTED |
 
-#### AlphaAI Act Compliance (19 use cases documented)
+#### AlphaHecta Act Compliance (19 use cases documented)
 
 | Use Case | UI Interaction | Test Status |
 |----------|---------------|-------------|

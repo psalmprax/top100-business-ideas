@@ -54,7 +54,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 status_code=429,
                 content={
                     "error": "too_many_requests",
-                    "message": "AlphaAI Resilience Shield: Rate limit exceeded. Please throttle your requests.",
+                    "message": "AlphaHecta Resilience Shield: Rate limit exceeded. Please throttle your requests.",
                     "retry_after": "1 minute"
                 }
             )

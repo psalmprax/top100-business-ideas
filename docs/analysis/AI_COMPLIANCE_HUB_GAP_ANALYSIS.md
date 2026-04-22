@@ -1,7 +1,7 @@
 # AI Compliance Hub - UI Gap Analysis Report
 
 ## Executive Summary
-Comprehensive analysis of UI/buttons/clickables/menus use cases for the AI Compliance Hub (AlphaAIActCompliance.tsx). This document identifies covered scenarios, uncovered gaps, and prioritizes real implementations over dummies/simulations/placeholders.
+Comprehensive analysis of UI/buttons/clickables/menus use cases for the AI Compliance Hub (AlphaHectaActCompliance.tsx). This document identifies covered scenarios, uncovered gaps, and prioritizes real implementations over dummies/simulations/placeholders.
 
 ---
 
@@ -442,4 +442,4 @@ The AI Compliance Hub has **excellent coverage** of core compliance use cases (9
 ---
 
 *Generated: 2026-03-24*
-*File: client/src/pages/AlphaAIActCompliance.tsx (4,679 lines)*
+*File: client/src/pages/AlphaHectaActCompliance.tsx (4,679 lines)*

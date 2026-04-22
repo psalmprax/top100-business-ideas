@@ -223,3 +223,35 @@ func (h *VendorHandler) AddVendor(c *gin.Context) {
 	}
 	c.Data(http.StatusCreated, "application/json", response)
 }
+
+// DeleteVendor removes a vendor
+func (h *VendorHandler) DeleteVendor(c *gin.Context) {
+	id := c.Param("id")
+	response, err := h.proxyService.Forward(c, "DELETE", fmt.Sprintf("/vendors/%s", id), nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to delete vendor", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+// AuditVendor triggers a compliance audit for a vendor
+func (h *VendorHandler) AuditVendor(c *gin.Context) {
+	id := c.Param("id")
+	response, err := h.proxyService.Forward(c, "POST", fmt.Sprintf("/vendors/%s/audit", id), nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to audit vendor", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+// GetRiskReport returns the comprehensive supply chain risk report
+func (h *VendorHandler) GetRiskReport(c *gin.Context) {
+	response, err := h.proxyService.Forward(c, "GET", "/vendors/report", nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch risk report", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
+}

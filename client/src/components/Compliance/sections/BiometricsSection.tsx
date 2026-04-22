@@ -1,20 +1,34 @@
 import { useState, useEffect } from "react";
-import { 
-  Fingerprint, 
-  Trash2, 
-  Plus, 
+import {
+  Fingerprint,
+  Trash2,
+  Plus,
   ShieldCheck,
-  RefreshCw 
+  RefreshCw,
+  ExternalLink,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { extendedApi } from "@/lib/api";
+import { extendedApi, type BiometricTemplate } from "@/lib/api";
 import { toast } from "sonner";
 
 export function BiometricsSection() {
-  const [biometrics, setBiometrics] = useState<any[]>([]);
+  const [biometrics, setBiometrics] = useState<BiometricTemplate[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -47,7 +61,9 @@ export function BiometricsSection() {
     return (
       <div className="flex flex-col items-center justify-center p-20">
         <RefreshCw className="w-8 h-8 animate-spin text-primary" />
-        <p className="mt-4 text-muted-foreground text-sm font-medium">Synchronizing biometric vault...</p>
+        <p className="mt-4 text-muted-foreground text-sm font-medium">
+          Synchronizing biometric vault...
+        </p>
       </div>
     );
   }
@@ -60,9 +76,13 @@ export function BiometricsSection() {
             <Fingerprint className="w-5 h-5 text-blue-500" />
             Biometric Signatures
           </h3>
-          <p className="text-sm text-muted-foreground">Managing hardware-backed biometric identities for Deepfake Defense</p>
+          <p className="text-sm text-muted-foreground">
+            Managing hardware-backed biometric identities for Deepfake Defense
+          </p>
         </div>
-        <Button onClick={() => window.location.href = "/biometric-enrollment"}>
+        <Button
+          onClick={() => (window.location.href = "/biometric-enrollment")}
+        >
           <Plus className="w-4 h-4 mr-2" />
           Enroll New Identity
         </Button>
@@ -89,7 +109,10 @@ export function BiometricsSection() {
             <TableBody>
               {biometrics.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
+                  <TableCell
+                    colSpan={5}
+                    className="text-center py-10 text-muted-foreground"
+                  >
                     No biometric signatures found.
                   </TableCell>
                 </TableRow>
@@ -97,11 +120,21 @@ export function BiometricsSection() {
                 biometrics.map((b, i) => (
                   <TableRow key={i}>
                     <TableCell className="font-medium">{b.label}</TableCell>
-                    <TableCell className="capitalize">{b.biometric_type}</TableCell>
-                    <TableCell className="font-mono text-[10px]">{b.hardware_id}</TableCell>
-                    <TableCell>{new Date(b.enrolled_at).toLocaleDateString()}</TableCell>
+                    <TableCell className="capitalize">
+                      {b.biometric_type}
+                    </TableCell>
+                    <TableCell className="font-mono text-[10px]">
+                      {b.hardware_id}
+                    </TableCell>
                     <TableCell>
-                      <Button size="sm" variant="ghost" onClick={() => revokeBiometric(b.id)}>
+                      {new Date(b.enrolled_at).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => revokeBiometric(b.id)}
+                      >
                         <Trash2 className="w-3 h-3 text-destructive" />
                       </Button>
                     </TableCell>

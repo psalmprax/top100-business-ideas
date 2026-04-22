@@ -115,14 +115,26 @@ async def report_article_71_incident(
 
 
 @router.patch("/incidents/{incident_id}/resolve", response_model=ComplianceIncident)
-async def resolve_incident(incident_id: str, session: AsyncSession = Depends(get_async_session)):
-    """Mark a compliance incident as resolved"""
-    incident = await session.get(ComplianceIncident, incident_id)
+async def resolve_incident(
+    incident_id: str,
+    request: Dict[str, Any] = None,
+    session: AsyncSession = Depends(get_async_session),
+):
+    """Mark a compliance incident as resolved with optional status/notes"""
+    incident = await session.get(ComplianceIncident, uuid.UUID(incident_id))
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
 
-    incident.status = "resolved"
+    status = "resolved"
+    if request and "status" in request:
+        status = request["status"]
+
+    incident.status = status
     incident.resolved_at = datetime.utcnow()
+
+    # If article72 is passed in body, update it
+    if request and "article72" in request:
+        incident.article72 = request["article72"]
 
     session.add(incident)
     await session.commit()
@@ -426,11 +438,11 @@ async def get_bias_reports(
             return [
                 {
                     "id": f"bias-{i}",
-                    "modelId": f"model-{i}",
-                    "category": ["gender", "age", "ethnicity"][i % 3],
-                    "bias_score": 0.15 + (i * 0.1),
+                    "model_id": f"model-{i}",
+                    "bias_category": ["gender", "age", "ethnicity"][i % 3],
+                    "disparate_impact": 0.15 + (i * 0.1),
                     "severity": ["low", "medium", "high"][i % 3],
-                    "findings": ["Sample finding 1", "Sample finding 2"],
+                    "details": "Sample finding 1: Model shows baseline divergence.",
                     "recommendations": ["Sample recommendation"],
                     "created_at": datetime.utcnow().isoformat(),
                     "status": "reviewed",
@@ -456,6 +468,21 @@ async def trigger_bias_scan(
         "issues_found": 3,
         "completed_at": datetime.utcnow().isoformat(),
     }
+
+
+@router.post("/red-team")
+async def red_team_audit(
+    request: Dict[str, Any], session: AsyncSession = Depends(get_async_session)
+):
+    """Trigger adversarial / red-team audit for a model"""
+    try:
+        from app.services.compliance_integration import compliance_integration_service
+        
+        model_id = request.get("model_id", "global")
+        return await compliance_integration_service.run_adversarial_audit(model_id)
+    except Exception as e:
+        logger.error(f"Red Team Audit Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/enterprise/audits")
@@ -518,14 +545,52 @@ async def update_compliance_policy(
     }
 
 
+@router.get("/vendors", response_model=List[Vendor])
+async def list_vendors(session: AsyncSession = Depends(get_async_session)):
+    """List all supply chain vendors (Art 28/29)"""
+    result = await session.execute(select(Vendor))
+    return result.scalars().all()
+
+
+@router.post("/vendors", response_model=Vendor)
+async def add_vendor(vendor: Vendor, session: AsyncSession = Depends(get_async_session)):
+    """Register a new vendor in the AI supply chain"""
+    session.add(vendor)
+    await session.commit()
+    await session.refresh(vendor)
+    return vendor
+
+
+@router.post("/vendors/audit")
+async def trigger_supply_chain_audit(session: AsyncSession = Depends(get_async_session)):
+    """Trigger a manual compliance audit across the supply chain"""
+    try:
+        return await compliance_service.run_supply_chain_audit(session)
+    except Exception as e:
+        logger.error(f"Supply Chain Audit Error: {e}")
+        raise HTTPException(status_code=500, detail="Audit execution failed.")
+
+
+@router.get("/vendors/stats")
+async def get_vendor_stats(session: AsyncSession = Depends(get_async_session)):
+    """Get aggregated risk statistics for the AI supply chain"""
+    from app.connectors.supply_chain_audit import supply_chain_audit
+    
+    result = await session.execute(select(Vendor))
+    vendors = result.scalars().all()
+    return supply_chain_audit.get_supply_chain_risk_report(vendors)
+
+
 @router.delete("/vendors/{vendor_id}")
 async def delete_vendor(vendor_id: str, session: AsyncSession = Depends(get_async_session)):
     """Remove a vendor from compliance monitoring"""
-    return {
-        "status": "success",
-        "vendor_id": vendor_id,
-        "removed_at": datetime.utcnow().isoformat(),
-    }
+    vendor = await session.get(Vendor, vendor_id)
+    if not vendor:
+        raise HTTPException(status_code=404, detail="Vendor not found")
+    
+    await session.delete(vendor)
+    await session.commit()
+    return {"status": "success", "vendor_id": vendor_id}
 
 
 @router.delete("/gdpr/forgotten/{user_id}")

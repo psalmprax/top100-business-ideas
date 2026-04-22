@@ -100,6 +100,9 @@ func SetupDeepfakeRoutes(
 		deepfake.GET("/threats", agentOpsHandler.ProxyToPython)
 		deepfake.GET("/duress", deepfakeHandler.GetDuressConfig)
 		deepfake.POST("/duress", deepfakeHandler.UpdateDuressConfig)
+		deepfake.GET("/biometrics", agentOpsHandler.ProxyToPython)
+		deepfake.POST("/biometrics", agentOpsHandler.ProxyToPython)
+		deepfake.DELETE("/biometrics/:id/revoke", agentOpsHandler.ProxyToPython)
 	}
 }
 

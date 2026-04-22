@@ -30,6 +30,8 @@ type ComplianceHandler interface {
 	ListModels(c *gin.Context)
 	RegisterModel(c *gin.Context)
 	GetBiasReports(c *gin.Context)
+	TriggerBiasScan(c *gin.Context)
+	RedTeamAudit(c *gin.Context)
 	ExportReport(c *gin.Context)
 }
 
@@ -52,7 +54,8 @@ func SetupComplianceRoutes(
 		// Extended AI Model Compliance & Orchestration
 		compliance.PATCH("/models/:id/guardrails", agentOpsHandler.ProxyToPython)
 		compliance.POST("/documentation/:id", complianceHandler.GenerateDocumentation)
-		compliance.GET("/incidents", complianceHandler.ListAuditLogs)
+		compliance.GET("/incidents", agentOpsHandler.ProxyToPython)
+		compliance.POST("/incidents", agentOpsHandler.ProxyToPython)
 		compliance.POST("/incidents/article-71", agentOpsHandler.ProxyToPython)
 		compliance.PATCH("/incidents/:id", complianceHandler.UpdateIncidentStatus)
 		compliance.POST("/upload", complianceHandler.UploadArtifact)
@@ -60,7 +63,7 @@ func SetupComplianceRoutes(
 		compliance.GET("/roi", complianceHandler.GetROIMetrics)
 		compliance.GET("/velocity", complianceHandler.GetVelocityTrends)
 		compliance.GET("/deadlines", complianceHandler.GetDeadlines)
-		compliance.GET("/enterprise-audits", complianceHandler.GetEnterpriseAudits)
+		compliance.GET("/enterprise/audits", complianceHandler.GetEnterpriseAudits)
 		compliance.GET("/models/:id/breakdown", complianceHandler.GetModelBreakdown)
 		compliance.GET("/models/:id/audits", complianceHandler.GetModelAudits)
 		compliance.GET("/models/:id/handshakes", complianceHandler.GetModelHandshakes)
@@ -75,8 +78,13 @@ func SetupComplianceRoutes(
 		compliance.GET("/models", complianceHandler.ListModels)
 		compliance.POST("/models", complianceHandler.RegisterModel)
 		compliance.GET("/bias-reports/:id", complianceHandler.GetBiasReports)
+		compliance.GET("/bias/reports", complianceHandler.GetBiasReports)
+		compliance.POST("/bias/scan", complianceHandler.TriggerBiasScan)
+		compliance.POST("/red-team", complianceHandler.RedTeamAudit)
 		compliance.GET("/reports/export", complianceHandler.ExportReport)
 		compliance.GET("/live-metrics", agentOpsHandler.ProxyToPython)
 		compliance.POST("/remediate", agentOpsHandler.ProxyToPython)
+		compliance.POST("/audit/sox", agentOpsHandler.ProxyToPython)
+		compliance.POST("/audit/hipaa", agentOpsHandler.ProxyToPython)
 	}
 }

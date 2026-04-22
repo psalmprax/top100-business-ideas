@@ -1,4 +1,4 @@
-# Roadmap: AlphaAI Real-First Transition
+# Roadmap: AlphaHecta Real-First Transition
 
 ## Milestone 1: Platform Hardening (Complete ✅)
 

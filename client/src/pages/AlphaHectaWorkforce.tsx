@@ -42,8 +42,9 @@ import { FinanceSection } from "@/components/Workforce/sections/FinanceSection";
 import { CashClawSection } from "@/components/Workforce/sections/CashClawSection";
 import { HRSection } from "@/components/Workforce/sections/HRSection";
 import { CommsSection } from "@/components/Workforce/sections/CommsSection";
+import { MetricCard } from "@/components/Workforce/ui/MetricCard";
 
-const AlphaWorkforce = () => {
+const AlphaHectaWorkforce = () => {
   const [isAutonomous, setIsAutonomous] = useState(
     storage.get("workforce_autonomous", false)
   );
@@ -230,7 +231,7 @@ const AlphaWorkforce = () => {
         `RECOVERY-FIRST: Workforce service "${endpoint}" reported a connection drop. Activating local-first autonomous simulation.`,
         {
           description:
-            "Your Alpha Workforce agents are continuing work in autonomous sandbox mode.",
+            "Your AlphaHecta Workforce agents are continuing work in autonomous sandbox mode.",
           duration: 8000,
         }
       );
@@ -424,7 +425,7 @@ const AlphaWorkforce = () => {
         <div className="flex flex-col items-center gap-4">
           <RefreshCw className="w-10 h-10 text-primary animate-spin" />
           <p className="text-xs font-black uppercase tracking-widest text-muted-foreground animate-pulse">
-            Syncing Alpha Workforce Node...
+            Syncing AlphaHecta Workforce Node...
           </p>
         </div>
       </div>
@@ -580,7 +581,7 @@ const AlphaWorkforce = () => {
               onFiscalApproval={(id: string, status: string) =>
                 handleGovernanceDecision(1, status)
               }
-              MetricCard={() => <div />}
+              MetricCard={MetricCard}
             />
           </TabsContent>
 
@@ -628,4 +629,4 @@ const AlphaWorkforce = () => {
   );
 };
 
-export default AlphaWorkforce;
+export default AlphaHectaWorkforce;

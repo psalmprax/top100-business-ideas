@@ -1,8 +1,17 @@
 import uuid
 import logging
 import random
+import os
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
+
+try:
+    from agentops import AgentOpsClient, LogLevel, TraceStatus
+except ImportError:
+    AgentOpsClient = None
+    LogLevel = None
+    TraceStatus = None
+
 from sqlmodel import Session, select
 from app.core.database import engine
 from app.core.models import (
@@ -22,6 +31,21 @@ logger = logging.getLogger(__name__)
 
 
 class AgentOpsService:
+    _agentops_client = None
+
+    @classmethod
+    def get_agentops_client(cls):
+        if cls._agentops_client is None and AgentOpsClient is not None and os.getenv("AGENTOPS_API_KEY"):
+            try:
+                cls._agentops_client = AgentOpsClient(
+                    api_key=os.getenv("AGENTOPS_API_KEY"),
+                    endpoint=os.getenv("AGENTOPS_ENDPOINT", "https://api.agentops.dev")
+                )
+                cls._agentops_client.register_agent("Top100Workforce", "master_orchestrator")
+            except Exception as e:
+                logger.warning(f"Failed to init AgentOps client: {e}")
+        return cls._agentops_client
+
     @staticmethod
     def get_vigilance_alerts(
         agent_id: Optional[str] = None,
@@ -165,9 +189,9 @@ class AgentOpsService:
                 float(multiplier_setting.setting_value) if multiplier_setting else 8.4
             )
 
-            total_cost = sum(a.metrics.get("totalCost", 0) for a in agents if a.metrics)
+            total_cost = sum(a.metrics.get("total_cost", 0) for a in agents if a.metrics)
             total_saved = sum(
-                a.metrics.get("costSaved", 0) for a in agents if a.metrics
+                a.metrics.get("cost_saved", 0) for a in agents if a.metrics
             )
 
             # Calculate dynamic efficiency gain
@@ -284,6 +308,13 @@ class AgentOpsService:
             "metadata": metadata,
         }
         logger.info(f"TRACE_HOOK:{trace_id} {trace_data}")
+
+        client = AgentOpsService.get_agentops_client()
+        if client and LogLevel:
+            try:
+                client.log(LogLevel.INFO, f"Action: {step}", metadata)
+            except Exception as e:
+                logger.error(f"AgentOps sync failed: {e}")
 
 
 agent_ops_service = AgentOpsService()

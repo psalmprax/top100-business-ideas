@@ -1,52 +1,70 @@
 import { useState, useEffect } from "react";
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle, 
-  CardDescription 
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogFooter 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  Loader2, 
-  Database, 
-  Zap, 
-  Activity, 
-  BadgeCheck 
-} from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Loader2, Database, Zap, Activity, BadgeCheck } from "lucide-react";
 import { toast } from "sonner";
-import { extendedApi } from "@/lib/api";
+import { extendedApi, type ComplianceConnection } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
-import { ConnectionDialog } from "../components/ConnectionDialog";
+import { ConnectionDialog } from "../../../pages/Compliance/components/ConnectionDialog";
+
+interface Article {
+  article: string;
+  title: string;
+  description: string;
+  risk: string;
+  status: string;
+  evidence: string;
+  remediation: string;
+  integrationType: string;
+  scanType: string;
+}
 
 interface ChecklistSectionProps {
-  articles?: any[];
-  loading?: boolean;
-  type?: string;
+  articles: Article[];
+  loading: boolean;
 }
 
 export const ChecklistSection = ({
-  articles = [],
-  loading = false,
+  articles,
+  loading,
 }: ChecklistSectionProps) => {
-  const [connectedSystems, setConnectedSystems] = useState<Record<string, any>>({});
-  const [scanningArticles, setScanningArticles] = useState<Record<string, boolean>>({});
-  const [lastScanResults, setLastScanResults] = useState<Record<string, any>>({});
+  const [connectedSystems, setConnectedSystems] = useState<
+    Record<string, ComplianceConnection>
+  >({});
+  const [scanningArticles, setScanningArticles] = useState<
+    Record<string, boolean>
+  >({});
+  const [lastScanResults, setLastScanResults] = useState<Record<string, any>>(
+    {}
+  );
   const [showScanConfigDialog, setShowScanConfigDialog] = useState(false);
-  const [selectedArticleForScan, setSelectedArticleForScan] = useState<any>(null);
+  const [selectedArticleForScan, setSelectedArticleForScan] =
+    useState<Article | null>(null);
   const [scanSensitivity, setScanSensitivity] = useState(75);
 
   const { isAuthenticated } = useAuth();
@@ -56,8 +74,8 @@ export const ChecklistSection = ({
       if (!isAuthenticated) return;
       try {
         const conns = await extendedApi.compliance.listConnections();
-        const connMap: Record<string, any> = {};
-        conns.forEach((c: any) => {
+        const connMap: Record<string, ComplianceConnection> = {};
+        conns.forEach((c: ComplianceConnection) => {
           connMap[c.article_id] = c;
         });
         setConnectedSystems(connMap);
@@ -70,13 +88,13 @@ export const ChecklistSection = ({
 
   const handleConnect = async (
     articleId: string,
-    type: string,
-    config: any
+    connectionType: string,
+    config: Record<string, unknown>
   ) => {
     try {
       const result = await extendedApi.compliance.connectSystem(
         articleId,
-        type,
+        connectionType,
         config
       );
       setConnectedSystems(prev => ({ ...prev, [articleId]: result }));
@@ -128,10 +146,19 @@ export const ChecklistSection = ({
     }
   };
 
-  const compliantCount = articles.filter((a: any) => a.status === "compliant").length;
-  const inProgressCount = articles.filter((a: any) => a.status === "in_progress").length;
-  const notStartedCount = articles.filter((a: any) => a.status === "not_started").length;
-  const progressPercent = articles.length > 0 ? Math.round((compliantCount / articles.length) * 100) : 0;
+  const compliantCount = articles.filter(
+    (a: Article) => a.status === "compliant"
+  ).length;
+  const inProgressCount = articles.filter(
+    (a: Article) => a.status === "in_progress"
+  ).length;
+  const notStartedCount = articles.filter(
+    (a: Article) => a.status === "not_started"
+  ).length;
+  const progressPercent =
+    articles.length > 0
+      ? Math.round((compliantCount / articles.length) * 100)
+      : 0;
 
   if (loading) {
     return (
@@ -148,7 +175,9 @@ export const ChecklistSection = ({
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="text-card-title">EU AI Act Compliance Overview</CardTitle>
+          <CardTitle className="text-card-title">
+            EU AI Act Compliance Overview
+          </CardTitle>
           <CardDescription className="text-feature">
             Track compliance status across all EU AI Act requirements
           </CardDescription>
@@ -182,7 +211,9 @@ export const ChecklistSection = ({
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="text-card-title font-mono">{article.article}</span>
+                  <span className="text-card-title font-mono">
+                    {article.article}
+                  </span>
                   <span className="text-card-title">{article.title}</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -192,15 +223,25 @@ export const ChecklistSection = ({
               </div>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground mb-4">{article.description}</p>
+              <p className="text-muted-foreground mb-4">
+                {article.description}
+              </p>
 
               <div className="flex items-center justify-between mb-4 p-3 rounded-lg bg-blue-500/5 border border-blue-500/20">
                 <div className="flex items-center gap-2">
                   <Database className="w-4 h-4 text-blue-500" />
-                  <span className="text-sm font-medium">Integration: {article.integrationType}</span>
+                  <span className="text-sm font-medium">
+                    Integration: {article.integrationType}
+                  </span>
                   {connectedSystems[article.article] && (
-                    <Badge variant="outline" className="text-[10px] h-4 px-1 border-blue-500/30 text-blue-400 capitalize">
-                      {connectedSystems[article.article]?.connection_type?.replace("_", " ") || article.integrationType}
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] h-4 px-1 border-blue-500/30 text-blue-400 capitalize"
+                    >
+                      {connectedSystems[
+                        article.article
+                      ]?.connection_type?.replace("_", " ") ||
+                        article.integrationType}
                     </Badge>
                   )}
                 </div>
@@ -218,25 +259,34 @@ export const ChecklistSection = ({
                     >
                       {scanningArticles[article.article] ? (
                         <>
-                          <Loader2 className="w-4 h-4 mr-1 animate-spin" /> Scanning Platform...
+                          <Loader2 className="w-4 h-4 mr-1 animate-spin" />{" "}
+                          Scanning Platform...
                         </>
                       ) : (
                         <>
-                          <Zap className="w-4 h-4 mr-1" /> Configure & Run {article.scanType}
+                          <Zap className="w-4 h-4 mr-1" /> Configure & Run{" "}
+                          {article.scanType}
                         </>
                       )}
                     </Button>
                   ) : (
                     <ConnectionDialog
                       article={article}
-                      onConnect={(type, config) => handleConnect(article.article, type, config)}
+                      onConnect={(connectionType, config) =>
+                        handleConnect(article.article, connectionType, config)
+                      }
                     />
                   )}
 
                   {lastScanResults[article.article] && (
                     <div className="flex items-center gap-2 ml-2 p-1 px-2 rounded bg-green-500/20 border border-green-500/30 text-[10px] text-green-400 animate-in fade-in zoom-in duration-300">
                       <BadgeCheck className="w-3 h-3" />
-                      Last: {Math.round(lastScanResults[article.article].results?.metrics?.compliance_rate * 100)}% Pass
+                      Last:{" "}
+                      {Math.round(
+                        lastScanResults[article.article].results?.metrics
+                          ?.compliance_rate * 100
+                      )}
+                      % Pass
                     </div>
                   )}
                 </div>
@@ -245,11 +295,15 @@ export const ChecklistSection = ({
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="p-3 rounded-lg bg-muted/50">
                   <div className="font-medium mb-1">Evidence Required</div>
-                  <div className="text-muted-foreground">{article.evidence}</div>
+                  <div className="text-muted-foreground">
+                    {article.evidence}
+                  </div>
                 </div>
                 <div className="p-3 rounded-lg bg-muted/50">
                   <div className="font-medium mb-1">Remediation Action</div>
-                  <div className="text-muted-foreground">{article.remediation}</div>
+                  <div className="text-muted-foreground">
+                    {article.remediation}
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -257,7 +311,10 @@ export const ChecklistSection = ({
         ))}
       </div>
 
-      <Dialog open={showScanConfigDialog} onOpenChange={setShowScanConfigDialog}>
+      <Dialog
+        open={showScanConfigDialog}
+        onOpenChange={setShowScanConfigDialog}
+      >
         <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-white">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -265,14 +322,17 @@ export const ChecklistSection = ({
               Configure Article {selectedArticleForScan?.article} Scan
             </DialogTitle>
             <DialogDescription className="text-zinc-400">
-              Set parameters for the {selectedArticleForScan?.scanType} orchestration.
+              Set parameters for the {selectedArticleForScan?.scanType}{" "}
+              orchestration.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-4">
             <div className="space-y-4">
               <div className="flex justify-between">
                 <Label>Scan Sensitivity / Depth</Label>
-                <span className="text-xs font-mono text-yellow-500">{scanSensitivity}%</span>
+                <span className="text-xs font-mono text-yellow-500">
+                  {scanSensitivity}%
+                </span>
               </div>
               <Progress value={scanSensitivity} className="h-2" />
               <div className="grid grid-cols-4 gap-2">
@@ -297,17 +357,28 @@ export const ChecklistSection = ({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-zinc-900 border-zinc-800">
-                  <SelectItem value="prod">Production Inference Logs</SelectItem>
-                  <SelectItem value="staging">Staging / Pre-market Cluster</SelectItem>
-                  <SelectItem value="training">Training / Gold Dataset v4</SelectItem>
-                  <SelectItem value="adversarial">Adversarial Test Suite</SelectItem>
+                  <SelectItem value="prod">
+                    Production Inference Logs
+                  </SelectItem>
+                  <SelectItem value="staging">
+                    Staging / Pre-market Cluster
+                  </SelectItem>
+                  <SelectItem value="training">
+                    Training / Gold Dataset v4
+                  </SelectItem>
+                  <SelectItem value="adversarial">
+                    Adversarial Test Suite
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="flex items-center space-x-2 p-3 rounded bg-zinc-900 border border-zinc-800">
               <Switch id="auto-remediate" />
-              <Label htmlFor="auto-remediate" className="text-xs font-medium cursor-pointer">
+              <Label
+                htmlFor="auto-remediate"
+                className="text-xs font-medium cursor-pointer"
+              >
                 Enable Auto-Remediation (Article 15 compatible)
               </Label>
             </div>
@@ -316,8 +387,13 @@ export const ChecklistSection = ({
             <Button
               className="w-full bg-yellow-600 hover:bg-yellow-700 font-bold"
               onClick={() => {
-                handleRunScan(selectedArticleForScan.article, selectedArticleForScan.scanType);
-                setShowScanConfigDialog(false);
+                if (selectedArticleForScan) {
+                  handleRunScan(
+                    selectedArticleForScan.article,
+                    selectedArticleForScan.scanType
+                  );
+                  setShowScanConfigDialog(false);
+                }
               }}
             >
               Orchestrate Scan Now

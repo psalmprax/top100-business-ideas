@@ -117,7 +117,7 @@ export function GovernanceSection({
                     {entry.timestamp.toLocaleString()}
                   </TableCell>
                   <TableCell className="font-medium text-xs">
-                    {entry.agentName}
+                    {entry.agent_name}
                   </TableCell>
                   <TableCell>
                     <Badge variant="secondary" className="text-[9px] uppercase tracking-tight">

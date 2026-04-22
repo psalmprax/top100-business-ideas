@@ -15,6 +15,7 @@ class ComplianceCheckType(str, Enum):
     AI_ACT = "ai_act"
     PRIVACY = "privacy"
     SECURITY = "security"
+    DEEPFAKE = "deepfake"
 
 
 class ComplianceStatus(str, Enum):
@@ -28,6 +29,7 @@ class ComplianceStatus(str, Enum):
 
 class ComplianceCheck(SQLModel, table=True):
     """Compliance check model with persistent storage"""
+
     __tablename__ = "compliance_checks"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -41,6 +43,7 @@ class ComplianceCheck(SQLModel, table=True):
 
 class ComplianceCategory(SQLModel, table=True):
     """Compliance category model with persistent storage"""
+
     __tablename__ = "compliance_categories"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -137,14 +140,17 @@ class BiasReport(SQLModel, table=True):
     bias_category: str = Field(default="demographic")
     disparate_impact: float = Field(default=0.0)
     statistical_significance: float = Field(default=0.0)
+    severity: str = Field(default="low")
     status: str
     details: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
     ai_model: Optional["AIModel"] = Relationship(back_populates="bias_reports")
 
 
 class ComplianceAuditLog(SQLModel, table=True):
     """Persistent audit logs for HIPAA/SOX/GDPR compliance"""
+
     __tablename__ = "compliance_audit_logs"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
@@ -333,10 +339,13 @@ class ComplianceIncident(SQLModel, table=True):
     title: str
     description: str
     severity: str = Field(default="medium")  # low, medium, high, critical
-    incident_type: str = Field(default="security")  # security, compliance, bias, forensic
+    incident_type: str = Field(
+        default="security"
+    )  # security, compliance, bias, forensic
     status: str = Field(default="open")  # open, investigating, resolved, closed
     reported_by: str
     affected_systems: List[str] = Field(default=[], sa_column=Column(JSON))
+    article72: bool = Field(default=False)
     reported_at: datetime = Field(default_factory=datetime.utcnow)
     resolved_at: Optional[datetime] = None
 
@@ -347,9 +356,18 @@ class Vendor(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str
     category: str = Field(default="software")
+    type: str = Field(default="software")  # Matches frontend type field
     risk_level: str = Field(default="low")
+    compliance_status: str = Field(
+        default="vetted", alias="complianceStatus"
+    )  # Matches frontend complianceStatus
     status: str = Field(default="vetted")
+    last_assessment: Optional[datetime] = Field(
+        default=None, alias="lastAssessment"
+    )  # Matches frontend lastAssessment
     contact_email: Optional[str] = None
     website: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+

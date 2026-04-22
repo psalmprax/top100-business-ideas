@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('AlphaAI Products', () => {
+test.describe('AlphaHecta Products', () => {
     test.beforeEach(async ({ page }) => {
         await page.goto('/');
     });
@@ -30,7 +30,7 @@ test.describe('AlphaAI Products', () => {
     test.describe('Authentication', () => {
         test('should show login page', async ({ page }) => {
             await page.goto('/login');
-            await expect(page.getByText('AlphaAI', { exact: true })).toBeVisible();
+            await expect(page.getByText('AlphaHecta', { exact: true })).toBeVisible();
             await expect(page.getByText('Sign in to your account to continue')).toBeVisible();
         });
 
@@ -148,7 +148,7 @@ test.describe('AlphaAI Products', () => {
         });
     });
 
-    test.describe('AlphaWorkforce (Unauthenticated)', () => {
+    test.describe('AlphaHectaWorkforce (Unauthenticated)', () => {
         test('should redirect /products/workforce to /login if not authenticated', async ({ page }) => {
             await page.goto('/products/workforce');
             await page.waitForURL(url => url.pathname.includes('/login'));
@@ -156,10 +156,10 @@ test.describe('AlphaAI Products', () => {
         });
     });
 
-    test.describe('AlphaWorkforce (Authenticated)', () => {
+    test.describe('AlphaHectaWorkforce (Authenticated)', () => {
         // Note: In a real CI, we would use a storage state or a login helper.
         // For this demo, we verify the page structure assuming some bypass or mock.
-        test('should show management tabs on AlphaWorkforce', async ({ page }) => {
+        test('should show management tabs on AlphaHectaWorkforce', async ({ page }) => {
             await page.goto('/products/workforce');
             await page.waitForLoadState('networkidle');
             

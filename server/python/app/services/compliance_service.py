@@ -57,18 +57,51 @@ class ComplianceService:
             self._monitor_task.cancel()
 
     async def _audit_loop(self):
-        """Periodically trigger automated audits (SOX, HIPAA, AI Act)"""
+        """Periodically trigger automated audits (SOX, HIPAA, AI Act, Supply Chain)"""
         while self.is_running:
             try:
                 from app.core.database import AsyncSessionLocal
+                from app.connectors.supply_chain_audit import supply_chain_audit
 
                 async with AsyncSessionLocal() as session:
                     logger.info("Starting scheduled compliance audits...")
                     await self.run_sox_audit(session, user_id="system_cron")
                     await self.run_hipaa_audit(session, user_id="system_cron")
+                    await self.run_supply_chain_audit(session)
             except Exception as e:
                 logger.error(f"Error in compliance audit loop: {e}")
             await asyncio.sleep(86400)  # Run once every 24 hours
+
+    async def run_supply_chain_audit(self, session: AsyncSession) -> Dict[str, Any]:
+        """
+        Execute AI supply chain audit across all registered vendors.
+        Maps findings to Article 10/11 compliance status.
+        """
+        from app.connectors.supply_chain_audit import supply_chain_audit
+        
+        logger.info("Executing Supply Chain Compliance Audit...")
+        result = await session.execute(select(Vendor))
+        vendors = result.scalars().all()
+        
+        audit_results = []
+        for vendor in vendors:
+            audit_res = await supply_chain_audit.audit_vendor(session, vendor)
+            audit_results.append(audit_res)
+            
+        # Log summary to Audit Trail
+        report = supply_chain_audit.get_supply_chain_risk_report(vendors)
+        audit_log = ComplianceAuditLog(
+            user_id=uuid.UUID(int=0), # system
+            action="SUPPLY_CHAIN_AUDIT",
+            resource="VendorSupplyChain",
+            status="verified",
+            compliance_type="EU AI Act Article 28/29 (Supply Chain)",
+            metadata_json=report,
+        )
+        session.add(audit_log)
+        await session.commit()
+        
+        return report
 
     async def delete_user_data(self, session: AsyncSession, user_id: str) -> Dict[str, Any]:
         """
@@ -138,13 +171,13 @@ class ComplianceService:
         db_model = AIModel(
             id=model_id,
             name=name,
-            riskCategory=risk_category,
+            risk_category=risk_category,
             status=status,
-            complianceScore=compliance_score,
+            compliance_score=compliance_score,
             provider=provider,
-            endpointUrl=endpoint_url,
-            lastAudit=datetime.utcnow(),
-            nextAudit=datetime.utcnow(),  # Schedule immediate audit
+            endpoint_url=endpoint_url,
+            last_audit=datetime.utcnow(),
+            next_audit=datetime.utcnow(),  # Schedule immediate audit
         )
 
         # Derive Article Statuses based on Model Metadata
@@ -154,14 +187,14 @@ class ComplianceService:
         db_model.articles = [
             ArticleStatus(
                 id=str(uuid.uuid4()),
-                modelId=model_id,
+                model_id=model_id,
                 article="Article 9",
                 title="Risk Management",
                 status="compliant" if status == "compliant" else "pending",
             ),
             ArticleStatus(
                 id=str(uuid.uuid4()),
-                modelId=model_id,
+                model_id=model_id,
                 article="Article 10",
                 title="Data Governance",
                 status="compliant"
@@ -170,7 +203,7 @@ class ComplianceService:
             ),
             ArticleStatus(
                 id=str(uuid.uuid4()),
-                modelId=model_id,
+                model_id=model_id,
                 article="Article 15",
                 title="Accuracy & Robustness",
                 status="compliant" if risk_category.lower() != "high" else "review",
@@ -205,14 +238,14 @@ class ComplianceService:
 
         # Clear old reports
         result = await session.execute(
-            select(BiasReport).where(BiasReport.modelId == model_id)
+            select(BiasReport).where(BiasReport.model_id == model_id)
         )
         old_reports = result.scalars().all()
         for report in old_reports:
             await session.delete(report)
 
         # Baseline bias profile based on risk category
-        base_impact = 0.05 if model.riskCategory.lower() != "high" else 0.15
+        base_impact = 0.05 if model.risk_category.lower() != "high" else 0.15
 
         categories = [
             ("Gender", "Demographic"),
@@ -239,10 +272,10 @@ class ComplianceService:
 
             report = BiasReport(
                 id=str(uuid.uuid4()),
-                modelId=model_id,
-                biasCategory=cat,
-                disparateImpact=impact,
-                statisticalSignificance=sig,
+                model_id=model_id,
+                bias_category=cat,
+                disparate_impact=impact,
+                statistical_significance=sig,
                 status=status,
                 details=f"Analysis of {cat} bias relative to {group} group baseline.",
             )
@@ -250,9 +283,9 @@ class ComplianceService:
             session.add(report)
 
         # Update model compliance score
-        avg_impact = sum(r.disparateImpact for r in reports) / len(reports)
-        model.complianceScore = round(max(0, 100 - (avg_impact * 100)), 2)
-        model.lastAudit = datetime.utcnow()
+        avg_impact = sum(r.disparate_impact for r in reports) / len(reports)
+        model.compliance_score = round(max(0, 100 - (avg_impact * 100)), 2)
+        model.last_audit = datetime.utcnow()
         session.add(model)
 
         # Log to Audit Trail
@@ -420,14 +453,14 @@ class ComplianceService:
 
         for agent in agents:
             if agent.status == AgentStatus.RUNNING:
-                if agent.daily_spend > agent.dailyBudget:
+                if agent.daily_spend > agent.budget:
                     findings.append(
                         {
                             "agent_id": str(agent.id),
                             "agent_name": agent.name,
                             "issue": "Budget overrun detected",
                             "severity": "high",
-                            "daily_budget": float(agent.dailyBudget),
+                            "daily_budget": float(agent.budget),
                             "daily_spend": float(agent.daily_spend),
                         }
                     )

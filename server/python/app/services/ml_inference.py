@@ -1,6 +1,6 @@
 """
 ML Inference Service
-Production-grade ML model inference for AlphaAI products with PyTorch/transformers support.
+Production-grade ML model inference for AlphaHecta products with PyTorch/transformers support.
 This service is designed for TOP-NOTCH production use with proper model management,
 caching, fallback handling, and hardware acceleration.
 """

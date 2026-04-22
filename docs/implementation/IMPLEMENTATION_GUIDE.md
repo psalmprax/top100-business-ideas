@@ -1,8 +1,8 @@
-# AlphaAI Products Implementation Guide
+# AlphaHecta Products Implementation Guide
 
 ## Overview
 
-This guide documents the complete implementation of the first 3 AlphaAI products:
+This guide documents the complete implementation of the first 3 AlphaHecta products:
 1. **Agent Ops** - AI-powered agent operations optimization & Sentinel Guard
 2. **AI Compliance** - Regulatory compliance checking for AI systems
 3. **Deepfake Defense** - Detection and prevention of deepfake media
@@ -26,7 +26,7 @@ top100-business-ideas/
 │   ├── src/
 │   │   ├── pages/             # Page components
 │   │   │   ├── AlphaAgentOps.tsx
-│   │   │   ├── AlphaAIActCompliance.tsx
+│   │   │   ├── AlphaHectaActCompliance.tsx
 │   │   │   ├── AlphaDeepfakeDefense.tsx
 │   │   │   ├── AlphaWorkforce.tsx
 │   │   │   ├── DenialDefense.tsx
@@ -316,7 +316,7 @@ cd server/python && PYTHONPATH=. python3 -m uvicorn app.main:app --host 0.0.0.0 
 
 ```env
 # Database
-DATABASE_URL=postgresql://user:pass@localhost:7003/alphaai
+DATABASE_URL=postgresql://user:pass@localhost:7003/alphahecta
 REDIS_URL=redis://localhost:7004
 
 # Auth
@@ -357,9 +357,9 @@ MODEL_CACHE_DIR=/models
 
 ### Docker Production
 ```bash
-docker build -t alphaai/api server/go
-docker build -t alphaai/ml server/python
-docker build -t alphaai/client client
+docker build -t alphahecta/api server/go
+docker build -t alphahecta/ml server/python
+docker build -t alphahecta/client client
 
 docker-compose -f docker-compose.prod.yml up -d
 ```

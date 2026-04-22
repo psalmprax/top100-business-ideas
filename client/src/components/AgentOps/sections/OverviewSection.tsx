@@ -1,22 +1,22 @@
 import { motion } from "framer-motion";
-import { 
-  Brain, 
-  DollarSign, 
-  ShieldAlert, 
+import {
+  Brain,
+  DollarSign,
+  ShieldAlert,
   TrendingDown,
   Zap,
   ShieldCheck,
   FileText,
   Users,
   RefreshCw,
-  Activity
+  Activity,
 } from "lucide-react";
-import { 
-  Card, 
-  CardHeader, 
-  CardTitle, 
-  CardDescription, 
-  CardContent 
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -38,10 +38,16 @@ export function OverviewSection({
   onSelfHealingToggle,
 }: OverviewSectionProps) {
   const totalAgents = agents.length;
-  const activeAgents = agents.filter(a => a.status === "active").length;
-  const totalDailySpend = agents.reduce((sum, a) => sum + a.dailySpend, 0);
-  const totalCostSaved = agents.reduce((sum, a) => sum + (a.metrics?.costSaved || 0), 0);
-  const loopsPrevented = agents.reduce((sum, a) => sum + (a.metrics?.loopsPrevented || 0), 0);
+  const activeAgents = agents.filter(a => a.status === "running").length;
+  const totalDailySpend = agents.reduce((sum, a) => sum + a.daily_spend, 0);
+  const totalCostSaved = agents.reduce(
+    (sum, a) => sum + (a.metrics?.cost_saved || 0),
+    0
+  );
+  const loopsPrevented = agents.reduce(
+    (sum, a) => sum + (a.metrics?.loops_prevented || 0),
+    0
+  );
 
   return (
     <div className="space-y-6">
@@ -96,10 +102,16 @@ export function OverviewSection({
                   <div className="flex justify-between text-sm">
                     <span className="font-medium">{agent.name}</span>
                     <span className="text-muted-foreground">
-                      {Math.round(((agent.dailySpend || 0) / (agent.budget || 1)) * 100)}%
+                      {Math.round(
+                        ((agent.daily_spend || 0) / (agent.budget || 1)) * 100
+                      )}
+                      %
                     </span>
                   </div>
-                  <BudgetProgress spent={agent.dailySpend} limit={agent.budget} />
+                  <BudgetProgress
+                    spent={agent.daily_spend}
+                    limit={agent.budget}
+                  />
                 </div>
               ))}
             </div>
@@ -162,11 +174,17 @@ export function OverviewSection({
                 <div className="space-y-3">
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground">Next 30 Days</span>
-                    <span className="font-bold text-lg">${liveMetrics.usage_forecast.next_30_days_cost_est?.toLocaleString()}</span>
+                    <span className="font-bold text-lg">
+                      $
+                      {liveMetrics.usage_forecast.next_30_days_cost_est?.toLocaleString()}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center text-xs">
                     <span>Predicted Trend</span>
-                    <Badge variant="outline" className="text-emerald-500 bg-emerald-500/10 border-emerald-500/20">
+                    <Badge
+                      variant="outline"
+                      className="text-emerald-500 bg-emerald-500/10 border-emerald-500/20"
+                    >
                       {liveMetrics.usage_forecast.trend || "STABLE"}
                     </Badge>
                   </div>
@@ -191,7 +209,9 @@ export function OverviewSection({
               <RefreshCw className="w-5 h-5 text-emerald-500" />
               <CardTitle>Autonomous Recovery (Self-Repairing Logic)</CardTitle>
             </div>
-            <CardDescription>Real-time prompt refinement and safety rollbacks</CardDescription>
+            <CardDescription>
+              Real-time prompt refinement and safety rollbacks
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-6 md:grid-cols-2">
@@ -199,21 +219,29 @@ export function OverviewSection({
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Auto-Refine Prompts</Label>
-                    <p className="text-sm text-muted-foreground">Iteratively improve prompts based on semantic feedback</p>
+                    <p className="text-sm text-muted-foreground">
+                      Iteratively improve prompts based on semantic feedback
+                    </p>
                   </div>
                   <Switch
                     checked={healingConfig.auto_healing_enabled}
-                    onCheckedChange={checked => onSelfHealingToggle("auto_refine", checked)}
+                    onCheckedChange={checked =>
+                      onSelfHealingToggle("auto_refine", checked)
+                    }
                   />
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Safety-First Rollback</Label>
-                    <p className="text-sm text-muted-foreground">Instant reversion to known-safe states on anomaly</p>
+                    <p className="text-sm text-muted-foreground">
+                      Instant reversion to known-safe states on anomaly
+                    </p>
                   </div>
                   <Switch
                     checked={healingConfig.active}
-                    onCheckedChange={checked => onSelfHealingToggle("safety_rollback", checked)}
+                    onCheckedChange={checked =>
+                      onSelfHealingToggle("safety_rollback", checked)
+                    }
                   />
                 </div>
               </div>
@@ -226,15 +254,26 @@ export function OverviewSection({
                   <div className="flex justify-between items-center text-xs">
                     <span>Last Refinement</span>
                     <span className="font-bold">
-                      {healingConfig.updated_at ? new Date(healingConfig.updated_at).toLocaleTimeString() : "Active"}
+                      {healingConfig.updated_at
+                        ? new Date(
+                            healingConfig.updated_at
+                          ).toLocaleTimeString()
+                        : "Active"}
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-xs">
                     <span>Prevention Rate</span>
-                    <span className="text-emerald-500 font-bold">{liveMetrics.status === "live" ? "ACTIVE" : "---"}</span>
+                    <span className="text-emerald-500 font-bold">
+                      {liveMetrics.status === "live" ? "ACTIVE" : "---"}
+                    </span>
                   </div>
                   <p className="text-[10px] text-muted-foreground italic">
-                    System active. {healingConfig.mitigations_count || 0} potential hallucinations mitigated {healingConfig.last_mitigation_time ? `since ${new Date(healingConfig.last_mitigation_time).toLocaleTimeString()}` : "recently"}.
+                    System active. {healingConfig.mitigations_count || 0}{" "}
+                    potential hallucinations mitigated{" "}
+                    {healingConfig.last_mitigation_time
+                      ? `since ${new Date(healingConfig.last_mitigation_time).toLocaleTimeString()}`
+                      : "recently"}
+                    .
                   </p>
                 </div>
               </div>

@@ -1,33 +1,33 @@
-# AlphaAI - Enterprise AI Solutions
+# AlphaHecta - Enterprise AI Solutions
 
 <p align="center">
-  <img src="https://via.placeholder.com/120x120/2563eb/white?text=AI" alt="AlphaAI Logo" />
+  <img src="https://via.placeholder.com/120x120/2563eb/white?text=AI" alt="AlphaHecta Logo" />
 </p>
 
 <p align="center">
--   <a href="http://localhost:7000">
--     <img src="https://img.shields.io/badge/Frontend-Live-brightgreen" alt="Frontend Status" />
--   </a>
--   <a href="http://localhost:7001">
--     <img src="https://img.shields.io/badge/API Gateway-Live-brightgreen" alt="API Status" />
--   </a>
--   <a href="http://localhost:7002">
--     <img src="https://img.shields.io/badge/ML Backend-Live-brightgreen" alt="ML Status" />
--   </a>
+  <a href="http://localhost:7000">
+    <img src="https://img.shields.io/badge/Frontend-Live-brightgreen" alt="Frontend Status" />
+  </a>
+  <a href="http://localhost:7001">
+    <img src="https://img.shields.io/badge/API Gateway-Live-brightgreen" alt="API Status" />
+  </a>
+  <a href="http://localhost:7002">
+    <img src="https://img.shields.io/badge/ML Backend-Live-brightgreen" alt="ML Status" />
+  </a>
   <img src="https://img.shields.io/badge/TypeScript-100%25-blue" alt="TypeScript" />
   <img src="https://img.shields.io/badge/License-MIT-green" alt="License" />
 </p>
 
-## About AlphaAI
+## About AlphaHecta
 
-AlphaAI is an enterprise AI company providing production-ready AI solutions. Our platform offers five core products:
+AlphaHecta is an enterprise AI company providing production-ready AI solutions. Our platform offers five core products:
 
 - **AgentOps** - Autonomous AI workforce management & Sentinel Guard
 - **AI Compliance Hub** - EU AI Act compliance automation & Risk Assessment
 - **Deepfake Defense** - AI-powered media authenticity detection
-- **Alpha Workforce** - Decentralized Autonomous Corporate Management
+- **AlphaHecta Workforce** - Decentralized Autonomous Corporate Management
 - **DenialDefense AI** - Revenue cycle recovery & AI Claims Engine
-- **Alpha Marketplace** - Hybrid Gated Agent Skill Discovery & Deploy
+- **AlphaHecta Marketplace** - Hybrid Gated Agent Skill Discovery & Deploy
 
 ## Architecture
 
@@ -143,7 +143,7 @@ AlphaAI is an enterprise AI company providing production-ready AI solutions. Our
 ### Persistence & Session Continuity
 The Alpha suite features a **namespaced persistence layer** using `localStorage`. This ensures that session-level configurations (e.g., active SLA tiers, agent rosters, fiscal approvals) are preserved across page reloads without requiring immediate backend schema migrations.
 - **Utility**: `client/src/lib/storage.ts`
-- **Prefix**: `alpha_sentinel_`
+- **Prefix**: `alpha_hecta_`
 
 ### 🏗️ Database Agnosticism & Migrations
 The Alpha platform uses **SQLModel** and **Alembic** to ensure 100% database portability.
@@ -157,7 +157,7 @@ The Alpha platform uses **SQLModel** and **Alembic** to ensure 100% database por
 # Login and get token
 curl -X POST http://localhost:7001/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@alphaai.com","password":"admin"}'
+  -d '{"email":"admin@alphahecta.com","password":"admin"}'
 
 # Get agents list (with token)
 curl -X GET http://localhost:7001/api/v1/agents \
@@ -175,11 +175,11 @@ curl -X POST http://localhost:7001/api/v1/deepfake/analyze \
 ├── client/                    # React Frontend
 │   ├── src/
 │   │   ├── pages/            # Page components
-│   │   │   ├── AlphaAI.tsx          # Company landing page
-│   │   │   ├── AlphaAgentOps.tsx    # AgentOps dashboard (Sentinel)
-│   │   │   ├── AlphaAIActCompliance.tsx  # Compliance dashboard
-│   │   │   ├── AlphaDeepfakeDefense.tsx  # Deepfake dashboard
-│   │   │   ├── AlphaWorkforce.tsx   # Workforce Management
+│   │   │   ├── AlphaHecta.tsx          # Company landing page
+│   │   │   ├── AlphaHectaAgentOps.tsx    # AgentOps dashboard (Sentinel)
+│   │   │   ├── AlphaHectaCompliance.tsx  # Compliance dashboard
+│   │   │   ├── AlphaHectaDeepfake.tsx  # Deepfake dashboard
+│   │   │   ├── AlphaHectaWorkforce.tsx   # Workforce Management
 │   │   │   └── DenialDefense.tsx    # AI Claims Engine
 │   │   ├── components/       # Reusable components
 │   │   ├── lib/              # Utilities (storage.ts, api.ts)
@@ -305,6 +305,6 @@ MIT License - see LICENSE for details.
 
 ## Support
 
-- Email: support@alphaai.com
+- Email: support@alphahecta.com
 - Documentation: http://localhost:7000/docs
 - API Docs: http://localhost:7002/docs

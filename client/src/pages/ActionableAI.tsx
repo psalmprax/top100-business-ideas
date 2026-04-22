@@ -31,6 +31,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { storage } from "@/lib/storage";
 import { metricsApi, extendedApi } from "@/lib/api";
@@ -55,28 +56,30 @@ export default function ActionableAI() {
         const data = await metricsApi.current();
         if (data) {
           // REAL-FIRST: Using direct backend-instrumented metric
-          if (data.computeLoad !== undefined) {
-            setComputeLoad(data.computeLoad);
+          if (data.compute_load !== undefined) {
+            setComputeLoad(data.compute_load ?? 0);
           }
 
           // REAL-FIRST: Using direct p99 latency metric
-          if (data.p99Latency !== undefined) {
-            setLatency(data.p99Latency);
+          if (data.p99_latency !== undefined) {
+            setLatency(data.p99_latency ?? 0);
           }
 
           // REAL-FIRST: Using daily mission throughput metric
-          if (data.missionsToday !== undefined) {
-            setMissionsToday(data.missionsToday);
+          if (data.missions_today !== undefined) {
+            setMissionsToday(data.missions_today ?? 0);
           }
 
-          const total = data.tasksCompleted + data.tasksFailed;
+          const completed = data.tasks_completed ?? 0;
+          const failed = data.tasks_failed ?? 0;
+          const total = completed + failed;
           if (total > 0) {
             setSuccessRate(
-              parseFloat(((data.tasksCompleted / total) * 100).toFixed(1))
+              parseFloat(((completed / total) * 100).toFixed(1))
             );
           }
-          if (data.activeAgents !== undefined) {
-            setActiveThreads(data.activeAgents);
+          if (data.active_agents !== undefined) {
+            setActiveThreads(data.active_agents ?? 0);
           }
         }
       } catch (error) {
@@ -109,7 +112,7 @@ export default function ActionableAI() {
           setMissionLogs(
             data.map(
               (l: any) =>
-                `[${l.timestamp || new Date().toLocaleTimeString()}] ${l.agentName || l.agent || "SYSTEM"}: ${l.action || l.event || JSON.stringify(l).substring(0, 80)}`
+                `[${l.timestamp || new Date().toLocaleTimeString()}] ${l.agent_name || l.agent || "SYSTEM"}: ${l.action || l.event || JSON.stringify(l).substring(0, 80)}`
             )
           );
         }
@@ -417,7 +420,7 @@ export default function ActionableAI() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-orange-600/20 to-red-600/10 border-orange-500/20">
+            <Card className="bg-gradient-to-br from-orange-600/20 to-red-600/10 border-orange-500/20 shadow-xl">
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3 mb-4">
                   <Shield className="w-5 h-5 text-orange-500" />
@@ -425,24 +428,47 @@ export default function ActionableAI() {
                     Safety Protocols
                   </div>
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <div className="flex items-center justify-between text-xs">
-                    <span>Infinite Loop Protection</span>
-                    <Badge
-                      className="bg-emerald-500 text-white text-[8px] h-4"
-                      data-testid="badge-loop-protection"
-                    >
-                      ARMED
-                    </Badge>
+                    <span className="text-white/60">Infinite Loop Protection</span>
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        className={`${storage.get("actionable_ai_loop_prot", true) ? "bg-emerald-500" : "bg-red-500"} text-white text-[8px] h-4 border-none`}
+                      >
+                        {storage.get("actionable_ai_loop_prot", true) ? "ARMED" : "DISARMED"}
+                      </Badge>
+                      <Switch 
+                        checked={storage.get("actionable_ai_loop_prot", true)}
+                        onCheckedChange={(checked) => {
+                          storage.set("actionable_ai_loop_prot", checked);
+                          toast.info(`Loop protection ${checked ? "armed" : "disarmed"}`);
+                        }}
+                      />
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span>Cost Auto-Kill Switch</span>
-                    <span
-                      className="text-muted-foreground"
-                      data-testid="kill-switch-threshold"
-                    >
-                      $50/hour
-                    </span>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-white/60">Cost Auto-Kill Switch</span>
+                      <Switch 
+                        checked={storage.get("actionable_ai_kill_switch", true)}
+                        onCheckedChange={(checked) => {
+                          storage.set("actionable_ai_kill_switch", checked);
+                          toast.info(`Kill switch ${checked ? "enabled" : "disabled"}`);
+                        }}
+                      />
+                    </div>
+                    {storage.get("actionable_ai_kill_switch", true) && (
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[10px] text-muted-foreground">$</span>
+                        <input 
+                          type="number"
+                          className="bg-black/40 border border-white/10 rounded px-2 py-1 text-[10px] w-16 text-orange-500 outline-none"
+                          defaultValue={storage.get("actionable_ai_kill_threshold", 50)}
+                          onChange={(e) => storage.set("actionable_ai_kill_threshold", parseInt(e.target.value))}
+                        />
+                        <span className="text-[10px] text-muted-foreground">/hour</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardContent>

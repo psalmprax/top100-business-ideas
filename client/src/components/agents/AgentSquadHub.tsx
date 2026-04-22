@@ -91,7 +91,7 @@ export const AgentSquadHub: React.FC = () => {
         <Bot className="w-6 h-6" />
         <AnimatePresence>
           {agents.some(
-            a => a.status === "thinking" || a.status === "acting"
+            a => a.engineStatus === "thinking" || a.engineStatus === "acting"
           ) && (
             <motion.span
               initial={{ scale: 0 }}
@@ -152,7 +152,7 @@ export const AgentSquadHub: React.FC = () => {
                       <span className="text-[11px] font-bold text-slate-300 truncate w-24">
                         {agent.name}
                       </span>
-                      {getStatusIcon(agent.status)}
+                      {getStatusIcon(agent.engineStatus)}
                     </div>
                     <Badge
                       variant="outline"

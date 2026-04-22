@@ -330,11 +330,15 @@ func (p *ProxyService) UpdateComplianceGuardrails(c *gin.Context, id string, dat
 }
 
 func (p *ProxyService) GetBiasReports(c *gin.Context, modelID string) ([]byte, error) {
-	return p.Forward(c, "GET", fmt.Sprintf("/compliance/bias-reports/%s", modelID), nil)
+	path := "/compliance/bias/reports"
+	if modelID != "" && modelID != "global" {
+		path = fmt.Sprintf("%s?scope=%s", path, modelID)
+	}
+	return p.Forward(c, "GET", path, nil)
 }
 
-func (p *ProxyService) TriggerBiasScan(c *gin.Context, data interface{}) ([]byte, error) {
-	return p.Forward(c, "POST", "/compliance/bias-scan", data)
+func (h *ProxyService) TriggerBiasScan(c *gin.Context, data interface{}) ([]byte, error) {
+	return h.Forward(c, "POST", "/compliance/bias/scan", data)
 }
 
 func (p *ProxyService) RunForensics(c *gin.Context, agentID string) ([]byte, error) {

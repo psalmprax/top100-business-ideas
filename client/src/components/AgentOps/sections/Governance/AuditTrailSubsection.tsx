@@ -112,7 +112,7 @@ export function AuditTrailSubsection({
                       {entry.timestamp.toLocaleString()}
                     </TableCell>
                     <TableCell className="font-bold text-xs">
-                      {entry.agentName}
+                      {entry.agent_name}
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary" className="text-[9px] font-black uppercase tracking-tight bg-muted/50 border-border/50">

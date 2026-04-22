@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This document provides a comprehensive gap analysis of the AlphaAI project, covering UI/buttons/clickables/menus, use cases, and all possible scenarios. The analysis identifies covered and uncovered areas, with implemented solutions to achieve 100% coverage.
+This document provides a comprehensive gap analysis of the AlphaHecta project, covering UI/buttons/clickables/menus, use cases, and all possible scenarios. The analysis identifies covered and uncovered areas, with implemented solutions to achieve 100% coverage.
 
 ---
 
@@ -142,8 +142,8 @@ This document provides a comprehensive gap analysis of the AlphaAI project, cove
 | `client/src/index.css` | Mobile responsive CSS |
 | `client/src/test/e2e.spec.ts` | E2E + visual regression tests |
 | `client/src/pages/AlphaAgentOps.tsx` | Agent Ops features |
-| `client/src/pages/AlphaAI.tsx` | Alpha AI main page |
-| `client/src/pages/AlphaAIActCompliance.tsx` | Compliance features |
+| `client/src/pages/AlphaHecta.tsx` | Alpha AI main page |
+| `client/src/pages/AlphaHectaActCompliance.tsx` | Compliance features |
 | `client/src/pages/AlphaDeepfakeDefense.tsx` | Deepfake features |
 
 ### 6.2 Backend

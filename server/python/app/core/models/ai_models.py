@@ -14,6 +14,7 @@ class AIModel(SQLModel, table=True):
     name: str
     risk_category: str = Field(index=True)
     status: str = "pending"
+    tier: str = Field(default="strategic")  # strategic, tactical, industrial
     compliance_score: float = Field(default=0.0)
     last_audit: Optional[datetime] = Field(default=None)
     next_audit: Optional[datetime] = Field(default=None)
@@ -42,6 +43,7 @@ class AIModelCreate(SQLModel):
     name: str
     riskCategory: str
     provider: str
+    tier: str = "strategic"
     endpointUrl: Optional[str] = None
     apiKey: Optional[str] = None
 
@@ -109,7 +111,9 @@ class Subscription(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     user_id: uuid.UUID = Field(index=True)
     stripe_subscription_id: Optional[str] = Field(default=None, index=True)
-    plan: str  # professional, enterprise, starter
+    plan: str = Field(
+        default="free"
+    )  # free, pro, enterprise (unified across all layers)
     status: str = Field(default="active")  # active, canceled, past_due
     current_period_end: datetime
     cancel_at_period_end: bool = Field(default=False)

@@ -139,6 +139,7 @@ func main() {
 	denialDefenseHandler := handlers.NewDenialDefenseHandler(denialDefenseRepo)
 	userHandler := handlers.NewUserHandler(userRepo, authService)
 	panicHandler := handlers.NewPanicHandler(cfg.AdminSecret)
+	vendorHandler := handlers.NewVendorHandler(proxyService)
 
 	// New domain-specific handlers for production-grade routing
 	governanceHandler := handlers.NewGovernanceHandler(proxyService)
@@ -164,7 +165,8 @@ func main() {
 	// 5. Infrastructure
 	router.Use(middleware.CORS(cfg.AllowedOrigins))
 	router.Use(middleware.SystemLock())
-	router.Use(middleware.RateLimitMiddleware(100))
+	// Distributed Redis rate limiter (falls back to in-memory if Redis unavailable)
+	router.Use(middleware.RedisRateLimitMiddleware(cfg.RedisURL, 100))
 
 	// Health check (no auth required)
 	router.GET("/health", healthHandler.Health)
@@ -196,6 +198,7 @@ func main() {
 		MLHandler:            mlHandler,
 		IntelligenceHandler:  intelligenceHandler,
 		WorkforceHandler:     workforceHandler,
+		VendorHandler:        vendorHandler,
 	}
 
 	middlewareContainer := &routers.MiddlewareContainer{

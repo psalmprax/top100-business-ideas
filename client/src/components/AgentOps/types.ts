@@ -13,7 +13,7 @@ export interface DashboardAgent {
     | "openai"
     | "metagpt"
     | "pydanticai";
-  status: "active" | "paused" | "error" | "stopped";
+  status: "running" | "stopped" | "error" | "paused";
   environment?: string;
   provider?: string;
   model?: string;
@@ -22,20 +22,20 @@ export interface DashboardAgent {
   org_id?: string;
   control_webhook?: string;
   budget: number;
-  dailySpend: number;
+  daily_spend: number;
   tier: "strategic" | "tactical" | "industrial";
   persistent_memory?: boolean;
   config: {
     provider: string;
     model: string;
-    maxTokens: number;
+    max_tokens: number;
     temperature: number;
     rules: DashboardAgentRule[];
   };
   metrics: DashboardAgentMetrics;
-  created_at?: string;
-  createdAt: Date;
-  lastActiveAt: Date;
+  created_at: string | Date;
+  updated_at?: string | Date;
+  last_active_at?: string | Date;
   metadata?: Record<string, any>;
 }
 
@@ -48,22 +48,22 @@ export interface DashboardAgentRule {
 }
 
 export interface DashboardAgentMetrics {
-  totalRequests: number;
-  totalTokens: number;
-  totalCost: number;
-  avgLatencyMs: number;
-  errorRate: number;
-  loopCount: number;
-  cacheHits: number;
-  loopsPrevented: number;
-  costSaved: number;
+  total_requests: number;
+  total_tokens: number;
+  total_cost: number;
+  avg_latency_ms: number;
+  error_rate: number;
+  loop_count: number;
+  cache_hits: number;
+  loops_prevented: number;
+  cost_saved: number;
 }
 
 export interface AuditEntry {
   id: string;
   timestamp: Date;
-  agentId: string;
-  agentName: string;
+  agent_id: string;
+  agent_name: string;
   action: string;
   intent: string;
   outcome: "approved" | "denied" | "modified" | "paused";
@@ -71,7 +71,7 @@ export interface AuditEntry {
   cost: number;
   reasoning: string;
   summary: string;
-  interactionId?: string;
+  interaction_id?: string;
 }
 
 export interface AlertConfig {
@@ -87,11 +87,11 @@ export interface AlertConfig {
 }
 
 export interface LLMMetrics {
-  p95LatencyMs: number;
-  avgLatencyMs: number;
+  p95_latency_ms: number;
+  avg_latency_ms: number;
   throughput: number;
-  errorRate: number;
-  costPer1k: number;
+  error_rate: number;
+  cost_per_1k: number;
   uptime: number;
 }
 
@@ -101,17 +101,17 @@ export interface LLMProviderConfig {
   provider: "deepseek" | "google" | "openai" | "anthropic" | "meta" | "local";
   model: string;
   status: "active" | "degraded" | "down";
-  isPrimary: boolean;
-  failoverPriority: number;
-  apiKeySet: boolean;
+  is_primary: boolean;
+  failover_priority: number;
+  api_key_set: boolean;
   metrics: LLMMetrics;
 }
 
 export interface BudgetRule {
   id: string;
   name: string;
-  agentIds: string[];
-  dailyLimit: number;
+  agent_ids: string[];
+  daily_limit: number;
   priority: "low" | "medium" | "high";
   action: "pause" | "alert" | "throttle";
   enabled: boolean;

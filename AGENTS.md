@@ -20,7 +20,7 @@
 
 ## Key Conventions
 
-- **Storage namespace**: `alpha_sistor_` prefix for localStorage (`client/src/lib/storage.ts`)
+- **Storage namespace**: `alpha_hecta_` prefix for localStorage (`client/src/lib/storage.ts`)
 - **Build output**: `dist/`
 - **UI components**: Radix UI primitives in `client/src/components/ui/`
 - **Prettier**: semi=true, singleQuote=false, printWidth=80

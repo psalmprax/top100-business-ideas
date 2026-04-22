@@ -9,44 +9,52 @@ type User struct {
 	Name               string    `json:"name" db:"name"`
 	Password           string    `json:"-" db:"password_hash"`
 	Role               string    `json:"role" db:"role"`
-	SubscriptionTier   string    `json:"subscriptionTier" db:"subscription_tier"`
-	SubscriptionStatus string    `json:"subscriptionStatus" db:"subscription_status"`
-	AllowedProducts    []string  `json:"allowedProducts" db:"allowed_products"`
-	CreatedAt          time.Time `json:"createdAt" db:"created_at"`
-	UpdatedAt          time.Time `json:"updatedAt" db:"updated_at"`
+	SubscriptionTier   string    `json:"subscription_tier" db:"subscription_tier"`
+	SubscriptionStatus string    `json:"subscription_status" db:"subscription_status"`
+	AllowedProducts    []string  `json:"allowed_products" db:"allowed_products"`
+	CreatedAt          time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // Agent represents an AI agent
 type Agent struct {
-	ID             string        `json:"id" db:"id"`
-	Name           string        `json:"name" db:"name"`
-	Type           string        `json:"type" db:"type"`
-	Status         string        `json:"status" db:"status"` // running, stopped, error
-	Environment    string        `json:"environment" db:"environment"`
-	Provider       string        `json:"provider" db:"provider"`
-	Model          string        `json:"model" db:"model"`
-	OrgID          string        `json:"org_id" db:"org_id"`
+	ID               string        `json:"id" db:"id"`
+	Name             string        `json:"name" db:"name"`
+	Type             string        `json:"type" db:"type"`
+	Status           string        `json:"status" db:"status"` // running, stopped, error
+	Environment      string        `json:"environment" db:"environment"`
+	Provider         string        `json:"provider" db:"provider"`
+	Model            string        `json:"model" db:"model"`
+	OrgID            string        `json:"org_id" db:"org_id"`
 	ControlWebhook   string        `json:"control_webhook" db:"control_webhook"`
 	APISecret        string        `json:"api_secret" db:"api_secret"`
 	Config           string        `json:"config" db:"config"` // JSON string
 	Budget           float64       `json:"budget" db:"budget"`
+	DailySpend       float64       `json:"daily_spend" db:"daily_spend"`
 	MaxTokens        int           `json:"max_tokens" db:"max_tokens"`
 	Tier             string        `json:"tier" db:"tier"`
 	PersistentMemory bool          `json:"persistent_memory" db:"persistent_memory"`
 	Metrics          *AgentMetrics `json:"metrics"`
-	CreatedAt        time.Time     `json:"createdAt" db:"created_at"`
-	UpdatedAt        time.Time     `json:"updatedAt" db:"updated_at"`
+	CreatedAt        time.Time     `json:"created_at" db:"created_at"`
+	UpdatedAt        time.Time     `json:"updated_at" db:"updated_at"`
 }
 
 // AgentMetrics represents agent performance metrics
 type AgentMetrics struct {
-	CPUUsage      float64   `json:"cpu_usage"`
-	MemoryUsage   float64   `json:"memory_usage"`
-	TasksTotal    int       `json:"tasks_total"`
-	TasksComplete int       `json:"tasks_complete"`
-	TasksFailed   int       `json:"tasks_failed"`
-	Uptime        float64   `json:"uptime"` // seconds
-	LastUpdated   time.Time `json:"last_updated"`
+	CPUUsage       float64   `json:"cpu_usage"`
+	ComputeLoad    float64   `json:"compute_load"`
+	MemoryUsage    float64   `json:"memory_usage"`
+	TasksTotal     int       `json:"tasks_total"`
+	TasksCompleted int       `json:"tasks_completed"`
+	TasksFailed    int       `json:"tasks_failed"`
+	TotalRequests  int       `json:"total_requests"`
+	TotalTokens    int       `json:"total_tokens"`
+	TotalCost      float64   `json:"total_cost"`
+	AvgLatencyMs   float64   `json:"avg_latency_ms"`
+	P99Latency     float64   `json:"p99_latency"`
+	ErrorRate      float64   `json:"error_rate"`
+	Uptime         float64   `json:"uptime"` // seconds
+	LastUpdated    time.Time `json:"last_updated"`
 }
 
 // AgentLog represents agent execution log
@@ -149,26 +157,25 @@ type AuthResponse struct {
 }
 
 type CreateAgentRequest struct {
-	Name           string  `json:"name" binding:"required"`
-	Type           string  `json:"type" binding:"required"`
-	Environment    string  `json:"environment"`
-	Provider       string  `json:"provider"`
-	Model          string  `json:"model"`
-	OrgID          string  `json:"org_id"`
-	ControlWebhook string  `json:"control_webhook"`
-	Budget           float64 `json:"budget"`
-	MaxTokens        int     `json:"max_tokens"`
+	Name             string                 `json:"name" binding:"required"`
+	Type             string                 `json:"type" binding:"required"`
+	Environment      string                 `json:"environment"`
+	Provider         string                 `json:"provider"`
+	Model            string                 `json:"model"`
+	OrgID            string                 `json:"org_id"`
+	ControlWebhook   string                 `json:"control_webhook"`
+	Budget           float64                `json:"budget"`
+	MaxTokens        int                    `json:"max_tokens"`
 	Tier             string                 `json:"tier"`
 	PersistentMemory bool                   `json:"persistent_memory"`
 	Config           map[string]interface{} `json:"config"`
 }
 
-
 type UpdateAgentRequest struct {
-	Name      string  `json:"name"`
-	Type      string  `json:"type"`
-	Config    string  `json:"config"`
-	Status    string  `json:"status"`
+	Name             string  `json:"name"`
+	Type             string  `json:"type"`
+	Config           string  `json:"config"`
+	Status           string  `json:"status"`
 	Budget           float64 `json:"budget"`
 	MaxTokens        int     `json:"max_tokens"`
 	Tier             string  `json:"tier"`
@@ -340,14 +347,13 @@ type TrainingStats struct {
 type ShadowAIDetection struct {
 	ID           string     `json:"id" db:"id"`
 	ToolName     string     `json:"tool_name" db:"tool_name"`
-	Domain       string     `json:"domain" db:"domain"`
-	UserEmail    string     `json:"user_email" db:"user_email"`
+	Vendor       string     `json:"vendor" db:"vendor"`
+	Department   string     `json:"department" db:"department"`
 	RiskLevel    string     `json:"risk_level" db:"risk_level"`
 	Status       string     `json:"status" db:"status"`
 	Category     string     `json:"category" db:"category"`
-	UsageCount   int        `json:"usage_count" db:"usage_count"`
-	FirstSeen    time.Time  `json:"first_seen" db:"first_seen"`
-	LastSeen     time.Time  `json:"last_seen" db:"last_seen"`
+	UserCount    int        `json:"user_count" db:"user_count"`
+	DetectedAt   time.Time  `json:"detected_at" db:"detected_at"`
 	Description  string     `json:"description" db:"description"`
 	RemediatedAt *time.Time `json:"remediated_at" db:"remediated_at"`
 }
@@ -362,6 +368,7 @@ type ShadowAIStats struct {
 	Blocked         int            `json:"blocked"`
 	ByCategory      map[string]int `json:"by_category"`
 	ByStatus        map[string]int `json:"by_status"`
+	ByRiskLevel     map[string]int `json:"by_risk_level"`
 }
 
 // WearableDevice represents a wearable biometric device
@@ -489,7 +496,7 @@ type Task struct {
 	ID        string     `json:"id" db:"id"`
 	UserID    string     `json:"user_id" db:"user_id"`
 	Title     string     `json:"title" db:"title"`
-	Status    string     `json:"status" db:"status"`     // todo, in_progress, completed
+	Status    string     `json:"status" db:"status"`     // pending, in_progress, completed, cancelled
 	Priority  string     `json:"priority" db:"priority"` // low, medium, high
 	DueDate   *time.Time `json:"due_date,omitempty" db:"due_date"`
 	CreatedAt time.Time  `json:"created_at" db:"created_at"`
@@ -503,7 +510,7 @@ type Client struct {
 	Name      string    `json:"name" db:"name"`
 	Email     string    `json:"email" db:"email"`
 	Company   string    `json:"company" db:"company"`
-	Status    string    `json:"status" db:"status"` // active, inactive
+	Status    string    `json:"status" db:"status"` // prospect, active, inactive, churned
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 }
@@ -561,10 +568,10 @@ type ForensicTrace struct {
 type Claim struct {
 	ID            string    `json:"id" db:"id"`
 	UserID        string    `json:"user_id" db:"user_id"`
-	ClaimIDString string    `json:"claim_id" db:"claim_id_string"`
+	ClaimIDString string    `json:"claim_id_string" db:"claim_id_string"`
 	Payer         string    `json:"payer" db:"payer"`
 	Amount        float64   `json:"amount" db:"amount"`
-	Status        string    `json:"status" db:"status"` // pending, scrubbed, flagged
+	Status        string    `json:"status" db:"status"` // pending, recovered, failed
 	Risk          string    `json:"risk" db:"risk"`     // low, medium, high
 	CreatedAt     time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at" db:"updated_at"`
@@ -582,7 +589,7 @@ type DenialStats struct {
 type RevenueRecovery struct {
 	ID              string    `json:"id" db:"id"`
 	UserID          string    `json:"user_id" db:"user_id"`
-	Status          string    `json:"status" db:"status"` // discovered, processed, recovered
+	Status          string    `json:"status" db:"status"` // pending, recovered, failed (aligned with Python)
 	RecoveredAmount string    `json:"recovered_amount" db:"recovered_amount"`
 	ActionsTaken    []string  `json:"actions_taken" db:"actions_taken"`
 	ConfidenceScore float64   `json:"confidence_score" db:"confidence_score"`

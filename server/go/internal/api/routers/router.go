@@ -50,6 +50,9 @@ type HandlerContainer struct {
 	ShadowAIHandler interface {
 		ListDetections(c *gin.Context)
 		GetShadowAIStats(c *gin.Context)
+		AutoDetect(c *gin.Context)
+		ScanLogs(c *gin.Context)
+		GetReport(c *gin.Context)
 		RemediateDetection(c *gin.Context)
 	}
 	TrainingHandler interface {
@@ -87,7 +90,8 @@ type HandlerContainer struct {
 		CheckCompliance(c *gin.Context)
 		DetectDeepfake(c *gin.Context)
 	}
-	WorkforceHandler WorkforceHandler
+	WorkforceHandler     WorkforceHandler
+	VendorHandler        VendorHandler
 }
 
 // IntelligenceHandler interface
@@ -181,6 +185,7 @@ func SetupAllRoutes(router *gin.Engine, handlers *HandlerContainer, mw *Middlewa
 		SetupWSRoutes(protected, handlers.WSHandler)
 		SetupAdditionalRoutes(protected, handlers.IntelligenceHandler)
 		SetupWorkforceRoutes(protected, handlers.WorkforceHandler, middleware.ProductAccess, middleware.RequireRole)
+		SetupVendorRoutes(protected, handlers.VendorHandler, middleware.ProductAccess)
 
 		// ML routes (Proxied to Python)
 		mlGroup := v1.Group("/ml")

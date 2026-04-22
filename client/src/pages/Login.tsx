@@ -71,7 +71,7 @@ const PRODUCT_MAPPING: Record<
     color: "text-cyan-400",
     path: "/products/workflow-bot",
   },
-  "alpha-workforce": {
+  "alpha-hecta-workforce": {
     label: "Workforce",
     icon: Users,
     color: "text-indigo-400",
@@ -197,7 +197,7 @@ export default function Login() {
             </div>
           </div>
           <CardTitle className="text-display-hero text-white mb-2">
-            AlphaAI Access
+            AlphaHecta Access
           </CardTitle>
           <CardDescription className="text-feature text-slate-400">
             Secure product-aware gateway

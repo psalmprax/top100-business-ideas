@@ -1,20 +1,33 @@
 import { useState, useEffect } from "react";
-import { 
-  Shield, 
-  Clock, 
-  CheckCircle2, 
+import {
+  Shield,
+  Clock,
+  CheckCircle2,
   AlertCircle,
   BarChart3,
-  RefreshCw 
+  RefreshCw,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { extendedApi } from "@/lib/api";
+import { extendedApi, type SLATierInfo, type SLAMetric } from "@/lib/api";
 
 export function SLATiersSection() {
-  const [slaData, setSlaData] = useState<any>(null);
-  const [metrics, setMetrics] = useState<any[]>([]);
+  const [slaData, setSlaData] = useState<SLATierInfo | null>(null);
+  const [metrics, setMetrics] = useState<SLAMetric[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,7 +39,7 @@ export function SLATiersSection() {
     try {
       const [tier, slaMetrics] = await Promise.all([
         extendedApi.enterprise.getSlaTier(),
-        extendedApi.governance.sla.getMetrics()
+        extendedApi.governance.sla.getMetrics(),
       ]);
       setSlaData(tier);
       setMetrics(slaMetrics || []);
@@ -41,7 +54,9 @@ export function SLATiersSection() {
     return (
       <div className="flex flex-col items-center justify-center p-20">
         <RefreshCw className="w-8 h-8 animate-spin text-primary" />
-        <p className="mt-4 text-muted-foreground text-sm font-medium">Loading SLA performance data...</p>
+        <p className="mt-4 text-muted-foreground text-sm font-medium">
+          Loading SLA performance data...
+        </p>
       </div>
     );
   }
@@ -51,15 +66,22 @@ export function SLATiersSection() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-primary/5 border-primary/20">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Active SLA Tier</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Active SLA Tier
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
-              <div className="text-2xl font-bold capitalize">{slaData?.tier || "Bronze"}</div>
+              <div className="text-2xl font-bold capitalize">
+                {slaData?.tier || "Bronze"}
+              </div>
               <Shield className="w-5 h-5 text-primary" />
             </div>
             <div className="mt-2">
-              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+              <Badge
+                variant="outline"
+                className="bg-primary/10 text-primary border-primary/20"
+              >
                 {slaData?.active ? "Operational" : "Pending"}
               </Badge>
             </div>
@@ -68,23 +90,35 @@ export function SLATiersSection() {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Avg Uptime (30d)</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-400">
+              Avg Uptime (30d)
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
-              <div className="text-2xl font-bold">99.98%</div>
+              <div className="text-2xl font-bold text-white">
+                {metrics.length > 0 
+                  ? (metrics.reduce((acc, m) => acc + m.uptime, 0) / metrics.length).toFixed(2) 
+                  : "99.9"}%
+              </div>
               <CheckCircle2 className="w-5 h-5 text-emerald-500" />
             </div>
           </CardContent>
         </Card>
-
+ 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Avg Response Time</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-400">
+              Avg Response Time
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
-              <div className="text-2xl font-bold">142ms</div>
+              <div className="text-2xl font-bold text-white">
+                {metrics.length > 0 
+                  ? Math.round(metrics.reduce((acc, m) => acc + m.latency, 0) / metrics.length) 
+                  : "---"}ms
+              </div>
               <Clock className="w-5 h-5 text-blue-500" />
             </div>
           </CardContent>
@@ -97,7 +131,9 @@ export function SLATiersSection() {
             <BarChart3 className="w-5 h-5" />
             Performance Metrics History
           </CardTitle>
-          <CardDescription>Historical SLA adherence and breach monitoring</CardDescription>
+          <CardDescription>
+            Historical SLA adherence and breach monitoring
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -113,7 +149,10 @@ export function SLATiersSection() {
             <TableBody>
               {metrics.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
+                  <TableCell
+                    colSpan={5}
+                    className="text-center py-10 text-muted-foreground"
+                  >
                     No historical metrics found.
                   </TableCell>
                 </TableRow>
@@ -125,7 +164,9 @@ export function SLATiersSection() {
                     <TableCell>{m.latency}ms</TableCell>
                     <TableCell>{m.breaches}</TableCell>
                     <TableCell>
-                      <Badge variant={m.breaches > 0 ? "destructive" : "default"}>
+                      <Badge
+                        variant={m.breaches > 0 ? "destructive" : "default"}
+                      >
                         {m.breaches > 0 ? "Breached" : "Compliant"}
                       </Badge>
                     </TableCell>

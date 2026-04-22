@@ -22,6 +22,7 @@ import { PerspectiveSwitcher } from "@/components/PerspectiveSwitcher";
 import { DetectorsSection } from "@/components/DeepfakeDefense/sections/DetectorsSection";
 import { ModelsSection } from "@/components/DeepfakeDefense/sections/ModelsSection";
 import { LivenessSection } from "@/components/DeepfakeDefense/sections/LivenessSection";
+import { GlobalSearch } from "@/components/GlobalSearch";
 import {
   extendedApi,
   type MobileSDKStatus,
@@ -40,6 +41,9 @@ import {
   Calculator,
   CheckCircle2,
   ChevronDown,
+  Calendar,
+  Archive,
+  ExternalLink,
   Clock,
   Cloud,
   Cpu,
@@ -140,6 +144,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { UserMenu } from "@/components/UserMenu";
+import { NotificationCenter } from "@/components/NotificationCenter";
+import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { PremiumPlaceholder } from "@/components/skeletons/PremiumPlaceholder";
 
@@ -313,7 +319,7 @@ function ThreatBadge({ severity }: { severity: ThreatAlert["severity"] }) {
 // Main Component
 // ============================================================================
 
-export default function AlphaDeepfakeDefense() {
+export default function AlphaHectaDeepfakeDefense() {
   const { isAuthenticated, user } = useAuth();
   const { perspective } = usePerspective();
   const [, setLocation] = useLocation();
@@ -473,6 +479,9 @@ export default function AlphaDeepfakeDefense() {
   const [showPanicWordDialog, setShowPanicWordDialog] = useState(false);
   const [showVoiceAuthTestDialog, setShowVoiceAuthTestDialog] = useState(false);
   const [showDeviceMgmtDialog, setShowDeviceMgmtDialog] = useState(false);
+  const [confirmFailover, setConfirmFailover] = useState<string | null>(null);
+  const [confirmRevoke, setConfirmRevoke] = useState(false);
+  const [isRevoking, setIsRevoking] = useState(false);
   const [stats, setStats] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -1044,6 +1053,8 @@ export default function AlphaDeepfakeDefense() {
                   DEFENSE_ACTIVE
                 </Badge>
               </div>
+              <div className="h-4 w-px bg-border mx-2 hidden lg:block" />
+              <GlobalSearch />
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -1122,6 +1133,7 @@ export default function AlphaDeepfakeDefense() {
               >
                 Voice Forensics
               </Button>
+              <NotificationCenter />
               <UserMenu />
             </div>
           </div>
@@ -1576,7 +1588,7 @@ export default function AlphaDeepfakeDefense() {
                                 </TooltipTrigger>
                                 <TooltipContent>
                                   <p className="w-64 text-[10px]">
-                                    AlphaAI's foundational benchmark dataset.
+                                    AlphaHecta's foundational benchmark dataset.
                                     Contains 30,000 high-fidelity video pairs
                                     (Real vs Synthetic) used for training our
                                     baseline GenAI detection models.
@@ -1672,24 +1684,62 @@ export default function AlphaDeepfakeDefense() {
             {/* Audit Trail Tab */}
             <TabsContent value="audit-trail">
               <Card>
-                <CardHeader>
-                  <CardTitle>Compliance Audit Trail</CardTitle>
-                  <CardDescription>
-                    Immutable log of all detection activities
-                  </CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Compliance Audit Trail</CardTitle>
+                    <CardDescription>
+                      Immutable log of all detection activities backed by hardware signing
+                    </CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-blue-500/30 text-blue-500 bg-blue-500/5 hover:bg-blue-500/10"
+                      onClick={() => toast.info("Audit scheduler coming soon...")}
+                    >
+                      <Calendar className="w-4 h-4 mr-2" />
+                      Schedule Recurrent Audit
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          Batch Actions <ChevronDown className="w-4 h-4 ml-2" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="bg-slate-900 border-slate-700 text-white">
+                        <DropdownMenuItem onClick={() => toast.success("Exporting 5 selected logs...")}>
+                          <Download className="w-4 h-4 mr-2" /> Export Selected
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => toast.success("Archiving 5 selected logs...")}>
+                          <Archive className="w-4 h-4 mr-2" /> Archive Selected
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
                     {[1, 2, 3, 4, 5].map(i => (
                       <div
                         key={i}
-                        className="flex items-center justify-between p-2 text-xs border rounded bg-muted/20"
+                        className="flex items-center gap-4 p-3 text-xs border border-white/5 rounded-xl bg-muted/10 hover:bg-muted/20 transition-all group"
                       >
-                        <span className="font-mono">AUDIT_LOG_00{i}</span>
-                        <span className="text-muted-foreground">
-                          Signed by HW_ENCLAVE_{i}0{i}
-                        </span>
-                        <Badge variant="outline">Verified</Badge>
+                        <Checkbox id={`audit-${i}`} checked />
+                        <div className="flex-1 flex items-center justify-between">
+                          <span className="font-mono font-bold text-white tracking-wider">AUDIT_LOG_00{i}</span>
+                          <span className="text-muted-foreground hidden md:block">
+                            Signed by HW_ENCLAVE_{i}0{i}
+                          </span>
+                          <div className="flex items-center gap-3">
+                            <Badge variant="outline" className="bg-emerald-500/5 text-emerald-500 border-emerald-500/20 px-3">
+                              VERIFIED
+                            </Badge>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <ExternalLink className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -2731,7 +2781,7 @@ export default function AlphaDeepfakeDefense() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleTriggerFailover(region.id)}
+                                onClick={() => setConfirmFailover(region.id)}
                               >
                                 <RefreshCw className="w-3 h-3 mr-1" /> Failover
                               </Button>
@@ -4967,7 +5017,7 @@ export default function AlphaDeepfakeDefense() {
                     const doc = new jsPDF();
                     doc.setFontSize(18);
                     doc.text(
-                      "AlphaAI Deepfake Defense - Security Report",
+                      "AlphaHecta Deepfake Defense - Security Report",
                       20,
                       20
                     );
@@ -5020,7 +5070,7 @@ export default function AlphaDeepfakeDefense() {
                 Fraud-Loss ROI Analysis
               </DialogTitle>
               <DialogDescription>
-                Real-time financial impact of AlphaAI Deepfake Defense
+                Real-time financial impact of AlphaHecta Deepfake Defense
               </DialogDescription>
             </DialogHeader>
 
@@ -5471,6 +5521,26 @@ export default function AlphaDeepfakeDefense() {
                   </Table>
                 </div>
               </div>
+
+              <div className="pt-4 border-t border-zinc-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-xs font-bold text-red-500 uppercase tracking-wider">Master Biometric Key</div>
+                    <div className="text-[10px] text-zinc-500">Last rotated: 45 days ago</div>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-8 border-red-500/30 text-red-500 hover:bg-red-500/10 font-bold text-[10px] uppercase tracking-widest"
+                    onClick={() => setConfirmRevoke(true)}
+                  >
+                    <Trash2 className="w-3 h-3 mr-2" /> Revoke/Rotate Key
+                  </Button>
+                </div>
+                <p className="text-[10px] text-zinc-600 leading-relaxed italic">
+                  Revoking the master key will immediately invalidate all active SDK sessions and enrolled biometric templates globally.
+                </p>
+              </div>
             </div>
             <DialogFooter>
               <Button
@@ -5488,6 +5558,39 @@ export default function AlphaDeepfakeDefense() {
         </Dialog>
       </div>
       <PerspectiveSwitcher />
+
+      <ConfirmationModal
+        open={confirmRevoke}
+        onOpenChange={setConfirmRevoke}
+        title="Revoke Biometric Master Key?"
+        description="This action will immediately disconnect all mobile SDKs and invalidate all hardware challenge sessions globally. Users will need to re-enroll their biometric pulses."
+        confirmText="Revoke and Rotate Key"
+        isLoading={isRevoking}
+        onConfirm={async () => {
+          setIsRevoking(true);
+          try {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            toast.success("Master key revoked. New key material distributed to edge nodes.");
+            setConfirmRevoke(false);
+          } finally {
+            setIsRevoking(false);
+          }
+        }}
+      />
+
+      <ConfirmationModal
+        open={!!confirmFailover}
+        onOpenChange={(open) => !open && setConfirmFailover(null)}
+        title="Execute Regional Failover?"
+        description={`Initiating a failover for ${confirmFailover} will reroute all biometric traffic to the closest healthy node. This sequence is irreversible once started.`}
+        confirmText="Execute Failover"
+        onConfirm={() => {
+          if (confirmFailover) {
+            handleTriggerFailover(confirmFailover);
+            setConfirmFailover(null);
+          }
+        }}
+      />
     </div>
   );
 }

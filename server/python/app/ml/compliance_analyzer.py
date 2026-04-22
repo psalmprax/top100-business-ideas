@@ -85,7 +85,7 @@ class ComplianceAnalyzer:
                 "rule": "Article 13: Transparency and provisioning of information",
                 "severity": "high",
                 "description": "User-facing transparency disclosures (Article 13.1) are missing.",
-                "recommendation": "Integrate AlphaAI Transparency Banner and model cards."
+                "recommendation": "Integrate AlphaHecta Transparency Banner and model cards."
             })
             
         status = "passed" if score >= 85 else "review" if score >= 60 else "failed"

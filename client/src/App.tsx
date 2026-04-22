@@ -7,11 +7,11 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider } from "./contexts/AuthContext";
-import AlphaAI from "./pages/AlphaAI";
-import AlphaAgentOpsPage from "./pages/AlphaAgentOps";
-import AlphaAIActCompliancePage from "./pages/Compliance";
-import AlphaDeepfakeDefensePage from "./pages/AlphaDeepfakeDefense";
-import AlphaWorkforcePage from "./pages/AlphaWorkforce";
+import AlphaHecta from "./pages/AlphaHecta";
+import AlphaHectaAgentOpsPage from "./pages/AlphaHectaAgentOps";
+import AlphaHectaActCompliancePage from "./pages/Compliance";
+import AlphaHectaDeepfakeDefensePage from "./pages/AlphaHectaDeepfakeDefense";
+import AlphaHectaWorkforcePage from "./pages/AlphaHectaWorkforce";
 import DenialDefensePage from "./pages/DenialDefense";
 import ActionableAIPage from "./pages/ActionableAI";
 import FreelancerWorkflowBotPage from "./pages/FreelancerWorkflowBot";
@@ -93,14 +93,14 @@ function Router() {
   return (
     <Switch>
       {/* Company Landing Page */}
-      <Route path={"/"} component={AlphaAI} />
+      <Route path={"/"} component={AlphaHecta} />
       <Route path={"/market-intelligence"} component={Home} />
       <Route path={"/marketplace"} component={SkillMarketplacePage} />
 
       {/* Product Pages */}
       <ProtectedRoute
         path="/products/agent-ops"
-        component={AlphaAgentOpsPage}
+        component={AlphaHectaAgentOpsPage}
         productId="agent-ops"
       />
       <ProtectedRoute
@@ -115,7 +115,7 @@ function Router() {
       />
       <ProtectedRoute
         path="/products/ai-compliance"
-        component={AlphaAIActCompliancePage}
+        component={AlphaHectaActCompliancePage}
         productId="ai-compliance"
       />
       <ProtectedRoute
@@ -126,7 +126,7 @@ function Router() {
       <ProtectedRoute path="/reports" component={ReportingDashboard} />
       <ProtectedRoute
         path="/products/deepfake-defense"
-        component={AlphaDeepfakeDefensePage}
+        component={AlphaHectaDeepfakeDefensePage}
         productId="deepfake-defense"
       />
       <ProtectedRoute
@@ -148,8 +148,8 @@ function Router() {
       {/* Gated Management Pages */}
       <ProtectedRoute
         path="/products/workforce"
-        component={AlphaWorkforcePage}
-        productId="alpha-workforce"
+        component={AlphaHectaWorkforcePage}
+        productId="alpha-hecta-workforce"
         requireManagement={true}
       />
 
@@ -168,7 +168,7 @@ function Router() {
       <Route path={"/mobile"} component={MobileLandingPage} />
 
       {/* Legacy routes redirect to products */}
-      <Route path={"/ventures/alpha-agent-ops"}>
+      <Route path={"/ventures/alpha-hecta-agent-ops"}>
         {() => {
           window.location.replace("/products/agent-ops");
           return null;
@@ -192,13 +192,13 @@ function Router() {
           return null;
         }}
       </Route>
-      <Route path={"/ventures/alpha-ai-act-compliance"}>
+      <Route path={"/ventures/alpha-hecta-act-compliance"}>
         {() => {
           window.location.replace("/products/ai-compliance");
           return null;
         }}
       </Route>
-      <Route path={"/ventures/alpha-deepfake-defense"}>
+      <Route path={"/ventures/alpha-hecta-deepfake-defense"}>
         {() => {
           window.location.replace("/products/deepfake-defense");
           return null;

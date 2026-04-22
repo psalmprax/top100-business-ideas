@@ -2,9 +2,9 @@
 
 ## Executive Summary
 
-Full audit of ALL buttons, clickables, menus, and their use case scenarios in `AlphaAIActCompliance.tsx`. This analysis identifies covered scenarios, uncovered gaps, dummy/simulation/placeholder content, and prioritizes real implementations over fallbacks.
+Full audit of ALL buttons, clickables, menus, and their use case scenarios in `AlphaHectaActCompliance.tsx`. This analysis identifies covered scenarios, uncovered gaps, dummy/simulation/placeholder content, and prioritizes real implementations over fallbacks.
 
-**File:** `client/src/pages/AlphaAIActCompliance.tsx` (4,868 lines)
+**File:** `client/src/pages/AlphaHectaActCompliance.tsx` (4,868 lines)
 **Previous Analysis:** `AI_COMPLIANCE_HUB_GAP_ANALYSIS.md` (2026-03-24)
 
 ---
@@ -325,4 +325,4 @@ Many handlers implement try/catch with local state fallback when API fails. This
 
 _Generated: 2026-03-29_
 _Analyzer: Kilo AI_
-_Source: client/src/pages/AlphaAIActCompliance.tsx (4,868 lines)_
+_Source: client/src/pages/AlphaHectaActCompliance.tsx (4,868 lines)_
