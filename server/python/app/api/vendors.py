@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
-from app.connectors.supply_chain_audit import supply_chain_audit, VendorRiskLevel, ComplianceStatus
+from app.connectors.supply_chain_audit import supply_chain_audit, VendorRiskLevel
 
 router = APIRouter()
 
