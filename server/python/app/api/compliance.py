@@ -16,6 +16,9 @@ from app.core.models import (
     ComplianceAuditLog,
     BiasReport,
     DeepfakeAnalysis,
+    Vendor,
+    SystemConnection,
+    ComplianceChecklistItem,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 import logging
@@ -24,7 +27,7 @@ import logging
 from app.connectors.github_connector import github_connector
 from app.services.reporting import reporting_service
 from app.core.database import get_async_session, AsyncSessionLocal
-from app.core.models import ComplianceChecklistItem, AgentAuditLog
+from app.core.models import AgentAuditLog
 
 from app.services.compliance_service import compliance_service
 
