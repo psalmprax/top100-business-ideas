@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -149,8 +150,9 @@ func RedisRateLimitMiddleware(redisURL string, rate, capacity int) gin.HandlerFu
 	}
 
 	return func(c *gin.Context) {
-		// Skip for health checks
-		if c.Request.URL.Path == "/health" || c.Request.URL.Path == "/health/" {
+		// Skip for health checks and auth routes
+		if c.Request.URL.Path == "/health" || c.Request.URL.Path == "/health/" || 
+		   strings.HasPrefix(c.Request.URL.Path, "/api/v1/auth/") {
 			c.Next()
 			return
 		}
