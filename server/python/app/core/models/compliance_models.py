@@ -372,4 +372,14 @@ class Vendor(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
+class SelfHealingEvent(SQLModel, table=True):
+    """Event log for self-healing actions"""
 
+    __tablename__ = "self_healing_events"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    config_id: uuid.UUID = Field(foreign_key="healingconfiguration.id")
+    action_taken: str
+    status: str  # success, failure, partial
+    details: Dict[str, Any] = Field(default={}, sa_column=Column(JSON))
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
