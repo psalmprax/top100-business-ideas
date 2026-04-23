@@ -264,51 +264,58 @@ app.use(
 );
 
 app.use(
-  createProxyMiddleware("/api/v1/auth", {
+  createProxyMiddleware({
     target: GO_BACKEND,
     changeOrigin: true,
+    pathFilter: "/api/v1/auth",
   })
 );
 
 app.use(
-  createProxyMiddleware("/api/v1/agents", {
+  createProxyMiddleware({
     target: GO_BACKEND,
     changeOrigin: true,
+    pathFilter: "/api/v1/agents",
   })
 );
 
 app.use(
-  createProxyMiddleware("/api/v1/agent-ops", {
+  createProxyMiddleware({
     target: GO_BACKEND,
     changeOrigin: true,
+    pathFilter: "/api/v1/agent-ops",
   })
 );
 
 app.use(
-  createProxyMiddleware("/api/v1/billing", {
+  createProxyMiddleware({
     target: GO_BACKEND,
     changeOrigin: true,
+    pathFilter: "/api/v1/billing",
   })
 );
 
 app.use(
-  createProxyMiddleware("/api/v1/workforce", {
+  createProxyMiddleware({
     target: GO_BACKEND,
     changeOrigin: true,
+    pathFilter: "/api/v1/workforce",
   })
 );
 
 app.use(
-  createProxyMiddleware("/api/v1/webhooks", {
+  createProxyMiddleware({
     target: GO_BACKEND,
     changeOrigin: true,
+    pathFilter: "/api/v1/webhooks",
   })
 );
 
 app.use(
-  createProxyMiddleware("/api/v1/health", {
+  createProxyMiddleware({
     target: GO_BACKEND,
     changeOrigin: true,
+    pathFilter: "/api/v1/health",
   })
 );
 
