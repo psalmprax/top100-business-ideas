@@ -58,6 +58,7 @@ services:
       - SESSION_SECRET_KEY=${SESSION_SECRET_KEY}
       - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
       - REDIS_URL=redis://redis:6379
+      - OLLAMA_BASE_URL=http://149.104.110.122:11435/v1
       - SEED_DATABASE=false
     restart: always
     depends_on:

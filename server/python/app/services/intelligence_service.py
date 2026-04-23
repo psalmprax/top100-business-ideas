@@ -36,7 +36,7 @@ class IntelligenceService:
                 name="Paperclip",
                 type=AgentType.analysis,
                 provider="ollama",
-                model="llama3",
+                model="hermes3",
                 status=AgentStatus.RUNNING,
                 tier="strategic"
             )
@@ -108,7 +108,7 @@ class IntelligenceService:
                 name="Hermes",
                 type=AgentType.content_generation,
                 provider="ollama",
-                model="llama3",
+                model="hermes3",
                 status=AgentStatus.RUNNING,
                 tier="strategic"
             )
