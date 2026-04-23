@@ -552,7 +552,8 @@ export default function Login() {
               </Button>
             </div>
           </div>
-        </div>
+        </CardContent>
+      </div>
       </Card>
     </div>
   );
