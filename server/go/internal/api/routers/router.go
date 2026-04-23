@@ -208,7 +208,7 @@ type VendorHandler interface {
 	GetRiskReport(c *gin.Context)
 }
 
-// IntelligenceHandler interface
+// IntelligenceHandler defines the interface for intelligence handlers
 type IntelligenceHandler interface {
 	// Generic Intelligence
 	GetStrategicInsights(c *gin.Context)
@@ -218,6 +218,11 @@ type IntelligenceHandler interface {
 	// Hermes Specific
 	HermesSuggestFix(c *gin.Context)
 	HermesValidateStrategy(c *gin.Context)
+	HermesChat(c *gin.Context)
+	HermesAnalyze(c *gin.Context)
+	// Paperclip Specific
+	PaperclipResearch(c *gin.Context)
+	PaperclipRun(c *gin.Context)
 }
 
 // MLHandler interface

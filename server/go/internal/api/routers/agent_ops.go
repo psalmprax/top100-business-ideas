@@ -132,6 +132,8 @@ func SetupAgentOpsRoutes(
 		agentOps.POST("/proxy/config", agentOpsHandler.ProxyToPython)
 		agentOps.POST("/retention", agentOpsHandler.ProxyToPython)
 		agentOps.GET("/metrics/stream", agentOpsHandler.ProxyToPython)
+		agentOps.GET("/intelligence/research", agentOpsHandler.ProxyToPython)
+		agentOps.POST("/intelligence/strategy", agentOpsHandler.ProxyToPython)
 
 		// Sensitive Management Actions
 		agentOps.Use(requireRoleMiddleware("management"))
