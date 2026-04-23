@@ -79,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       // If productId is provided, we execute the normal login flow
-      if (productId != undefined) {
+      if (productId) {
         const data = await authApi.login(email, password, productId);
 
         const requiresSelection = data.requires_product_selection;
