@@ -267,9 +267,9 @@ async function apiRequest<T>(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      const errorMessage =
-        errorData.error ||
-        `HTTP Error ${response.status}: ${response.statusText}`;
+      const errorMessage = errorData.details 
+        ? `${errorData.error}: ${errorData.details}`
+        : (errorData.error || `HTTP Error ${response.status}: ${response.statusText}`);
 
       // If we have a fallback, use it even for 4xx errors if strict is not enforced manually
       // but usually we want to distinguish between "Service Down" and "Bad Request"

@@ -146,6 +146,10 @@ export default function Login() {
       setError("Password is required");
       return;
     }
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters");
+      return;
+    }
 
     setIsLoading(true);
     setError("");
@@ -233,7 +237,7 @@ export default function Login() {
                 </TabsList>
 
                 <TabsContent value="login">
-                  <form onSubmit={handleLogin} className="space-y-4" noValidate>
+                  <form onSubmit={handleLogin} className="space-y-4">
                     <div className="space-y-4">
                       {selectedProduct && (
                         <div className="p-4 bg-white/5 border border-white/5 rounded-2xl flex items-center justify-between mb-6">
