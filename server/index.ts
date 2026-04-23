@@ -264,65 +264,51 @@ app.use(
 );
 
 app.use(
-  "/api/v1/auth",
-  createProxyMiddleware({
+  createProxyMiddleware("/api/v1/auth", {
     target: GO_BACKEND,
     changeOrigin: true,
-    pathRewrite: { "^/api/v1/auth": "/api/v1/auth" },
   })
 );
 
 app.use(
-  "/api/v1/agents",
-  createProxyMiddleware({
+  createProxyMiddleware("/api/v1/agents", {
     target: GO_BACKEND,
     changeOrigin: true,
-    pathRewrite: { "^/api/v1/agents": "/api/v1/agents" },
   })
 );
 
 app.use(
-  "/api/v1/agent-ops",
-  createProxyMiddleware({
+  createProxyMiddleware("/api/v1/agent-ops", {
     target: GO_BACKEND,
     changeOrigin: true,
-    pathRewrite: { "^/api/v1/agent-ops": "/api/v1/agent-ops" },
   })
 );
 
 app.use(
-  "/api/v1/billing",
-  createProxyMiddleware({
+  createProxyMiddleware("/api/v1/billing", {
     target: GO_BACKEND,
     changeOrigin: true,
-    pathRewrite: { "^/api/v1/billing": "/api/v1/billing" },
   })
 );
 
 app.use(
-  "/api/v1/workforce",
-  createProxyMiddleware({
+  createProxyMiddleware("/api/v1/workforce", {
     target: GO_BACKEND,
     changeOrigin: true,
-    pathRewrite: { "^/api/v1/workforce": "/api/v1/workforce" },
   })
 );
 
 app.use(
-  "/api/v1/webhooks",
-  createProxyMiddleware({
+  createProxyMiddleware("/api/v1/webhooks", {
     target: GO_BACKEND,
     changeOrigin: true,
-    pathRewrite: { "^/api/v1/webhooks": "/api/v1/webhooks" },
   })
 );
 
 app.use(
-  "/api/v1/health",
-  createProxyMiddleware({
+  createProxyMiddleware("/api/v1/health", {
     target: GO_BACKEND,
     changeOrigin: true,
-    pathRewrite: { "^/api/v1/health": "/api/v1/health" },
   })
 );
 
