@@ -150,9 +150,11 @@ func RedisRateLimitMiddleware(redisURL string, rate, capacity int) gin.HandlerFu
 	}
 
 	return func(c *gin.Context) {
+		fmt.Printf("[RateLimit Debug] Path: %s\n", c.Request.URL.Path)
 		// Skip for health checks and auth routes
 		if c.Request.URL.Path == "/health" || c.Request.URL.Path == "/health/" || 
 		   strings.HasPrefix(c.Request.URL.Path, "/api/v1/auth/") {
+			fmt.Printf("[RateLimit Debug] Skipping auth/health route: %s\n", c.Request.URL.Path)
 			c.Next()
 			return
 		}
