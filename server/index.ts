@@ -142,9 +142,10 @@ app.use(
   })
 );
 
+// Rate limiters
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 1000, // Increased from 100 to 1000 to prevent 429s on dashboard load
+  max: 1000, 
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many requests, please try again later" },
@@ -152,7 +153,7 @@ const apiLimiter = rateLimit({
 
 const mlLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100, // Increased from 20 to 100
+  max: 100,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "ML resource limit exceeded" },
@@ -160,31 +161,31 @@ const mlLimiter = rateLimit({
 
 app.use("/api/", apiLimiter);
 
+// PROXY INFRASTRUCTURE (V3 pathFilter Pattern)
+// Python/ML Services
 app.use(
-  "/api/v1/ml",
-  mlLimiter,
   createProxyMiddleware({
     target: PYTHON_BACKEND,
     changeOrigin: true,
+    pathFilter: "/api/v1/ml",
     pathRewrite: { "^/api/v1/ml": "" },
   })
 );
 
 app.use(
-  "/api/v1/deepfake",
-  mlLimiter,
   createProxyMiddleware({
     target: PYTHON_BACKEND,
     changeOrigin: true,
+    pathFilter: "/api/v1/deepfake",
     pathRewrite: { "^/api/v1/deepfake": "/deepfake" },
   })
 );
 
 app.use(
-  "/api/v1/compliance",
   createProxyMiddleware({
     target: PYTHON_BACKEND,
     changeOrigin: true,
+    pathFilter: "/api/v1/compliance",
     pathRewrite: {
       "^/api/v1/compliance/status": "/compliance/stats",
       "^/api/v1/compliance": "/compliance",
@@ -193,76 +194,60 @@ app.use(
 );
 
 app.use(
-  "/api/v1/sentinel",
-  createProxyMiddleware({
-    target: GO_BACKEND,
-    changeOrigin: true,
-    pathRewrite: { "^/api/v1/sentinel": "/api/v1/agent-ops/self-healing" },
-  })
-);
-
-app.use(
-  "/api/v1/agent-ops/architecture",
-  createProxyMiddleware({
-    target: GO_BACKEND,
-    changeOrigin: true,
-  })
-);
-
-app.use(
-  "/api/v1/governance",
   createProxyMiddleware({
     target: PYTHON_BACKEND,
     changeOrigin: true,
+    pathFilter: "/api/v1/governance",
     pathRewrite: { "^/api/v1/governance": "/governance" },
   })
 );
 
 app.use(
-  "/api/v1/enterprise",
   createProxyMiddleware({
     target: PYTHON_BACKEND,
     changeOrigin: true,
+    pathFilter: "/api/v1/enterprise",
     pathRewrite: { "^/api/v1/enterprise": "/enterprise" },
   })
 );
 
 app.use(
-  "/api/v1/venture",
   createProxyMiddleware({
     target: PYTHON_BACKEND,
     changeOrigin: true,
+    pathFilter: "/api/v1/venture",
     pathRewrite: { "^/api/v1/venture": "/venture" },
   })
 );
 
 app.use(
-  "/api/v1/alerts",
   createProxyMiddleware({
     target: PYTHON_BACKEND,
     changeOrigin: true,
+    pathFilter: "/api/v1/alerts",
     pathRewrite: { "^/api/v1/alerts": "/alerts" },
   })
 );
 
 app.use(
-  "/api/v1/intelligence",
   createProxyMiddleware({
     target: PYTHON_BACKEND,
     changeOrigin: true,
+    pathFilter: "/api/v1/intelligence",
     pathRewrite: { "^/api/v1/intelligence": "/intelligence" },
   })
 );
 
 app.use(
-  "/api/v1/extended",
   createProxyMiddleware({
     target: PYTHON_BACKEND,
     changeOrigin: true,
+    pathFilter: "/api/v1/extended",
     pathRewrite: { "^/api/v1/extended": "/extended" },
   })
 );
 
+// Go Backend Services
 app.use(
   createProxyMiddleware({
     target: GO_BACKEND,
@@ -284,6 +269,15 @@ app.use(
     target: GO_BACKEND,
     changeOrigin: true,
     pathFilter: "/api/v1/agent-ops",
+  })
+);
+
+app.use(
+  createProxyMiddleware({
+    target: GO_BACKEND,
+    changeOrigin: true,
+    pathFilter: "/api/v1/sentinel",
+    pathRewrite: { "^/api/v1/sentinel": "/api/v1/agent-ops/self-healing" },
   })
 );
 
@@ -319,16 +313,14 @@ app.use(
   })
 );
 
+// WebSocket Proxy
 app.use(
-  "/ws",
-  (req, _res, next) => {
-    req.url = req.url.replace("/ws", "");
-    next();
-  },
   createProxyMiddleware({
     target: GO_BACKEND,
     changeOrigin: true,
     ws: true,
+    pathFilter: "/ws",
+    pathRewrite: { "^/ws": "" },
   })
 );
 
