@@ -35,7 +35,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -304,6 +304,42 @@ const Counter = ({ value, duration = 1.5 }: { value: number; duration?: number }
   return <>{displayValue}</>;
 };
 
+const NeuralFlow = () => {
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-40">
+      <svg className="w-full h-full" viewBox="0 0 800 800">
+        <defs>
+          <linearGradient id="flow-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="var(--primary-start)" stopOpacity="0" />
+            <stop offset="50%" stopColor="var(--primary-start)" stopOpacity="1" />
+            <stop offset="100%" stopColor="var(--primary-start)" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {[...Array(6)].map((_, i) => (
+          <motion.path
+            key={i}
+            d={`M ${100 + i * 100} 800 Q ${400 + (i-3) * 50} 400 ${100 + i * 100} 0`}
+            stroke="url(#flow-grad)"
+            strokeWidth="1"
+            fill="none"
+            initial={{ pathLength: 0, pathOffset: 0 }}
+            animate={{ 
+              pathLength: [0, 1, 0],
+              pathOffset: [0, 1] 
+            }}
+            transition={{ 
+              duration: 5 + i, 
+              repeat: Infinity, 
+              ease: "linear",
+              delay: i * 0.5 
+            }}
+          />
+        ))}
+      </svg>
+    </div>
+  );
+};
+
 export default function AlphaHecta() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isManagement, hasProductAccess, isAuthenticated } = useAuth();
@@ -363,7 +399,9 @@ export default function AlphaHecta() {
   );
 
   return (
-    <div className="min-h-screen bg-[#0A0A0B] text-foreground font-sans selection:bg-primary/30">
+    <div className="min-h-screen bg-[#080809] text-foreground font-sans selection:bg-primary/30 relative">
+      <div className="noise-texture" />
+      
       {/* Navigation */}
       <motion.header 
         style={{ backdropFilter: `blur(${headerBlur}px)`, backgroundColor: headerBg }}
@@ -619,61 +657,48 @@ export default function AlphaHecta() {
               </div>
             </motion.div>
 
-            {/* Right Column: Visual Anchor */}
+            {/* Right Column: Hyper-Neural Visual */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.9, rotateY: 10 }}
-              animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-              transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
-              className="relative perspective-1000 hidden lg:block"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 1.2 }}
+              className="relative hidden lg:block"
             >
-              <div className="relative z-10 glass-premium p-6 rounded-3xl iridescent-border group shadow-[0_20px_50px_rgba(0,0,0,0.8)] animate-float overflow-hidden">
-                {/* 3D Obsidian Composition Mockup */}
-                <div className="aspect-square w-full relative flex items-center justify-center">
-                  <div className="absolute inset-0 bg-gradient-to-br from-black via-black to-blue-900/20" />
+              <div className="relative z-10 glass-premium rounded-[2.5rem] p-1 shadow-[0_40px_100px_rgba(0,0,0,0.8)] border-white/5 overflow-hidden group">
+                <div className="bg-[#080809] rounded-[2.4rem] p-12 relative overflow-hidden">
+                  <NeuralFlow />
                   
-                  {/* Abstract Cubes */}
-                  <div className="relative z-10 w-48 h-48">
-                    {[1, 2, 3].map((i) => (
-                      <motion.div
-                        key={i}
-                        className="absolute inset-0 border border-white/10 bg-black/40 backdrop-blur-xl rounded-xl"
-                        animate={{ 
-                          rotateX: [0, 360], 
-                          rotateY: [0, 360],
-                          scale: [1, 1.1, 1] 
-                        }}
-                        transition={{ 
-                          duration: 10 + i * 2, 
-                          repeat: Infinity, 
-                          ease: "linear" 
-                        }}
-                        style={{
-                          transformStyle: "preserve-3d",
-                          boxShadow: `0 0 40px var(--primary-start) inset, 0 0 20px var(--secondary-accent)`,
-                          opacity: 0.6 / i
-                        }}
-                      />
-                    ))}
+                  {/* Central Core Element */}
+                  <div className="relative z-20 flex flex-col items-center justify-center py-20">
+                    <div className="relative group/core">
+                      <div className="absolute inset-0 bg-primary-start blur-3xl opacity-20 group-hover/core:opacity-50 transition-opacity" />
+                      <div className="relative h-32 w-32 glass-premium rounded-3xl flex items-center justify-center border-white/10 rotate-45 group-hover/core:rotate-90 transition-transform duration-700">
+                        <Zap className="h-12 w-12 text-primary-start -rotate-45 group-hover/core:-rotate-90 transition-transform duration-700" />
+                      </div>
+                    </div>
                     
-                    {/* Glowing Core */}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-primary-start blur-2xl animate-pulse" />
-                    <Zap className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-12 w-12 text-primary-start group-hover:scale-125 transition-transform duration-500" />
+                    <div className="mt-12 text-center">
+                      <div className="text-technical mb-2">Neural Synchronization</div>
+                      <div className="text-2xl font-black tabular-nums tracking-tighter">
+                        <Counter value={99.982} />
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Iridescent overlay effect */}
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(0,242,254,0.1),transparent_70%)]" />
-                </div>
-
-                {/* System Status Label */}
-                <div className="absolute bottom-4 left-6 flex items-center gap-3">
-                  <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-[10px] font-mono tracking-widest opacity-40 uppercase">Obsidian_Logic_v1.0</span>
+                  {/* Corner technical markers */}
+                  <div className="absolute top-8 left-8 text-[8px] font-mono opacity-20">LATENCY_STABLE</div>
+                  <div className="absolute bottom-8 right-8 text-[8px] font-mono opacity-20">SHIELD_PROTOCOL_v4</div>
                 </div>
               </div>
               
-              {/* Decorative rings */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] border border-primary-start/10 rounded-full pointer-events-none animate-spin-slow" />
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140%] h-[140%] border border-secondary-accent/5 rounded-full pointer-events-none opacity-50" />
+              {/* Floating ambient data nodes */}
+              <motion.div 
+                animate={{ y: [0, -40, 0] }}
+                transition={{ duration: 8, repeat: Infinity }}
+                className="absolute -top-10 -right-10 h-32 w-32 glass-premium rounded-2xl border-white/5 flex items-center justify-center backdrop-blur-3xl"
+              >
+                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              </motion.div>
             </motion.div>
           </div>
         </div>
@@ -697,15 +722,19 @@ export default function AlphaHecta() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: i * 0.1 }}
                 viewport={{ once: true }}
-                className="text-center relative group glass-premium p-8 rounded-3xl border-white/5 iridescent-border"
+                whileHover={{ y: -10, scale: 1.02 }}
+                className="text-center relative group glass-premium p-10 rounded-[2.5rem] border-white/5 transition-all duration-500"
               >
-                <div className="text-stat text-gradient-premium mb-2 font-black tracking-tighter">
-                  {stat.prefix}
-                  <Counter value={stat.value} />
-                  {stat.suffix}
-                </div>
-                <div className="text-caption-premium uppercase tracking-widest opacity-40 group-hover:opacity-100 transition-opacity">
-                  {stat.label}
+                <div className="absolute inset-0 iridescent-border-elite opacity-0 group-hover:opacity-20 transition-opacity rounded-[2.5rem]" />
+                <div className="relative z-10">
+                  <div className="text-stat text-gradient-premium mb-4 font-black tracking-tighter leading-none">
+                    {stat.prefix}
+                    <Counter value={stat.value} />
+                    {stat.suffix}
+                  </div>
+                  <div className="text-technical tracking-[0.4em]">
+                    {stat.label}
+                  </div>
                 </div>
               </motion.div>
             ))}
@@ -837,60 +866,49 @@ export default function AlphaHecta() {
                 viewport={{ once: true }}
               >
                 <Card
-                  className="group relative overflow-hidden border-white/5 bg-card/40 backdrop-blur-xl hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-500 h-full flex flex-col iridescent-border rounded-[2rem]"
+                  className="group relative overflow-hidden border-white/5 bg-black/40 backdrop-blur-3xl hover:shadow-[0_40px_100px_rgba(0,0,0,0.8)] transition-all duration-700 h-full flex flex-col rounded-[2.5rem] p-1"
                   data-testid="venture-card"
                 >
-                  <CardHeader>
-                    <div className="flex items-center justify-between mb-6">
-                      <div
-                        className={`p-4 rounded-2xl bg-white/5 border border-white/5 transition-all duration-500 group-hover:scale-110 group-hover:border-primary/20 group-hover:bg-primary/5`}
-                      >
-                        <product.icon
-                          className={`h-7 w-7 ${product.color.replace("bg-", "text-")}`}
-                        />
-                      </div>
-                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                        <span className="text-[10px] font-bold tracking-widest text-primary">LIVE_SYSTEM</span>
-                        <ArrowRight className="h-4 w-4 text-primary" />
-                      </div>
-                    </div>
-                    <CardTitle className="text-card-title mb-2">
-                      {product.name}
-                    </CardTitle>
-                    <p className="text-overline text-primary/60">
-                      {product.tagline}
-                    </p>
-                  </CardHeader>
-                  <CardContent className="flex-grow flex flex-col pt-0">
-                    <p className="text-body leading-relaxed mb-8 text-foreground/80">
-                      {product.description}
-                    </p>
-                    <div className="space-y-3 mb-10">
-                      {product.features.map((feature, fIdx) => (
-                        <div
-                          key={fIdx}
-                          className="flex items-center text-sm text-foreground/70"
-                        >
-                          <div className="h-1 w-1 rounded-full bg-primary/40 mr-3" />
-                          {feature}
+                  <div className="absolute inset-0 iridescent-border-elite opacity-0 group-hover:opacity-10 transition-opacity" />
+                  <div className="bg-[#080809] rounded-[2.4rem] h-full flex flex-col p-8">
+                    <CardHeader className="p-0 mb-8">
+                      <div className="flex items-center justify-between mb-8">
+                        <div className="p-5 rounded-3xl bg-white/5 border border-white/5 group-hover:scale-110 transition-transform duration-500">
+                          <product.icon className={`h-8 w-8 ${product.color.replace("bg-", "text-")}`} />
                         </div>
-                      ))}
-                    </div>
-                    <div className="mt-auto pt-6 border-t border-white/5">
-                      <Link href={product.url}>
+                        <div className="text-technical opacity-40">Active_Link</div>
+                      </div>
+                      <CardTitle className="text-3xl font-black tracking-tight mb-2">
+                        {product.name}
+                      </CardTitle>
+                      <div className="text-technical text-primary-start">{product.tagline}</div>
+                    </CardHeader>
+
+                    <CardContent className="p-0 flex-grow">
+                      <p className="text-white/40 text-sm leading-relaxed mb-8">
+                        {product.description}
+                      </p>
+                      <div className="space-y-4 mb-12">
+                        {product.features.map((feature, fIdx) => (
+                          <div key={fIdx} className="flex items-center gap-3">
+                            <div className="h-1 w-1 rounded-full bg-primary-start" />
+                            <span className="text-technical text-[9px] opacity-60">{feature}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+
+                    <CardFooter className="p-0">
+                      <Link href={product.url} className="w-full">
                         <Button
-                          variant={hasProductAccess(product.id) ? "default" : "outline"}
-                          className={`w-full transition-all duration-300 ${!hasProductAccess(product.id) && isAuthenticated ? "opacity-50" : "hover:bg-primary hover:text-primary-foreground"}`}
+                          variant="outline"
+                          className="w-full h-14 rounded-2xl border-white/5 bg-white/5 hover:bg-primary-start hover:text-black font-black uppercase tracking-[0.2em] text-xs transition-all duration-500"
                         >
-                          {!isAuthenticated
-                            ? "Examine Logic"
-                            : hasProductAccess(product.id)
-                              ? "Launch Instance"
-                              : "Upgrade Access"}
+                          {hasProductAccess(product.id) ? "Access Protocol" : "Authorize"}
                         </Button>
                       </Link>
-                    </div>
-                  </CardContent>
+                    </CardFooter>
+                  </div>
                 </Card>
               </motion.div>
             ))}
@@ -1016,45 +1034,31 @@ export default function AlphaHecta() {
                 transition={{ duration: 0.5, delay: idx * 0.1 }}
                 viewport={{ once: true }}
               >
-                <div className="relative group overflow-hidden rounded-2xl border border-border/50 bg-card/30 p-8 h-full">
-                  <div className="absolute top-4 right-4 h-2 w-2 rounded-full bg-primary animate-pulse" />
-                  <div className="flex flex-col md:flex-row gap-6">
-                    <div
-                      className={`flex-shrink-0 p-4 rounded-xl ${product.color}/10 h-fit`}
-                    >
-                      <product.icon
-                        className={`h-8 w-8 ${product.color.replace("bg-", "text-")}`}
-                      />
-                    </div>
-                    <div>
-                      <h3 className="text-card-title mb-1">{product.name}</h3>
-                      <p className="text-caption-premium text-primary mb-4">
-                        {product.tagline}
-                      </p>
-                      <p className="text-body leading-relaxed mb-6">
-                        {product.description}
-                      </p>
-                      <div className="flex flex-wrap gap-2 mb-8">
-                        {product.features.map((feature, fIdx) => (
-                          <span
-                            key={fIdx}
-                            className="text-xs px-2 py-1 rounded-full bg-muted border border-border/50"
-                          >
-                            {feature}
-                          </span>
-                        ))}
+                <div className="glass-premium p-1 rounded-[2.5rem] group border-white/5 overflow-hidden">
+                  <div className="bg-[#080809] rounded-[2.4rem] p-10 h-full relative">
+                    <div className="absolute top-8 right-8 text-technical text-[8px] opacity-20">DEFERRED_DEPLOYMENT</div>
+                    <div className="flex flex-col md:flex-row gap-8">
+                      <div className="p-6 rounded-3xl bg-white/5 border border-white/5 h-fit">
+                        <product.icon className={`h-8 w-8 ${product.color.replace("bg-", "text-")}`} />
                       </div>
-                      <LeadGenDialog
-                        title={`Join ${product.name} Waitlist`}
-                        trigger={
-                          <Button
-                            variant="outline"
-                            className="w-full sm:w-auto border-primary/20 hover:border-primary/50 gap-2"
-                          >
-                            Join Waitlist <ArrowRight className="h-4 w-4" />
-                          </Button>
-                        }
-                      />
+                      <div className="flex-grow">
+                        <h3 className="text-2xl font-black mb-1">{product.name}</h3>
+                        <div className="text-technical text-primary-start mb-6">{product.tagline}</div>
+                        <p className="text-white/40 text-sm leading-relaxed mb-8">
+                          {product.description}
+                        </p>
+                        <LeadGenDialog
+                          title={`Join ${product.name} Waitlist`}
+                          trigger={
+                            <Button
+                              variant="outline"
+                              className="w-full sm:w-auto h-12 px-8 border-white/10 bg-white/5 hover:bg-primary-start hover:text-black font-black uppercase tracking-widest text-[10px] rounded-xl transition-all"
+                            >
+                              Reserve Beta Access
+                            </Button>
+                          }
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
