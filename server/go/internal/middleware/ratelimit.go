@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -140,11 +139,9 @@ func RateLimitMiddleware(rate, capacity int) gin.HandlerFunc {
 	limiter := NewRateLimiter(rate, capacity)
 
 	return func(c *gin.Context) {
-		fmt.Printf("[RateLimit Debug In-Mem] Path: %s\n", c.Request.URL.Path)
 		// Skip rate limiting for health checks and auth routes
 		if c.Request.URL.Path == "/health" || c.Request.URL.Path == "/health/" || 
 		   strings.HasPrefix(c.Request.URL.Path, "/api/v1/auth/") {
-			fmt.Printf("[RateLimit Debug In-Mem] Skipping auth/health route: %s\n", c.Request.URL.Path)
 			c.Next()
 			return
 		}
