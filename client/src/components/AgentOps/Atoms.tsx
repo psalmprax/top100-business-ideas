@@ -21,7 +21,7 @@ export function MetricCard({
   footer,
 }: MetricCardProps) {
   return (
-    <Card className="glass-premium-hover border-border/40 transition-all duration-500 group">
+    <Card className="GlassCard-hover border-border/40 transition-all duration-500 group">
       <CardContent className="p-5">
         <div className="flex items-center justify-between">
           <div

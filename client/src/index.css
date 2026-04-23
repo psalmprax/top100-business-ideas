@@ -55,10 +55,10 @@
 :root {
   /* Dark theme as default - Venture Capital Intelligence Hub */
   --radius: 0.5rem;
-  --background: oklch(0.09 0.02 265);
-  --foreground: oklch(0.95 0.005 265);
-  --card: oklch(0.12 0.02 265);
-  --card-foreground: oklch(0.95 0.005 265);
+  --background: #0a0a0f;
+  --foreground: #ffffff;
+  --card: #0a0a0f;
+  --card-foreground: #ffffff;
   --popover: oklch(0.12 0.02 265);
   --popover-foreground: oklch(0.95 0.005 265);
   --primary: oklch(0.65 0.2 250);
@@ -92,28 +92,28 @@
 
 /* Perspective: ALPHAHECTA (V1) - Enterprise Compliance */
 :root.perspective-alpha {
-  --primary: oklch(0.65 0.2 250); /* Blue */
-  --accent: oklch(0.75 0.18 75); /* Orange/Amber */
-  --ring: oklch(0.65 0.2 250);
+  --primary: #00e0ff; /* Cyan Glow */
+  --accent: #00ff7f; /* Emerald Accent */
+  --ring: #00e0ff;
   --radius: 0.5rem;
 }
 
 /* Perspective: SIGMA (V2) - SaaS Bento Platform */
 :root.perspective-sigma {
-  --primary: oklch(0.6 0.25 300); /* Purple/Amethyst */
-  --accent: oklch(0.8 0.2 190); /* Electric Cyan */
-  --ring: oklch(0.6 0.25 300);
+  --primary: #8E2DE2; /* Purple/Amethyst */
+  --accent: #00e0ff; /* Electric Cyan */
+  --ring: #8E2DE2;
   --radius: 1rem;
-  --background: oklch(0.05 0.01 280);
+  --background: #0a0a0f;
 }
 
 /* Perspective: OMEGA (V3) - Agentic Terminal */
 :root.perspective-omega {
-  --primary: oklch(0.72 0.18 145); /* Matrix Green */
-  --accent: oklch(0.65 0.22 320); /* Indigo/Neon */
-  --ring: oklch(0.72 0.18 145);
+  --primary: #00ff7f; /* Matrix Green */
+  --accent: #6366f1; /* Indigo/Neon */
+  --ring: #00ff7f;
   --radius: 0.25rem;
-  --background: oklch(0.04 0 0); /* Pure Black */
+  --background: #050505; /* Pure Blackish */
 }
 
 @layer base {
@@ -427,7 +427,7 @@
 .text-display-hero {
   @apply font-bold tracking-tight;
   font-family: var(--font-display);
-  font-size: clamp(2.5rem, 6vw + 1rem, 5rem);
+  font-size: 3.052rem; /* H1 from Spec */
   line-height: 1.1;
   letter-spacing: -0.02em;
   text-wrap: balance;
@@ -437,7 +437,7 @@
 .text-section-headline {
   @apply font-bold tracking-tight;
   font-family: var(--font-display);
-  font-size: clamp(1.75rem, 3.5vw + 0.5rem, 3rem);
+  font-size: 2.441rem; /* H2 Equivalent in 1.25 Scale */
   line-height: 1.1;
   letter-spacing: -0.04em;
   text-wrap: balance;
@@ -494,7 +494,7 @@
 .text-stat {
   @apply font-bold tracking-tighter tabular-nums;
   font-family: var(--font-display);
-  font-size: clamp(1.5rem, 3vw + 0.5rem, 2.5rem);
+  font-size: 3.052rem; /* H1 Equivalent in 1.25 Scale */
   line-height: 1.1;
   letter-spacing: -0.04em;
 }
@@ -535,19 +535,28 @@
 
 :root {
   /* AlphaHecta v1.1 Elite Palette */
-  --background-alt: #080809;
-  --primary-start: #00F2FE;
-  --primary-end: #4ADE80;
+  --background-alt: #0a0a0f;
+  --primary-start: #00e0ff;
+  --primary-end: #00ff7f;
   --secondary-accent: #8E2DE2;
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-glow: rgba(0, 242, 254, 0.05);
-  --glass-blur: 32px;
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-glow: rgba(0, 224, 255, 0.05);
+  --glass-blur: 12px;
   
-  --primary: oklch(0.72 0.18 180);
-  --primary-foreground: oklch(0.99 0.01 180);
+  --primary: #00e0ff;
+  --primary-foreground: #ffffff;
   
   /* Precision Spacing */
   --section-padding: clamp(5rem, 10vw, 10rem);
+}
+
+/* EXACT GlassCard Snippet from Spec (Image 1, Point 3) */
+.GlassCard {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(10, 10, 15, 0.6);
+  border-radius: 1.5rem;
 }
 
 /* Global Noise Texture */

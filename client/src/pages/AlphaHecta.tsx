@@ -664,7 +664,7 @@ export default function AlphaHecta() {
               transition={{ duration: 1.2 }}
               className="relative hidden lg:block"
             >
-              <div className="relative z-10 glass-premium rounded-[2.5rem] p-1 shadow-[0_40px_100px_rgba(0,0,0,0.8)] border-white/5 overflow-hidden group">
+              <div className="relative z-10 GlassCard rounded-[2.5rem] p-1 shadow-[0_40px_100px_rgba(0,0,0,0.8)] border-white/5 overflow-hidden group">
                 <div className="bg-[#080809] rounded-[2.4rem] p-12 relative overflow-hidden">
                   <NeuralFlow />
                   
@@ -672,7 +672,7 @@ export default function AlphaHecta() {
                   <div className="relative z-20 flex flex-col items-center justify-center py-20">
                     <div className="relative group/core">
                       <div className="absolute inset-0 bg-primary-start blur-3xl opacity-20 group-hover/core:opacity-50 transition-opacity" />
-                      <div className="relative h-32 w-32 glass-premium rounded-3xl flex items-center justify-center border-white/10 rotate-45 group-hover/core:rotate-90 transition-transform duration-700">
+                      <div className="relative h-32 w-32 GlassCard rounded-3xl flex items-center justify-center border-white/10 rotate-45 group-hover/core:rotate-90 transition-transform duration-700">
                         <Zap className="h-12 w-12 text-primary-start -rotate-45 group-hover/core:-rotate-90 transition-transform duration-700" />
                       </div>
                     </div>
@@ -695,7 +695,7 @@ export default function AlphaHecta() {
               <motion.div 
                 animate={{ y: [0, -40, 0] }}
                 transition={{ duration: 8, repeat: Infinity }}
-                className="absolute -top-10 -right-10 h-32 w-32 glass-premium rounded-2xl border-white/5 flex items-center justify-center backdrop-blur-3xl"
+                className="absolute -top-10 -right-10 h-32 w-32 GlassCard rounded-2xl border-white/5 flex items-center justify-center backdrop-blur-3xl"
               >
                 <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
               </motion.div>
@@ -720,10 +720,10 @@ export default function AlphaHecta() {
                 key={i}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: i * 0.1 }}
+                transition={{ duration: 0.6, delay: i * 0.1 }}
                 viewport={{ once: true }}
                 whileHover={{ y: -10, scale: 1.02 }}
-                className="text-center relative group glass-premium p-10 rounded-[2.5rem] border-white/5 transition-all duration-500"
+                className="text-center relative group GlassCard p-10 rounded-[2.5rem] border-white/5 transition-all duration-500"
               >
                 <div className="absolute inset-0 iridescent-border-elite opacity-0 group-hover:opacity-20 transition-opacity rounded-[2.5rem]" />
                 <div className="relative z-10">
@@ -788,7 +788,7 @@ export default function AlphaHecta() {
                 key={idx}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: idx * 0.2 }}
+                transition={{ duration: 0.6, delay: idx * 0.2 }}
                 viewport={{ once: true }}
                 className="relative z-10 p-8 rounded-2xl bg-white/5 border border-white/5 hover:border-primary/20 transition-all duration-300 group"
               >
@@ -1034,7 +1034,7 @@ export default function AlphaHecta() {
                 transition={{ duration: 0.5, delay: idx * 0.1 }}
                 viewport={{ once: true }}
               >
-                <div className="glass-premium p-1 rounded-[2.5rem] group border-white/5 overflow-hidden">
+                <div className="GlassCard p-1 rounded-[2.5rem] group border-white/5 overflow-hidden">
                   <div className="bg-[#080809] rounded-[2.4rem] p-10 h-full relative">
                     <div className="absolute top-8 right-8 text-technical text-[8px] opacity-20">DEFERRED_DEPLOYMENT</div>
                     <div className="flex flex-col md:flex-row gap-8">
@@ -1223,7 +1223,7 @@ export default function AlphaHecta() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
-            className="max-w-4xl mx-auto glass-premium p-12 md:p-20 rounded-[2rem] border-white/5 text-center relative overflow-hidden"
+            className="max-w-4xl mx-auto GlassCard p-12 md:p-20 rounded-[2rem] border-white/5 text-center relative overflow-hidden"
           >
             {/* Background glow */}
             <div className="absolute -top-1/2 -left-1/2 w-full h-full bg-primary/10 blur-[120px] pointer-events-none" />
