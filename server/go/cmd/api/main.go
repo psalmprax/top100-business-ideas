@@ -159,6 +159,9 @@ func main() {
 	}
 
 	router := gin.New() // Use New() instead of Default() for full control
+	
+	// Trust the Node gateway proxy to get the real client IP
+	router.SetTrustedProxies([]string{"127.0.0.1", "172.16.0.0/12", "192.168.0.0/16", "10.0.0.0/8"})
 
 	// Global middleware stack - Hardening Order
 	// 1. Security Headers first
