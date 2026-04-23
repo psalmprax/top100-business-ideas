@@ -34,7 +34,7 @@ import { storage } from "@/lib/storage";
 import { UserMenu } from "@/components/UserMenu";
 
 // Modular Sections
-import { CEOSection } from "@/components/Workforce/sections/CEOSection";
+import { ExecutiveSection } from "@/components/Workforce/sections/ExecutiveSection";
 import { GrowthSection } from "@/components/Workforce/sections/GrowthSection";
 import { BoardroomSection } from "@/components/Workforce/sections/BoardroomSection";
 import { OpsSection } from "@/components/Workforce/sections/OpsSection";
@@ -44,7 +44,7 @@ import { HRSection } from "@/components/Workforce/sections/HRSection";
 import { CommsSection } from "@/components/Workforce/sections/CommsSection";
 import { MetricCard } from "@/components/Workforce/ui/MetricCard";
 
-const AlphaHectaWorkforce = () => {
+const WorkforcePage = () => {
   const [isAutonomous, setIsAutonomous] = useState(
     storage.get("workforce_autonomous", false)
   );
@@ -542,7 +542,7 @@ const AlphaHectaWorkforce = () => {
           </TabsContent>
 
           <TabsContent value="ceo">
-            <CEOSection
+            <ExecutiveSection
               workforceData={workforceData}
               revenueData={revenueData}
               onShiftMarketFocus={handleShiftMarketFocus}
@@ -629,4 +629,4 @@ const AlphaHectaWorkforce = () => {
   );
 };
 
-export default AlphaHectaWorkforce;
+export default WorkforcePage;

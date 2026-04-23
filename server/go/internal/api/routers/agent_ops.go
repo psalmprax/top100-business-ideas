@@ -149,7 +149,7 @@ func SetupAgentOpsRoutes(
 			agentOps.POST("/skills/install", agentOpsHandler.ProxyToPython)
 		}
 
-		// Vigilance (Sentinel Monitoring)
+		// Vigilance (AlphaHecta Monitoring)
 		vigilance := agentOps.Group("/vigilance")
 		{
 			vigilance.GET("/alerts", agentOpsHandler.ProxyToPython)
@@ -166,6 +166,7 @@ func SetupAgentOpsRoutes(
 			selfHealing.POST("/config", agentOpsHandler.ProxyToPython)
 			selfHealing.POST("/recover", selfHealingHandler.TriggerRecovery)
 			selfHealing.POST("/hint", agentOpsHandler.ProxyToPython)
+			selfHealing.POST("/events/:id/resolve", agentOpsHandler.ProxyToPython)
 		}
 
 		// Venture Intelligence (Market Intelligence)
@@ -175,7 +176,7 @@ func SetupAgentOpsRoutes(
 			venture.POST("/scenario/analyze", agentOpsHandler.AnalyzeVentureScenario)
 		}
 
-		// Governance & Advanced Analytics (Sentinel)
+		// Governance & Advanced Analytics (AlphaHecta)
 		governance := agentOps.Group("/governance")
 		{
 			governance.GET("/compliance/dashboard", governanceHandler.GetComplianceDashboard)

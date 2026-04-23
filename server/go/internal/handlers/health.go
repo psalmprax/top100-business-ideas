@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/top100-business-ideas/api/internal/middleware"
 )
 
 type HealthHandler struct{}
@@ -19,6 +20,15 @@ func (h *HealthHandler) Health(c *gin.Context) {
 		"status":  "healthy",
 		"service": "api-gateway",
 		"version": "1.0.0",
+	})
+}
+
+// Vigilance returns the state of all circuit breakers
+func (h *HealthHandler) Vigilance(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"status":   "active",
+		"breakers": middleware.GetAllBreakerStates(),
+		"time":     time.Now().Format(time.RFC3339),
 	})
 }
 

@@ -1,4 +1,4 @@
-"""Centralized Seeding logic for Sentinel Core"""
+"""Centralized Seeding logic for AlphaHecta Core"""
 
 from datetime import datetime
 from sqlmodel import Session, select

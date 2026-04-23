@@ -237,7 +237,7 @@ export const categoryTabs: Record<string, { value: string; label: string; icon: 
     { value: "vendors", label: "Vendors", icon: Users },
     { value: "partner", label: "Partner Portal", icon: Globe },
     { value: "training", label: "Training", icon: BookOpen },
-    { value: "api", label: "API Access", icon: Key },
+    { value: "identity", label: "Identity & Biometrics", icon: Key },
     { value: "incidents", label: "Incidents", icon: AlertTriangle },
   ],
   infra: [

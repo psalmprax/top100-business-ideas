@@ -42,7 +42,7 @@ export function IncidentsSection() {
   async function loadIncidents() {
     setLoading(true);
     try {
-      const list = await extendedApi.complianceAudit.listIncidents();
+      const list = await extendedApi.compliance.listIncidents();
       setIncidents(list || []);
     } catch (err) {
       console.error("Failed to fetch incidents", err);

@@ -141,6 +141,13 @@ func main() {
 	panicHandler := handlers.NewPanicHandler(cfg.AdminSecret)
 	vendorHandler := handlers.NewVendorHandler(proxyService)
 
+	// Additional extended handlers
+	wearableHandler := handlers.NewWearableHandler(proxyService)
+	cryptoHandler := handlers.NewCryptoHandler(proxyService)
+	travelKioskHandler := handlers.NewTravelKioskHandler(proxyService)
+	edgeHandler := handlers.NewEdgeHandler(proxyService)
+	insightOrchestrator := handlers.NewInsightOrchestrator(proxyService)
+
 	// New domain-specific handlers for production-grade routing
 	governanceHandler := handlers.NewGovernanceHandler(proxyService)
 	intelligenceHandler := handlers.NewIntelligenceHandler(proxyService)
@@ -166,10 +173,11 @@ func main() {
 	router.Use(middleware.CORS(cfg.AllowedOrigins))
 	router.Use(middleware.SystemLock())
 	// Distributed Redis rate limiter (falls back to in-memory if Redis unavailable)
-	router.Use(middleware.RedisRateLimitMiddleware(cfg.RedisURL, 100))
+	router.Use(middleware.RedisRateLimitMiddleware(cfg.RedisURL, cfg.RateLimitRate, cfg.RateLimitCapacity))
 
 	// Health check (no auth required)
 	router.GET("/health", healthHandler.Health)
+	router.GET("/vigilance", healthHandler.Vigilance)
 
 	// 135: // ML endpoints (proxy to Python backend) protected by Circuit Breaker
 	// Moved to SetupAllRoutes for /api/v1 versioning parity
@@ -199,12 +207,18 @@ func main() {
 		IntelligenceHandler:  intelligenceHandler,
 		WorkforceHandler:     workforceHandler,
 		VendorHandler:        vendorHandler,
+		WearableHandler:      wearableHandler,
+		CryptoHandler:        cryptoHandler,
+		TravelKioskHandler:   travelKioskHandler,
+		EdgeHandler:          edgeHandler,
+		InsightOrchestrator:  insightOrchestrator,
 	}
 
 	middlewareContainer := &routers.MiddlewareContainer{
 		Auth:          middleware.Auth(authService),
 		ProductAccess: middleware.ProductAccess,
 		RequireRole:   middleware.RequireRole,
+		RateLimit:     middleware.RedisRateLimitMiddleware(cfg.RedisURL, cfg.RateLimitRate, cfg.RateLimitCapacity),
 	}
 
 	routers.SetupAllRoutes(router, handlerContainer, middlewareContainer)

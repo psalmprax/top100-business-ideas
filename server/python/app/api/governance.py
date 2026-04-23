@@ -154,7 +154,7 @@ async def get_sla_dashboard(session: AsyncSession = Depends(get_async_session)):
         if not current_sla:
             raise HTTPException(
                 status_code=404,
-                detail="No active SLA agreement found in Sentinel ledger.",
+                detail="No active SLA agreement found in AlphaHecta ledger.",
             )
 
         # Calculate current metrics from real SLA metric records

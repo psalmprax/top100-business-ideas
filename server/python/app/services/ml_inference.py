@@ -17,6 +17,7 @@ from enum import Enum
 from sqlmodel import Session, select
 from app.core.database import engine
 from app.core.models import SystemSetting
+from app.core.resilience import ml_breaker
 
 logger = logging.getLogger(__name__)
 
@@ -274,6 +275,7 @@ class ProductionMLInferenceService:
 
         self.cache[cache_key] = {"result": result, "timestamp": datetime.now()}
 
+    @ml_breaker
     async def infer(
         self, model_name: str, input_data: Dict, use_cache: bool = True
     ) -> Dict[str, Any]:

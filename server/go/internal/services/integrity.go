@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"net/http"
+	"os"
 	"runtime"
 	"time"
 
@@ -74,6 +75,14 @@ func (s *IntegrityService) VerifySystemIntegrity() error {
 				}
 			}
 		}()
+	}
+
+	// 4. Configuration Check
+	criticalVars := []string{"JWT_SECRET", "DATABASE_URL", "REDIS_URL"}
+	for _, v := range criticalVars {
+		if os.Getenv(v) == "" {
+			s.logger.Warn().Str("variable", v).Msg("Critical environment variable is missing")
+		}
 	}
 
 	s.logger.Info().Msg("Dependency verification completed")

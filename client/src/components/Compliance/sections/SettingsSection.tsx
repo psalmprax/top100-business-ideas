@@ -51,7 +51,7 @@ export function SettingsSection() {
 
   async function loadSettings() {
     try {
-      const policy = await extendedApi.compliance.getStats();
+      const policy = await extendedApi.compliance.getPolicy();
       if (policy?.budget) setBudget(String(policy.budget));
     } catch (err) {
       console.error("Failed to load settings", err);
@@ -180,7 +180,12 @@ export function SettingsSection() {
                       Mandatory for high-risk model access (Article 15).
                     </p>
                   </div>
-                  <Switch checked={ssoConfig.enforceMfa} />
+                  <Switch
+                    checked={ssoConfig.enforceMfa}
+                    onCheckedChange={checked =>
+                      setSsoConfig(prev => ({ ...prev, enforceMfa: checked }))
+                    }
+                  />
                 </div>
 
                 <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/20">
@@ -192,7 +197,15 @@ export function SettingsSection() {
                       Automatically assign roles based on OIDC claims.
                     </p>
                   </div>
-                  <Switch checked={ssoConfig.autoProvision} />
+                  <Switch
+                    checked={ssoConfig.autoProvision}
+                    onCheckedChange={checked =>
+                      setSsoConfig(prev => ({
+                        ...prev,
+                        autoProvision: checked,
+                      }))
+                    }
+                  />
                 </div>
               </div>
               <Button onClick={handleSaveSso} className="w-full md:w-auto">

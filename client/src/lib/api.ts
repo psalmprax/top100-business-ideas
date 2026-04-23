@@ -1014,7 +1014,14 @@ export interface EdgeDeployment {
   device_id: string;
   location: string;
   device_type: string;
-  status: "active" | "inactive" | "maintenance" | "error";
+  status:
+    | "active"
+    | "inactive"
+    | "maintenance"
+    | "error"
+    | "running"
+    | "stopped"
+    | "updating";
   firmware_version?: string;
   last_seen?: string;
   metadata?: Record<string, unknown>;
@@ -1520,6 +1527,7 @@ export const extendedApi = {
       apiRequest<any[]>("/api/v1/compliance/enterprise/audits"),
     getLiveMetrics: () =>
       apiRequest<ComplianceLiveMetrics>("/api/v1/compliance/metrics/live"),
+    getPolicy: () => apiRequest<any>("/api/v1/compliance/policy"),
     updatePolicy: (policyData: any) =>
       apiRequest<any>("/api/v1/compliance/policy/update", {
         method: "POST",
@@ -1688,6 +1696,7 @@ export const extendedApi = {
       if (queryString) url += `?${queryString}`;
       return apiRequest<any>(url, options);
     },
+    listIncidents: () => apiRequest<Incident[]>("/api/v1/compliance/incidents"),
   },
   training: {
     listModules: () => apiRequest<any[]>("/api/v1/training/modules"),

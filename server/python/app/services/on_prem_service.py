@@ -6,7 +6,7 @@ import yaml
 
 class OnPremService:
     """
-    Service for generating on-premise deployment manifests for Agent Ops Sentinel.
+    Service for generating on-premise deployment manifests for AlphaHecta.
     Supports Helm charts and Docker Compose for air-gapped environments.
     """
 

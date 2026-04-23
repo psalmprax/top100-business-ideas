@@ -63,7 +63,7 @@ export function RedTeamSection() {
     setIsRunning(true);
     try {
       toast.info("Starting adversarial penetration test...");
-      const result = await extendedApi.complianceAudit.redTeam("system-core");
+      const result = await extendedApi.compliance.redTeamAudit("system-core");
       toast.success("Audit initiated: " + result.audit_id);
       loadAudits();
     } catch (err) {

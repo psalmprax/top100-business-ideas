@@ -1,5 +1,5 @@
 """
-Audit Service for AgentOps Sentinel Hardening
+Audit Service for AlphaHecta Hardening
 Unifies querying of ComplianceAuditLog and AgentAuditLog for a real-time audit trail.
 """
 

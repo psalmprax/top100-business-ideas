@@ -372,7 +372,7 @@ class SelfHealingManager:
                 return {"status": "error", "message": f"Node {node_id} not found"}
 
         logger.info(
-            f"Deploying recovery daemon (Sentinel-Rebirth v2.4) to {node_id}..."
+            f"Deploying recovery daemon (AlphaHecta-Recovery v2.4) to {node_id}..."
         )
 
         # Deploy a real health-check subprocess that monitors and restarts services

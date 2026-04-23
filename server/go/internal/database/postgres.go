@@ -148,7 +148,7 @@ func RunMigrations(ctx context.Context) error {
 			budget FLOAT DEFAULT 10.0,
 			daily_spend FLOAT DEFAULT 0.0,
 			metrics JSONB DEFAULT '{"costSaved": 0.0, "loopsPrevented": 0, "totalRequests": 0}',
-			status VARCHAR(50) DEFAULT 'STOPPED',
+			status VARCHAR(50) DEFAULT 'stopped',
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`,
@@ -444,7 +444,7 @@ func RunMigrations(ctx context.Context) error {
 			timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`,
 
-		// Sentinel Extensions - Deepfake Hardening
+		// AlphaHecta Extensions - Deepfake Hardening
 		`CREATE TABLE IF NOT EXISTS duress_configs (
 			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 			user_id UUID REFERENCES users(id) ON DELETE CASCADE UNIQUE,
@@ -455,7 +455,7 @@ func RunMigrations(ctx context.Context) error {
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`,
 
-		// Sentinel Extensions - Workforce Hardening
+		// AlphaHecta Extensions - Workforce Hardening
 		`CREATE TABLE IF NOT EXISTS workforce_interactions (
 			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 			agent_role VARCHAR(100) NOT NULL,

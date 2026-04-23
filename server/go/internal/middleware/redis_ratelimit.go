@@ -134,17 +134,18 @@ func (rl *RedisRateLimiter) GetCurrentCount(ctx context.Context, key string) (in
 }
 
 // RedisRateLimitMiddleware creates Gin middleware using Redis
-func RedisRateLimitMiddleware(redisURL string, rateLimit int) gin.HandlerFunc {
-	rate := 100
-	capacity := 200
-	if rateLimit > 0 {
-		capacity = rateLimit
+func RedisRateLimitMiddleware(redisURL string, rate, capacity int) gin.HandlerFunc {
+	if capacity <= 0 {
+		capacity = 200
+	}
+	if rate <= 0 {
+		rate = 100
 	}
 
 	limiter, err := NewRedisRateLimiter(redisURL, rate, capacity)
 	if err != nil {
 		// Fall back to in-memory if Redis unavailable
-		return RateLimitMiddleware(rateLimit)
+		return RateLimitMiddleware(rate, capacity)
 	}
 
 	return func(c *gin.Context) {

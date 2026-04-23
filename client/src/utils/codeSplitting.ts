@@ -18,7 +18,7 @@ export const AlphaHectaAgentOpsDashboard = createLazy(
 );
 
 export const AlphaHectaWorkforceDashboard = createLazy(
-  () => import("../pages/AlphaHectaWorkforce")
+  () => import("../pages/Workforce")
 );
 
 // AI Act Compliance - use existing RegionalCompliance as fallback

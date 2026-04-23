@@ -647,3 +647,91 @@ func (h *ComplianceHandler) DeleteVendor(c *gin.Context) {
 
 	c.Data(http.StatusOK, "application/json", response)
 }
+
+func (h *ComplianceHandler) ListIncidents(c *gin.Context) {
+	response, err := h.proxyService.Forward(c, "GET", "/compliance/incidents", nil)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch incidents", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+func (h *ComplianceHandler) CreateIncident(c *gin.Context) {
+	var req interface{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request body"})
+		return
+	}
+	response, err := h.proxyService.Forward(c, "POST", "/compliance/incidents", req)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to create incident", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusCreated, "application/json", response)
+}
+
+func (h *ComplianceHandler) CreateArticle71Incident(c *gin.Context) {
+	var req interface{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request body"})
+		return
+	}
+	response, err := h.proxyService.Forward(c, "POST", "/compliance/incidents/article-71", req)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to create Article 71 incident", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusCreated, "application/json", response)
+}
+
+func (h *ComplianceHandler) GetLiveMetrics(c *gin.Context) {
+	response, err := h.proxyService.Forward(c, "GET", "/compliance/live-metrics", nil)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch live metrics", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+func (h *ComplianceHandler) Remediate(c *gin.Context) {
+	var req interface{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request body"})
+		return
+	}
+	response, err := h.proxyService.Forward(c, "POST", "/compliance/remediate", req)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Remediation failed", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+func (h *ComplianceHandler) RunSoxAudit(c *gin.Context) {
+	var req interface{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request body"})
+		return
+	}
+	response, err := h.proxyService.Forward(c, "POST", "/compliance/audit/sox", req)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "SOX audit failed", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+func (h *ComplianceHandler) RunHipaaAudit(c *gin.Context) {
+	var req interface{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request body"})
+		return
+	}
+	response, err := h.proxyService.Forward(c, "POST", "/compliance/audit/hipaa", req)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "HIPAA audit failed", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
+}

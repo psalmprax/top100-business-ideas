@@ -1682,7 +1682,7 @@ export default function FreelancerWorkflowBot() {
       <footer className="border-t bg-background py-8">
         <div className="container mx-auto px-4 text-center">
           <p className="text-body-sm font-black uppercase tracking-[0.2em] opacity-40">
-            Alpha Sentinel &middot; WorkflowBot Strategic Autonomy &middot; 2026
+            AlphaHecta &middot; WorkflowBot Strategic Autonomy &middot; 2026
           </p>
         </div>
       </footer>

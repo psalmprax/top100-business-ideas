@@ -18,7 +18,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 
-const MobileLandingPage = () => {
+const MobileComingSoonPage = () => {
   const [, setLocation] = useLocation();
 
   const features = [
@@ -65,7 +65,7 @@ const MobileLandingPage = () => {
         </div>
         <div className="flex items-center gap-2">
           <Terminal className="w-5 h-5 text-indigo-500" />
-          <span className="font-bold tracking-tighter text-lg uppercase">Top 100 Business Ideas <span className="text-indigo-500">Mobile</span></span>
+          <span className="font-bold tracking-tighter text-lg uppercase">AlphaHecta <span className="text-indigo-500">Mobile</span></span>
         </div>
       </nav>
 
@@ -86,7 +86,7 @@ const MobileLandingPage = () => {
               </span>
             </h1>
             <p className="text-lg md:text-xl text-white/50 mb-12 max-w-2xl mx-auto leading-relaxed">
-              Top 100 Business Ideas Mobile brings the full Real-First autonomous architecture to your iOS and Android devices. Secure, encrypted, and perpetually connected to your corporate cluster.
+              AlphaHecta Mobile brings the full Real-First autonomous architecture to your iOS and Android devices. Secure, encrypted, and perpetually connected to your corporate cluster.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20">
@@ -207,4 +207,4 @@ const MobileLandingPage = () => {
   );
 };
 
-export default MobileLandingPage;
+export default MobileComingSoonPage;

@@ -14,12 +14,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type MetricsAggregator struct {
+type InsightOrchestrator struct {
 	proxyService *services.ProxyService
 }
 
-func NewMetricsAggregator(proxyService *services.ProxyService) *MetricsAggregator {
-	return &MetricsAggregator{
+func NewInsightOrchestrator(proxyService *services.ProxyService) *InsightOrchestrator {
+	return &InsightOrchestrator{
 		proxyService: proxyService,
 	}
 }
@@ -33,7 +33,7 @@ func max(a, b int) int {
 
 // AggregateAgentMetrics fetches and aggregates metrics from Python backend
 // Applies business logic: calculates trends, identifies anomalies, derives insights
-func (h *MetricsAggregator) AggregateAgentMetrics(c *gin.Context) {
+func (h *InsightOrchestrator) AggregateAgentMetrics(c *gin.Context) {
 	response, err := h.proxyService.GetAgentMetrics(c)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch agent metrics", Details: err.Error()})
@@ -50,7 +50,7 @@ func (h *MetricsAggregator) AggregateAgentMetrics(c *gin.Context) {
 	c.JSON(http.StatusOK, aggregated)
 }
 
-func (h *MetricsAggregator) processMetrics(raw map[string]interface{}) map[string]interface{} {
+func (h *InsightOrchestrator) processMetrics(raw map[string]interface{}) map[string]interface{} {
 	result := make(map[string]interface{})
 
 	for k, v := range raw {
@@ -103,7 +103,7 @@ func (h *MetricsAggregator) processMetrics(raw map[string]interface{}) map[strin
 	return result
 }
 
-func (h *MetricsAggregator) GetTopAgents(c *gin.Context) {
+func (h *InsightOrchestrator) GetTopAgents(c *gin.Context) {
 	sortBy := c.DefaultQuery("sort", "cost")
 	limit := c.DefaultQuery("limit", "10")
 
@@ -156,7 +156,7 @@ func (h *MetricsAggregator) GetTopAgents(c *gin.Context) {
 	})
 }
 
-func (h *MetricsAggregator) AnomalyDetection(c *gin.Context) {
+func (h *InsightOrchestrator) AnomalyDetection(c *gin.Context) {
 	response, err := h.proxyService.GetAgentMetrics(c)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch metrics", Details: err.Error()})

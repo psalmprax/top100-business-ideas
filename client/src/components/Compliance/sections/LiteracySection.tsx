@@ -23,7 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { extendedApi, type TrainingModule } from "@/lib/api";
 import { toast } from "sonner";
 
-export function TrainingSection() {
+export function LiteracySection() {
   const [modules, setModules] = useState<TrainingModule[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -73,7 +73,7 @@ export function TrainingSection() {
         <div>
           <h3 className="text-lg font-bold flex items-center gap-2">
             <BookOpen className="w-5 h-5 text-emerald-500" />
-            Empowerment & Training
+            Empowerment & Literacy
           </h3>
           <p className="text-sm text-muted-foreground">
             Article 17 & 18 workforce literacy and deployment readiness

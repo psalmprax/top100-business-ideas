@@ -6,7 +6,7 @@ import hashlib
 
 class RegulatoryComplianceService:
     """
-    Service for handling HIPAA and SOX compliance for Agent Ops Sentinel.
+    Service for handling HIPAA and SOX compliance for AlphaHecta.
     Provides audit trail templates and data retention policy management.
     """
 

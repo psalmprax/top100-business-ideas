@@ -216,63 +216,7 @@ func (h *MultiCloudHandler) InitiateFailover(c *gin.Context) {
 	c.Data(http.StatusOK, "application/json", resp)
 }
 
-// SelfHealingHandler handles self-healing operations
-type SelfHealingHandler struct {
-	proxy *services.ProxyService
-}
 
-func NewSelfHealingHandler(proxy *services.ProxyService) *SelfHealingHandler {
-	return &SelfHealingHandler{proxy: proxy}
-}
-
-// GetEvents returns self-healing event logs
-// GET /api/v1/self-healing/events
-func (h *SelfHealingHandler) GetEvents(c *gin.Context) {
-	resp, err := h.proxy.Forward(c, "GET", "/self-healing/events", nil)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch self-healing events", Details: err.Error()})
-		return
-	}
-	c.Data(http.StatusOK, "application/json", resp)
-}
-
-// TriggerRecovery manually triggers a recovery action
-// POST /api/v1/self-healing/recover
-func (h *SelfHealingHandler) TriggerRecovery(c *gin.Context) {
-	var req interface{}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request", Details: err.Error()})
-		return
-	}
-	resp, err := h.proxy.Forward(c, "POST", "/self-healing/recover", req)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to trigger recovery", Details: err.Error()})
-		return
-	}
-	c.Data(http.StatusOK, "application/json", resp)
-}
-
-// GetHealingStatus returns the current status of the self-healing cluster
-// GET /api/v1/self-healing/status
-func (h *SelfHealingHandler) GetHealingStatus(c *gin.Context) {
-	resp, err := h.proxy.Forward(c, "GET", "/self-healing/status", nil)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch self-healing status", Details: err.Error()})
-		return
-	}
-	c.Data(http.StatusOK, "application/json", resp)
-}
-
-// GetStats returns self-healing statistics
-// GET /api/v1/self-healing/stats
-func (h *SelfHealingHandler) GetStats(c *gin.Context) {
-	resp, err := h.proxy.Forward(c, "GET", "/self-healing/stats", nil)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to fetch self-healing stats", Details: err.Error()})
-		return
-	}
-	c.Data(http.StatusOK, "application/json", resp)
-}
 
 // generateID generates a cryptographically random hex ID
 func generateID() string {

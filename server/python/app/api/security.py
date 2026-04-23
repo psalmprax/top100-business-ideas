@@ -32,7 +32,7 @@ async def rotate_api_key(
         key.expires_at = datetime.utcnow() + timedelta(hours=24)
         session.add(key)
 
-    new_key = f"sk_sentinel_live_{secrets.token_hex(16)}"
+    new_key = f"sk_alphahecta_live_{secrets.token_hex(16)}"
     key_hash = hash_key(new_key)
     prefix = new_key[:16]
 

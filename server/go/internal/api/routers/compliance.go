@@ -8,7 +8,6 @@ import (
 func SetupComplianceRoutes(
 	protected *gin.RouterGroup,
 	complianceHandler ComplianceHandler,
-	agentOpsHandler ProxyHandler,
 	productAccessMiddleware func(string) gin.HandlerFunc,
 ) {
 	compliance := protected.Group("/compliance")
@@ -21,11 +20,11 @@ func SetupComplianceRoutes(
 		compliance.GET("/categories", complianceHandler.GetCategories)
 
 		// Extended AI Model Compliance & Orchestration
-		compliance.PATCH("/models/:id/guardrails", agentOpsHandler.ProxyToPython)
+		compliance.PATCH("/models/:id/guardrails", complianceHandler.UpdateGuardrails)
 		compliance.POST("/documentation/:id", complianceHandler.GenerateDocumentation)
-		compliance.GET("/incidents", agentOpsHandler.ProxyToPython)
-		compliance.POST("/incidents", agentOpsHandler.ProxyToPython)
-		compliance.POST("/incidents/article-71", agentOpsHandler.ProxyToPython)
+		compliance.GET("/incidents", complianceHandler.ListIncidents)
+		compliance.POST("/incidents", complianceHandler.CreateIncident)
+		compliance.POST("/incidents/article-71", complianceHandler.CreateArticle71Incident)
 		compliance.PATCH("/incidents/:id", complianceHandler.UpdateIncidentStatus)
 		compliance.POST("/upload", complianceHandler.UploadArtifact)
 		compliance.GET("/artifacts", complianceHandler.ListArtifacts)
@@ -51,10 +50,10 @@ func SetupComplianceRoutes(
 		compliance.POST("/bias/scan", complianceHandler.TriggerBiasScan)
 		compliance.POST("/red-team", complianceHandler.RedTeamAudit)
 		compliance.GET("/reports/export", complianceHandler.ExportReport)
-		compliance.GET("/live-metrics", agentOpsHandler.ProxyToPython)
-		compliance.POST("/remediate", agentOpsHandler.ProxyToPython)
-		compliance.POST("/audit/sox", agentOpsHandler.ProxyToPython)
-		compliance.POST("/audit/hipaa", agentOpsHandler.ProxyToPython)
+		compliance.GET("/live-metrics", complianceHandler.GetLiveMetrics)
+		compliance.POST("/remediate", complianceHandler.Remediate)
+		compliance.POST("/audit/sox", complianceHandler.RunSoxAudit)
+		compliance.POST("/audit/hipaa", complianceHandler.RunHipaaAudit)
 		compliance.POST("/eu-register", complianceHandler.EURegister)
 		compliance.POST("/sso/update", complianceHandler.UpdateSSOConfig)
 		compliance.POST("/proxy/verify", complianceHandler.VerifyProxy)

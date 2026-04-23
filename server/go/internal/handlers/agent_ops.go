@@ -467,20 +467,16 @@ func (h *AgentOpsHandler) ProxyToPython(c *gin.Context) {
 			path = "/compliance/audit/sox"
 		} else if path == "/agent-ops/compliance/hipaa" || path == "/agent-ops/compliance/audit/hipaa" {
 			path = "/compliance/audit/hipaa"
-		} else if path == "/agent-ops/governance/healing/configs" {
-			path = "/governance/healing/configs"
-		} else if strings.HasPrefix(subPath, "/governance/healing/") {
-			// e.g. /agent-ops/governance/healing/configs -> /governance/healing/configs
-			path = subPath
-		} else if path == "/agent-ops/governance/healing/events" {
-			path = "/compliance/healing/events"
+		} else if strings.HasPrefix(subPath, "/governance/healing/") || strings.HasPrefix(subPath, "/self-healing/") {
+			// Align with AlphaHecta Self-Healing API
+			subPathTrimmed := strings.TrimPrefix(subPath, "/governance/healing/")
+			subPathTrimmed = strings.TrimPrefix(subPathTrimmed, "/self-healing/")
+			path = "/self-healing/healing/" + subPathTrimmed
 		} else if strings.HasPrefix(subPath, "/alerts") {
 			path = "/agents" + subPath
 		} else if strings.HasPrefix(subPath, "/vigilance") {
-			// Map /agent-ops/vigilance/alerts -> /agents/vigilance
-			// Map /agent-ops/vigilance/alerts/{id}/resolve -> /agents/vigilance/{id}/resolve
 			if strings.HasPrefix(subPath, "/vigilance/alerts") {
-				path = "/agents/vigilance"
+				path = "/agents/vigilance" + strings.TrimPrefix(subPath, "/vigilance/alerts")
 			} else {
 				path = "/agents" + subPath
 			}
@@ -490,10 +486,6 @@ func (h *AgentOpsHandler) ProxyToPython(c *gin.Context) {
 			} else {
 				path = subPath
 			}
-		} else if strings.HasPrefix(subPath, "/vigilance/alerts") {
-			path = "/agent-ops/vigilance/alerts"
-		} else if strings.HasPrefix(subPath, "/self-healing/") {
-			path = subPath
 		} else if strings.HasPrefix(subPath, "/venture") {
 			path = subPath
 		} else if strings.HasPrefix(subPath, "/compliance/hipaa") {

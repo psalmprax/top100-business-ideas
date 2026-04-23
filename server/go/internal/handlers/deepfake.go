@@ -608,3 +608,45 @@ func (h *DeepfakeHandler) UpdateConfig(c *gin.Context) {
 
 	c.Data(http.StatusOK, "application/json", response)
 }
+
+func (h *DeepfakeHandler) ListBiometrics(c *gin.Context) {
+	response, err := h.proxyService.Forward(c, "GET", "/deepfake/biometrics", nil)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch biometrics", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+func (h *DeepfakeHandler) CreateBiometric(c *gin.Context) {
+	var req interface{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid request"})
+		return
+	}
+	response, err := h.proxyService.Forward(c, "POST", "/deepfake/biometrics", req)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to create biometric", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusCreated, "application/json", response)
+}
+
+func (h *DeepfakeHandler) RevokeBiometric(c *gin.Context) {
+	id := c.Param("id")
+	response, err := h.proxyService.Forward(c, "DELETE", fmt.Sprintf("/deepfake/biometrics/%s/revoke", id), nil)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to revoke biometric", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
+}
+
+func (h *DeepfakeHandler) GetThreats(c *gin.Context) {
+	response, err := h.proxyService.Forward(c, "GET", "/deepfake/threats", nil)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, models.ErrorResponse{Error: "Failed to fetch threats", Details: err.Error()})
+		return
+	}
+	c.Data(http.StatusOK, "application/json", response)
+}

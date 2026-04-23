@@ -3,7 +3,7 @@ import httpx
 from app.services.self_healing_manager import self_healing_manager
 
 async def register_initial_nodes():
-    print("Registering Initial Service Nodes for Sentinel...")
+    print("Registering Initial Service Nodes for AlphaHecta...")
     
     # Register Python Backend
     self_healing_manager.register_node(

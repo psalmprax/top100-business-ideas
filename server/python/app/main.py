@@ -4,7 +4,7 @@ FastAPI application for AI/ML processing
 """
 
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends, Header
+from fastapi import FastAPI, Depends, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 import sys
@@ -12,12 +12,25 @@ import asyncio
 import os
 from starlette.middleware.sessions import SessionMiddleware
 from unittest.mock import MagicMock
+from app.core.logging_config import setup_logging, request_id_ctx
 
 # Configure logging early
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+setup_logging()
 logger = logging.getLogger(__name__)
+
+async def tracing_middleware(request: Request, call_next):
+    """
+    Middleware to extract X-Request-ID from headers and set it in the context.
+    """
+    request_id = request.headers.get("X-Request-ID", "unknown")
+    token = request_id_ctx.set(request_id)
+    try:
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = request_id
+        return response
+    finally:
+        request_id_ctx.reset(token)
+
 
 # Real-First Hardening: Dependency Inventory
 # Instead of masking missing libraries with MagicMock, we inventory them for the Vigilance dashboard.
@@ -54,7 +67,6 @@ from app.api import (
 from app.api.routers import (
     webhooks_router,
     multi_cloud_router,
-    self_healing_router,
     agent_ops_router,
     budget_router,
     workforce_router,
@@ -138,6 +150,9 @@ app.add_middleware(SessionMiddleware, secret_key=session_secret)
 # Resilience: Rate Limiting Shield (In-Memory Sliding Window)
 app.add_middleware(RateLimitMiddleware, window=60, limit=200)
 
+# Tracing Middleware
+app.middleware("http")(tracing_middleware)
+
 # Register Global Resilience Exception Handler
 app.add_exception_handler(Exception, resilience_exception_handler)
 
@@ -186,12 +201,7 @@ app.include_router(
     tags=["Multi-Cloud"],
     dependencies=[Depends(get_current_user)],
 )
-app.include_router(
-    self_healing_router,
-    prefix="/self-healing",
-    tags=["Self-Healing"],
-    dependencies=[Depends(get_current_user)],
-)
+
 app.include_router(
     agent_ops_router,
     prefix="/agent-ops",
@@ -252,12 +262,12 @@ app.include_router(
     tags=["Vendors"],
     dependencies=[Depends(get_current_user)],
 )
-from app.api import sentinel
+from app.api import self_healing
 
 app.include_router(
-    sentinel.router,
-    prefix="/api/v1/sentinel",
-    tags=["Sentinel"],
+    self_healing.router,
+    prefix="/self-healing",
+    tags=["Self-Healing"],
     dependencies=[Depends(get_current_user)],
 )
 app.include_router(

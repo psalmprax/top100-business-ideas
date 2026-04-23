@@ -63,19 +63,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const login = async (email: string, password: string, productId?: string) => {
+  const login = async (
+    email: string,
+    password: string,
+    productId?: string,
+    depth = 0
+  ) => {
+    // MAX_RECURSION_DEPTH: Prevent infinite login loops
+    if (depth > 2) {
+      console.error("[Auth] Max login recursion depth reached");
+      throw new Error(
+        "Too many login attempts. Please select a product manually."
+      );
+    }
+
     try {
-      // Prevent infinite recursion: if productId is provided but still requires selection,
-      // return the selection prompt instead of retrying
+      // If productId is provided, we execute the normal login flow
       if (productId != undefined) {
         const data = await authApi.login(email, password, productId);
 
         const requiresSelection = data.requires_product_selection;
         if (requiresSelection) {
-          const availableProducts = data.available_products;
           return {
             requiresSelection: true,
-            availableProducts,
+            availableProducts: data.available_products,
           };
         }
 
@@ -87,20 +98,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return {};
       }
 
-      // If productId not provided, auto-select first available product
-      const loginProductId = productId;
-
-      const data = await authApi.login(email, password, loginProductId);
+      // Initial login without productId
+      const data = await authApi.login(email, password);
 
       const requiresSelection = data.requires_product_selection;
       if (requiresSelection) {
-        // Auto-select first available product and retry login
         const availableProducts = data.available_products;
-        if (availableProducts && availableProducts.length > 0) {
+
+        // Auto-select first product if only one is available
+        if (availableProducts && availableProducts.length === 1) {
           const firstProduct = availableProducts[0];
-          console.log("[Auth] Auto-selecting product:", firstProduct);
-          return login(email, password, firstProduct);
+          console.log("[Auth] Auto-selecting unique product:", firstProduct);
+          return login(email, password, firstProduct, depth + 1);
         }
+
         return {
           requiresSelection: true,
           availableProducts,
@@ -115,7 +126,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return {};
     } catch (error: any) {
       console.error("[Auth] login failed:", error.message);
-      // Only clear token if it's an authentication error (401), not network or other errors
       if (
         error.message.includes("401") ||
         error.message.includes("Unauthorized")

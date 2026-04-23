@@ -43,13 +43,13 @@ import { SLATiersSection } from "@/components/Compliance/sections/SLATiersSectio
 import { RedTeamSection } from "@/components/Compliance/sections/RedTeamSection";
 import { MonitoringSection } from "@/components/Compliance/sections/MonitoringSection";
 import { ShadowAISection } from "@/components/Compliance/sections/ShadowAISection";
-import { BiometricsSection } from "@/components/Compliance/sections/BiometricsSection";
+import { BiometricsSection } from "@/components/Deepfake/sections/BiometricsSection";
 
 // Hardened Sections (New)
 import { EnterpriseAuditsSection } from "@/components/Compliance/sections/EnterpriseAuditsSection";
 import { IncidentsSection } from "@/components/Compliance/sections/IncidentsSection";
 import { VendorsSection } from "@/components/Compliance/sections/VendorsSection";
-import { TrainingSection } from "@/components/Compliance/sections/TrainingSection";
+import { LiteracySection } from "@/components/Compliance/sections/LiteracySection";
 import { SettingsSection } from "@/components/Compliance/sections/SettingsSection";
 import { BiasScanSection } from "@/components/Compliance/sections/BiasScanSection";
 import { EdgeAISection } from "@/components/Compliance/sections/EdgeAISection";
@@ -195,8 +195,8 @@ export default function ComplianceHub() {
       case "partner":
         return <PartnerPortalSection />;
       case "training":
-        return <TrainingSection />;
-      case "api":
+        return <LiteracySection />;
+      case "identity":
         return <BiometricsSection />;
       case "incidents":
         return <IncidentsSection />;

@@ -11,7 +11,7 @@ import AlphaHecta from "./pages/AlphaHecta";
 import AlphaHectaAgentOpsPage from "./pages/AlphaHectaAgentOps";
 import AlphaHectaActCompliancePage from "./pages/Compliance";
 import AlphaHectaDeepfakeDefensePage from "./pages/AlphaHectaDeepfakeDefense";
-import AlphaHectaWorkforcePage from "./pages/AlphaHectaWorkforce";
+import WorkforcePage from "./pages/Workforce";
 import DenialDefensePage from "./pages/DenialDefense";
 import ActionableAIPage from "./pages/ActionableAI";
 import FreelancerWorkflowBotPage from "./pages/FreelancerWorkflowBot";
@@ -38,7 +38,7 @@ const ShadowAIMonitor = React.lazy(() => import("./pages/ShadowAIMonitor"));
 const ReportingDashboard = React.lazy(
   () => import("./pages/ReportingDashboard")
 );
-import MobileLandingPage from "./pages/MobileLanding";
+import MobileComingSoonPage from "./pages/MobileComingSoon";
 
 import {
   PerspectiveProvider,
@@ -148,7 +148,7 @@ function Router() {
       {/* Gated Management Pages */}
       <ProtectedRoute
         path="/products/workforce"
-        component={AlphaHectaWorkforcePage}
+        component={WorkforcePage}
         productId="alpha-hecta-workforce"
         requireManagement={true}
       />
@@ -165,7 +165,7 @@ function Router() {
       <Route path={"/webhooks"} component={WebhookHistoryPage} />
       <Route path={"/regional-compliance"} component={RegionalCompliancePage} />
       <Route path={"/biometrics"} component={BiometricEnrollmentPage} />
-      <Route path={"/mobile"} component={MobileLandingPage} />
+      <Route path={"/mobile"} component={MobileComingSoonPage} />
 
       {/* Legacy routes redirect to products */}
       <Route path={"/ventures/alpha-hecta-agent-ops"}>

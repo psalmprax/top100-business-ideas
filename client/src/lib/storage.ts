@@ -1,5 +1,5 @@
 /**
- * Simple namespaced localStorage utility for Alpha Sentinel
+ * Simple namespaced localStorage utility for Alpha Hecta
  */
 
 const PREFIX = "alpha_hecta_";
@@ -22,11 +22,19 @@ export const storage = {
         }
     },
     remove: (key: string) => {
-        window.localStorage.removeItem(`${PREFIX}${key}`);
+        try {
+            window.localStorage.removeItem(`${PREFIX}${key}`);
+        } catch (e) {
+            console.error('Error removing from storage', e);
+        }
     },
     clearAll: () => {
-        Object.keys(window.localStorage)
-            .filter(key => key.startsWith(PREFIX))
-            .forEach(key => window.localStorage.removeItem(key));
+        try {
+            Object.keys(window.localStorage)
+                .filter(key => key.startsWith(PREFIX))
+                .forEach(key => window.localStorage.removeItem(key));
+        } catch (e) {
+            console.error('Error clearing storage', e);
+        }
     }
 };

@@ -26,7 +26,10 @@ func Logger(logger *zerolog.Logger) gin.HandlerFunc {
 		latency := time.Since(start)
 		status := c.Writer.Status()
 
+		requestID := c.GetString("RequestID")
+
 		logger.Info().
+			Str("request_id", requestID).
 			Str("method", method).
 			Str("path", path).
 			Int("status", status).

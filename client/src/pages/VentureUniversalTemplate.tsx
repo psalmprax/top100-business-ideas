@@ -266,7 +266,7 @@ const VentureUniversalTemplate = () => {
               Real-First System Online
             </span>
             <span>Ref: {id}-UC.19-HARDENED</span>
-            <span>Alpha Sentinel Protocol V4.2.0</span>
+            <span>AlphaHecta Protocol V4.2.0</span>
           </div>
           <div className="flex items-center gap-4">
             <span className="text-[10px] text-white/20 uppercase tracking-tighter font-bold">Industry Compliance</span>

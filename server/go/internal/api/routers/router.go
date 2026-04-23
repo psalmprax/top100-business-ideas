@@ -45,6 +45,13 @@ type ComplianceHandler interface {
 	RunGeneralScan(c *gin.Context)
 	ListScans(c *gin.Context)
 	DeleteVendor(c *gin.Context)
+	ListIncidents(c *gin.Context)
+	CreateIncident(c *gin.Context)
+	CreateArticle71Incident(c *gin.Context)
+	GetLiveMetrics(c *gin.Context)
+	Remediate(c *gin.Context)
+	RunSoxAudit(c *gin.Context)
+	RunHipaaAudit(c *gin.Context)
 }
 
 // AgentOpsHandler defines the interface for agent operations handlers
@@ -95,6 +102,10 @@ type DeepfakeHandler interface {
 	ListDetectors(c *gin.Context)
 	GetDuressConfig(c *gin.Context)
 	UpdateDuressConfig(c *gin.Context)
+	ListBiometrics(c *gin.Context)
+	CreateBiometric(c *gin.Context)
+	RevokeBiometric(c *gin.Context)
+	GetThreats(c *gin.Context)
 }
 
 // DenialDefenseHandler interface
@@ -219,6 +230,40 @@ type MLHandler interface {
 	DetectDeepfake(c *gin.Context)
 }
 
+// InsightOrchestratorHandler interface
+type InsightOrchestratorHandler interface {
+	AggregateAgentMetrics(c *gin.Context)
+	GetTopAgents(c *gin.Context)
+	AnomalyDetection(c *gin.Context)
+}
+
+// WearableHandler interface
+type WearableHandler interface {
+	ListDevices(c *gin.Context)
+	RegisterDevice(c *gin.Context)
+	PairDevice(c *gin.Context)
+}
+
+// CryptoHandler interface
+type CryptoHandler interface {
+	ListWallets(c *gin.Context)
+	ProtectWallet(c *gin.Context)
+	VerifyTransaction(c *gin.Context)
+}
+
+// TravelKioskHandler interface
+type TravelKioskHandler interface {
+	ListKiosks(c *gin.Context)
+	VerifyTraveler(c *gin.Context)
+}
+
+// EdgeHandler interface
+type EdgeHandler interface {
+	ListDeployments(c *gin.Context)
+	SyncWeights(c *gin.Context)
+	GetEdgeLogs(c *gin.Context)
+}
+
 // HandlerContainer holds all handler implementations
 type HandlerContainer struct {
 	PanicHandler         PanicHandler
@@ -300,6 +345,11 @@ type HandlerContainer struct {
 	MLHandler        MLHandler
 	WorkforceHandler WorkforceHandler
 	VendorHandler    VendorHandler
+	WearableHandler  WearableHandler
+	CryptoHandler    CryptoHandler
+	TravelKioskHandler TravelKioskHandler
+	EdgeHandler      EdgeHandler
+	InsightOrchestrator InsightOrchestratorHandler
 }
 
 // MiddlewareContainer holds all middleware functions
@@ -307,6 +357,7 @@ type MiddlewareContainer struct {
 	Auth          gin.HandlerFunc
 	ProductAccess func(string) gin.HandlerFunc
 	RequireRole   func(string) gin.HandlerFunc
+	RateLimit     gin.HandlerFunc
 }
 
 // SetupAllRoutes configures all API routes
@@ -326,6 +377,7 @@ func SetupAllRoutes(router *gin.Engine, handlers *HandlerContainer, mw *Middlewa
 	// All protected routes
 	protected := v1.Group("")
 	protected.Use(mw.Auth)
+	protected.Use(mw.RateLimit)
 
 	// Apply Circuit Breaker for proxy intensive routes
 	proxyCB := middleware.GinCircuitBreakerMiddleware("python-backend", middleware.CircuitBreakerConfig{
@@ -361,12 +413,12 @@ func SetupAllRoutes(router *gin.Engine, handlers *HandlerContainer, mw *Middlewa
 		// Compliance routes (Proxy heavy)
 		complianceGroup := protected.Group("")
 		complianceGroup.Use(proxyCB)
-		SetupComplianceRoutes(complianceGroup, handlers.ComplianceHandler, handlers.AgentOpsHandler, middleware.ProductAccess)
+		SetupComplianceRoutes(complianceGroup, handlers.ComplianceHandler, middleware.ProductAccess)
 
 		// Deepfake routes (Proxy heavy)
 		deepfakeGroup := protected.Group("")
 		deepfakeGroup.Use(proxyCB)
-		SetupDeepfakeRoutes(deepfakeGroup, handlers.DeepfakeHandler, handlers.AgentOpsHandler, middleware.ProductAccess)
+		SetupDeepfakeRoutes(deepfakeGroup, handlers.DeepfakeHandler, middleware.ProductAccess)
 
 		// Metrics routes (Proxy heavy)
 		metricsGroup := protected.Group("")
@@ -382,6 +434,11 @@ func SetupAllRoutes(router *gin.Engine, handlers *HandlerContainer, mw *Middlewa
 		SetupAdditionalRoutes(protected, handlers.IntelligenceHandler)
 		SetupWorkforceRoutes(protected, handlers.WorkforceHandler, middleware.ProductAccess, middleware.RequireRole)
 		SetupVendorRoutes(protected, handlers.VendorHandler, middleware.ProductAccess)
+		SetupWearableRoutes(protected, handlers.WearableHandler)
+		SetupCryptoRoutes(protected, handlers.CryptoHandler)
+		SetupTravelKioskRoutes(protected, handlers.TravelKioskHandler)
+		SetupEdgeRoutes(protected, handlers.EdgeHandler)
+		SetupIntelligenceRoutes(protected, handlers.InsightOrchestrator)
 
 		// ML routes (Proxied to Python)
 		mlGroup := v1.Group("/ml")

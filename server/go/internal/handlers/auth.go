@@ -66,8 +66,16 @@ func (h *AuthHandler) Login(c *gin.Context) {
 			// No ProductID provided, check if selection is needed
 			if len(user.AllowedProducts) > 1 {
 				// Still generate tokens even when product selection is needed
-				accessToken, _ := h.authService.GenerateToken(user.ID, user.Email, user.Role, user.AllowedProducts)
-				refreshToken, _ := h.authService.GenerateRefreshToken(user.ID, user.Email, user.Role, user.AllowedProducts)
+				accessToken, err := h.authService.GenerateToken(user.ID, user.Email, user.Role, user.AllowedProducts)
+				if err != nil {
+					c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Token generation failed during product selection flow"})
+					return
+				}
+				refreshToken, err := h.authService.GenerateRefreshToken(user.ID, user.Email, user.Role, user.AllowedProducts)
+				if err != nil {
+					c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Refresh token generation failed during product selection flow"})
+					return
+				}
 				c.JSON(http.StatusOK, models.AuthResponse{
 					AccessToken:              accessToken,
 					RefreshToken:             refreshToken,
@@ -183,7 +191,8 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 
 	// Verify this is a refresh token, not an access token
 	if claims.TokenType != "refresh" {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid token"})
+		services.Warn("Refresh token attempt with invalid token type", "token_id", claims.ID, "user_id", claims.UserID)
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "Invalid or expired refresh token"})
 		return
 	}
 
@@ -244,9 +253,14 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 				key := fmt.Sprintf("blacklist:%s", claims.ID)
 				ttl := time.Until(claims.ExpiresAt.Time)
 				if ttl > 0 {
-					database.Redis.Set(ctx, key, "1", ttl)
+					if err := database.Redis.Set(ctx, key, "1", ttl).Err(); err != nil {
+						services.Error("Failed to blacklist token", "error", err.Error())
+					}
 				}
 			}
+			services.Info("User logged out", "user_id", claims.UserID, "token_id", claims.ID)
+		} else {
+			services.Warn("Logout attempted with invalid token", "error", err.Error())
 		}
 	}
 
@@ -279,7 +293,11 @@ func (h *AuthHandler) RequestPasswordReset(c *gin.Context) {
 	if database.Pool != nil {
 		query := `INSERT INTO password_resets (user_id, token, expires_at) VALUES ($1, $2, $3)
 		          ON CONFLICT (user_id) DO UPDATE SET token = $2, expires_at = $3, used = false`
-		_, _ = database.Pool.Exec(c.Request.Context(), query, user.ID, resetToken, expiresAt)
+		if _, err := database.Pool.Exec(c.Request.Context(), query, user.ID, resetToken, expiresAt); err != nil {
+			services.Error("Failed to persist password reset token", "error", err.Error(), "user_id", user.ID)
+			c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to process request"})
+			return
+		}
 	}
 
 	resetURL := fmt.Sprintf("%s/reset-password?token=%s&email=%s",
@@ -353,7 +371,9 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 		return
 	}
 
-	_, _ = database.Pool.Exec(c.Request.Context(), `UPDATE password_resets SET used = true WHERE token = $1`, req.Token)
+	if _, err := database.Pool.Exec(c.Request.Context(), `UPDATE password_resets SET used = true WHERE token = $1`, req.Token); err != nil {
+		services.Warn("Failed to mark reset token as used", "error", err.Error(), "token", req.Token)
+	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Password reset successfully"})
 }
@@ -361,11 +381,7 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 func generateResetToken() string {
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
-		// Fallback to crypto/rand on system failure
-		b = make([]byte, 32)
-		for i := range b {
-			b[i] = byte(i * 17 % 256)
-		}
+		services.Fatal("Critical failure in crypto/rand: system security compromised", "error", err.Error())
 	}
 	return hex.EncodeToString(b)
 }

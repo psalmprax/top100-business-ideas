@@ -22,17 +22,17 @@ import { toast } from "sonner";
 import { extendedApi } from "@/lib/api";
 import { StrategyIterationCard } from "../ui/StrategyIterationCard";
 
-interface CEOSectionProps {
+interface ExecutiveSectionProps {
   workforceData: any;
   revenueData: any;
   onShiftMarketFocus: () => void;
 }
 
-export function CEOSection({
+export function ExecutiveSection({
   workforceData,
   revenueData,
   onShiftMarketFocus
-}: CEOSectionProps) {
+}: ExecutiveSectionProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <Card className="bg-indigo-500/5 border-indigo-500/20 shadow-xl overflow-hidden ring-1 ring-indigo-500/10">

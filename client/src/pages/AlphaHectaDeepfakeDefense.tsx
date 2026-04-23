@@ -945,7 +945,7 @@ export default function AlphaHectaDeepfakeDefense() {
           confidence: latestAnalysis.confidence,
           media_type: latestAnalysis.mediaType,
           origin: "LivenessLink-v4-Enterprise",
-          verified_by: user?.email || "Alpha Sentinel",
+          verified_by: user?.email || "AlphaHecta",
         }
       : {
           id: "CERT-EMPTY",

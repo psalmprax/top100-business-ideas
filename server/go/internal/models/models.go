@@ -70,7 +70,7 @@ type AgentLog struct {
 type ComplianceCheck struct {
 	ID        string    `json:"id" db:"id"`
 	Type      string    `json:"type" db:"type"`     // ai_act, privacy, security
-	Status    string    `json:"status" db:"status"` // passed, failed, pending, review
+	Status    string    `json:"status" db:"status"` // passed, failed, pending, review, compliant, non_compliant, verifying
 	Score     int       `json:"score" db:"score"`
 	Findings  []Finding `json:"findings"`
 	CheckedAt time.Time `json:"checked_at" db:"checked_at"`
@@ -426,10 +426,10 @@ type TravelVerificationResult struct {
 
 // EdgeDeployment represents an edge AI deployment
 type EdgeDeployment struct {
-	ID           string    `json:"id" db:"id"`
+	ID           string    `json:"device_id" db:"device_id"`
 	Name         string    `json:"name" db:"name"`
-	Type         string    `json:"type" db:"type"`     // industrial, retail, iot
-	Status       string    `json:"status" db:"status"` // running, stopped, updating
+	Type         string    `json:"device_type" db:"device_type"` // industrial, retail, iot
+	Status       string    `json:"status" db:"status"`           // running, stopped, updating, active, inactive, maintenance, error
 	Location     string    `json:"location" db:"location"`
 	ModelVersion string    `json:"model_version" db:"model_version"`
 	LastSync     time.Time `json:"last_sync" db:"last_sync"`
@@ -571,7 +571,7 @@ type Claim struct {
 	ClaimIDString string    `json:"claim_id_string" db:"claim_id_string"`
 	Payer         string    `json:"payer" db:"payer"`
 	Amount        float64   `json:"amount" db:"amount"`
-	Status        string    `json:"status" db:"status"` // pending, recovered, failed
+	Status        string    `json:"status" db:"status"` // pending, recovered, failed, New, Scrubbed
 	Risk          string    `json:"risk" db:"risk"`     // low, medium, high
 	CreatedAt     time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at" db:"updated_at"`
@@ -590,12 +590,16 @@ type RevenueRecovery struct {
 	ID              string    `json:"id" db:"id"`
 	UserID          string    `json:"user_id" db:"user_id"`
 	Status          string    `json:"status" db:"status"` // pending, recovered, failed (aligned with Python)
+	Amount          float64   `json:"amount" db:"amount"`
 	RecoveredAmount string    `json:"recovered_amount" db:"recovered_amount"`
 	ActionsTaken    []string  `json:"actions_taken" db:"actions_taken"`
 	ConfidenceScore float64   `json:"confidence_score" db:"confidence_score"`
 	InteractionID   string    `json:"interaction_id" db:"interaction_id"`
+	Source          string    `json:"source" db:"source"`
+	MetadataJSON    string    `json:"metadata_json" db:"metadata_json"`
 	Timestamp       time.Time `json:"timestamp" db:"timestamp"`
 }
+
 
 // BusinessIdea represents one of the Top 100 Business Ideas
 type BusinessIdea struct {

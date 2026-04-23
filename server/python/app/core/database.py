@@ -105,7 +105,7 @@ def init_async_engine():
 
 
 def seed_users():
-    """Seed the database with a system user for Sentinel operations"""
+    """Seed the database with a system user for AlphaHecta operations"""
     with SessionLocal() as session:
         # Check if system user exists
         system_user_id = uuid.UUID("00000000-0000-0000-0000-000000000000")
@@ -114,11 +114,11 @@ def seed_users():
 
         system_user = User(
             id=system_user_id,
-            email="sentinel@alpha-ai.io",
-            name="Sentinel System Agent",
-            password_hash=hashlib.sha256(f"sentinel-system-{uuid.uuid4().hex}".encode()).hexdigest(),
+            email="alphahecta@alpha-ai.io",
+            name="AlphaHecta System Agent",
+            password_hash=hashlib.sha256(f"alphahecta-system-{uuid.uuid4().hex}".encode()).hexdigest(),
             role="admin",
-            company="Alpha Sentinel Global",
+            company="AlphaHecta Global",
             subscription_tier="enterprise",
         )
         session.add(system_user)
@@ -524,7 +524,7 @@ def seed_workforce_data():
                     "trend": "down",
                 },
                 {
-                    "name": "Web3 Sentinel",
+                    "name": "Web3 AlphaHecta",
                     "sector": "DeFi",
                     "roi": 45.0,
                     "status": "BETA",
@@ -608,7 +608,7 @@ def seed_workforce_data():
                     "agent_id": "00000000-0000-4000-a000-000000000002",
                     "action": "Lead List Generation",
                     "details": {
-                        "message": "120 high-intent leads generated from Sentinel network."
+                        "message": "120 high-intent leads generated from AlphaHecta network."
                     },
                 },
                 {

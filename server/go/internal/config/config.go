@@ -41,6 +41,10 @@ type Config struct {
 
 	// Security Hardening
 	AdminSecret string
+
+	// Rate Limiting
+	RateLimitRate     int
+	RateLimitCapacity int
 }
 
 func getEnvAsSlice(key, separator string) []string {
@@ -70,6 +74,8 @@ func Load(logger *zerolog.Logger) *Config {
 		PayPalAppID:         getEnv("PAYPAL_APP_ID", ""),
 		PayPalMode:          getEnv("PAYPAL_MODE", "sandbox"),
 		AdminSecret:         getEnv("ADMIN_SECRET", ""),
+		RateLimitRate:       getEnvAsInt("RATE_LIMIT_RATE", 100, logger),
+		RateLimitCapacity:   getEnvAsInt("RATE_LIMIT_CAPACITY", 200, logger),
 	}
 
 	if cfg.JWTSecret == "" {

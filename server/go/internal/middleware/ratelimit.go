@@ -127,12 +127,12 @@ func (rl *RateLimiter) GetRemainingTokens(key string) int {
 }
 
 // RateLimitMiddleware creates a Gin middleware for rate limiting
-func RateLimitMiddleware(rateLimit int) gin.HandlerFunc {
-	// Default: 100 requests per second, burst of 200
-	rate := 100
-	capacity := 200
-	if rateLimit > 0 {
-		capacity = rateLimit
+func RateLimitMiddleware(rate, capacity int) gin.HandlerFunc {
+	if rate <= 0 {
+		rate = 100
+	}
+	if capacity <= 0 {
+		capacity = 200
 	}
 
 	limiter := NewRateLimiter(rate, capacity)

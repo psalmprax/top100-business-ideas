@@ -141,7 +141,7 @@ class IntelligenceService:
                 "project": project,
                 "strategy_score": 88,
                 "roadmap": [],
-                "ux_blueprint": {"navigation": [], "core_components": [], "aesthetic": "Sentinel Dark"},
+                "ux_blueprint": {"navigation": [], "core_components": [], "aesthetic": "AlphaHecta Dark"},
                 "recommendation": content[:1000]
             }
 

@@ -122,7 +122,7 @@ async def export_agent_config(agent_id: str, session: AsyncSession = Depends(get
         "metadata": {
             "version": "1.0",
             "exported_at": datetime.utcnow().isoformat(),
-            "origin": "AlphaHecta Sentinel"
+            "origin": "AlphaHecta"
         },
         "agent": agent.dict()
     }
