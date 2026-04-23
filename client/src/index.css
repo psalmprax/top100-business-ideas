@@ -45,6 +45,11 @@
   --font-display: "Inter", sans-serif;
   --font-body: "Inter", sans-serif;
   --font-mono: "JetBrains Mono", monospace;
+
+  /* Animation Durations */
+  --duration-slow: 8s;
+  --duration-normal: 4s;
+  --duration-fast: 2s;
 }
 
 :root {
@@ -528,17 +533,105 @@
   @apply font-normal opacity-70;
 }
 
-/* Gradient text: premium accent */
+:root {
+  /* AlphaHecta v1.0 Spec Palette */
+  --background-alt: #0A0A0B;
+  --primary-start: #00F2FE;
+  --primary-end: #4ADE80;
+  --secondary-accent: #8E2DE2;
+  --glass-opacity: 0.1;
+  --glass-blur: 24px;
+  
+  --primary: oklch(0.7 0.2 180); /* Mapped to teal/green vibe */
+  --primary-foreground: oklch(0.98 0.01 180);
+  
+  /* Animations */
+  --anim-float: float 6s ease-in-out infinite;
+  --anim-pulse-slow: pulse-slow 4s ease-in-out infinite;
+  --anim-iridescent: iridescent 8s linear infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.05); }
+}
+
+@keyframes iridescent {
+  0% { border-image-source: linear-gradient(45deg, var(--primary-start), var(--secondary-accent), var(--primary-end)); }
+  33% { border-image-source: linear-gradient(45deg, var(--secondary-accent), var(--primary-end), var(--primary-start)); }
+  66% { border-image-source: linear-gradient(45deg, var(--primary-end), var(--primary-start), var(--secondary-accent)); }
+  100% { border-image-source: linear-gradient(45deg, var(--primary-start), var(--secondary-accent), var(--primary-end)); }
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-float { animation: var(--anim-float); }
+.animate-pulse-slow { animation: var(--anim-pulse-slow); }
+.animate-marquee { animation: marquee 30s linear infinite; }
+
+.bg-premium-gradient {
+  background: linear-gradient(135deg, var(--primary-start), var(--primary-end));
+}
+
 .text-gradient-premium {
-  background: linear-gradient(
-    135deg,
-    oklch(0.65 0.2 250),
-    oklch(0.72 0.18 145),
-    oklch(0.75 0.18 75)
-  );
+  background: linear-gradient(135deg, var(--primary-start), var(--primary-end));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.glass-premium {
+  background: rgba(255, 255, 255, var(--glass-opacity));
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.iridescent-border {
+  position: relative;
+  border: 1px solid transparent;
+  border-radius: inherit;
+  background-clip: padding-box;
+}
+
+.iridescent-border::before {
+  content: "";
+  position: absolute;
+  top: -1px; bottom: -1px;
+  left: -1px; right: -1px;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(45deg, var(--primary-start), var(--secondary-accent), var(--primary-end), var(--primary-start));
+  background-size: 400% 400%;
+  opacity: 0.2;
+  transition: opacity 0.5s ease;
+}
+
+.group:hover .iridescent-border::before {
+  opacity: 0.6;
+  animation: iridescent-flow 3s linear infinite;
+}
+
+@keyframes iridescent-flow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.section-divider-glow {
+  height: 1px;
+  width: 100%;
+  background: linear-gradient(90deg, transparent, var(--primary-start), transparent);
+  opacity: 0.2;
+  box-shadow: 0 0 20px var(--primary-start);
 }
 
 /* Gradient text warm: amber/orange accent */
@@ -603,4 +696,68 @@
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
   pointer-events: none;
   border-radius: inherit;
+}
+
+/* Neural Grid Utility */
+.bg-neural-grid {
+  background-image: 
+    linear-gradient(to right, oklch(0.25 0.02 265 / 0.2) 1px, transparent 1px),
+    linear-gradient(to bottom, oklch(0.25 0.02 265 / 0.2) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(circle at center, black, transparent 80%);
+}
+
+.neural-node {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: var(--primary);
+  border-radius: 50%;
+  filter: blur(1px);
+  box-shadow: 0 0 10px var(--primary);
+}
+
+/* Redesigned CTAs */
+.btn-primary-premium {
+  @apply relative overflow-hidden bg-primary text-primary-foreground shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)] transition-all duration-300;
+  background: linear-gradient(135deg, oklch(0.65 0.2 250), oklch(0.55 0.2 280));
+}
+
+.btn-primary-premium:hover {
+  @apply shadow-[0_0_30px_rgba(var(--primary-rgb),0.5)] scale-[1.02];
+}
+
+/* Section Separators */
+.section-divider {
+  @apply h-px w-full;
+  background: linear-gradient(90deg, transparent, oklch(0.22 0.02 265), transparent);
+}
+
+.section-divider-glow {
+  @apply h-px w-full relative;
+  background: linear-gradient(90deg, transparent, oklch(0.65 0.2 250 / 0.3), transparent);
+}
+
+.section-divider-glow::after {
+  content: "";
+  @apply absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1/4 h-8 bg-primary/20 blur-2xl;
+}
+
+/* Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  50% { transform: translateY(-20px) rotate(2deg); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.1); }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 8s ease-in-out infinite;
 }

@@ -5,7 +5,15 @@
 
 import * as React from "react";
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import {
+  motion,
+  AnimatePresence,
+  useScroll,
+  useTransform,
+  useSpring,
+  useMotionValue,
+  animate,
+} from "framer-motion";
 import { Link } from "wouter";
 import {
   Shield,
@@ -270,6 +278,32 @@ function LeadGenDialog({
 import { useAuth } from "@/contexts/AuthContext";
 import { usePerspective } from "@/contexts/PerspectiveContext";
 
+const Counter = ({ value, duration = 1.5 }: { value: number; duration?: number }) => {
+  const count = useMotionValue(0);
+  const rounded = useTransform(count, (latest) => Math.round(latest * 100) / 100);
+  const [displayValue, setDisplayValue] = useState("0");
+
+  useEffect(() => {
+    const controls = animate(count, value, {
+      duration: duration,
+      ease: [0.165, 0.84, 0.44, 1], // quart-out
+    });
+    return controls.stop;
+  }, [value, duration]);
+
+  useEffect(() => {
+    return rounded.onChange((v) => {
+      if (value % 1 === 0) {
+        setDisplayValue(Math.floor(v).toLocaleString());
+      } else {
+        setDisplayValue(v.toFixed(2));
+      }
+    });
+  }, [rounded, value]);
+
+  return <>{displayValue}</>;
+};
+
 export default function AlphaHecta() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isManagement, hasProductAccess, isAuthenticated } = useAuth();
@@ -320,11 +354,21 @@ export default function AlphaHecta() {
     fetchPlatformStats();
   }, [isAuthenticated]);
 
+  const { scrollY } = useScroll();
+  const headerBlur = useTransform(scrollY, [0, 100], [0, 10]);
+  const headerBg = useTransform(
+    scrollY,
+    [0, 100],
+    ["rgba(10, 10, 11, 0)", "rgba(10, 10, 11, 0.8)"]
+  );
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header section... */}
+    <div className="min-h-screen bg-[#0A0A0B] text-foreground font-sans selection:bg-primary/30">
       {/* Navigation */}
-      <header className="fixed top-0 left-0 right-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <motion.header 
+        style={{ backdropFilter: `blur(${headerBlur}px)`, backgroundColor: headerBg }}
+        className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 px-4 py-4 transition-colors duration-300"
+      >
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center gap-2">
@@ -457,161 +501,320 @@ export default function AlphaHecta() {
             </nav>
           </div>
         )}
-      </header>
+      </motion.header>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4 relative overflow-hidden">
+      <section className="pt-32 pb-20 px-4 relative overflow-hidden bg-background">
         {/* Ambient glow orbs */}
         <div
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] pointer-events-none"
           aria-hidden
         >
           <div
-            className={`absolute top-0 left-1/4 w-72 h-72 rounded-full blur-[120px] animate-pulse transition-colors duration-1000 ${
+            className={`absolute top-0 left-1/4 w-72 h-72 rounded-full blur-[120px] animate-pulse-slow transition-colors duration-1000 ${
               perspective === "alpha"
-                ? "bg-blue-500/15"
+                ? "bg-blue-500/20"
                 : perspective === "sigma"
-                  ? "bg-purple-500/15"
+                  ? "bg-purple-500/20"
                   : perspective === "omega"
-                    ? "bg-emerald-500/15"
-                    : "bg-blue-500/15"
+                    ? "bg-emerald-500/20"
+                    : "bg-blue-500/20"
             }`}
-            style={{ animationDuration: "4s" }}
           />
           <div
-            className={`absolute bottom-0 right-1/4 w-96 h-96 rounded-full blur-[140px] animate-pulse transition-colors duration-1000 ${
+            className={`absolute bottom-0 right-1/4 w-96 h-96 rounded-full blur-[140px] animate-pulse-slow transition-colors duration-1000 ${
               perspective === "alpha"
-                ? "bg-purple-600/10"
+                ? "bg-purple-600/15"
                 : perspective === "sigma"
-                  ? "bg-blue-600/10"
+                  ? "bg-blue-600/15"
                   : perspective === "omega"
-                    ? "bg-indigo-600/10"
-                    : "bg-purple-600/10"
+                    ? "bg-indigo-600/15"
+                    : "bg-purple-600/15"
             }`}
-            style={{ animationDuration: "6s", animationDelay: "1s" }}
-          />
-          <div
-            className={`absolute top-1/3 right-1/3 w-64 h-64 rounded-full blur-[100px] animate-pulse transition-colors duration-1000 ${
-              perspective === "alpha"
-                ? "bg-emerald-500/8"
-                : perspective === "sigma"
-                  ? "bg-amber-500/8"
-                  : perspective === "omega"
-                    ? "bg-red-500/8"
-                    : "bg-emerald-500/8"
-            }`}
-            style={{ animationDuration: "5s", animationDelay: "2s" }}
+            style={{ animationDelay: "1s" }}
           />
         </div>
-        {/* Subtle grid */}
+
+        {/* Neural Grid */}
         <div
-          className="absolute inset-0 pointer-events-none"
+          className="absolute inset-0 pointer-events-none bg-neural-grid opacity-30"
           aria-hidden
-          style={{
-            backgroundImage: `linear-gradient(oklch(0.25 0.02 265 / 0.3) 1px, transparent 1px), linear-gradient(90deg, oklch(0.25 0.02 265 / 0.3) 1px, transparent 1px)`,
-            backgroundSize: "64px 64px",
-            maskImage:
-              "radial-gradient(ellipse 60% 50% at 50% 40%, black 20%, transparent 70%)",
-            WebkitMaskImage:
-              "radial-gradient(ellipse 60% 50% at 50% 40%, black 20%, transparent 70%)",
-          }}
         />
+
         <div className="container mx-auto relative z-10">
-          <div className="text-center max-w-4xl mx-auto">
-            <div
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-kicker mb-8 border backdrop-blur-sm transition-all duration-500 ${
-                perspective === "alpha"
-                  ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
-                  : perspective === "sigma"
-                    ? "bg-purple-500/10 text-purple-500 border-purple-500/20"
-                    : perspective === "omega"
-                      ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                      : "bg-blue-500/10 text-blue-500 border-blue-500/20"
-              }`}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {/* Left Column: Content */}
+            <motion.div 
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="text-left"
             >
-              <Zap className="h-4 w-4" />
-              Now available: Enterprise tier with custom SLAs
-            </div>
-            <h1 className="text-display-hero mb-8 text-balance">
-              Enterprise AI Solutions
-              <span className="block text-gradient-premium mt-2">
-                Built for Production
-              </span>
-            </h1>
-            <p className="text-subheadline mb-10 max-w-2xl mx-auto text-balance">
-              Deploy autonomous AI agents, ensure regulatory compliance, and
-              protect against deepfake threats — all from one platform.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/signup">
-                <Button
-                  size="lg"
-                  className="gap-2 px-8 py-6 text-base shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:scale-[1.02] transition-all duration-300"
-                  data-testid="btn-start-free-trial"
-                >
-                  Start Free Trial <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-              <LeadGenDialog
-                trigger={
+              <div
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-kicker mb-8 border backdrop-blur-sm transition-all duration-500 ${
+                  perspective === "alpha"
+                    ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
+                    : perspective === "sigma"
+                      ? "bg-purple-500/10 text-purple-500 border-purple-500/20"
+                      : perspective === "omega"
+                        ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                        : "bg-blue-500/10 text-blue-500 border-blue-500/20"
+                }`}
+              >
+                <Zap className="h-4 w-4" />
+                Next-Gen Enterprise AI Orchestration
+              </div>
+              
+              <h1 className="text-display-hero mb-8 text-balance">
+                Deploy Production-Ready AI
+                <span className="block text-gradient-premium mt-2">
+                  in Days, Not Months
+                </span>
+              </h1>
+              
+              <p className="text-subheadline mb-10 max-w-xl text-balance">
+                The unified platform to deploy autonomous agents, enforce 
+                regulatory compliance, and protect your brand from synthetic 
+                threats with military-grade precision.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row items-center gap-4">
+                <Link href="/signup">
                   <Button
                     size="lg"
-                    data-testid="btn-schedule-demo"
-                    className="px-10 py-6 text-base hover:scale-[1.02] transition-all duration-300 shadow-lg shadow-purple-500/20"
-                    style={{
-                      background:
-                        "linear-gradient(135deg, oklch(0.65 0.2 250), oklch(0.55 0.2 280))",
-                      border: "none",
-                    }}
+                    className="gap-2 px-10 py-7 text-lg btn-primary-premium"
+                    data-testid="btn-start-free-trial"
                   >
-                    <Sparkles className="w-5 h-5 mr-2" />
-                    Discuss Your AI Needs
+                    Start Building <ArrowRight className="h-5 w-5" />
                   </Button>
-                }
-                title="Custom AI Solutions Inquiry"
-              />
-            </div>
+                </Link>
+                <LeadGenDialog
+                  trigger={
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="px-10 py-7 text-lg border-primary/20 hover:bg-primary/5 transition-all duration-300"
+                      data-testid="btn-schedule-demo"
+                    >
+                      <Sparkles className="w-5 h-5 mr-2 text-primary" />
+                      View Demo
+                    </Button>
+                  }
+                  title="Schedule an Enterprise Walkthrough"
+                />
+              </div>
+
+              {/* Trust Indicators */}
+              <div className="mt-12 flex items-center gap-6 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
+                <div className="flex -space-x-3">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="h-10 w-10 rounded-full border-2 border-background bg-muted flex items-center justify-center text-[10px] font-bold">
+                      U{i}
+                    </div>
+                  ))}
+                </div>
+                <div className="text-sm font-medium">
+                  Trusted by <span className="text-foreground font-bold">500+</span> teams globally
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Right Column: Visual Anchor */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, rotateY: 10 }}
+              animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+              transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
+              className="relative perspective-1000 hidden lg:block"
+            >
+              <div className="relative z-10 glass-premium p-6 rounded-3xl iridescent-border group shadow-[0_20px_50px_rgba(0,0,0,0.8)] animate-float overflow-hidden">
+                {/* 3D Obsidian Composition Mockup */}
+                <div className="aspect-square w-full relative flex items-center justify-center">
+                  <div className="absolute inset-0 bg-gradient-to-br from-black via-black to-blue-900/20" />
+                  
+                  {/* Abstract Cubes */}
+                  <div className="relative z-10 w-48 h-48">
+                    {[1, 2, 3].map((i) => (
+                      <motion.div
+                        key={i}
+                        className="absolute inset-0 border border-white/10 bg-black/40 backdrop-blur-xl rounded-xl"
+                        animate={{ 
+                          rotateX: [0, 360], 
+                          rotateY: [0, 360],
+                          scale: [1, 1.1, 1] 
+                        }}
+                        transition={{ 
+                          duration: 10 + i * 2, 
+                          repeat: Infinity, 
+                          ease: "linear" 
+                        }}
+                        style={{
+                          transformStyle: "preserve-3d",
+                          boxShadow: `0 0 40px var(--primary-start) inset, 0 0 20px var(--secondary-accent)`,
+                          opacity: 0.6 / i
+                        }}
+                      />
+                    ))}
+                    
+                    {/* Glowing Core */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-primary-start blur-2xl animate-pulse" />
+                    <Zap className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-12 w-12 text-primary-start group-hover:scale-125 transition-transform duration-500" />
+                  </div>
+
+                  {/* Iridescent overlay effect */}
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(0,242,254,0.1),transparent_70%)]" />
+                </div>
+
+                {/* System Status Label */}
+                <div className="absolute bottom-4 left-6 flex items-center gap-3">
+                  <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-[10px] font-mono tracking-widest opacity-40 uppercase">Obsidian_Logic_v1.0</span>
+                </div>
+              </div>
+              
+              {/* Decorative rings */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] border border-primary-start/10 rounded-full pointer-events-none animate-spin-slow" />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140%] h-[140%] border border-secondary-accent/5 rounded-full pointer-events-none opacity-50" />
+            </motion.div>
           </div>
         </div>
       </section>
 
+      <div className="section-divider-glow" />
+
       {/* Stats Ribbon — Social Proof */}
-      <section className="py-12 px-4 border-y border-white/5">
+      <section className="py-20 px-4 bg-muted/5 relative overflow-hidden">
         <div className="container mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, i) => (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-12">
+            {[
+              { label: "Uptime", value: 99.99, suffix: "%", icon: Zap },
+              { label: "Global Clients", value: 10, suffix: "K+", icon: Globe },
+              { label: "Venture Funding", value: 100, prefix: "$", suffix: "M+", icon: Shield },
+              { label: "Daily Predictions", value: 1, suffix: "B+", icon: Bot },
+            ].map((stat, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: i * 0.1 }}
                 viewport={{ once: true }}
-                className="text-center"
+                className="text-center relative group glass-premium p-8 rounded-3xl border-white/5 iridescent-border"
               >
-                <div className="text-stat text-gradient-premium">
-                  {stat.value}
+                <div className="text-stat text-gradient-premium mb-2 font-black tracking-tighter">
+                  {stat.prefix}
+                  <Counter value={stat.value} />
+                  {stat.suffix}
                 </div>
-                <div className="text-stat-label mt-2">{stat.label}</div>
+                <div className="text-caption-premium uppercase tracking-widest opacity-40 group-hover:opacity-100 transition-opacity">
+                  {stat.label}
+                </div>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
+      <div className="section-divider" />
+
+      {/* How It Works Section */}
+      <section className="py-24 px-4 bg-background relative overflow-hidden">
+        <div className="container mx-auto relative z-10">
+          <div className="text-center mb-20">
+            <h2 className="text-section-headline mb-6">
+              Production AI in <span className="text-gradient-premium">3 Simple Steps</span>
+            </h2>
+            <p className="text-subheadline max-w-2xl mx-auto">
+              We've abstracted the complexity of enterprise AI so you can 
+              focus on results, not infrastructure.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 relative">
+            {/* Connecting lines for desktop */}
+            <div className="hidden md:block absolute top-1/2 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent -translate-y-1/2 pointer-events-none" />
+            
+            {[
+              {
+                step: "01",
+                title: "Connect Your Stack",
+                desc: "Securely integrate your enterprise data, cloud infrastructure, and existing software tools.",
+                icon: Globe,
+                color: "text-blue-500",
+              },
+              {
+                step: "02",
+                title: "Deploy Agents",
+                desc: "Launch specialized AI workforces tailored to your specific workflows and business logic.",
+                icon: Bot,
+                color: "text-purple-500",
+              },
+              {
+                step: "03",
+                title: "Scale & Protect",
+                desc: "Monitor performance in real-time while our defense systems ensure compliance and safety.",
+                icon: Shield,
+                color: "text-emerald-500",
+              },
+            ].map((item, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: idx * 0.2 }}
+                viewport={{ once: true }}
+                className="relative z-10 p-8 rounded-2xl bg-white/5 border border-white/5 hover:border-primary/20 transition-all duration-300 group"
+              >
+                <div className="text-overline text-primary/40 mb-4">{item.step}</div>
+                <div className={`h-12 w-12 rounded-xl bg-white/5 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                  <item.icon className={`h-6 w-6 ${item.color}`} />
+                </div>
+                <h3 className="text-card-title mb-4">{item.title}</h3>
+                <p className="text-body opacity-70 leading-relaxed">
+                  {item.desc}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <div className="section-divider-glow" />
+
+      {/* Social Proof - Logo Marquee */}
+      <section className="py-20 bg-background/50 border-y border-white/5 overflow-hidden">
+        <div className="container mx-auto mb-10 text-center">
+          <p className="text-caption-premium opacity-40 uppercase tracking-[0.3em]">Trusted by Industry Leaders</p>
+        </div>
+        <div className="flex items-center gap-24 whitespace-nowrap animate-marquee px-4 opacity-20 grayscale hover:grayscale-0 transition-all duration-700">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            <div key={i} className="flex items-center gap-4 text-3xl font-black tracking-tighter uppercase italic opacity-50">
+              <Zap className="h-8 w-8 text-primary-start" /> {["Spotify", "Apple", "Mastercard", "Google", "HP", "IBM", "WorldBank", "Nvidia"][i-1]}
+            </div>
+          ))}
+          {/* Duplicate for seamless effect */}
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            <div key={i+8} className="flex items-center gap-4 text-3xl font-black tracking-tighter uppercase italic opacity-50">
+              <Zap className="h-8 w-8 text-primary-start" /> {["Spotify", "Apple", "Mastercard", "Google", "HP", "IBM", "WorldBank", "Nvidia"][i-1]}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <div className="section-divider" />
+
       {/* Our Ventures / Products Section */}
       <section
         id="products"
-        className="py-24 px-4 bg-background relative overflow-hidden"
+        className="py-32 px-4 bg-muted/5 relative overflow-hidden"
       >
         <div className="container mx-auto relative z-10">
-          <div className="text-center mb-16">
+          <div className="text-center mb-20">
             <motion.h2
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
               className="text-section-headline mb-6"
             >
-              Our <span className="text-gradient-premium">Ventures</span>
+              The <span className="text-gradient-premium">Portfolio</span>
             </motion.h2>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -619,8 +822,8 @@ export default function AlphaHecta() {
               transition={{ duration: 0.5, delay: 0.1 }}
               className="text-subheadline max-w-2xl mx-auto"
             >
-              A portfolio of autonomous companies and AI solutions built to
-              solve real-world enterprise challenges.
+              Autonomous companies and specialized AI solutions built to 
+              orchestrate the future of enterprise operations.
             </motion.p>
           </div>
 
@@ -634,52 +837,56 @@ export default function AlphaHecta() {
                 viewport={{ once: true }}
               >
                 <Card
-                  className="group relative overflow-hidden border-border/50 bg-card/50 backdrop-blur-sm hover:border-primary/50 transition-all duration-300 h-full flex flex-col noise-overlay"
+                  className="group relative overflow-hidden border-white/5 bg-card/40 backdrop-blur-xl hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-500 h-full flex flex-col iridescent-border rounded-[2rem]"
                   data-testid="venture-card"
                 >
                   <CardHeader>
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center justify-between mb-6">
                       <div
-                        className={`p-3 rounded-xl ${product.color}/10 transition-transform group-hover:scale-110 duration-300`}
+                        className={`p-4 rounded-2xl bg-white/5 border border-white/5 transition-all duration-500 group-hover:scale-110 group-hover:border-primary/20 group-hover:bg-primary/5`}
                       >
                         <product.icon
-                          className={`h-6 w-6 ${product.color.replace("bg-", "text-")}`}
+                          className={`h-7 w-7 ${product.color.replace("bg-", "text-")}`}
                         />
                       </div>
-                      <ArrowRight className="h-5 w-5 text-muted-foreground/30 group-hover:text-primary transition-colors" />
+                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                        <span className="text-[10px] font-bold tracking-widest text-primary">LIVE_SYSTEM</span>
+                        <ArrowRight className="h-4 w-4 text-primary" />
+                      </div>
                     </div>
-                    <CardTitle className="text-card-title group-hover:text-primary transition-colors">
+                    <CardTitle className="text-card-title mb-2">
                       {product.name}
                     </CardTitle>
-                    <p className="text-caption-premium text-primary/80 mt-1 uppercase">
+                    <p className="text-overline text-primary/60">
                       {product.tagline}
                     </p>
                   </CardHeader>
-                  <CardContent className="flex-grow">
-                    <p className="text-body leading-relaxed mb-6">
+                  <CardContent className="flex-grow flex flex-col pt-0">
+                    <p className="text-body leading-relaxed mb-8 text-foreground/80">
                       {product.description}
                     </p>
-                    <ul className="space-y-2 mb-8">
+                    <div className="space-y-3 mb-10">
                       {product.features.map((feature, fIdx) => (
-                        <li
+                        <div
                           key={fIdx}
-                          className="flex items-center text-feature text-foreground/80"
+                          className="flex items-center text-sm text-foreground/70"
                         >
-                          <CheckCircle2 className="h-4 w-4 text-primary mr-2 flex-shrink-0" />
+                          <div className="h-1 w-1 rounded-full bg-primary/40 mr-3" />
                           {feature}
-                        </li>
+                        </div>
                       ))}
-                    </ul>
-                    <div className="mt-auto pt-6 border-t border-border/50">
+                    </div>
+                    <div className="mt-auto pt-6 border-t border-white/5">
                       <Link href={product.url}>
                         <Button
-                          className={`w-full transition-all duration-300 ${!hasProductAccess(product.id) && isAuthenticated ? "opacity-50 grayscale cursor-not-allowed" : "group-hover:bg-primary group-hover:text-primary-foreground"}`}
+                          variant={hasProductAccess(product.id) ? "default" : "outline"}
+                          className={`w-full transition-all duration-300 ${!hasProductAccess(product.id) && isAuthenticated ? "opacity-50" : "hover:bg-primary hover:text-primary-foreground"}`}
                         >
                           {!isAuthenticated
-                            ? "Learn More"
+                            ? "Examine Logic"
                             : hasProductAccess(product.id)
-                              ? "Learn More"
-                              : "Upgrade to Unlock"}
+                              ? "Launch Instance"
+                              : "Upgrade Access"}
                         </Button>
                       </Link>
                     </div>
@@ -1003,167 +1210,187 @@ export default function AlphaHecta() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 px-4 bg-gradient-to-r from-blue-600 to-purple-600">
-        <div className="container mx-auto text-center">
-          <h2 className="text-section-headline text-white mb-4">
-            Ready to Transform Your AI Operations?
-          </h2>
-          <p className="text-subheadline text-white/80 mb-8 max-w-2xl mx-auto">
-            Join 500+ enterprises already using AlphaHecta to power their AI
-            initiatives
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/signup">
-              <Button size="lg" variant="secondary" className="gap-2">
-                Start Free Trial <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-            <LeadGenDialog
-              title="Contact Sales"
-              trigger={
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="bg-transparent text-white border-white hover:bg-white/10"
-                >
-                  Contact Sales
+      {/* Final Momentum Close */}
+      <section className="py-32 px-4 relative overflow-hidden bg-background">
+        <div className="absolute inset-0 bg-neural-grid opacity-20 pointer-events-none" />
+        <div className="container mx-auto relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="max-w-4xl mx-auto glass-premium p-12 md:p-20 rounded-[2rem] border-white/5 text-center relative overflow-hidden"
+          >
+            {/* Background glow */}
+            <div className="absolute -top-1/2 -left-1/2 w-full h-full bg-primary/10 blur-[120px] pointer-events-none" />
+            
+            <Zap className="h-16 w-16 text-primary mx-auto mb-8 animate-pulse" />
+            <h2 className="text-display-hero mb-6 text-white">
+              The Future is <span className="text-gradient-premium">Autonomous</span>
+            </h2>
+            <p className="text-subheadline mb-12 max-w-2xl mx-auto text-white/70">
+              Join 500+ global enterprises that have accelerated their AI 
+              roadmap by 10x. Production-ready, compliant, and secure.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+              <Link href="/signup">
+                <Button size="lg" className="px-12 py-8 text-xl btn-primary-premium">
+                  Claim Your Instance <ArrowRight className="h-5 w-5 ml-2" />
                 </Button>
-              }
-            />
-          </div>
+              </Link>
+              <LeadGenDialog
+                title="Enterprise Inquiry"
+                trigger={
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="px-12 py-8 text-xl border-white/10 hover:bg-white/5 text-white"
+                  >
+                    Custom Integration
+                  </Button>
+                }
+              />
+            </div>
+
+            <div className="mt-16 grid grid-cols-3 gap-8 pt-12 border-t border-white/5 opacity-40">
+              <div>
+                <div className="text-2xl font-bold text-white">24/7</div>
+                <div className="text-[10px] uppercase tracking-widest mt-1">Uptime SLA</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-white">ISO</div>
+                <div className="text-[10px] uppercase tracking-widest mt-1">Certified</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-white">Global</div>
+                <div className="text-[10px] uppercase tracking-widest mt-1">Footprint</div>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </section>
 
+      <div className="section-divider" />
+
       {/* Pricing Section */}
-      <section id="pricing" className="py-20 px-4 bg-muted/30">
-        <div className="container mx-auto">
-          <div className="text-center mb-12">
+      <section id="pricing" className="py-32 px-4 bg-muted/5 relative overflow-hidden">
+        <div className="container mx-auto relative z-10">
+          <div className="text-center mb-20">
             <h2 className="text-section-headline mb-4">
-              Simple, Transparent Pricing
+              Scale with <span className="text-gradient-premium">Confidence</span>
             </h2>
             <p className="text-subheadline max-w-2xl mx-auto">
-              Choose the plan that fits your enterprise needs
+              Transparent, enterprise-grade pricing for teams of all sizes.
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
-            <Card className="bg-muted/50">
-              <CardHeader>
-                <CardTitle className="text-card-title">Developer</CardTitle>
-                <p className="text-price">
-                  $0
-                  <span className="text-body-sm text-muted-foreground">
-                    /free
-                  </span>
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-feature">Solo builders & hackers</p>
-                <p className="text-feature">Community support</p>
-                <p className="text-feature">1M free tokens/mo</p>
-                <Link href="/signup">
-                  <Button className="w-full" variant="outline">
-                    Start Building
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-card-title">Starter</CardTitle>
-                <p className="text-price">
-                  $499
-                  <span className="text-body-sm text-muted-foreground">
-                    /month
-                  </span>
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-feature">Up to 5 agents</p>
-                <p className="text-feature">100K tokens/day</p>
-                <p className="text-feature">Priority email</p>
-                <Link href="/signup">
-                  <Button className="w-full" variant="outline">
-                    Get Started
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-            <Card className="border-emerald-500 bg-emerald-500/5">
-              <CardHeader>
-                <CardTitle className="text-card-title text-emerald-500">
-                  Professional
-                </CardTitle>
-                <p className="text-price">
-                  $1,499
-                  <span className="text-body-sm text-muted-foreground">
-                    /month
-                  </span>
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-feature">Up to 25 agents</p>
-                <p className="text-feature">1M tokens/day</p>
-                <p className="text-feature">Advanced analytics</p>
-                <Link href="/signup">
-                  <Button className="w-full bg-emerald-600 hover:bg-emerald-700">
-                    Go Professional
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-            <Card className="border-blue-500 bg-blue-500/5">
-              <CardHeader>
-                <CardTitle className="text-card-title text-blue-500">
-                  Enterprise
-                </CardTitle>
-                <p className="text-price">
-                  $2,500
-                  <span className="text-body-sm text-muted-foreground">
-                    + /month
-                  </span>
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-feature">Unlimited agents</p>
-                <p className="text-feature">VPC deployment</p>
-                <p className="text-feature">24/7 dedicated lead</p>
-                <LeadGenDialog
-                  title="Contact Enterprise Sales"
-                  trigger={
-                    <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                      Contact Sales
-                    </Button>
-                  }
-                />
-              </CardContent>
-            </Card>
+            {[
+              {
+                name: "Developer",
+                price: "$0",
+                period: "/free",
+                features: ["Solo builders & hackers", "Community support", "1M free tokens/mo"],
+                cta: "Start Building",
+                variant: "outline"
+              },
+              {
+                name: "Starter",
+                price: "$499",
+                period: "/month",
+                features: ["Up to 5 agents", "100K tokens/day", "Priority email"],
+                cta: "Get Started",
+                variant: "outline"
+              },
+              {
+                name: "Professional",
+                price: "$1,499",
+                period: "/month",
+                features: ["Up to 25 agents", "1M tokens/day", "Advanced analytics"],
+                cta: "Go Professional",
+                variant: "default",
+                highlight: "border-emerald-500 bg-emerald-500/5",
+                text: "text-emerald-500"
+              },
+              {
+                name: "Enterprise",
+                price: "$2,500+",
+                period: "/month",
+                features: ["Unlimited agents", "VPC deployment", "24/7 dedicated lead"],
+                cta: "Contact Sales",
+                variant: "default",
+                highlight: "border-blue-500 bg-blue-500/5",
+                text: "text-blue-500",
+                dialog: true
+              }
+            ].map((plan, idx) => (
+              <Card key={idx} className={`group relative overflow-hidden border-white/5 bg-card/40 backdrop-blur-sm transition-all duration-300 hover:border-primary/40 ${plan.highlight || ""}`}>
+                <CardHeader>
+                  <CardTitle className={`text-card-title ${plan.text || ""}`}>{plan.name}</CardTitle>
+                  <div className="mt-4">
+                    <span className="text-price">{plan.price}</span>
+                    <span className="text-body-sm text-muted-foreground ml-1">{plan.period}</span>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {plan.features.map((f, i) => (
+                    <p key={i} className="text-feature flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-primary/40" /> {f}
+                    </p>
+                  ))}
+                  <div className="pt-6">
+                    {plan.dialog ? (
+                      <LeadGenDialog
+                        title="Enterprise Inquiry"
+                        trigger={<Button className="w-full bg-blue-600 hover:bg-blue-700">{plan.cta}</Button>}
+                      />
+                    ) : (
+                      <Link href="/signup">
+                        <Button className="w-full" variant={plan.variant as any}>{plan.cta}</Button>
+                      </Link>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </section>
 
+      <div className="section-divider" />
+
       {/* About Section */}
-      <section id="about" className="py-20 px-4">
+      <section id="about" className="py-32 px-4 bg-background">
         <div className="container mx-auto">
-          <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-section-headline mb-6">About AlphaHecta</h2>
-            <p className="text-body-lg mb-8">
-              AlphaHecta is a leading enterprise AI platform trusted by Fortune 500
-              companies worldwide. We specialize in autonomous agent operations,
-              AI compliance, and deepfake defense solutions.
-            </p>
-            <div className="grid grid-cols-3 gap-8">
+          <div className="max-w-5xl mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
               <div>
-                <p className="text-stat text-blue-500">500+</p>
-                <p className="text-stat-label mt-2">Enterprise Customers</p>
+                <h2 className="text-section-headline mb-8">Forging the <span className="text-gradient-premium">AI Frontier</span></h2>
+                <p className="text-body-lg mb-8 leading-relaxed text-foreground/80">
+                  AlphaHecta is more than a platform—it's the operating system 
+                  for the autonomous enterprise. Trusted by global leaders, 
+                  we bridge the gap between experimental AI and production-grade 
+                  certainty.
+                </p>
+                <div className="grid grid-cols-2 gap-8">
+                  <div>
+                    <div className="text-stat text-primary">500+</div>
+                    <div className="text-stat-label">Deployments</div>
+                  </div>
+                  <div>
+                    <div className="text-stat text-primary">10x</div>
+                    <div className="text-stat-label">Efficiency</div>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-stat text-purple-500">99.9%</p>
-                <p className="text-stat-label mt-2">Uptime SLA</p>
-              </div>
-              <div>
-                <p className="text-stat text-emerald-500">24/7</p>
-                <p className="text-stat-label mt-2">Support</p>
+              <div className="relative">
+                <div className="aspect-video rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-neural-grid opacity-20" />
+                  <Sparkles className="h-20 w-20 text-primary/20 group-hover:scale-110 transition-transform duration-700" />
+                  {/* Decorative corner accents */}
+                  <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-primary/30 rounded-tl-lg" />
+                  <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-primary/30 rounded-br-lg" />
+                </div>
               </div>
             </div>
           </div>
