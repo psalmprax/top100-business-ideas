@@ -144,7 +144,7 @@ app.use(
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 1000, // Increased from 100 to 1000 to prevent 429s on dashboard load
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many requests, please try again later" },
@@ -152,7 +152,7 @@ const apiLimiter = rateLimit({
 
 const mlLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20,
+  max: 100, // Increased from 20 to 100
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "ML resource limit exceeded" },
