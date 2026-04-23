@@ -425,11 +425,11 @@
 
 /* Hero display: massive landing headline */
 .text-display-hero {
-  @apply font-black tracking-tighter;
+  @apply font-bold tracking-tight;
   font-family: var(--font-display);
   font-size: clamp(2.5rem, 6vw + 1rem, 5rem);
-  line-height: 0.95;
-  letter-spacing: -0.05em;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
   text-wrap: balance;
 }
 
