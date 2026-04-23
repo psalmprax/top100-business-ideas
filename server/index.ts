@@ -53,32 +53,11 @@ const io = new SocketServer(server, {
 
 app.use(
   helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
-        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-        fontSrc: ["'self'", "https://fonts.gstatic.com"],
-        imgSrc: [
-          "'self'",
-          "data:",
-          "https://images.unsplash.com",
-          "https://api.placeholder.com",
-        ],
-        connectSrc: [
-          "'self'",
-          "ws:",
-          "wss:",
-          "http://localhost:7001",
-          "http://localhost:8080",
-          "http://localhost:8000",
-        ],
-      },
-    },
+    contentSecurityPolicy: false, // Disabled to prevent forced HTTPS upgrades on IP-based deployment
     crossOriginEmbedderPolicy: false,
-    crossOriginOpenerPolicy: false, // Disabled: HTTP only
+    crossOriginOpenerPolicy: false,
     originAgentCluster: false,
-    hsts: false,
+    hsts: false, // Explicitly disable HSTS for HTTP-only production
   })
 );
 
