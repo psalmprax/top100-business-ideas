@@ -20,6 +20,7 @@ class CloudProvider(str, Enum):
     AZURE = "azure"
     ANTHROPIC = "anthropic"
     BEDROCK = "bedrock"
+    OLLAMA = "ollama"
 
 
 class MultiCloudProxy:
@@ -53,8 +54,13 @@ class MultiCloudProxy:
                 "api_key": os.getenv("AWS_ACCESS_KEY_ID", ""),
                 "region": os.getenv("AWS_REGION", "us-east-1"),
             },
+            CloudProvider.OLLAMA: {
+                "base_url": os.getenv("OLLAMA_BASE_URL", "http://ollama:11434/v1"),
+                "api_key": "ollama", # Placeholder for compatibility
+            },
         }
         self.fallback_order = [
+            CloudProvider.OLLAMA, # Local first for cost/sovereignty
             CloudProvider.OPENAI,
             CloudProvider.ANTHROPIC,
             CloudProvider.AZURE,
@@ -141,6 +147,10 @@ class MultiCloudProxy:
                 elif provider == CloudProvider.BEDROCK:
                     result = await self._call_bedrock(
                         messages, model, max_tokens, temperature, api_key
+                    )
+                elif provider == CloudProvider.OLLAMA:
+                    result = await self._call_ollama(
+                        messages, model, max_tokens, temperature
                     )
                 else:
                     raise ValueError(f"Unknown provider: {provider}")
@@ -432,7 +442,52 @@ class MultiCloudProxy:
             "azure": bool(self.providers[CloudProvider.AZURE]["api_key"]),
             "anthropic": bool(self.providers[CloudProvider.ANTHROPIC]["api_key"]),
             "bedrock": bool(self.providers[CloudProvider.BEDROCK]["api_key"]),
+            "ollama": True, # Always true if network is reachable
         }
+
+    async def _call_ollama(
+        self,
+        messages: List[Dict[str, str]],
+        model: str,
+        max_tokens: int,
+        temperature: float,
+    ) -> Dict[str, Any]:
+        """Call local/remote Ollama API (OpenAI-compatible)."""
+        config = self.providers[CloudProvider.OLLAMA]
+        
+        # Default to llama3 if no specific local model is requested
+        ollama_model = model if model and not model.startswith("gpt") else "llama3"
+
+        try:
+            response = await self.client.post(
+                f"{config['base_url']}/chat/completions",
+                headers={"Content-Type": "application/json"},
+                json={
+                    "model": ollama_model,
+                    "messages": messages,
+                    "max_tokens": max_tokens,
+                    "temperature": temperature,
+                },
+                timeout=60.0 # Ollama can be slow on large models
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            return {
+                "status": "success",
+                "content": data["choices"][0]["message"]["content"],
+                "model": data["model"],
+                "usage": data.get("usage", {"prompt_tokens": 0, "completion_tokens": 0}),
+                "provider": "ollama",
+            }
+        except Exception as e:
+            logger.error(f"Ollama call failed: {e}")
+            # Try fallback to localhost if internal docker name fails
+            if "ollama" in config["base_url"]:
+                logger.info("Retrying Ollama on localhost...")
+                config["base_url"] = "http://localhost:11434/v1"
+                return await self._call_ollama(messages, model, max_tokens, temperature)
+            raise e
 
     def switch_provider(
         self, from_provider: CloudProvider, to_provider: CloudProvider

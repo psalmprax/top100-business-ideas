@@ -35,8 +35,8 @@ class IntelligenceService:
             agent = Agent(
                 name="Paperclip",
                 type=AgentType.analysis,
-                provider="openai",
-                model="gpt-4o",
+                provider="ollama",
+                model="llama3",
                 status=AgentStatus.RUNNING,
                 tier="strategic"
             )
@@ -107,8 +107,8 @@ class IntelligenceService:
             agent = Agent(
                 name="Hermes",
                 type=AgentType.content_generation,
-                provider="openai",
-                model="gpt-4o",
+                provider="ollama",
+                model="llama3",
                 status=AgentStatus.RUNNING,
                 tier="strategic"
             )
