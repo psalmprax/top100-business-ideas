@@ -1,4 +1,5 @@
 # Autonomous Operational Engine Architecture
+
 ## Digital Workforce / AI Workforce System Design
 
 ---
@@ -32,16 +33,18 @@
 ## 2. Supported LLM Providers (Multi-Provider Failover)
 
 ### Primary Providers
-| Provider | Model | Status | Use Case |
-|----------|-------|--------|----------|
-| **OpenAI** | GPT-4o, GPT-4o-mini | Default | General purpose |
-| **Anthropic** | Claude 3.5 Sonnet, Claude 3 Opus | Secondary | Complex reasoning |
-| **DeepSeek** | DeepSeek V3, DeepSeek Coder | Testing | Cost optimization |
-| **Google Gemini** | Gemini 1.5 Pro, Gemini Flash | Testing | Multimodal |
-| **Cohere** | Command R+ | Beta | Enterprise |
-| **Mistral** | Mistral Large | Beta | EU compliance |
+
+| Provider          | Model                            | Status    | Use Case          |
+| ----------------- | -------------------------------- | --------- | ----------------- |
+| **OpenAI**        | GPT-4o, GPT-4o-mini              | Default   | General purpose   |
+| **Anthropic**     | Claude 3.5 Sonnet, Claude 3 Opus | Secondary | Complex reasoning |
+| **DeepSeek**      | DeepSeek V3, DeepSeek Coder      | Testing   | Cost optimization |
+| **Google Gemini** | Gemini 1.5 Pro, Gemini Flash     | Testing   | Multimodal        |
+| **Cohere**        | Command R+                       | Beta      | Enterprise        |
+| **Mistral**       | Mistral Large                    | Beta      | EU compliance     |
 
 ### Failover Configuration
+
 ```yaml
 llm_providers:
   primary:
@@ -49,18 +52,18 @@ llm_providers:
       model: gpt-4o
       priority: 1
       max_cost_per_1k_tokens: $0.015
-      
+
   failover:
     - provider: anthropic
       model: claude-3-5-sonnet-20241022
       priority: 2
       trigger: "openai_error OR cost_exceed_threshold"
-      
+
     - provider: deepseek
       model: deepseek-chat
       priority: 3
       trigger: "anthropic_error OR cost_optimization_mode"
-      
+
     - provider: google
       model: gemini-1.5-pro
       priority: 4
@@ -68,6 +71,7 @@ llm_providers:
 ```
 
 ### Performance Testing Mode
+
 ```yaml
 performance_testing:
   enabled: true
@@ -81,7 +85,7 @@ performance_testing:
       metrics: [latency, accuracy, cost, tokens]
     - provider: google
       metrics: [latency, accuracy, cost, tokens]
-      
+
   auto_select_best: true
   update_interval: hourly
 ```
@@ -90,81 +94,84 @@ performance_testing:
 
 ## 3. Digital Workforce (AI Agent Roster)
 
-| Agent ID | Role | Framework | Status |
-|----------|------|-----------|--------|
-| `CEO` | CEO AI | Agent Zero | ACTIVE |
-| `CFO` | CFO AI | Agent Zero | ACTIVE |
-| `Legal` | Legal Compliance | Autogen | ACTIVE |
-| `Growth` | Growth Lead | CrewAI | ACTIVE |
-| `CMO` | CMO AI | LlamaIndex | ACTIVE |
-| `Security` | Security/Ops | OpenClaw | ACTIVE |
-| `Red-Team` | Defense Red-Teamer | OpenClaw | ACTIVE |
-| `Data` | Data Analyst | Autogen | ACTIVE |
-| `Insights` | Customer Insights | CrewAI | ACTIVE |
-| `Receptionist` | Inbound Receptionist | Concierge AI | ACTIVE |
-| `AI-Assistant` | AI Personal Assistant | Agent Zero | ACTIVE |
-| `SEO` | SEO Strategy Manager | CrewAI | ACTIVE |
-| `Crisis` | Crisis Commander | Sovereign OS | ACTIVE |
+| Agent ID       | Role                  | Framework    | Status |
+| -------------- | --------------------- | ------------ | ------ |
+| `CEO`          | CEO AI                | Agent Zero   | ACTIVE |
+| `CFO`          | CFO AI                | Agent Zero   | ACTIVE |
+| `Legal`        | Legal Compliance      | Autogen      | ACTIVE |
+| `Growth`       | Growth Lead           | CrewAI       | ACTIVE |
+| `CMO`          | CMO AI                | LlamaIndex   | ACTIVE |
+| `Security`     | Security/Ops          | OpenClaw     | ACTIVE |
+| `Red-Team`     | Defense Red-Teamer    | OpenClaw     | ACTIVE |
+| `Data`         | Data Analyst          | Autogen      | ACTIVE |
+| `Insights`     | Customer Insights     | CrewAI       | ACTIVE |
+| `Receptionist` | Inbound Receptionist  | Concierge AI | ACTIVE |
+| `AI-Assistant` | AI Personal Assistant | Agent Zero   | ACTIVE |
+| `SEO`          | SEO Strategy Manager  | CrewAI       | ACTIVE |
+| `Crisis`       | Crisis Commander      | Sovereign OS | ACTIVE |
 
 ---
 
 ## 4. Sovereign Autonomy Matrix
 
-| Stage | Domain | Autonomy Level | Protocol |
-|-------|--------|----------------|----------|
-| **1** | Financial Settlement | HI-T-L (Review) | AI suggests; Human approves via Slack |
-| **2** | Legal Personality | HI-T-L (Review) | AI drafts; Human signs contracts |
-| **3** | Crisis Resilience | FULL (Autonomous) | Immediate failover/rotation |
-| **4** | Strategic R&D | FULL (Autonomous) | Autonomous venture discovery |
-| **5** | Ethical Alignment | HI-T-L (Review) | AI monitors; Human overrides |
+| Stage | Domain               | Autonomy Level    | Protocol                              |
+| ----- | -------------------- | ----------------- | ------------------------------------- |
+| **1** | Financial Settlement | HI-T-L (Review)   | AI suggests; Human approves via Slack |
+| **2** | Legal Personality    | HI-T-L (Review)   | AI drafts; Human signs contracts      |
+| **3** | Crisis Resilience    | FULL (Autonomous) | Immediate failover/rotation           |
+| **4** | Strategic R&D        | FULL (Autonomous) | Autonomous venture discovery          |
+| **5** | Ethical Alignment    | HI-T-L (Review)   | AI monitors; Human overrides          |
 
 ---
 
 ## 5. Self-Healing Protocols (Error Recovery)
 
-| Scenario | Autonomous Action | Human Escalation |
-|----------|-------------------|------------------|
-| Rogue Agent Loop | Kill specific agent PID | 3+ agents rogue |
-| Platform Block | Pivot to secondary channel | All channels blocked |
-| API Failure | Cache + retry 1 hour | 24+ hours downtime |
-| High Cost Anomaly | Kill loop; switch cheaper model | 50% daily budget |
-| LLM Provider Down | Auto-failover to next provider | All providers down |
-| Budget Overrun | Pause non-essential agents | > $500/24h spent |
+| Scenario          | Autonomous Action               | Human Escalation     |
+| ----------------- | ------------------------------- | -------------------- |
+| Rogue Agent Loop  | Kill specific agent PID         | 3+ agents rogue      |
+| Platform Block    | Pivot to secondary channel      | All channels blocked |
+| API Failure       | Cache + retry 1 hour            | 24+ hours downtime   |
+| High Cost Anomaly | Kill loop; switch cheaper model | 50% daily budget     |
+| LLM Provider Down | Auto-failover to next provider  | All providers down   |
+| Budget Overrun    | Pause non-essential agents      | > $500/24h spent     |
 
 ---
 
 ## 6. Technical Stack
 
 ### Data Plane
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| Proxy Core | Rust (Axum/Tokio) | Sub-1ms latency |
-| Cache | Redis (ElastiCache) | Semantic vector caching |
-| Message Bus | Apache Kafka | Audit logging |
+
+| Component   | Technology          | Purpose                 |
+| ----------- | ------------------- | ----------------------- |
+| Proxy Core  | Rust (Axum/Tokio)   | Sub-1ms latency         |
+| Cache       | Redis (ElastiCache) | Semantic vector caching |
+| Message Bus | Apache Kafka        | Audit logging           |
 
 ### Control Plane
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| API | Node.js (NestJS) | CRUD operations |
-| Database | PostgreSQL | Users, teams, billing |
-| Metrics | TimescaleDB | Proxy log analytics |
+
+| Component | Technology       | Purpose               |
+| --------- | ---------------- | --------------------- |
+| API       | Node.js (NestJS) | CRUD operations       |
+| Database  | PostgreSQL       | Users, teams, billing |
+| Metrics   | TimescaleDB      | Proxy log analytics   |
 
 ### Frontend
-| Component | Technology |
-|-----------|------------|
-| Framework | Next.js 14 |
-| Styling | Tailwind + Shadcn |
-| Charts | Tremor.so |
+
+| Component | Technology        |
+| --------- | ----------------- |
+| Framework | Next.js 14        |
+| Styling   | Tailwind + Shadcn |
+| Charts    | Tremor.so         |
 
 ---
 
 ## 7. Security Architecture
 
-| Measure | Implementation |
-|---------|----------------|
+| Measure              | Implementation                     |
+| -------------------- | ---------------------------------- |
 | Zero Payload Storage | Prompts hashed; logs only metadata |
-| PII Redaction | Regex/NLP at edge before LLM |
-| Key Vaulting | AWS KMS / HashiCorp Vault |
+| PII Redaction        | Regex/NLP at edge before LLM       |
+| Key Vaulting         | AWS KMS / HashiCorp Vault          |
 
 ---
 
@@ -187,34 +194,37 @@ performance_testing:
 ## 10. Enterprise Pricing Automation
 
 ### Pricing Tiers (Implemented)
-| Tier | Price | Features | Target |
-|------|-------|----------|--------|
-| **Developer** | £0 | Up to 1M tokens/mo, 1 agent | Solo hackers, prototypes |
-| **Growth** | £49/mo | Base + £1.20/1M tokens, 5 Custom Rules | Startups, small production |
-| **Enterprise** | Custom (Starts £850/mo) | Unlimited agents, PII Masking, VPC deployment | Series B+, Mid-Market |
+
+| Tier           | Price                   | Features                                      | Target                     |
+| -------------- | ----------------------- | --------------------------------------------- | -------------------------- |
+| **Developer**  | £0                      | Up to 1M tokens/mo, 1 agent                   | Solo hackers, prototypes   |
+| **Growth**     | £49/mo                  | Base + £1.20/1M tokens, 5 Custom Rules        | Startups, small production |
+| **Enterprise** | Custom (Starts £850/mo) | Unlimited agents, PII Masking, VPC deployment | Series B+, Mid-Market      |
 
 ### Billing Implementation
+
 ```yaml
 billing:
   provider: Stripe
   model: Usage-Based Metering
   sync_interval: 1 hour
-  
+
   components:
     - name: token_inspection
       unit_price: £1.20 per 1M tokens
       included: 1M (free tier)
-      
+
     - name: custom_rules
       unit_price: £5.00 per rule
       included: 5 (growth), unlimited (enterprise)
-      
+
     - name: enterprise_features
       price: £850/mo minimum
       includes: [PII_Masking, VPC_Deployment, SSO, SOC2_Reports]
 ```
 
 ### Enterprise Contract Automation
+
 ```yaml
 enterprise_automation:
   quote_generation:
@@ -223,12 +233,12 @@ enterprise_automation:
       - user_tier: Enterprise
       - tokens_per_month: > 50M
       - custom_rule_count: > 20
-      
+
   negotiation_workflow:
     - AI analyzes usage patterns
     - Generates optimized quote
     - Escalates to human for > £10k/mo
-    
+
   auto_discount_rules:
     annual_prepay: 20%
     multi_year: 30%
@@ -237,13 +247,14 @@ enterprise_automation:
 ```
 
 ### Revenue Operations (RevOps) AI
+
 ```yaml
 revops_ai:
   pricing_optimization:
     enabled: true
     inputs: [competitor_pricing, customer_usage, churn_risk]
     output: Dynamic pricing recommendations
-    
+
   churn_prevention:
     triggers:
       - usage_drop: > 30%
@@ -253,7 +264,7 @@ revops_ai:
       - Auto-discount offer
       - Proactive outreach
       - Success manager assignment
-    
+
   upsell_automation:
     triggers:
       - usage_approaching_limit: 80%
@@ -265,5 +276,5 @@ revops_ai:
 
 ---
 
-*Last Updated: 2026-03-20*
-*Version: 1.1*
+_Last Updated: 2026-03-20_
+_Version: 1.1_

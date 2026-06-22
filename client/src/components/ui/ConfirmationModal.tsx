@@ -39,10 +39,18 @@ export function ConfirmationModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px] bg-slate-950 border-slate-800 text-white shadow-2xl">
         <DialogHeader className="space-y-4">
-          <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-            isDanger ? "bg-red-500/10 text-red-500" : "bg-amber-500/10 text-amber-500"
-          }`}>
-            {isDanger ? <ShieldAlert className="w-6 h-6" /> : <AlertTriangle className="w-6 h-6" />}
+          <div
+            className={`w-12 h-12 rounded-full flex items-center justify-center ${
+              isDanger
+                ? "bg-red-500/10 text-red-500"
+                : "bg-amber-500/10 text-amber-500"
+            }`}
+          >
+            {isDanger ? (
+              <ShieldAlert className="w-6 h-6" />
+            ) : (
+              <AlertTriangle className="w-6 h-6" />
+            )}
           </div>
           <div className="space-y-1">
             <DialogTitle className="text-xl font-bold tracking-tight uppercase">
@@ -68,8 +76,8 @@ export function ConfirmationModal({
               // We don't automatically close here to allow for loading states if handled by parent
             }}
             className={`${
-              isDanger 
-                ? "bg-red-600 hover:bg-red-700 shadow-lg shadow-red-900/20" 
+              isDanger
+                ? "bg-red-600 hover:bg-red-700 shadow-lg shadow-red-900/20"
                 : "bg-amber-600 hover:bg-amber-700 shadow-lg shadow-amber-900/20"
             } text-white font-bold text-xs uppercase tracking-widest h-10 px-6`}
             disabled={isLoading}

@@ -1,22 +1,22 @@
 {
-    "name": "agentops/sdk",
-    "description": "Agent Ops Sentinel SDK - PHP Client",
-    "type": "library",
-    "license": "MIT",
-    "require": {
-        "php": ">=7.4",
-        "ext-json": "*",
-        "ext-curl": "*",
-        "guzzlehttp/guzzle": "^7.0"
-    },
-    "autoload": {
-        "psr-4": {
-            "AgentOps\\": "src/"
-        }
-    },
-    "autoload-dev": {
-        "psr-4": {
-            "AgentOps\\Tests\\": "tests/"
-        }
+  "name": "agentops/sdk",
+  "description": "Agent Ops Sentinel SDK - PHP Client",
+  "type": "library",
+  "license": "MIT",
+  "require": {
+    "php": ">=7.4",
+    "ext-json": "*",
+    "ext-curl": "*",
+    "guzzlehttp/guzzle": "^7.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "AgentOps\\": "src/"
     }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "AgentOps\\Tests\\": "tests/"
+    }
+  }
 }

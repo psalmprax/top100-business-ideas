@@ -20,7 +20,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
   User as UserIcon,
-  Mail,
   Lock,
   Bell,
   Shield,
@@ -29,20 +28,15 @@ import {
   Save,
   Loader2,
   Check,
-  AlertCircle,
   Globe,
-  Smartphone,
   Monitor,
-  Database,
   Trash2,
   Plus,
   Eye,
-  Download,
   Copy,
   LogOut,
 } from "lucide-react";
-import { storage } from "@/lib/storage";
-import { userApi, extendedApi, authApi, type User } from "@/lib/api";
+import { userApi, extendedApi, authApi, type User, type WebhookConfig, type BiometricTemplate } from "@/lib/api";
 
 export default function Settings() {
   const [isLoading, setIsLoading] = useState(false);
@@ -72,9 +66,9 @@ export default function Settings() {
     autoSave: true,
   });
 
-  const [apiKeys, setApiKeys] = useState<any[]>([]);
-  const [webhooks, setWebhooks] = useState<any[]>([]);
-  const [biometricKeys, setBiometricKeys] = useState<any[]>([]);
+  const [apiKeys, setApiKeys] = useState<{ id: string; name: string; key: string; status: string; created: string; hidden: boolean }[]>([]);
+  const [webhooks, setWebhooks] = useState<{ id: string | number; url: string; name?: string; status: string }[]>([]);
+  const [biometricKeys, setBiometricKeys] = useState<BiometricTemplate[]>([]);
   const [mfaEnabled, setMfaEnabled] = useState(false);
 
   useEffect(() => {
@@ -89,10 +83,10 @@ export default function Settings() {
 
         if (userData) {
           setProfile({
-            name: (userData as any).name || "",
-            email: (userData as any).email || "",
-            company: (userData as any).company || "",
-            role: (userData as any).role || "",
+            name: userData.name || "",
+            email: userData.email || "",
+            company: userData.company || "",
+            role: userData.role || "",
           });
 
           if (userData.notifications) {
@@ -106,24 +100,26 @@ export default function Settings() {
 
         if (Array.isArray(keysData)) {
           setApiKeys(
-            keysData.map((k: any) => ({
-              id: k.id,
-              name: k.name,
-              key: k.key,
-              status: k.status || "Active",
-              created: k.createdAt || "Recently",
+            keysData.map((k: Record<string, unknown>) => ({
+              id: k.id as string,
+              name: k.name as string,
+              key: k.key as string,
+              status: (k.status as string) || "Active",
+              created: (k.createdAt as string) || "Recently",
               hidden: true,
             }))
           );
         }
 
         if (Array.isArray(webhookData)) {
-          setWebhooks(webhookData.map((w: any) => ({
-            id: w.id,
-            url: w.url,
-            name: w.name,
-            status: w.is_active ? "Active" : "Inactive",
-          })));
+          setWebhooks(
+            webhookData.map((w: WebhookConfig) => ({
+              id: w.id || "",
+              url: w.url,
+              name: w.name,
+              status: w.enabled ? "Active" : "Inactive",
+            }))
+          );
           if (userData.mfa_enabled) {
             setMfaEnabled(true);
           }
@@ -177,10 +173,10 @@ export default function Settings() {
           url,
           events: ["all"],
           enabled: true,
-        } as any),
+        } as WebhookConfig),
         {
           loading: "Registering webhook endpoint...",
-          success: (data: any) => {
+          success: (data: WebhookConfig) => {
             setWebhooks([
               ...webhooks,
               { id: data?.id || Date.now(), url, status: "Active", name },
@@ -218,11 +214,10 @@ export default function Settings() {
       };
       setApiKeys(prev => [...prev, newKey]);
       toast.success(`API Key '${name}' created.`);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Service unavailable";
       console.error("Failed to create API key:", err);
-      toast.error(
-        `Failed to create API key: ${err.message || "Service unavailable"}`
-      );
+      toast.error(`Failed to create API key: ${message}`);
     }
   };
 
@@ -233,7 +228,7 @@ export default function Settings() {
       )
     ) {
       setIsLoading(true);
-      toast.promise(userApi.update({ role: "deactivated" } as any), {
+      toast.promise(userApi.update({ role: "deactivated" } as unknown as Partial<User>), {
         loading: "De-provisioning all AI instances and wiping data volumes...",
         success: () => {
           setIsLoading(false);
@@ -262,11 +257,12 @@ export default function Settings() {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
       toast.success("Profile updated successfully");
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Endpoint offline";
       console.error("Failed to update profile:", err);
       setIsLoading(false);
       setSaved(false);
-      toast.error(`Sync Failure: ${err.message || "Endpoint offline"}`);
+      toast.error(`Sync Failure: ${message}`);
     }
   };
 
@@ -454,8 +450,9 @@ export default function Settings() {
                           description:
                             "Your security credentials have been refreshed.",
                         });
-                      } catch (err: any) {
-                        toast.error(err.message || "Failed to update password");
+                      } catch (err: unknown) {
+                        const message = err instanceof Error ? err.message : "Failed to update password";
+                        toast.error(message);
                       }
                     }}
                   >
@@ -501,16 +498,20 @@ export default function Settings() {
                           <span className="text-xs text-muted-foreground mr-2">
                             {biometricKeys.length} keys registered
                           </span>
-                          <Switch 
-                            checked={mfaEnabled} 
-                            onCheckedChange={async (checked) => {
+                          <Switch
+                            checked={mfaEnabled}
+                            onCheckedChange={async (checked: boolean) => {
                               try {
                                 setMfaEnabled(checked);
-                                await userApi.update({ mfa_enabled: checked } as any);
-                                toast.success(`MFA ${checked ? "enabled" : "disabled"}`);
-                              } catch (err) {
-                                setMfaEnabled(!checked);
-                                toast.error("Failed to update MFA status");
+                                await userApi.update({
+                                  mfa_enabled: checked,
+                                } as unknown as Partial<User>);
+                                toast.success(
+                                  `MFA ${checked ? "enabled" : "disabled"}`
+                                );
+                      } catch {
+                        setMfaEnabled(!checked);
+                        toast.error("Failed to update MFA status");
                               }
                             }}
                           />
@@ -613,7 +614,7 @@ export default function Settings() {
                         checked={
                           notifications[item.key as keyof typeof notifications]
                         }
-                        onCheckedChange={async checked => {
+                        onCheckedChange={async (checked: boolean) => {
                           const updated = {
                             ...notifications,
                             [item.key]: checked,
@@ -622,12 +623,14 @@ export default function Settings() {
                           try {
                             await userApi.update({
                               notifications: updated,
-                            } as any);
+                            } as unknown as Partial<User>);
                             toast.success(
                               `${item.label} ${checked ? "enabled" : "disabled"}`
                             );
                           } catch {
-                            toast.error("Failed to persist notification settings.");
+                            toast.error(
+                              "Failed to persist notification settings."
+                            );
                           }
                         }}
                       />
@@ -667,10 +670,12 @@ export default function Settings() {
                             try {
                               await userApi.update({
                                 preferences: updated,
-                              } as any);
+                              } as unknown as Partial<User>);
                               toast.success(`Theme set to ${theme}`);
                             } catch {
-                              toast.error("Failed to persist theme preference.");
+                              toast.error(
+                                "Failed to persist theme preference."
+                              );
                             }
                           }}
                           className="capitalize"
@@ -698,12 +703,14 @@ export default function Settings() {
                             try {
                               await userApi.update({
                                 preferences: updated,
-                              } as any);
+                              } as unknown as Partial<User>);
                               toast.success(
                                 `Language set to ${lang.toUpperCase()}`
                               );
                             } catch {
-                              toast.error("Failed to persist language preference.");
+                              toast.error(
+                                "Failed to persist language preference."
+                              );
                             }
                           }}
                         >
@@ -724,8 +731,10 @@ export default function Settings() {
                         };
                         setPreferences(updated);
                         try {
-                          await userApi.update({ preferences: updated } as any);
-                          toast.success(`Default model set to ${e.target.value}`);
+                           await userApi.update({ preferences: updated } as unknown as Partial<User>);
+                          toast.success(
+                            `Default model set to ${e.target.value}`
+                          );
                         } catch {
                           toast.error("Failed to persist model preference.");
                         }
@@ -742,13 +751,13 @@ export default function Settings() {
                     <div className="flex items-center gap-2">
                       <Switch
                         checked={preferences.autoSave}
-                        onCheckedChange={async checked => {
+                        onCheckedChange={async (checked: boolean) => {
                           const updated = { ...preferences, autoSave: checked };
                           setPreferences(updated);
                           try {
                             await userApi.update({
                               preferences: updated,
-                            } as any);
+                            } as unknown as Partial<User>);
                             toast.success(
                               `Auto-save ${checked ? "enabled" : "disabled"}`
                             );

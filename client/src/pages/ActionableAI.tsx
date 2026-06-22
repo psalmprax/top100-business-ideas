@@ -6,18 +6,10 @@ import {
   Play,
   Pause,
   Square,
-  RefreshCw,
-  Terminal,
   Layers,
   Activity,
   Shield,
-  Bot,
   ArrowRight,
-  Search,
-  Plus,
-  BarChart3,
-  History,
-  Settings,
   CheckCircle2,
 } from "lucide-react";
 import {
@@ -29,7 +21,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -48,7 +40,7 @@ export default function ActionableAI() {
   const [missionsToday, setMissionsToday] = useState<number | null>(null);
   const [activeThreads, setActiveThreads] = useState<number | null>(null);
   const [missionLogs, setMissionLogs] = useState<string[]>([]);
-  const [swarms, setSwarms] = useState<any[]>([]);
+  const [swarms, setSwarms] = useState<{ name: string; agents: number; status: string; power: number }[]>([]);
 
   useEffect(() => {
     const fetchMetrics = async () => {
@@ -74,9 +66,7 @@ export default function ActionableAI() {
           const failed = data.tasks_failed ?? 0;
           const total = completed + failed;
           if (total > 0) {
-            setSuccessRate(
-              parseFloat(((completed / total) * 100).toFixed(1))
-            );
+            setSuccessRate(parseFloat(((completed / total) * 100).toFixed(1)));
           }
           if (data.active_agents !== undefined) {
             setActiveThreads(data.active_agents ?? 0);
@@ -90,14 +80,17 @@ export default function ActionableAI() {
     const fetchSwarms = async () => {
       try {
         const data = await extendedApi.workforce.getVentures();
-        if (Array.isArray(data)) {
-          setSwarms(
-            data.map((v: any) => ({
-              name: v.name || v.id || "Swarm",
-              agents: v.agent_count || v.agents || 0,
-              status: v.status || "Active",
-              power: v.utilization || v.power || 0,
-            }))
+          if (Array.isArray(data)) {
+            setSwarms(
+              data.map((v) => {
+                const venture = v as unknown as Record<string, unknown>;
+                return {
+                  name: (venture.name as string) || (venture.id as string) || "Swarm",
+                  agents: (venture.agent_count as number) || (venture.agents as number) || 0,
+                  status: (venture.status as string) || "Active",
+                  power: (venture.utilization as number) || (venture.power as number) || 0,
+                };
+              })
           );
         }
       } catch (error) {
@@ -107,12 +100,17 @@ export default function ActionableAI() {
 
     const fetchLogs = async () => {
       try {
-        const data = await extendedApi.agentOps.getAuditLogs(undefined, undefined, undefined, 20);
+        const data = await extendedApi.agentOps.getAuditLogs(
+          undefined,
+          undefined,
+          undefined,
+          20
+        );
         if (Array.isArray(data)) {
           setMissionLogs(
             data.map(
-              (l: any) =>
-                `[${l.timestamp || new Date().toLocaleTimeString()}] ${l.agent_name || l.agent || "SYSTEM"}: ${l.action || l.event || JSON.stringify(l).substring(0, 80)}`
+              (l: { timestamp?: string; agent_name?: string; agent?: string; action?: string; event?: string }) =>
+                `[${l.timestamp || new Date().toLocaleTimeString()}] ${l.agent_name || l.agent || "SYSTEM"}: ${l.action || l.event || ""}`
             )
           );
         }
@@ -138,9 +136,10 @@ export default function ActionableAI() {
     try {
       await extendedApi.workforce.toggleAutonomy(newState ? "full" : "partial");
       toast.success(newState ? "Engine resumed" : "Engine paused");
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to toggle engine state";
       toast.error(
-        `Control Error: ${error.message || "Failed to toggle engine state"}`
+        `Control Error: ${message}`
       );
     }
   };
@@ -168,12 +167,13 @@ export default function ActionableAI() {
       extendedApi.workforce.runCampaign("OMEGA_RECON", "agent-swarms"),
       {
         loading: "Initializing new mission parameters...",
-        success: (data: any) => {
+        success: (data) => {
           setIsNewMission(false);
           setIsExecuting(true);
           storage.set("actionable_ai_executing", true);
+          const msg = data && typeof data === "object" && "message" in data ? String((data as Record<string, unknown>).message) : undefined;
           return (
-            data?.message || "New mission spawned: OMEGA_RECON initialized."
+            msg || "New mission spawned: OMEGA_RECON initialized."
           );
         },
         error: err => {
@@ -430,43 +430,65 @@ export default function ActionableAI() {
                 </div>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-white/60">Infinite Loop Protection</span>
+                    <span className="text-white/60">
+                      Infinite Loop Protection
+                    </span>
                     <div className="flex items-center gap-2">
                       <Badge
                         className={`${storage.get("actionable_ai_loop_prot", true) ? "bg-emerald-500" : "bg-red-500"} text-white text-[8px] h-4 border-none`}
                       >
-                        {storage.get("actionable_ai_loop_prot", true) ? "ARMED" : "DISARMED"}
+                        {storage.get("actionable_ai_loop_prot", true)
+                          ? "ARMED"
+                          : "DISARMED"}
                       </Badge>
-                      <Switch 
+                      <Switch
                         checked={storage.get("actionable_ai_loop_prot", true)}
-                        onCheckedChange={(checked) => {
+                        onCheckedChange={(checked: boolean) => {
                           storage.set("actionable_ai_loop_prot", checked);
-                          toast.info(`Loop protection ${checked ? "armed" : "disarmed"}`);
+                          toast.info(
+                            `Loop protection ${checked ? "armed" : "disarmed"}`
+                          );
                         }}
                       />
                     </div>
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-white/60">Cost Auto-Kill Switch</span>
-                      <Switch 
+                      <span className="text-white/60">
+                        Cost Auto-Kill Switch
+                      </span>
+                      <Switch
                         checked={storage.get("actionable_ai_kill_switch", true)}
-                        onCheckedChange={(checked) => {
+                        onCheckedChange={(checked: boolean) => {
                           storage.set("actionable_ai_kill_switch", checked);
-                          toast.info(`Kill switch ${checked ? "enabled" : "disabled"}`);
+                          toast.info(
+                            `Kill switch ${checked ? "enabled" : "disabled"}`
+                          );
                         }}
                       />
                     </div>
                     {storage.get("actionable_ai_kill_switch", true) && (
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px] text-muted-foreground">$</span>
-                        <input 
+                        <span className="text-[10px] text-muted-foreground">
+                          $
+                        </span>
+                        <input
                           type="number"
                           className="bg-black/40 border border-white/10 rounded px-2 py-1 text-[10px] w-16 text-orange-500 outline-none"
-                          defaultValue={storage.get("actionable_ai_kill_threshold", 50)}
-                          onChange={(e) => storage.set("actionable_ai_kill_threshold", parseInt(e.target.value))}
+                          defaultValue={storage.get(
+                            "actionable_ai_kill_threshold",
+                            50
+                          )}
+                          onChange={e =>
+                            storage.set(
+                              "actionable_ai_kill_threshold",
+                              parseInt(e.target.value)
+                            )
+                          }
                         />
-                        <span className="text-[10px] text-muted-foreground">/hour</span>
+                        <span className="text-[10px] text-muted-foreground">
+                          /hour
+                        </span>
                       </div>
                     )}
                   </div>

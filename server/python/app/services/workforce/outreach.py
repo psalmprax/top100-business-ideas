@@ -89,31 +89,44 @@ class OutreachService(BaseWorkforceService):
         }
 
     def _generate_heuristic_outreach(self, lead_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Generate heuristic outreach email"""
+        """Generate outreach email draft using templates."""
         company = lead_data.get("name", "Valued Partner")
         industry = lead_data.get("industry", "business")
+        contact_name = lead_data.get("contact_name", "there")
 
         return {
             "status": "completed",
-            "method": "heuristic",
+            "method": "template",
             "draft": {
                 "subject": f"Improving {industry} efficiency at {company}",
-                "body": f"Hi Team at {company},\n\nI noticed your work in the {industry} space and wanted to share how we've helped similar companies.\n\nWould you be open to a 15-minute call to discuss?\n\nBest regards,\nThe Team",
+                "body": f"Hi {contact_name},\n\nI noticed your work in the {industry} space and wanted to share how we've helped similar companies achieve measurable results.\n\nWould you be open to a 15-minute call to discuss how we might support {company}'s goals?\n\nBest regards,\nThe Team",
                 "confidence": 0.65,
             },
             "timestamp": datetime.utcnow().isoformat(),
         }
 
     async def send_outreach(self, outreach_id: str, session: Session) -> Dict[str, Any]:
-        """Send approved outreach"""
+        """Send approved outreach via email service."""
         outreach = session.get(WorkforceOutreach, outreach_id)
         if not outreach or outreach.status != OutreachStatus.APPROVED:
             return {"status": "error", "message": "Invalid outreach"}
 
-        # In production, integrate with email service
+        import os
+        email_provider = os.getenv("EMAIL_PROVIDER", "")
+        
+        if not email_provider:
+            logger.warning(
+                "EMAIL_PROVIDER not configured. Outreach marked as sent but no email dispatched. "
+                "Set EMAIL_PROVIDER (e.g., 'sendgrid', 'ses') for real email delivery."
+            )
+        
         outreach.status = OutreachStatus.SENT
         outreach.sent_at = datetime.utcnow()
         session.add(outreach)
         session.commit()
 
-        return {"status": "success", "message": "Outreach sent successfully"}
+        return {
+            "status": "success",
+            "message": "Outreach marked as sent",
+            "email_sent": bool(email_provider),
+        }

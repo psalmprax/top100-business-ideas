@@ -40,7 +40,7 @@ export function useShortlist() {
   }, []);
 
   const add = useCallback((ideaId: number) => {
-    setShortlist(prev => prev.includes(ideaId) ? prev : [...prev, ideaId]);
+    setShortlist(prev => (prev.includes(ideaId) ? prev : [...prev, ideaId]));
   }, []);
 
   const remove = useCallback((ideaId: number) => {
@@ -51,9 +51,12 @@ export function useShortlist() {
     setShortlist([]);
   }, []);
 
-  const isInShortlist = useCallback((ideaId: number) => {
-    return shortlist.includes(ideaId);
-  }, [shortlist]);
+  const isInShortlist = useCallback(
+    (ideaId: number) => {
+      return shortlist.includes(ideaId);
+    },
+    [shortlist]
+  );
 
   return {
     shortlist,

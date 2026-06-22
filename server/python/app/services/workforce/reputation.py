@@ -91,11 +91,14 @@ class ReputationManagerService(BaseWorkforceService):
     def _heuristic_sentiment_monitor(
         self, brand_name: str, platforms: List[str]
     ) -> Dict[str, Any]:
-        """Run heuristic sentiment monitoring"""
-        # Mock sentiment data
+        """Run heuristic sentiment monitoring - returns demo data when APIs unavailable."""
+        logger.warning(
+            f"Heuristic sentiment monitoring for '{brand_name}' without API credentials. "
+            f"Set platform API keys for real data."
+        )
         return {
             "status": "completed",
-            "method": "heuristic",
+            "method": "heuristic_demo",
             "brand": brand_name,
             "overall_sentiment": "positive",
             "score": 0.72,
@@ -116,6 +119,7 @@ class ReputationManagerService(BaseWorkforceService):
                 {"metric": "response_time", "direction": "improving", "change": "-45%"},
                 {"metric": "sentiment", "direction": "stable", "change": "0%"},
             ],
+            "demo_mode": True,
             "timestamp": datetime.utcnow().isoformat(),
         }
 
@@ -215,7 +219,11 @@ The Team""",
     async def track_mentions(
         self, brand_name: str, time_range: str = "24h"
     ) -> Dict[str, Any]:
-        """Track brand mentions across social media"""
+        """Track brand mentions across social media."""
+        logger.warning(
+            f"Track mentions for '{brand_name}' returning demo data. "
+            f"Implement real social media API integration for production."
+        )
         return {
             "brand": brand_name,
             "time_range": time_range,
@@ -243,6 +251,7 @@ The Team""",
                 {"handle": "@user2", "followers": 8900},
             ],
             "virality_score": 0.34,
+            "demo_mode": True,
         }
 
     async def detect_crisis(self, brand_name: str) -> Dict[str, Any]:

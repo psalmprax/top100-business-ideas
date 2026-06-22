@@ -157,6 +157,11 @@ func (e *dfRequestEnricher) enrich(req map[string]interface{}, userID string) ma
 }
 
 func (e *dfRequestEnricher) transformResponse(data []byte) ([]byte, error) {
+	// SECURITY: Go's encoding/json unmarshal into interface{} is safe — it can
+	// only produce map[string]interface{} / []interface{} / scalars, with no
+	// type-confusion attack vector (unlike Java/Python pickle/yaml.load). We
+	// only mutate this locally-scoped map before re-marshalling.
+	// nosemgrep: go.lang.security.deserialization.unsafe-deserialization-interface.go-unsafe-deserialization-interface
 	var raw interface{}
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return data, err

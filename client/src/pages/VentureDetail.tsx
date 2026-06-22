@@ -7,7 +7,7 @@ import { Loader2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const VentureDetailPage = () => {
-  const [match, params] = useRoute("/ventures/:id");
+  const [, params] = useRoute("/ventures/:id");
   const [, setLocation] = useLocation();
   const id = params?.id ? parseInt(params.id) : null;
 

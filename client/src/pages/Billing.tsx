@@ -16,17 +16,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  CreditCard,
   Check,
-  X,
-  ExternalLink,
   Download,
   History,
   Shield,
-  Zap,
-  Building2,
   Loader2,
-  AlertCircle,
   CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -106,7 +100,7 @@ const plans: Plan[] = [
 ];
 
 export default function Billing() {
-  const [location] = useLocation();
+  const [] = useLocation();
   const [selectedPlan, setSelectedPlan] = useState("professional");
   const [isLoading, setIsLoading] = useState(false);
   const [isDataLoading, setIsDataLoading] = useState(true);
@@ -163,9 +157,10 @@ export default function Billing() {
       } else {
         throw new Error("No redirect URL received");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Please check your network connection.";
       toast.error("Failed to initiate checkout", {
-        description: err.message || "Please check your network connection.",
+        description: message,
       });
       setIsLoading(false);
     }
@@ -176,12 +171,12 @@ export default function Billing() {
     try {
       const response = await billingApi.updatePaymentMethod("portal");
       // REAL-FIRST: Redirect to actual portal URL if provided
-      if (response && (response as any).url) {
-        window.location.assign((response as any).url);
+      if (response && (response as unknown as { url?: string }).url) {
+        window.location.assign((response as unknown as { url: string }).url);
       } else {
         toast.success("Portal access granted - No direct redirect provided");
       }
-    } catch (err) {
+    } catch {
       toast.error("Cloud vault connection failed");
     }
   };
@@ -273,9 +268,10 @@ export default function Billing() {
                               );
                               const sub = await billingApi.subscription();
                               setSubscription(sub);
-                            } catch (err: any) {
+                            } catch (err: unknown) {
+                              const message = err instanceof Error ? err.message : "Failed to cancel subscription";
                               toast.error(
-                                err.message || "Failed to cancel subscription"
+                                message
                               );
                             }
                           }

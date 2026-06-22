@@ -71,8 +71,11 @@ class CompetitorIntelligenceService(BaseWorkforceService):
         }
 
     def _heuristic_competitor_analysis(self, competitor_name: str) -> Dict[str, Any]:
-        """Run heuristic competitor analysis"""
-        # Mock analysis data based on pattern matching
+        """Run heuristic competitor analysis - returns demo data when external APIs unavailable."""
+        logger.warning(
+            f"Heuristic analysis for '{competitor_name}' without API credentials. "
+            f"Set COMPETITOR_API_KEY for real data."
+        )
         analysis = {
             "competitor": competitor_name,
             "pricing_tier": "mid-market",
@@ -90,11 +93,12 @@ class CompetitorIntelligenceService(BaseWorkforceService):
                 "feature_gap",
             ],
             "score": 0.72,
+            "demo_mode": True,
         }
 
         return {
             "status": "completed",
-            "method": "heuristic",
+            "method": "heuristic_demo",
             "analysis": analysis,
             "timestamp": datetime.utcnow().isoformat(),
         }
@@ -118,21 +122,29 @@ class CompetitorIntelligenceService(BaseWorkforceService):
     async def get_pricing_intelligence(
         self, competitor_name: str, session: Session
     ) -> Dict[str, Any]:
-        """Get pricing intelligence for a competitor"""
-        # In production: scrape competitor pricing pages
+        """Get pricing intelligence for a competitor."""
+        logger.warning(
+            f"Pricing intelligence for '{competitor_name}' returning demo data. "
+            f"Implement real scraping for production use."
+        )
         return {
             "competitor": competitor_name,
             "pricing_models": ["subscription", "per-seat", "enterprise"],
             "entry_price": 29.99,
             "enterprise_price": 299.99,
             "currency": "USD",
+            "demo_mode": True,
             "last_updated": datetime.utcnow().isoformat(),
         }
 
     async def get_content_strategy(
         self, competitor_name: str, session: Session
     ) -> Dict[str, Any]:
-        """Get content strategy intelligence for a competitor"""
+        """Get content strategy intelligence for a competitor."""
+        logger.warning(
+            f"Content strategy for '{competitor_name}' returning demo data. "
+            f"Implement real scraping for production use."
+        )
         return {
             "competitor": competitor_name,
             "channels": ["blog", "social", "email", "webinar"],
@@ -148,4 +160,5 @@ class CompetitorIntelligenceService(BaseWorkforceService):
                 "how_to_guides",
             ],
             "engagement_rate": 0.045,
+            "demo_mode": True,
         }

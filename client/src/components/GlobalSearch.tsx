@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Search, Command, User, AlertTriangle, ShieldCheck, Zap } from "lucide-react";
+import {
+  Search,
+  User,
+  AlertTriangle,
+  ShieldCheck,
+  Zap,
+} from "lucide-react";
 import {
   CommandDialog,
   CommandEmpty,
@@ -19,7 +25,7 @@ export function GlobalSearch() {
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        setOpen((open) => !open);
+        setOpen(open => !open);
       }
     };
     document.addEventListener("keydown", down);
@@ -46,32 +52,47 @@ export function GlobalSearch() {
 
       <CommandDialog open={open} onOpenChange={setOpen}>
         <div className="bg-slate-950 border-slate-800 text-white">
-          <CommandInput placeholder="Type a command or search term..." className="border-none focus:ring-0" />
+          <CommandInput
+            placeholder="Type a command or search term..."
+            className="border-none focus:ring-0"
+          />
           <CommandList className="max-h-[300px]">
             <CommandEmpty>No results found.</CommandEmpty>
             <CommandGroup heading="Global Modules">
-              <CommandItem onSelect={() => runCommand(() => setLocation("/deepfake-defense"))}>
+              <CommandItem
+                onSelect={() =>
+                  runCommand(() => setLocation("/deepfake-defense"))
+                }
+              >
                 <ShieldCheck className="mr-2 h-4 w-4 text-blue-500" />
                 <span>Deepfake Defense</span>
               </CommandItem>
-              <CommandItem onSelect={() => runCommand(() => setLocation("/compliance"))}>
+              <CommandItem
+                onSelect={() => runCommand(() => setLocation("/compliance"))}
+              >
                 <Zap className="mr-2 h-4 w-4 text-emerald-500" />
                 <span>Compliance Hub</span>
               </CommandItem>
-              <CommandItem onSelect={() => runCommand(() => setLocation("/workforce"))}>
+              <CommandItem
+                onSelect={() => runCommand(() => setLocation("/workforce"))}
+              >
                 <User className="mr-2 h-4 w-4 text-orange-500" />
                 <span>Workforce Management</span>
               </CommandItem>
             </CommandGroup>
             <CommandSeparator className="bg-white/5" />
             <CommandGroup heading="Quick Actions">
-              <CommandItem onSelect={() => runCommand(() => console.log("Failover triggered"))}>
+              <CommandItem
+                onSelect={() => runCommand(() => setLocation("/compliance"))}
+              >
                 <AlertTriangle className="mr-2 h-4 w-4 text-red-500" />
-                <span>Trigger Global Failover</span>
+                <span>View Compliance Alerts</span>
               </CommandItem>
-              <CommandItem onSelect={() => runCommand(() => console.log("Report generated"))}>
+              <CommandItem
+                onSelect={() => runCommand(() => setLocation("/settings"))}
+              >
                 <ShieldCheck className="mr-2 h-4 w-4 text-purple-500" />
-                <span>Generate Security Audit</span>
+                <span>Platform Settings</span>
               </CommandItem>
             </CommandGroup>
           </CommandList>

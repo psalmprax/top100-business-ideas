@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -12,6 +13,35 @@ import (
 )
 
 var Pool *pgxpool.Pool
+
+// devAdminSeedBcryptHash is a development-only bcrypt hash seeded into the
+// admin@alpha.ai account so that local Docker Compose stacks work out of the
+// box. It MUST NOT be used in production: production deployments must set
+// the ADMIN_SEED_PASSWORD_HASH environment variable (use a freshly generated
+// bcrypt hash, e.g. `htpasswd -bnBC 12 "" <pw> | tr -d ':\n'`).
+// nosemgrep: generic.secrets.security.detected-bcrypt-hash.detected-bcrypt-hash
+const devAdminSeedBcryptHash = "$2a$12$N9qo8uLOickgx2ZMRZoMyeIjZAgNIvUUE9q47Vz9.YvXpT3KIdQ2O"
+
+// adminSeedEmail is the seed admin email address used in non-prod environments.
+const adminSeedEmail = "admin@alpha.ai"
+
+// getAdminSeedBcryptHash returns the bcrypt hash to seed admin@alpha.ai with.
+// Precedence: explicit env override > dev fallback (non-prod only) > empty
+// (production skips seeding). The empty return signals the caller to skip
+// admin seeding entirely.
+func getAdminSeedBcryptHash() string {
+	if h := os.Getenv("ADMIN_SEED_PASSWORD_HASH"); h != "" {
+		return h
+	}
+	if os.Getenv("ENVIRONMENT") != "production" {
+		log.Printf("[WARN] database: using dev-only ADMIN_SEED_PASSWORD_HASH fallback. " +
+			"Set ADMIN_SEED_PASSWORD_HASH for production deployments.")
+		return devAdminSeedBcryptHash
+	}
+	log.Printf("[WARN] database: ADMIN_SEED_PASSWORD_HASH not set in production; " +
+		"skipping admin user seeding. Provision an admin via the registration flow.")
+	return ""
+}
 
 func Connect(ctx context.Context, dsn string, logger *zerolog.Logger) error {
 	var p *pgxpool.Pool
@@ -559,11 +589,20 @@ func RunMigrations(ctx context.Context) error {
 	}
 
 	// Seed Admin User
-	adminSeed := "INSERT INTO users (email, password_hash, name, role, allowed_products) " +
-		"VALUES ('admin@alpha.ai', '$2a$12$N9qo8uLOickgx2ZMRZoMyeIjZAgNIvUUE9q47Vz9.YvXpT3KIdQ2O', 'Alpha Admin', 'admin', '[\"*\"]') " +
-		"ON CONFLICT (email) DO UPDATE SET role = 'admin', allowed_products = '[\"*\"]'"
-	if _, err := tx.Exec(ctx, adminSeed); err != nil {
-		return fmt.Errorf("seeding admin failed: %w", err)
+	// SECURITY: bcrypt hash is sourced from env (or dev-only fallback). The
+	// password hash is bound as a query parameter so a misconfigured env
+	// value cannot inject SQL. ON CONFLICT only restores role/entitlements
+	// on existing rows — it intentionally does NOT overwrite the stored
+	// password_hash, so an admin who has rotated their password is not
+	// reverted by subsequent migration runs.
+	adminSeedHash := getAdminSeedBcryptHash()
+	if adminSeedHash != "" {
+		adminSeed := "INSERT INTO users (email, password_hash, name, role, allowed_products) " +
+			"VALUES ($1, $2, 'Alpha Admin', 'admin', '[\"*\"]') " +
+			"ON CONFLICT (email) DO UPDATE SET role = 'admin', allowed_products = '[\"*\"]'"
+		if _, err := tx.Exec(ctx, adminSeed, adminSeedEmail, adminSeedHash); err != nil {
+			return fmt.Errorf("seeding admin failed: %w", err)
+		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {

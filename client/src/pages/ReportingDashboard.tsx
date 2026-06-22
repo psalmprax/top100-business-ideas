@@ -13,13 +13,6 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -33,14 +26,12 @@ import {
   FileText,
   Download,
   BarChart3,
-  Clock,
-  RefreshCw,
-  CheckCircle2,
   FileBarChart,
   FileSpreadsheet,
 } from "lucide-react";
 import { extendedApi } from "@/lib/api";
 import { toast } from "sonner";
+import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 
 interface Report {
   id: string;
@@ -54,7 +45,6 @@ interface Report {
 export default function ReportingDashboard() {
   const [reports, setReports] = useState<Report[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [reportType, setReportType] = useState("compliance");
   const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
@@ -64,18 +54,23 @@ export default function ReportingDashboard() {
   async function loadData() {
     setIsLoading(true);
     try {
-      const artifacts = await extendedApi.compliance.listArtifacts();
+      const artifacts = await extendedApi.compliance.listArtifacts() as unknown as Record<string, unknown>[];
       // Map artifacts to Report interface
-      const mappedReports: Report[] = (artifacts || []).map((art: any) => ({
-        id: art.id || String(Math.random()),
-        type: art.report_type || art.type || "Compliance",
+      const mappedReports: Report[] = (artifacts || []).map((art) => ({
+        id: (art.id as string) || String(Math.random()),
+        type: (art.report_type as string) || (art.type as string) || "Compliance",
         status: "ready", // Artifacts are by definition ready
-        created_at: art.created_at || new Date().toISOString(),
-        download_url: art.url || art.download_url,
-        size: art.size || "KB",
+        created_at: (art.created_at as string) || new Date().toISOString(),
+        download_url: (art.url as string) || (art.download_url as string),
+        size: (art.size as string) || "KB",
       }));
-      setReports(mappedReports.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
-    } catch (err) {
+      setReports(
+        mappedReports.sort(
+          (a, b) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        )
+      );
+    } catch {
       toast.error("Failed to load reports");
     } finally {
       setIsLoading(false);
@@ -84,16 +79,15 @@ export default function ReportingDashboard() {
 
   async function generateReport(type: string = "compliance") {
     setIsGenerating(true);
-    setReportType(type);
     try {
       toast.info(`Generating ${type} report...`);
-      const result = await extendedApi.compliance.exportReport(undefined, type);
-      
+      const result = await extendedApi.compliance.exportReport(undefined, type) as unknown as { url?: string; download_url?: string } | null;
+
       if (result && (result.url || result.download_url)) {
         toast.success(`${type} report ready`);
         // Refresh history to show the new report
         await loadData();
-        
+
         // Auto-download? For now let's just let the user download from history
         // window.open(result.url || result.download_url, '_blank');
       } else {
@@ -107,15 +101,15 @@ export default function ReportingDashboard() {
     }
   }
 
-  async function downloadArtifact(url: string, name: string) {
+  async function downloadArtifact(url: string, _name: string) {
     if (!url) {
       toast.error("Download URL not found");
       return;
     }
-    
+
     try {
-      window.open(url, '_blank');
-    } catch (err) {
+      window.open(url, "_blank");
+    } catch {
       toast.error("Download failed");
     }
   }
@@ -130,18 +124,11 @@ export default function ReportingDashboard() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Reporting Dashboard</h1>
-          <p className="text-muted-foreground">
-            Generate and download system reports
-          </p>
-        </div>
-        <Button onClick={loadData} variant="ghost" size="sm">
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Refresh
-        </Button>
-      </div>
+      <DashboardHeader
+        title="Reporting Dashboard"
+        description="Generate and download system reports"
+        onRefresh={loadData}
+      />
 
       <Tabs defaultValue="generate">
         <TabsList>
@@ -268,7 +255,15 @@ export default function ReportingDashboard() {
                         <TableCell>{report.size}</TableCell>
                         <TableCell>
                           {report.download_url && (
-                            <Button size="sm" onClick={() => downloadArtifact(report.download_url!, report.type)}>
+                            <Button
+                              size="sm"
+                              onClick={() =>
+                                downloadArtifact(
+                                  report.download_url!,
+                                  report.type
+                                )
+                              }
+                            >
                               <Download className="w-3 h-3 mr-1" /> Download
                             </Button>
                           )}

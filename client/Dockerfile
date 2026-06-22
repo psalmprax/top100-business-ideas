@@ -42,6 +42,14 @@ COPY vite.config.ts ./vite.config.ts
 COPY tsconfig.json ./tsconfig.json
 COPY tsconfig.node.json ./tsconfig.node.json
 
+# Create non-root user
+RUN groupadd -r appuser && useradd -r -g appuser -m appuser
+
+# Ensure app directory is owned by non-root user
+RUN chown -R appuser:appuser /app
+
+USER appuser
+
 # Expose port
 EXPOSE 7000
 

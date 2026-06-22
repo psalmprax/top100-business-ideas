@@ -8,7 +8,6 @@ import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -24,19 +23,23 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  Eye,
   Send,
   Plus,
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { extendedApi } from "@/lib/api";
+import { extendedApi, type WebhookConfig, type WebhookExecution } from "@/lib/api";
+
+interface ExtendedWebhookExecution extends WebhookExecution {
+  event_type?: string;
+  webhook_url?: string;
+}
 
 export default function WebhookHistory() {
-  const [webhooks, setWebhooks] = useState<any[]>([]);
-  const [executions, setExecutions] = useState<any[]>([]);
+  const [webhooks, setWebhooks] = useState<WebhookConfig[]>([]);
+  const [executions, setExecutions] = useState<ExtendedWebhookExecution[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedWebhook, setSelectedWebhook] = useState<string | null>(null);
+  const [selectedWebhook, _setSelectedWebhook] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newWebhook, setNewWebhook] = useState({
     name: "",
@@ -60,8 +63,9 @@ export default function WebhookHistory() {
 
   const fetchExecutions = async () => {
     try {
-      const allExecs: any[] = [];
+      const allExecs: ExtendedWebhookExecution[] = [];
       for (const wh of webhooks) {
+        if (!wh.id) continue;
         const res = await extendedApi.webhooks.executions(wh.id);
         if (res) allExecs.push(...(Array.isArray(res) ? res : []));
       }
@@ -90,8 +94,9 @@ export default function WebhookHistory() {
       setShowCreateForm(false);
       setNewWebhook({ name: "", url: "", events: "" });
       fetchWebhooks();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to create webhook");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to create webhook";
+      toast.error(message);
     }
   };
 
@@ -101,8 +106,9 @@ export default function WebhookHistory() {
       await extendedApi.webhooks.delete(id);
       toast.success("Webhook deleted");
       fetchWebhooks();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to delete webhook");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to delete webhook";
+      toast.error(message);
     }
   };
 
@@ -110,8 +116,9 @@ export default function WebhookHistory() {
     try {
       await extendedApi.webhooks.test(id);
       toast.success("Test webhook sent");
-    } catch (err: any) {
-      toast.error(err.message || "Test failed");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Test failed";
+      toast.error(message);
     }
   };
 
@@ -339,14 +346,14 @@ export default function WebhookHistory() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => testWebhook(wh.id)}
+                            onClick={() => wh.id && testWebhook(wh.id)}
                           >
                             Test
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => deleteWebhook(wh.id)}
+                            onClick={() => wh.id && deleteWebhook(wh.id)}
                           >
                             <Trash2 className="w-4 h-4 text-red-400" />
                           </Button>

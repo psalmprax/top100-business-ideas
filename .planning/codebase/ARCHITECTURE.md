@@ -11,6 +11,7 @@ The system uses a **BFF (Backend for Frontend)** pattern where an Express server
 ## Layers
 
 **Express Gateway / Proxy Layer (`server/index.ts`):**
+
 - **Purpose**: Unified entry point, Authentication (JWT), Rate Limiting, CORS, and Global System Lockdown.
 - **Responsibilities**:
   - Validates JWT tokens for all `/api/v1` routes.
@@ -20,6 +21,7 @@ The system uses a **BFF (Backend for Frontend)** pattern where an Express server
   - Serves static frontend assets in production.
 
 **Go Backend Layer (`server/go/`):**
+
 - **Purpose**: High-performance core business logic and state management.
 - **Framework**: Gin (HTTP), pgx (PostgreSQL), go-redis (Redis).
 - **Sub-sections**:
@@ -29,6 +31,7 @@ The system uses a **BFF (Backend for Frontend)** pattern where an Express server
   - **Billing**: Stripe and PayPal integrations for subscription management.
 
 **Python ML Backend Layer (`server/python/`):**
+
 - **Purpose**: Specialized AI/ML processing, compliance audits, and business intelligence.
 - **Framework**: FastAPI (HTTP), SQLModel (ORM), PyTorch/Transformers (ML).
 - **Sub-sections**:
@@ -38,6 +41,7 @@ The system uses a **BFF (Backend for Frontend)** pattern where an Express server
   - **Ventures**: Business intelligence and market gap analysis.
 
 **Frontend Layer (`client/`):**
+
 - **Purpose**: Interactive dashboard for managing AI agents, compliance, and venture discovery.
 - **Framework**: React 19, Vite, Tailwind CSS 4, wouter (routing).
 - **Pattern**: Perspective-based UI (V1-V3) for different user roles and abstraction levels.
@@ -45,6 +49,7 @@ The system uses a **BFF (Backend for Frontend)** pattern where an Express server
 ## Data Flow
 
 ### Request Flow
+
 1. **Frontend** sends HTTP/WS request to **Express Gateway** (:8080).
 2. **Express Gateway** validates JWT (if required) and checks "Global Lock" status.
 3. If valid, request is proxied to either **Go Backend** (:7001) or **Python Backend** (:7002).
@@ -52,6 +57,7 @@ The system uses a **BFF (Backend for Frontend)** pattern where an Express server
 5. Response is returned back through the Gateway to the Frontend.
 
 ### Real-time Flow
+
 - **Express Gateway** hosts a Socket.io server for secondary notifications (e.g., security alerts).
 - **Go Backend** handles primary real-time state via native WebSockets (:7001/ws).
 

@@ -42,6 +42,14 @@ COPY --from=builder /app/dist ./dist
 # Install only production dependencies
 RUN npm install -g pnpm@10.15.1 && pnpm install --prod --frozen-lockfile
 
+# Create non-root user
+RUN groupadd -r appuser && useradd -r -g appuser -m appuser
+
+# Ensure app directory is owned by non-root user
+RUN chown -R appuser:appuser /app
+
+USER appuser
+
 EXPOSE 7000
 
 # Start the unified gateway server

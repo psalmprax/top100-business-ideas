@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -25,12 +25,12 @@ import {
   Shield,
   Key,
   Globe,
-  CheckCircle,
   AlertCircle,
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { extendedApi } from "@/lib/api";
+import { useAsyncForm } from "@/hooks/useAsyncForm";
 
 interface SSOProvider {
   id: string;
@@ -61,7 +61,7 @@ export default function SSOConfig() {
 
   const fetchProviders = async () => {
     try {
-      const res = await extendedApi.sso.listProviders("default");
+      const res = await extendedApi.sso.listProviders("default") as unknown as { providers?: SSOProvider[] } | null;
       setProviders(res?.providers || []);
     } catch {
       setProviders([]);
@@ -70,18 +70,20 @@ export default function SSOConfig() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.name || !formData.issuer_url || !formData.client_id) {
-      toast.error("Name, Issuer URL, and Client ID are required");
-      return;
-    }
-    try {
+  const { handleSubmit } = useAsyncForm<typeof formData>({
+    onSubmit: async (data) => {
       await extendedApi.sso.saveConfig("default", {
-        ...formData,
+        ...data,
         app_id: "default",
       });
-      toast.success(`SSO provider "${formData.name}" configured`);
+    },
+    validate: (data) => {
+      if (!data.name || !data.issuer_url || !data.client_id) {
+        return "Name, Issuer URL, and Client ID are required";
+      }
+      return null;
+    },
+    onSuccess: () => {
       setShowForm(false);
       setFormData({
         name: "",
@@ -92,18 +94,17 @@ export default function SSOConfig() {
         metadata_url: "",
       });
       fetchProviders();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to configure provider");
-    }
-  };
+    },
+  });
 
   const toggleProvider = async (id: string, enabled: boolean) => {
     try {
       await extendedApi.sso.saveConfig("default", { id, enabled });
       toast.success(`Provider ${enabled ? "enabled" : "disabled"}`);
       fetchProviders();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to update provider");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to update provider";
+      toast.error(message);
     }
   };
 
@@ -112,8 +113,9 @@ export default function SSOConfig() {
     try {
       toast.success("Provider deleted");
       setProviders(prev => prev.filter(p => p.id !== id));
-    } catch (err: any) {
-      toast.error(err.message || "Failed to delete provider");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to delete provider";
+      toast.error(message);
     }
   };
 
@@ -121,8 +123,9 @@ export default function SSOConfig() {
     try {
       await extendedApi.sso.connectProvider("default", provider.type);
       toast.success(`Connection test initiated for ${provider.name}`);
-    } catch (err: any) {
-      toast.error(err.message || `Connection test failed for ${provider.name}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : `Connection test failed for ${provider.name}`;
+      toast.error(message);
     }
   };
 
@@ -154,7 +157,7 @@ export default function SSOConfig() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={(e) => handleSubmit(e, formData)} className="space-y-4">
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Provider Name</Label>
@@ -175,7 +178,7 @@ export default function SSOConfig() {
                       onChange={e =>
                         setFormData({
                           ...formData,
-                          type: e.target.value as any,
+                          type: e.target.value as "oidc" | "saml" | "oauth",
                         })
                       }
                     >
@@ -317,7 +320,7 @@ export default function SSOConfig() {
                           <div className="flex items-center gap-2">
                             <Switch
                               checked={p.enabled}
-                              onCheckedChange={v => toggleProvider(p.id, v)}
+                              onCheckedChange={(v: boolean) => toggleProvider(p.id, v)}
                             />
                           </div>
                           <Button

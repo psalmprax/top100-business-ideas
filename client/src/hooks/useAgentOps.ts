@@ -1,18 +1,97 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useAuth } from "../contexts/AuthContext";
-import { extendedApi, rulesApi } from "../lib/api";
-import {
-  DashboardAgent,
-  AuditEntry,
-  BudgetRule,
-  AlertConfig,
-  LLMProviderConfig,
-  CategoryType,
-  ROIMetric,
-  HealingConfig,
-  UsageForecast,
-} from "../components/AgentOps/types";
+import { extendedApi, type Agent } from "../lib/api";
+
+// ── Inline types (previously in components/AgentOps/types.ts) ──
+interface DashboardAgent {
+  id: string;
+  name: string;
+  status: string;
+  environment?: string;
+  org_id?: string;
+  persistent_memory?: boolean;
+  provider?: string;
+  model?: string;
+  metadata?: Record<string, unknown>;
+  daily_spend?: number;
+  budget?: number;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+  last_active_at?: Date | string;
+  config: {
+    provider: string;
+    model: string;
+    max_tokens: number;
+    temperature: number;
+    rules: Record<string, unknown>[];
+  };
+  metrics: {
+    tasks_total: number;
+    tasks_completed: number;
+    tasks_failed: number;
+    uptime: number;
+    total_requests: number;
+    total_tokens: number;
+    total_cost: number;
+    avg_latency_ms: number;
+    error_rate: number;
+    loop_count: number;
+    cache_hits: number;
+    loops_prevented: number;
+    cost_saved: number;
+  };
+}
+
+interface AuditEntry {
+  agentId: string;
+  agentName: string;
+  timestamp: Date;
+  summary: string;
+  interactionId: string;
+  action?: string;
+  reasoning?: string;
+  details?: string;
+  [key: string]: unknown;
+}
+
+interface BudgetRule {
+  id: string;
+  [key: string]: unknown;
+}
+
+interface AlertConfig {
+  id: string;
+  is_active: boolean;
+  [key: string]: unknown;
+}
+
+interface LLMProviderConfig {
+  id: string;
+  [key: string]: unknown;
+}
+
+type CategoryType = "core" | "ops" | "gov" | "advanced" | "intelligence";
+
+interface ROIMetric {
+  id: string;
+  [key: string]: unknown;
+}
+
+interface HealingConfig {
+  id: string;
+  type: string;
+  active: boolean;
+  auto_healing_enabled: boolean;
+  mitigations_count?: number;
+  last_mitigation_time?: string;
+  [key: string]: unknown;
+}
+
+interface UsageForecast {
+  id: string;
+  [key: string]: unknown;
+}
 
 export function useAgentOps() {
   const { user, isAuthenticated } = useAuth();
@@ -28,17 +107,17 @@ export function useAgentOps() {
 
   // Feature specific states
   const [budgetRules, setBudgetRules] = useState<BudgetRule[]>([]);
-  const [webhooks, setWebhooks] = useState<any[]>([]);
-  const [multiCloudStatus, setMultiCloudStatus] = useState<any>(null);
-  const [selfHealingEvents, setSelfHealingEvents] = useState<any[]>([]);
-  const [clusterNodes, setClusterNodes] = useState<any[]>([]);
+  const [webhooks, setWebhooks] = useState<Record<string, unknown>[]>([]);
+  const [multiCloudStatus, setMultiCloudStatus] = useState<Record<string, unknown> | null>(null);
+  const [selfHealingEvents, setSelfHealingEvents] = useState<Record<string, unknown>[]>([]);
+  const [clusterNodes, setClusterNodes] = useState<Record<string, unknown>[]>([]);
   const [llmConfigs, setLlmConfigs] = useState<LLMProviderConfig[]>([]);
   const [alertConfigs, setAlertConfigs] = useState<AlertConfig[]>([]);
-  const [vigilanceAlerts, setVigilanceAlerts] = useState<any[]>([]);
+  const [vigilanceAlerts, setVigilanceAlerts] = useState<Record<string, unknown>[]>([]);
   const [roiMetrics, setRoiMetrics] = useState<ROIMetric[]>([]);
   const [healingConfigs, setHealingConfigs] = useState<HealingConfig[]>([]);
   const [usageForecasts, setUsageForecasts] = useState<UsageForecast[]>([]);
-  const [ssoConfig, setSsoConfig] = useState<any>(null);
+  const [ssoConfig, setSsoConfig] = useState<Record<string, unknown> | null>(null);
   const [complianceStatus, setComplianceStatus] = useState({
     hipaa: "PENDING",
     sox: "PENDING",
@@ -46,7 +125,7 @@ export function useAgentOps() {
   });
 
   // Real-time metrics
-  const [liveMetrics, setLiveMetrics] = useState({
+  const [liveMetrics] = useState({
     throughput: 0,
     latency: 0,
     status: "inactive",
@@ -59,10 +138,10 @@ export function useAgentOps() {
   // Intel states
   const [researchTopic, setResearchTopic] = useState("");
   const [isResearching, setIsResearching] = useState(false);
-  const [researchResult, setResearchResult] = useState<any>(null);
+  const [researchResult, setResearchResult] = useState<Record<string, unknown> | null>(null);
   const [strategyPrompt, setStrategyPrompt] = useState("");
   const [isGeneratingStrategy, setIsGeneratingStrategy] = useState(false);
-  const [strategyResult, setStrategyResult] = useState<any>(null);
+  const [strategyResult, setStrategyResult] = useState<Record<string, unknown> | null>(null);
 
   // Dialog states
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
@@ -75,7 +154,20 @@ export function useAgentOps() {
     maxTokens: 4000,
     budget: 10,
   });
-  const [newAgentData, setNewAgentData] = useState<any>({
+  const [newAgentData, setNewAgentData] = useState<{
+    name: string;
+    type: string;
+    environment: string;
+    provider: string;
+    model: string;
+    budget: number;
+    maxTokens: number;
+    org_id: string;
+    control_webhook: string;
+    metadata: Record<string, unknown>;
+    tier: string;
+    persistent_memory: boolean;
+  }>({
     name: "",
     type: "langgraph",
     environment: "production",
@@ -134,25 +226,25 @@ export function useAgentOps() {
         extendedApi.agentOps.getArchitectureDefaults(),
       ]);
 
-      if (defaultsRes) setArchitectureDefaults(defaultsRes);
+      if (defaultsRes) setArchitectureDefaults(defaultsRes as typeof architectureDefaults);
 
-      if (complianceStatusRes) setComplianceStatus(complianceStatusRes);
+      if (complianceStatusRes) setComplianceStatus(complianceStatusRes as typeof complianceStatus);
 
-      if (Array.isArray(roiRes)) setRoiMetrics(roiRes);
+      if (Array.isArray(roiRes)) setRoiMetrics(roiRes as ROIMetric[]);
       if (Array.isArray(healingConfigRes)) {
-        const enriched = healingConfigRes.map((c, i) =>
+        const enriched = (healingConfigRes as HealingConfig[]).map((c, i) =>
           i === 0
             ? {
                 ...c,
-                mitigations_count: healingRes?.mitigations_count || 0,
+                mitigations_count: (healingRes as Record<string, unknown>)?.mitigations_count as number || 0,
                 last_mitigation_time:
-                  healingRes?.recent_recoveries?.[0]?.timestamp,
+                  ((healingRes as Record<string, unknown>)?.recent_recoveries as Record<string, unknown>[])?.[0]?.timestamp as string,
               }
             : c
         );
         setHealingConfigs(enriched);
       }
-      if (Array.isArray(forecastRes)) setUsageForecasts(forecastRes);
+      if (Array.isArray(forecastRes)) setUsageForecasts(forecastRes as UsageForecast[]);
 
       const transformedAgents: DashboardAgent[] = (
         Array.isArray(agentsRes) ? agentsRes : []
@@ -161,15 +253,14 @@ export function useAgentOps() {
         id: agent.id,
         name: agent.name,
         status: agent.status,
-        daily_spend: agent.daily_spend || agent.dailySpend || 0,
+        daily_spend: agent.daily_spend || 0,
         budget: agent.budget || 100,
-        created_at: new Date(agent.created_at || agent.createdAt || new Date()),
+        created_at: new Date(agent.created_at || new Date()),
         updated_at: new Date(
-          agent.updated_at || agent.created_at || agent.createdAt || new Date()
+          agent.updated_at || agent.created_at || new Date()
         ),
         last_active_at: new Date(
           agent.last_active_at ||
-            agent.lastActiveAt ||
             agent.updated_at ||
             agent.created_at ||
             new Date()
@@ -178,89 +269,74 @@ export function useAgentOps() {
           provider: agent.config?.provider || agent.provider || "openai",
           model: agent.config?.model || agent.model || "gpt-4o",
           max_tokens:
-            agent.config?.max_tokens ||
-            agent.config?.maxTokens ||
-            architectureDefaults.maxTokens,
+            agent.config?.max_tokens || architectureDefaults.maxTokens,
           temperature:
             agent.config?.temperature || architectureDefaults.temperature,
           rules: agent.config?.rules || [],
         },
         metrics: {
-          tasks_total:
-            agent.metrics?.tasks_total || agent.metrics?.tasksTotal || 0,
-          tasks_complete:
-            agent.metrics?.tasks_complete || agent.metrics?.tasksComplete || 0,
-          tasks_failed:
-            agent.metrics?.tasks_failed || agent.metrics?.tasksFailed || 0,
+          tasks_total: agent.metrics?.tasks_total || 0,
+          tasks_completed: agent.metrics?.tasks_completed || 0,
+          tasks_failed: agent.metrics?.tasks_failed || 0,
           uptime: agent.metrics?.uptime || 0,
-          total_requests:
-            agent.metrics?.total_requests || agent.metrics?.totalRequests || 0,
-          total_tokens:
-            agent.metrics?.total_tokens || agent.metrics?.totalTokens || 0,
-          total_cost:
-            agent.metrics?.total_cost || agent.metrics?.totalCost || 0,
-          avg_latency_ms:
-            agent.metrics?.avg_latency_ms || agent.metrics?.avgLatencyMs || 0,
-          error_rate:
-            agent.metrics?.error_rate || agent.metrics?.errorRate || 0,
-          loop_count:
-            agent.metrics?.loop_count || agent.metrics?.loopCount || 0,
-          cache_hits:
-            agent.metrics?.cache_hits || agent.metrics?.cacheHits || 0,
-          loops_prevented:
-            agent.metrics?.loops_prevented ||
-            agent.metrics?.loopsPrevented ||
-            0,
-          cost_saved:
-            agent.metrics?.cost_saved || agent.metrics?.costSaved || 0,
+          total_requests: agent.metrics?.total_requests || 0,
+          total_tokens: agent.metrics?.total_tokens || 0,
+          total_cost: agent.metrics?.total_cost || 0,
+          avg_latency_ms: agent.metrics?.avg_latency_ms || 0,
+          error_rate: agent.metrics?.error_rate || 0,
+          loop_count: agent.metrics?.loop_count || 0,
+          cache_hits: agent.metrics?.cache_hits || 0,
+          loops_prevented: agent.metrics?.loops_prevented || 0,
+          cost_saved: agent.metrics?.cost_saved || 0,
         },
       }));
       setAgents(transformedAgents);
 
       setAuditLog(
-        (Array.isArray(auditRes) ? auditRes : []).map((log: any) => ({
+        ((Array.isArray(auditRes) ? auditRes : []) as unknown as Record<string, unknown>[]).map((log) => ({
           ...log,
-          agentId: log.agent_id || log.agentId || "unknown",
-          agentName: log.agent_name || log.agentName || "Unknown Agent",
-          timestamp: log.timestamp ? new Date(log.timestamp) : new Date(),
+          agentId: (log.agent_id as string) || (log.agentId as string) || "unknown",
+          agentName: (log.agent_name as string) || (log.agentName as string) || "Unknown Agent",
+          timestamp: log.timestamp ? new Date(log.timestamp as string) : new Date(),
           summary:
-            log.details ||
-            log.summary ||
+            (log.details as string) ||
+            (log.summary as string) ||
             (log.reasoning
-              ? log.reasoning.length > 60
-                ? log.reasoning.substring(0, 60) + "..."
-                : log.reasoning
+              ? (log.reasoning as string).length > 60
+                ? (log.reasoning as string).substring(0, 60) + "..."
+                : (log.reasoning as string)
               : `Agent ${log.action}`),
-          interactionId: log.interaction_id || log.interactionId || log.id,
+          interactionId: (log.interaction_id as string) || (log.interactionId as string) || (log.id as string),
         }))
       );
 
-      setBudgetRules(rulesRes as any);
-      setWebhooks(webhookRes as any);
-      setMultiCloudStatus(cloudRes);
+      setBudgetRules(rulesRes as BudgetRule[]);
+      setWebhooks(webhookRes as Record<string, unknown>[]);
+      setMultiCloudStatus(cloudRes as Record<string, unknown>);
       if (healingRes) {
+        const healingData = healingRes as Record<string, unknown>;
         setSelfHealingEvents(
-          (Array.isArray(healingRes.recent_recoveries)
-            ? healingRes.recent_recoveries
+          (Array.isArray(healingData.recent_recoveries)
+            ? healingData.recent_recoveries
             : []
-          ).map((ev: any) => ({
+          ).map((ev: Record<string, unknown>) => ({
             ...ev,
-            timestamp: new Date(ev.timestamp),
+            timestamp: new Date(ev.timestamp as string),
           }))
         );
-        if (healingRes.nodes) setClusterNodes(healingRes.nodes);
+        if (healingData.nodes) setClusterNodes(healingData.nodes as Record<string, unknown>[]);
       }
       setLlmConfigs(
         Array.isArray(llmRes) ? (llmRes as unknown as LLMProviderConfig[]) : []
       );
-      setAlertConfigs(alertsRes as any);
-      if (Array.isArray(vigilanceRes)) setVigilanceAlerts(vigilanceRes);
+      setAlertConfigs(alertsRes as unknown as AlertConfig[]);
+      if (Array.isArray(vigilanceRes)) setVigilanceAlerts(vigilanceRes as Record<string, unknown>[]);
 
       if (isAuthenticated) {
         extendedApi.sso
           .config("default")
           .then(conf => {
-            if (conf) setSsoConfig(conf);
+            if (conf) setSsoConfig(conf as Record<string, unknown>);
           })
           .catch(() => {});
       }
@@ -291,7 +367,7 @@ export function useAgentOps() {
       toast.success(
         `Agent ${agent.name} ${newStatus === "running" ? "started" : "stopped"}`
       );
-    } catch (error) {
+    } catch {
       toast.error(
         `Failed to ${newStatus === "running" ? "start" : "stop"} agent.`
       );
@@ -317,11 +393,11 @@ export function useAgentOps() {
           model: updatedAgent.model || "gpt-4o",
         },
       };
-      await extendedApi.agents.update(updatedAgent.id, updatePayload);
+      await extendedApi.agents.update(updatedAgent.id, updatePayload as Partial<import("../lib/api").Agent>);
       setShowSettingsDialog(false);
       refreshData();
       toast.success("Agent settings synchronized with Sentinel backend.");
-    } catch (error) {
+    } catch {
       toast.error("Failed to update agent settings.");
     }
   };
@@ -329,16 +405,23 @@ export function useAgentOps() {
   const handleCreateAgent = async () => {
     try {
       const result = await extendedApi.agents.create({
-        ...newAgentData,
+        name: newAgentData.name,
+        type: newAgentData.type as Agent["type"],
+        environment: newAgentData.environment,
+        provider: newAgentData.provider,
+        model: newAgentData.model,
+        budget: newAgentData.budget,
+        org_id: newAgentData.org_id,
+        control_webhook: newAgentData.control_webhook,
+        persistent_memory: newAgentData.persistent_memory,
+        tier: newAgentData.tier as Agent["tier"],
         config: {
           provider: newAgentData.provider,
           model: newAgentData.model,
-          maxTokens: newAgentData.maxTokens || architectureDefaults.maxTokens,
+          max_tokens: newAgentData.maxTokens || architectureDefaults.maxTokens,
           temperature: architectureDefaults.temperature,
-          rules: [],
-          ...newAgentData.metadata,
         },
-      } as any);
+      });
 
       if (result) {
         setShowNewAgentDialog(false);
@@ -359,7 +442,7 @@ export function useAgentOps() {
           persistent_memory: true,
         });
       }
-    } catch (error) {
+    } catch {
       toast.error("Deployment failed.");
     }
   };
@@ -370,9 +453,9 @@ export function useAgentOps() {
     try {
       const data =
         await extendedApi.agents.intelligence.research(researchTopic);
-      setResearchResult(data);
+      setResearchResult(data as Record<string, unknown>);
       toast.success("Paperclip research complete!");
-    } catch (error) {
+    } catch {
       toast.error("Research failed");
     } finally {
       setIsResearching(false);
@@ -385,9 +468,9 @@ export function useAgentOps() {
     try {
       const data =
         await extendedApi.agents.intelligence.strategy(strategyPrompt);
-      setStrategyResult(data);
+      setStrategyResult(data as Record<string, unknown>);
       toast.success("Hermes strategy generated!");
-    } catch (error) {
+    } catch {
       toast.error("Strategy generation failed");
     } finally {
       setIsGeneratingStrategy(false);
@@ -401,8 +484,9 @@ export function useAgentOps() {
       });
       toast.success("Alert status updated.");
       refreshData();
-    } catch (e: any) {
-      toast.error(`Sync Fail: ${e.message}`);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
+      toast.error(`Sync Fail: ${message}`);
     }
   };
 
@@ -410,10 +494,10 @@ export function useAgentOps() {
     try {
       await extendedApi.sentinel.updateHealingConfig({
         [type]: enabled,
-      } as any);
+      } as Record<string, unknown>);
       toast.success(`Self-healing ${type} updated.`);
       refreshData();
-    } catch (error) {
+    } catch {
       toast.error("Failed to update healing configuration.");
     }
   };
@@ -427,8 +511,9 @@ export function useAgentOps() {
           duration: 10000,
         });
       }
-    } catch (error: any) {
-      toast.error(`Lockdown failed: ${error.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Lockdown failed";
+      toast.error(`Lockdown failed: ${message}`);
     }
   };
 
@@ -444,8 +529,9 @@ export function useAgentOps() {
         });
         refreshData();
       }
-    } catch (error: any) {
-      toast.error(`Reset failed: ${error.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Reset failed";
+      toast.error(`Reset failed: ${message}`);
     }
   };
 
@@ -467,7 +553,7 @@ export function useAgentOps() {
         `Agent ${agent.name} decommissioned and purged from cluster.`
       );
       refreshData();
-    } catch (error) {
+    } catch {
       toast.error("Failed to decommission agent. Enclave restricted.");
     }
   };
@@ -481,7 +567,7 @@ export function useAgentOps() {
       }
       toast.success(`${type.toUpperCase()} audit initiated successfully.`);
       refreshData();
-    } catch (error) {
+    } catch {
       toast.error(`Failed to initiate ${type.toUpperCase()} audit.`);
     }
   };
@@ -496,7 +582,7 @@ export function useAgentOps() {
       await extendedApi.agents.injectHint(agent.id, hint);
       toast.success("Governance hint injected into agent execution context.");
       refreshData();
-    } catch (error) {
+    } catch {
       toast.error("Failed to inject hint. Security policy restriction.");
     }
   };
@@ -508,23 +594,23 @@ export function useAgentOps() {
           ...agent.metadata,
           assets_sync_initiated: new Date().toISOString(),
         },
-      } as any);
+      } as Partial<import("../lib/api").Agent>);
       toast.success("Agent assets and persistent context refresh initiated.");
       refreshData();
-    } catch (error) {
+    } catch {
       toast.error("Asset synchronization failed. Check cluster health.");
     }
   };
 
-  const handleConfigureStream = async (agent: DashboardAgent) => {
+  const handleConfigureStream = async (_agent: DashboardAgent) => {
     try {
       await extendedApi.sentinel.updateHealingConfig({
-        auto_refine: true, // Specific configuration for streaming stability
+        auto_refine: true,
         max_retries: 5,
       });
       toast.success("Sentinel stream stability parameters configured.");
       refreshData();
-    } catch (error) {
+    } catch {
       toast.error("Stream configuration failed. Telemetry offline.");
     }
   };

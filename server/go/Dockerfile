@@ -25,6 +25,12 @@ WORKDIR /app
 
 COPY --from=builder /app/main .
 
+# Create non-root user
+RUN addgroup -S appuser && adduser -S -G appuser appuser
+RUN chown -R appuser:appuser /app
+
+USER appuser
+
 EXPOSE 8080
 
 CMD ["./main"]

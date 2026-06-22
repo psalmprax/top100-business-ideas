@@ -30,9 +30,18 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { extendedApi } from "@/lib/api";
+import { useAsyncForm } from "@/hooks/useAsyncForm";
+
+interface BiometricEnrollmentItem {
+  id: string;
+  enrollment_type: string;
+  device_id: string;
+  user_id?: string;
+  is_active?: boolean;
+}
 
 export default function BiometricEnrollment() {
-  const [enrollments, setEnrollments] = useState<any[]>([]);
+  const [enrollments, setEnrollments] = useState<BiometricEnrollmentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
@@ -48,7 +57,7 @@ export default function BiometricEnrollment() {
   const fetchEnrollments = async () => {
     try {
       const res = await extendedApi.deepfake.listBiometrics();
-      setEnrollments(res || []);
+      setEnrollments((res || []) as unknown as BiometricEnrollmentItem[]);
     } catch {
       setEnrollments([]);
     } finally {
@@ -56,26 +65,26 @@ export default function BiometricEnrollment() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.enrollment_type || !formData.device_id) {
-      toast.error("Enrollment type and device ID are required");
-      return;
-    }
-    try {
+  const { handleSubmit } = useAsyncForm<typeof formData>({
+    onSubmit: async (data) => {
       await extendedApi.deepfake.enrollBiometric({
-        enrollment_type: formData.enrollment_type,
-        device_id: formData.device_id,
-        user_id: formData.user_id || undefined,
+        enrollment_type: data.enrollment_type,
+        device_id: data.device_id,
+        user_id: data.user_id || undefined,
       });
-      toast.success("Biometric enrolled successfully");
+    },
+    validate: (data) => {
+      if (!data.enrollment_type || !data.device_id) {
+        return "Enrollment type and device ID are required";
+      }
+      return null;
+    },
+    onSuccess: () => {
       setShowForm(false);
       setFormData({ enrollment_type: "facial", device_id: "", user_id: "" });
       fetchEnrollments();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to enroll biometric");
-    }
-  };
+    },
+  });
 
   const revokeEnrollment = async (id: string) => {
     if (!window.confirm("Revoke this biometric enrollment?")) return;
@@ -83,8 +92,9 @@ export default function BiometricEnrollment() {
       await extendedApi.deepfake.revokeBiometric(id);
       toast.success("Biometric revoked");
       fetchEnrollments();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to revoke biometric");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to revoke biometric";
+      toast.error(message);
     }
   };
 
@@ -163,7 +173,7 @@ export default function BiometricEnrollment() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={(e) => handleSubmit(e, formData)} className="space-y-4">
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Biometric Type</Label>
@@ -247,7 +257,7 @@ export default function BiometricEnrollment() {
     </div>
   );
 
-  function renderList(items: any[]) {
+  function renderList(items: BiometricEnrollmentItem[]) {
     if (isLoading) {
       return (
         <div className="flex justify-center py-12">

@@ -10,15 +10,10 @@ import {
   Mail,
   CreditCard,
   Zap,
-  MessageCircle,
   CheckCircle2,
-  Search,
   Plus,
-  BarChart3,
   History,
   Settings,
-  ArrowRight,
-  Play,
   Timer,
   LayoutDashboard,
   FileText,
@@ -28,42 +23,31 @@ import {
   Users,
   Activity,
   Globe,
-  Lock,
   TrendingUp,
   FileCheck,
   Layers,
-  Box,
-  Milestone,
-  Tag,
-  ChevronDown,
   ShieldCheck,
-  AlertTriangle,
-  Mic,
-  RefreshCw,
   Trash2,
+  Plane,
+  MapPin,
   DollarSign,
-  ExternalLink,
-  Link2,
   Unlink,
+  Link2,
   Target,
   Send,
-  Phone,
-  MapPin,
-  Plane,
+  type LucideIcon,
 } from "lucide-react";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -77,14 +61,13 @@ import {
   type Client,
   type Integration,
   type ScheduleEvent,
-  type BotSetting,
 } from "@/lib/api";
 
 // ============================================================================
 // Types & Components
 // ============================================================================
 
-type CategoryType = "ops" | "fin" | "log" | "strat";
+export type CategoryType = "ops" | "fin" | "log" | "strat";
 
 function MetricCard({
   title,
@@ -95,7 +78,7 @@ function MetricCard({
 }: {
   title: string;
   value: string | number;
-  icon: any;
+  icon: LucideIcon;
   color: string;
   change?: number;
 }) {
@@ -136,21 +119,24 @@ export default function FreelancerWorkflowBot() {
   // Real data state
   const [agents, setAgents] = useState<Agent[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [auditLogs, setAuditLogs] = useState<any[]>([]);
-  const [invoices, setInvoices] = useState<any[]>([]);
-  const [metrics, setMetrics] = useState<any>(null);
+  const [auditLogs, setAuditLogs] = useState<{ sender?: string; category?: string; timestamp?: string; created_at?: string; content?: string; message?: string; actions?: string[] }[]>([]);
+  const [invoices, setInvoices] = useState<{ id: string; invoice_number?: string; client_name?: string; created_at: string; status: string; amount?: number }[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [metrics, setMetrics] = useState<Record<string, any> | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [scheduleEvents, setScheduleEvents] = useState<ScheduleEvent[]>([]);
-  const [botSettings, setBotSettings] = useState<any>({
+  const [botSettings, setBotSettings] = useState<Record<string, string | boolean>>({
     autoReply: true,
     autoInvoice: false,
     smartScheduling: true,
     leadScoring: false,
     nlpModel: "gpt-4",
   });
-  const [earningsData, setEarningsData] = useState<any>(null);
-  const [taxEstimate, setTaxEstimate] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [earningsData, setEarningsData] = useState<Record<string, any> | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [taxEstimate, setTaxEstimate] = useState<Record<string, any> | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -175,7 +161,7 @@ export default function FreelancerWorkflowBot() {
           extendedApi.workforce.getClients(),
           extendedApi.workforce.getIntegrations(),
           extendedApi.workforce.getScheduleEvents(),
-          extendedApi.workforce.getBotSettings("current_user"), 
+          extendedApi.workforce.getBotSettings("current_user"),
           extendedApi.workforce.getInsights(),
           extendedApi.workforce.getTaxEstimate(),
           extendedApi.workforce.getInvoices(),
@@ -193,7 +179,7 @@ export default function FreelancerWorkflowBot() {
         // Convert BotSetting[] to object for the UI
         if (Array.isArray(botSettingsData)) {
           const settingsObj = { ...botSettings };
-          botSettingsData.forEach((s: any) => {
+          botSettingsData.forEach((s: { setting_key?: string; setting_value?: string | boolean; setting_type?: string }) => {
             if (s.setting_key && s.setting_value !== undefined) {
               settingsObj[s.setting_key] =
                 s.setting_type === "boolean"
@@ -205,8 +191,8 @@ export default function FreelancerWorkflowBot() {
         }
         setEarningsData(insightsData || null);
         setTaxEstimate(taxDataResp || null);
-        if (Array.isArray(invoicesData)) setInvoices(invoicesData);
-        if (Array.isArray(inboxData)) setAuditLogs(inboxData); // Re-purpose auditLogs for Inbox for now
+        if (Array.isArray(invoicesData)) setInvoices(invoicesData as { id: string; invoice_number?: string; client_name?: string; created_at: string; status: string; amount?: number }[]);
+        if (Array.isArray(inboxData)) setAuditLogs(inboxData as { sender?: string; category?: string; timestamp?: string; created_at?: string; content?: string; message?: string; actions?: string[] }[]); // Re-purpose auditLogs for Inbox for now
       } catch (error) {
         console.error("Failed to fetch workforce bot data:", error);
         // In a real app, we might show an error state here
@@ -379,14 +365,15 @@ export default function FreelancerWorkflowBot() {
     setIsAuthorizing(true);
     toast.promise(extendedApi.workforce.deployCheck(), {
       loading: "Drafting legal authorization and deploying agent...",
-      success: (data: any) => {
+      success: (data) => {
         setIsAuthorizing(false);
         setTimeSaved(prev => {
           const newVal = prev + 14.0;
           storage.set("fwb_time_saved", newVal);
           return newVal;
         });
-        return data?.message || "Agent authorized. CRM automation is now live.";
+        const msg = data && typeof data === "object" && "message" in data ? String((data as Record<string, unknown>).message) : undefined;
+        return msg || "Agent authorized. CRM automation is now live.";
       },
       error: () => {
         setIsAuthorizing(false);
@@ -397,26 +384,30 @@ export default function FreelancerWorkflowBot() {
 
   const handleStripeConnect = async () => {
     setIsStripeConnecting(true);
-    toast.promise(extendedApi.workforce.billing.createCheckout("starter", "stripe"), {
-      loading: "Redirecting to Stripe OAuth...",
-      success: (data: any) => {
-        setIsStripeConnecting(false);
-        if (data?.url) {
-          window.open(data.url, "_blank");
-        }
-        return "Stripe account connected. Billing Bot active.";
-      },
-      error: () => {
-        setIsStripeConnecting(false);
-        return "Connection failed. Service unavailable.";
-      },
-    });
+    toast.promise(
+      extendedApi.workforce.billing.createCheckout("starter", "stripe"),
+      {
+        loading: "Redirecting to Stripe OAuth...",
+        success: (data) => {
+          setIsStripeConnecting(false);
+          const url = data && typeof data === "object" && "url" in data ? String((data as Record<string, unknown>).url) : undefined;
+          if (url) {
+            window.open(url, "_blank");
+          }
+          return "Stripe account connected. Billing Bot active.";
+        },
+        error: () => {
+          setIsStripeConnecting(false);
+          return "Connection failed. Service unavailable.";
+        },
+      }
+    );
   };
 
   const categories: {
     id: CategoryType;
     label: string;
-    icon: any;
+  icon: LucideIcon;
     description: string;
   }[] = [
     { id: "ops", label: "Operations", icon: Zap, description: "Tasks & Inbox" },
@@ -442,7 +433,7 @@ export default function FreelancerWorkflowBot() {
 
   const categoryTabs: Record<
     CategoryType,
-    { value: string; label: string; icon: any }[]
+    { value: string; label: string; icon: LucideIcon }[]
   > = {
     ops: [
       { value: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -473,7 +464,9 @@ export default function FreelancerWorkflowBot() {
     // REAL-FIRST: If it's a mobile SDK/App request, use the proper API handler
     if (filename.includes("sdk") || filename.includes("app")) {
       const platform = filename.includes("app") ? "ios" : "universal";
-      toast.info(`Fetching latest ${platform.toUpperCase()} binary from Secure Enclave...`);
+      toast.info(
+        `Fetching latest ${platform.toUpperCase()} binary from Secure Enclave...`
+      );
       try {
         const data = await extendedApi.mobileSDK.download(platform);
         if (data.download_url) {
@@ -487,7 +480,6 @@ export default function FreelancerWorkflowBot() {
     }
 
     if (filename.toLowerCase().endsWith(".pdf")) {
-      // @ts-ignore - jsPDF is imported
       const doc = new jsPDF();
       doc.text(content, 10, 10);
       doc.save(filename);
@@ -523,21 +515,16 @@ export default function FreelancerWorkflowBot() {
       extendedApi.workforce.runCampaign(taskDescription, "freelancer"),
       {
         loading: "Delegating task to workflow agent...",
-        success: (data: any) => {
+        success: (data) => {
+          const msg = data && typeof data === "object" && "message" in data ? String((data as Record<string, unknown>).message) : undefined;
           return (
-            data?.message ||
+            msg ||
             `Task delegated: "${taskDescription.substring(0, 40)}..."`
           );
         },
         error: () => "Task delegation failed. Service unavailable.",
       }
     );
-  };
-
-  const handleOpenInbox = () => {
-    setActiveCategory("ops");
-    setActiveTab("inbox");
-    toast.info("Inbox Manager activated. Monitoring communications...");
   };
 
   const sdkZip =
@@ -576,7 +563,9 @@ export default function FreelancerWorkflowBot() {
                 variant="outline"
                 size="sm"
                 className="hidden md:flex border-indigo-200"
-                onClick={() => handleDownloadPDF("workflowbot-sdk-v1.zip", sdkZip)}
+                onClick={() =>
+                  handleDownloadPDF("workflowbot-sdk-v1.zip", sdkZip)
+                }
               >
                 <Download className="w-4 h-4 mr-2 text-indigo-600" />
                 SDK
@@ -683,10 +672,10 @@ export default function FreelancerWorkflowBot() {
                   />
                   <MetricCard
                     title="Time Saved"
-                    value={`${(metrics?.time_saved || timeSaved).toFixed(1)}h`}
+                    value={`${(metrics?.time_saved ?? timeSaved).toFixed(1)}h`}
                     icon={Clock}
                     color="bg-indigo-500/10 text-indigo-500"
-                    change={metrics?.time_saved_change || 22}
+                    change={metrics?.time_saved_change ?? 22}
                   />
                   <MetricCard
                     title="Queue Pressure"
@@ -712,31 +701,28 @@ export default function FreelancerWorkflowBot() {
                     </div>
                   </CardHeader>
                   <CardContent className="p-0">
-                    {(tasks || []).slice(0, 5).map((item: any, idx: number) => (
+                    {(tasks || []).slice(0, 5).map((item: Task, idx: number) => (
                       <div
                         key={idx}
                         className="flex items-center justify-between p-6 border-b border-border/30 last:border-0 hover:bg-muted/20 transition-colors"
                       >
                         <div className="flex gap-4 items-center">
                           <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 flex items-center justify-center border border-indigo-100 dark:border-indigo-900/50">
-                            {item.type === "Docs" || !item.type ? (
-                              <FileText className="w-5 h-5 text-indigo-600" />
-                            ) : item.type === "Billing" ? (
-                              <CreditCard className="w-5 h-5 text-indigo-600" />
-                            ) : (
-                              <Calendar className="w-5 h-5 text-indigo-600" />
-                            )}
+                            <FileText className="w-5 h-5 text-indigo-600" />
                           </div>
                           <div>
                             <div className="text-card-title">{item.title}</div>
                             <div className="text-caption-premium mt-0.5">
-                              {item.assigned_to || "WorkflowBot"} &middot; {new Date(item.created_at || item.createdAt).toLocaleTimeString()}
+                              {item.assigned_to || "WorkflowBot"} &middot;{" "}
+                              {item.created_at
+                                ? new Date(item.created_at).toLocaleTimeString()
+                                : ""}
                             </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
                           <Badge
-                            className={`${item.status === "completed" || item.status === "Done" ? "bg-emerald-500" : "bg-indigo-500 animate-pulse"} text-white border-none text-caption-premium h-4 rounded-sm font-black uppercase tracking-tighter px-1.5`}
+                            className={`${item.status === "completed" ? "bg-emerald-500" : "bg-indigo-500 animate-pulse"} text-white border-none text-caption-premium h-4 rounded-sm font-black uppercase tracking-tighter px-1.5`}
                           >
                             {item.status}
                           </Badge>
@@ -824,7 +810,7 @@ export default function FreelancerWorkflowBot() {
               <CardContent className="p-0">
                 <ScrollArea className="h-[500px]">
                   {auditLogs.length > 0 ? (
-                    auditLogs.map((msg: any, idx: number) => (
+                    auditLogs.map((msg: { sender?: string; category?: string; timestamp?: string; created_at?: string; content?: string; message?: string; actions?: string[] }, idx: number) => (
                       <div
                         key={idx}
                         className="flex flex-col p-4 border-b border-border/30 last:border-0 hover:bg-muted/20 transition-colors"
@@ -834,12 +820,17 @@ export default function FreelancerWorkflowBot() {
                             <span className="text-body-sm font-bold text-indigo-600">
                               {msg.sender || "System"}
                             </span>
-                            <Badge variant="secondary" className="text-[8px] h-3 px-1">
+                            <Badge
+                              variant="secondary"
+                              className="text-[8px] h-3 px-1"
+                            >
                               {msg.category || "General"}
                             </Badge>
                           </div>
                           <span className="text-[10px] text-muted-foreground italic">
-                            {new Date(msg.timestamp || msg.created_at).toLocaleTimeString()}
+                            {(msg.timestamp || msg.created_at)
+                              ? new Date(msg.timestamp || msg.created_at!).toLocaleTimeString()
+                              : ""}
                           </span>
                         </div>
                         <p className="text-body-sm text-foreground/90 leading-relaxed">
@@ -848,7 +839,12 @@ export default function FreelancerWorkflowBot() {
                         {msg.actions && (
                           <div className="flex gap-2 mt-3">
                             {msg.actions.map((action: string, i: number) => (
-                              <Button key={i} variant="outline" size="sm" className="h-6 text-[10px] py-0 px-2">
+                              <Button
+                                key={i}
+                                variant="outline"
+                                size="sm"
+                                className="h-6 text-[10px] py-0 px-2"
+                              >
                                 {action}
                               </Button>
                             ))}
@@ -894,7 +890,7 @@ export default function FreelancerWorkflowBot() {
               <div className="space-y-6">
                 <MetricCard
                   title="Outstanding Invoices"
-                  value={`$${(earningsData?.pendingPayments || 0).toLocaleString()}`}
+                  value={`$${(earningsData?.pendingPayments ?? 0).toLocaleString()}`}
                   icon={FileCheck}
                   color="bg-orange-500/10 text-orange-500"
                   change={metrics?.outstanding_change || -12}
@@ -906,7 +902,7 @@ export default function FreelancerWorkflowBot() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-0">
-                    {(invoices || []).slice(0, 5).map((inv: any) => (
+                    {(invoices || []).slice(0, 5).map((inv: { id: string; invoice_number?: string; client_name?: string; created_at: string; status: string; amount?: number }) => (
                       <div
                         key={inv.id}
                         className="p-4 border-b border-border/30 last:border-0 flex items-center justify-between"
@@ -917,15 +913,19 @@ export default function FreelancerWorkflowBot() {
                           </div>
                           <div>
                             <div className="text-body-sm font-bold">
-                              {inv.invoice_number || `INV-${inv.id.substring(0, 4)}`}
+                              {inv.invoice_number ||
+                                `INV-${inv.id.substring(0, 4)}`}
                             </div>
                             <div className="text-caption-premium">
-                              {inv.client_name || "Enterprise Client"} &middot; {new Date(inv.created_at).toLocaleDateString()}
+                              {inv.client_name || "Enterprise Client"} &middot;{" "}
+                              {new Date(inv.created_at).toLocaleDateString()}
                             </div>
                           </div>
                         </div>
                         <Badge
-                          variant={inv.status === "paid" ? "default" : "outline"}
+                          variant={
+                            inv.status === "paid" ? "default" : "outline"
+                          }
                           className={`text-caption-premium uppercase ${inv.status === "paid" ? "bg-emerald-500" : ""}`}
                         >
                           {inv.status}
@@ -970,7 +970,7 @@ export default function FreelancerWorkflowBot() {
                     </p>
                   </div>
                 ) : (
-                  tasks.map((task: any) => (
+                  tasks.map((task: Task) => (
                     <div
                       key={task.id}
                       className="flex items-center justify-between p-4 border-b border-border/30 last:border-0 hover:bg-muted/20"
@@ -991,7 +991,9 @@ export default function FreelancerWorkflowBot() {
                             {task.title}
                           </div>
                           <div className="text-caption-premium">
-                            {new Date(task.createdAt).toLocaleDateString()}
+                            {task.created_at
+                              ? new Date(task.created_at).toLocaleDateString()
+                              : ""}
                           </div>
                         </div>
                       </div>
@@ -1029,7 +1031,7 @@ export default function FreelancerWorkflowBot() {
               </CardHeader>
               <CardContent className="p-0">
                 {agents.length > 0 ? (
-                  agents.map((agent: any) => (
+                  agents.map((agent: Agent) => (
                     <div
                       key={agent.id}
                       className="flex items-center justify-between p-4 border-b border-border/30 last:border-0"
@@ -1124,38 +1126,38 @@ export default function FreelancerWorkflowBot() {
                   <div className="flex justify-between items-center">
                     <span className="text-sm">Total Revenue</span>
                     <span className="text-xl font-bold text-green-500">
-                      ${earningsData.totalRevenue.toLocaleString()}
+                      ${(earningsData?.totalRevenue ?? 0).toLocaleString()}
                     </span>
                   </div>
                   <Progress
                     value={Math.min(
                       100,
-                      (earningsData.totalRevenue / 50000) * 100
+                      ((earningsData?.totalRevenue ?? 0) / 50000) * 100
                     )}
                     className="h-2"
                   />
                   <div className="flex justify-between items-center">
                     <span className="text-sm">Monthly Revenue</span>
                     <span className="font-bold">
-                      ${earningsData.monthlyRevenue.toLocaleString()}
+                      ${(earningsData?.monthlyRevenue ?? 0).toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm">Pending Payments</span>
                     <span className="font-bold text-orange-500">
-                      ${earningsData.pendingPayments.toLocaleString()}
+                      ${(earningsData?.pendingPayments ?? 0).toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm">Avg Project Value</span>
                     <span className="font-bold">
-                      ${earningsData.avgProjectValue.toLocaleString()}
+                      ${(earningsData?.avgProjectValue ?? 0).toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm">YoY Growth</span>
                     <Badge className="bg-green-500/10 text-green-500">
-                      +{earningsData.yoyGrowth}%
+                      +{earningsData?.yoyGrowth ?? 0}%
                     </Badge>
                   </div>
                 </CardContent>
@@ -1171,8 +1173,8 @@ export default function FreelancerWorkflowBot() {
                     {[
                       {
                         label: "Revenue Target",
-                        value: `${Math.round((earningsData.totalRevenue / 50000) * 100)}%`,
-                        progress: (earningsData.totalRevenue / 50000) * 100,
+                        value: `${Math.round(((earningsData?.totalRevenue ?? 0) / 50000) * 100)}%`,
+                        progress: ((earningsData?.totalRevenue ?? 0) / 50000) * 100,
                       },
                       { label: "Client Retention", value: "92%", progress: 92 },
                       { label: "Utilization Rate", value: "78%", progress: 78 },
@@ -1207,22 +1209,22 @@ export default function FreelancerWorkflowBot() {
                   <div className="p-4 rounded-lg bg-red-500/5 border border-red-500/20">
                     <div className="text-caption-premium">Estimated Tax</div>
                     <div className="text-stat text-red-500">
-                      ${taxEstimate.estimatedTax.toLocaleString()}
+                      ${(taxEstimate?.estimatedTax ?? 0).toLocaleString()}
                     </div>
                   </div>
                   <div className="p-4 rounded-lg bg-green-500/5 border border-green-500/20">
                     <div className="text-caption-premium">Deductible</div>
                     <div className="text-stat text-green-500">
-                      ${taxEstimate.deductible.toLocaleString()}
+                      ${(taxEstimate?.deductible ?? 0).toLocaleString()}
                     </div>
                   </div>
                 </div>
                 <div className="space-y-3">
                   {[
-                    { q: "Q1", amount: taxEstimate.q1Paid, status: "Paid" },
-                    { q: "Q2", amount: taxEstimate.q2Paid, status: "Paid" },
-                    { q: "Q3", amount: taxEstimate.q3Due, status: "Due" },
-                    { q: "Q4", amount: taxEstimate.q4Due, status: "Upcoming" },
+                    { q: "Q1", amount: taxEstimate?.q1Paid ?? 0, status: "Paid" },
+                    { q: "Q2", amount: taxEstimate?.q2Paid ?? 0, status: "Paid" },
+                    { q: "Q3", amount: taxEstimate?.q3Due ?? 0, status: "Due" },
+                    { q: "Q4", amount: taxEstimate?.q4Due ?? 0, status: "Upcoming" },
                   ].map(item => (
                     <div
                       key={item.q}
@@ -1233,7 +1235,7 @@ export default function FreelancerWorkflowBot() {
                       </span>
                       <div className="flex items-center gap-3">
                         <span className="font-mono font-bold">
-                          ${item.amount.toLocaleString()}
+                          ${(item.amount ?? 0).toLocaleString()}
                         </span>
                         <Badge
                           className={
@@ -1279,7 +1281,7 @@ export default function FreelancerWorkflowBot() {
                     </p>
                   </div>
                 ) : (
-                  scheduleEvents.map((evt: any) => (
+                  scheduleEvents.map((evt: ScheduleEvent) => (
                     <div
                       key={evt.id}
                       className="flex items-center justify-between p-4 border-b border-border/30 last:border-0"
@@ -1292,11 +1294,11 @@ export default function FreelancerWorkflowBot() {
                           <div className="text-body-sm font-bold">
                             {evt.title}
                           </div>
-                          <div className="text-caption-premium">{evt.date}</div>
+                          <div className="text-caption-premium">{evt.start_time}</div>
                         </div>
                       </div>
                       <Badge variant="outline" className="text-caption-premium">
-                        {evt.type}
+                        {evt.event_type}
                       </Badge>
                     </div>
                   ))
@@ -1447,7 +1449,7 @@ export default function FreelancerWorkflowBot() {
                     </p>
                   </div>
                 ) : (
-                  clients.map((client: any) => (
+                  clients.map((client: Client) => (
                     <div
                       key={client.id}
                       className="flex items-center justify-between p-4 border-b border-border/30 last:border-0 hover:bg-muted/20"
@@ -1467,7 +1469,7 @@ export default function FreelancerWorkflowBot() {
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="text-body-sm">
-                          {client.projects} projects
+                          {client.status === "active" ? "Active" : client.status}
                         </span>
                         <Badge
                           className={
@@ -1580,14 +1582,14 @@ export default function FreelancerWorkflowBot() {
                     className="w-full justify-start"
                     onClick={async () => {
                       try {
-                        const result =
-                          await extendedApi.workforce.activateReferral();
+                        await extendedApi.workforce.activateReferral();
                         toast.success(
                           "Referral program activated! Your unique referral code has been generated."
                         );
-                      } catch (err: any) {
+                      } catch (err: unknown) {
+                        const message = err instanceof Error ? err.message : "Failed to activate referral program";
                         toast.error(
-                          err.message || "Failed to activate referral program"
+                          message
                         );
                       }
                     }}
@@ -1640,8 +1642,8 @@ export default function FreelancerWorkflowBot() {
                       <p className="text-caption-premium">{setting.desc}</p>
                     </div>
                     <Switch
-                      checked={(botSettings as any)[setting.key]}
-                      onCheckedChange={checked =>
+                      checked={(botSettings as Record<string, boolean>)[setting.key]}
+                      onCheckedChange={(checked: boolean) =>
                         setBotSettings({
                           ...botSettings,
                           [setting.key]: checked,
@@ -1654,7 +1656,7 @@ export default function FreelancerWorkflowBot() {
                   <Label className="text-sm">NLP Model</Label>
                   <select
                     className="w-full bg-muted border border-border rounded-md px-3 py-2 text-sm"
-                    value={botSettings.nlpModel}
+                    value={String(botSettings.nlpModel)}
                     onChange={e =>
                       setBotSettings({
                         ...botSettings,

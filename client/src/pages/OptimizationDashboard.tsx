@@ -30,18 +30,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Activity,
-  BarChart3,
-  Zap,
-  TrendingUp,
-  TrendingDown,
-  RefreshCw,
-  Clock,
-  DollarSign,
-} from "lucide-react";
+import { Zap, TrendingDown } from "lucide-react";
 import { extendedApi } from "@/lib/api";
 import { toast } from "sonner";
+import { MetricCard } from "@/components/dashboard/MetricCard";
+import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 
 interface LLMPerformance {
   total_requests: number;
@@ -87,8 +80,8 @@ export default function OptimizationDashboard() {
     setIsLoading(true);
     try {
       const data = await extendedApi.optimization.getWorkforceEfficiency();
-      setEfficiency(data);
-    } catch (err) {
+      setEfficiency(data as EfficiencyReport);
+    } catch {
       toast.error("Failed to load optimization data");
     } finally {
       setIsLoading(false);
@@ -101,8 +94,8 @@ export default function OptimizationDashboard() {
         agentId,
         days
       );
-      setAgentPerformance(data);
-    } catch (err) {
+      setAgentPerformance(data as LLMPerformance);
+    } catch {
       toast.error("Failed to load agent performance");
     }
   }
@@ -113,7 +106,7 @@ export default function OptimizationDashboard() {
       await extendedApi.optimization.optimizeAgent(agentId);
       toast.success("Optimization cycle completed");
       loadData();
-    } catch (err) {
+    } catch {
       toast.error("Optimization failed");
     } finally {
       setIsOptimizing(false);
@@ -130,74 +123,42 @@ export default function OptimizationDashboard() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Optimization Dashboard</h1>
-          <p className="text-muted-foreground">
-            LLM performance tuning and workforce efficiency
-          </p>
-        </div>
-        <Button onClick={loadData} variant="ghost" size="sm">
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Refresh
-        </Button>
-      </div>
+      <DashboardHeader
+        title="Optimization Dashboard"
+        description="LLM performance tuning and workforce efficiency"
+        onRefresh={loadData}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">
-              Overall Efficiency
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+        <MetricCard
+          title="Overall Efficiency"
+          value={
+            <>
               {efficiency?.overall_efficiency.toFixed(1)}%
-            </div>
-            <Progress
-              value={efficiency?.overall_efficiency || 0}
-              className="mt-2"
-            />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">
-              Estimated Savings
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-500 flex items-center">
+              <Progress
+                value={efficiency?.overall_efficiency || 0}
+                className="mt-2"
+              />
+            </>
+          }
+        />
+        <MetricCard
+          title="Estimated Savings"
+          value={
+            <span className="text-green-500 flex items-center">
               <TrendingDown className="w-4 h-4 mr-1" />$
               {efficiency?.cost_savings.toFixed(2)}/mo
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">
-              Optimization Opportunities
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {efficiency?.optimization_opportunities}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Active Agents</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {efficiency?.agents.length}
-            </div>
-          </CardContent>
-        </Card>
+            </span>
+          }
+        />
+        <MetricCard
+          title="Optimization Opportunities"
+          value={efficiency?.optimization_opportunities}
+        />
+        <MetricCard
+          title="Active Agents"
+          value={efficiency?.agents.length}
+        />
       </div>
 
       <Tabs defaultValue="agents">
@@ -280,7 +241,7 @@ export default function OptimizationDashboard() {
           <div className="flex gap-4 mb-4">
             <Select
               value={days.toString()}
-              onValueChange={v => setDays(parseInt(v))}
+              onValueChange={(v: string) => setDays(parseInt(v))}
             >
               <SelectTrigger className="w-32">
                 <SelectValue placeholder="Period" />

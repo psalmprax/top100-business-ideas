@@ -4,13 +4,7 @@
  */
 
 import { useState, useEffect } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -149,6 +143,23 @@ const REGIONAL_DATA: Record<string, RegionalRule[]> = {
       ],
     },
   ],
+  uk: [
+    {
+      region: "United Kingdom",
+      regulation: "UK AI Safety (post-Brexit)",
+      description:
+        "Alignment with the UK 5 pro-innovation principles and the UK AI Safety Institute (AISI).",
+      status: "compliant",
+      requirements: [
+        "Safety, security, and robustness (AISI alignment)",
+        "Appropriate transparency and explainability",
+        "Fairness",
+        "Accountability and governance",
+        "Contestability and redress",
+        "Sectoral mapping (FCA / ICO / PRA)",
+      ],
+    },
+  ],
 };
 
 export default function RegionalCompliance() {
@@ -162,18 +173,9 @@ export default function RegionalCompliance() {
 
   const fetchRules = async () => {
     try {
-      const res = await extendedApi.compliance.getRegionalReports();
+      const res = await extendedApi.compliance.getRegionalReports() as unknown as RegionalRule[];
       if (res && res.length > 0) {
-        setRules(
-          res.map((r: any) => ({
-            region: r.region || "Unknown",
-            regulation: r.regulation || "Unknown",
-            description: r.description || "",
-            status: r.status || "pending",
-            last_checked: r.last_checked,
-            requirements: r.requirements || [],
-          }))
-        );
+        setRules(res);
       } else {
         setRules(Object.values(REGIONAL_DATA).flat());
       }
@@ -190,6 +192,7 @@ export default function RegionalCompliance() {
       eu: ["European Union"],
       us: ["United States"],
       asia: ["Asia Pacific", "Singapore", "Japan", "China"],
+      uk: ["United Kingdom"],
     };
     return regionMap[regionKey]?.some(name => r.region.includes(name));
   });
@@ -269,6 +272,10 @@ export default function RegionalCompliance() {
             <TabsTrigger value="asia">
               <Globe className="w-4 h-4 mr-2" />
               Asia Pacific
+            </TabsTrigger>
+            <TabsTrigger value="uk">
+              <Globe className="w-4 h-4 mr-2" />
+              United Kingdom
             </TabsTrigger>
           </TabsList>
 

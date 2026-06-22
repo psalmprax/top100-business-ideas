@@ -69,7 +69,7 @@ AlphaHecta is an enterprise AI company providing production-ready AI solutions. 
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - Go 1.21+
 - Python 3.10+
 - pnpm (recommended) or npm
@@ -77,25 +77,27 @@ AlphaHecta is an enterprise AI company providing production-ready AI solutions. 
 ### Development Setup
 
 1. **Clone and install dependencies:**
+
    ```bash
    # Install frontend dependencies
    cd client && pnpm install
-   
+
    # Install Go dependencies
    cd ../server/go && go mod download
-   
+
    # Install Python dependencies
    cd ../python && pip install -r requirements.txt
    ```
 
 2. **Start all services:**
+
    ```bash
    # Terminal 1: Frontend
    cd client && pnpm dev
-   
+
    # Terminal 2: Go API Gateway
    cd server/go && PORT=7001 go run cmd/api/main.go
-   
+
    # Terminal 3: Python ML Backend
    cd server/python && PYTHONPATH=. python3 -m uvicorn app.main:app --host 0.0.0.0 --port 7002
    ```
@@ -107,23 +109,25 @@ AlphaHecta is an enterprise AI company providing production-ready AI solutions. 
 
 ### Service URLs
 
-| Service | URL | Description |
-|---------|-----|-------------|
-| Frontend | http://localhost:7000 | React SPA |
-| API Gateway | http://localhost:7001 | Go REST API |
-| ML Backend | http://localhost:7002 | FastAPI /docs |
-| WebSocket | ws://localhost:7001/api/v1/ws | Real-time |
+| Service     | URL                           | Description   |
+| ----------- | ----------------------------- | ------------- |
+| Frontend    | http://localhost:7000         | React SPA     |
+| API Gateway | http://localhost:7001         | Go REST API   |
+| ML Backend  | http://localhost:7002         | FastAPI /docs |
+| WebSocket   | ws://localhost:7001/api/v1/ws | Real-time     |
 
 ## API Documentation
 
 ### REST Endpoints
 
 #### Authentication
+
 - `POST /api/v1/auth/register` - Register new user
 - `POST /api/v1/auth/login` - Login (returns JWT)
 - `GET /api/v1/auth/me` - Get current user
 
 #### Agents (AgentOps)
+
 - `GET /api/v1/agents` - List all agents
 - `POST /api/v1/agents` - Create new agent
 - `GET /api/v1/agents/:id` - Get agent details
@@ -131,22 +135,29 @@ AlphaHecta is an enterprise AI company providing production-ready AI solutions. 
 - `DELETE /api/v1/agents/:id` - Delete agent
 
 #### Compliance
+
 - `GET /api/v1/compliance/reports` - List reports
 - `POST /api/v1/compliance/check` - Analyze AI system
 
 #### Deepfake Detection
+
 - `POST /api/v1/deepfake/analyze` - Analyze media
 
 #### WebSocket
+
 - `ws://localhost:7001/api/v1/ws` - Real-time updates
 
 ### Persistence & Session Continuity
+
 The Alpha suite features a **namespaced persistence layer** using `localStorage`. This ensures that session-level configurations (e.g., active SLA tiers, agent rosters, fiscal approvals) are preserved across page reloads without requiring immediate backend schema migrations.
+
 - **Utility**: `client/src/lib/storage.ts`
 - **Prefix**: `alpha_hecta_`
 
 ### 🏗️ Database Agnosticism & Migrations
+
 The Alpha platform uses **SQLModel** and **Alembic** to ensure 100% database portability.
+
 - **Dialect Agnostic**: Deploy to PostgreSQL, SQLite, or Oracle without code changes.
 - **Versioned History**: Managed via `server/python/alembic/`.
 - **Command**: `cd server/python && alembic upgrade head`
@@ -219,6 +230,7 @@ curl -X POST http://localhost:7001/api/v1/deepfake/analyze \
 ## Technology Stack
 
 ### Frontend
+
 - **React 19** - UI Framework
 - **TypeScript** - Type safety
 - **Vite** - Build tool
@@ -228,12 +240,14 @@ curl -X POST http://localhost:7001/api/v1/deepfake/analyze \
 - **Wouter** - Routing
 
 ### Backend (API Gateway)
+
 - **Go 1.21+** - Language
 - **Gin** - Web framework
 - **JWT** - Authentication
 - **Gorilla WebSocket** - Real-time
 
 ### Backend (ML)
+
 - **Python 3.10+** - Language
 - **FastAPI** - Web framework
 - **PyTorch / Transformers** - AI/ML Inference
@@ -242,6 +256,7 @@ curl -X POST http://localhost:7001/api/v1/deepfake/analyze \
 - **CrewAI / LangChain** - Agentic Frameworks
 
 ### DevOps
+
 - **Docker** - Containerization
 - **Playwright** - E2E testing
 - **GitHub Actions** - CI/CD
@@ -249,6 +264,7 @@ curl -X POST http://localhost:7001/api/v1/deepfake/analyze \
 ## Testing
 
 ### Run E2E Tests
+
 ```bash
 # Install Playwright browsers
 npx playwright install
@@ -263,6 +279,7 @@ npx playwright test --ui
 ### Test Coverage
 
 The test suite covers:
+
 - Homepage loading
 - Product page navigation
 - API authentication
@@ -272,12 +289,14 @@ The test suite covers:
 ## Environment Variables
 
 ### Frontend (.env)
+
 ```env
 VITE_API_URL=http://localhost:7001
 VITE_WS_URL=ws://localhost:7001/api/v1/ws
 ```
 
 ### Go Backend (.env)
+
 ```env
 PORT=7001
 PYTHON_BACKEND_URL=http://localhost:7002
@@ -286,6 +305,7 @@ JWT_EXPIRY=24h
 ```
 
 ### Python Backend (.env)
+
 ```env
 PORT=7002
 LOG_LEVEL=info

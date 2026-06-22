@@ -1,9 +1,9 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 
 const BASE_URL = "http://149.104.110.122:7000";
 const API_URL = "http://149.104.110.122:7002";
 
-async function loginAndNavigate(page: any, tabName?: string) {
+async function loginAndNavigate(page: Page, tabName?: string) {
   await page.goto(`${BASE_URL}/login?product=alpha-hecta-workforce`);
   await page.waitForLoadState("domcontentloaded");
 

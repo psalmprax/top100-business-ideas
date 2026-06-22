@@ -7,10 +7,8 @@ import * as React from "react";
 import { useState, useEffect } from "react";
 import {
   motion,
-  AnimatePresence,
   useScroll,
   useTransform,
-  useSpring,
   useMotionValue,
   animate,
 } from "framer-motion";
@@ -35,7 +33,13 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -193,13 +197,6 @@ const comingSoonProducts = [
   },
 ];
 
-const stats = [
-  { value: "99.9%", label: "Uptime SLA" },
-  { value: "500+", label: "Enterprise Clients" },
-  { value: "50M+", label: "API Calls/Month" },
-  { value: "<100ms", label: "Avg Response Time" },
-];
-
 function LeadGenDialog({
   trigger,
   title = "Schedule a Demo",
@@ -278,9 +275,15 @@ function LeadGenDialog({
 import { useAuth } from "@/contexts/AuthContext";
 import { usePerspective } from "@/contexts/PerspectiveContext";
 
-const Counter = ({ value, duration = 1.5 }: { value: number; duration?: number }) => {
+const Counter = ({
+  value,
+  duration = 1.5,
+}: {
+  value: number;
+  duration?: number;
+}) => {
   const count = useMotionValue(0);
-  const rounded = useTransform(count, (latest) => Math.round(latest * 100) / 100);
+  const rounded = useTransform(count, latest => Math.round(latest * 100) / 100);
   const [displayValue, setDisplayValue] = useState("0");
 
   useEffect(() => {
@@ -292,7 +295,7 @@ const Counter = ({ value, duration = 1.5 }: { value: number; duration?: number }
   }, [value, duration]);
 
   useEffect(() => {
-    return rounded.onChange((v) => {
+    return rounded.onChange(v => {
       if (value % 1 === 0) {
         setDisplayValue(Math.floor(v).toLocaleString());
       } else {
@@ -310,28 +313,40 @@ const NeuralFlow = () => {
       <svg className="w-full h-full" viewBox="0 0 800 800">
         <defs>
           <linearGradient id="flow-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="var(--primary-start)" stopOpacity="0" />
-            <stop offset="50%" stopColor="var(--primary-start)" stopOpacity="1" />
-            <stop offset="100%" stopColor="var(--primary-start)" stopOpacity="0" />
+            <stop
+              offset="0%"
+              stopColor="var(--primary-start)"
+              stopOpacity="0"
+            />
+            <stop
+              offset="50%"
+              stopColor="var(--primary-start)"
+              stopOpacity="1"
+            />
+            <stop
+              offset="100%"
+              stopColor="var(--primary-start)"
+              stopOpacity="0"
+            />
           </linearGradient>
         </defs>
         {[...Array(6)].map((_, i) => (
           <motion.path
             key={i}
-            d={`M ${100 + i * 100} 800 Q ${400 + (i-3) * 50} 400 ${100 + i * 100} 0`}
+            d={`M ${100 + i * 100} 800 Q ${400 + (i - 3) * 50} 400 ${100 + i * 100} 0`}
             stroke="url(#flow-grad)"
             strokeWidth="1"
             fill="none"
             initial={{ pathLength: 0, pathOffset: 0 }}
-            animate={{ 
+            animate={{
               pathLength: [0, 1, 0],
-              pathOffset: [0, 1] 
+              pathOffset: [0, 1],
             }}
-            transition={{ 
-              duration: 5 + i, 
-              repeat: Infinity, 
+            transition={{
+              duration: 5 + i,
+              repeat: Infinity,
               ease: "linear",
-              delay: i * 0.5 
+              delay: i * 0.5,
             }}
           />
         ))}
@@ -370,8 +385,8 @@ export default function AlphaHecta() {
       try {
         const [agents, compliance, safety] = await Promise.all([
           extendedApi.agents.list(),
-          extendedApi.compliance.getStats(),
-          extendedApi.deepfake.getStats(),
+          extendedApi.compliance.getStats() as Promise<Record<string, number> | null>,
+          extendedApi.deepfake.getStats() as Promise<Record<string, number> | null>,
         ]);
 
         setPlatformStats({
@@ -383,7 +398,7 @@ export default function AlphaHecta() {
           agentOpsEfficiency: 87,
           aiActReadiness: compliance?.readiness || 0,
         });
-      } catch (e) {
+      } catch {
         console.error("Dashboard preview telemetry sync failed");
       }
     }
@@ -401,10 +416,13 @@ export default function AlphaHecta() {
   return (
     <div className="min-h-screen bg-[#080809] text-foreground font-sans selection:bg-primary/30 relative">
       <div className="noise-texture" />
-      
+
       {/* Navigation */}
-      <motion.header 
-        style={{ backdropFilter: `blur(${headerBlur}px)`, backgroundColor: headerBg }}
+      <motion.header
+        style={{
+          backdropFilter: `blur(${headerBlur}px)`,
+          backgroundColor: headerBg,
+        }}
         className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 px-4 py-4 transition-colors duration-300"
       >
         <div className="container mx-auto px-4">
@@ -582,7 +600,7 @@ export default function AlphaHecta() {
         <div className="container mx-auto relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Left Column: Content */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, x: -30 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, ease: "easeOut" }}
@@ -602,20 +620,20 @@ export default function AlphaHecta() {
                 <Zap className="h-4 w-4" />
                 Next-Gen Enterprise AI Orchestration
               </div>
-              
+
               <h1 className="text-display-hero mb-8 text-balance">
                 Deploy Production-Ready AI
                 <span className="block text-gradient-premium mt-2">
                   in Days, Not Months
                 </span>
               </h1>
-              
+
               <p className="text-subheadline mb-10 max-w-xl text-balance">
-                The unified platform to deploy autonomous agents, enforce 
-                regulatory compliance, and protect your brand from synthetic 
+                The unified platform to deploy autonomous agents, enforce
+                regulatory compliance, and protect your brand from synthetic
                 threats with military-grade precision.
               </p>
-              
+
               <div className="flex flex-col sm:flex-row items-center gap-4">
                 <Link href="/signup">
                   <Button
@@ -645,14 +663,19 @@ export default function AlphaHecta() {
               {/* Trust Indicators */}
               <div className="mt-12 flex items-center gap-6 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
                 <div className="flex -space-x-3">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="h-10 w-10 rounded-full border-2 border-background bg-muted flex items-center justify-center text-[10px] font-bold">
+                  {[1, 2, 3, 4].map(i => (
+                    <div
+                      key={i}
+                      className="h-10 w-10 rounded-full border-2 border-background bg-muted flex items-center justify-center text-[10px] font-bold"
+                    >
                       U{i}
                     </div>
                   ))}
                 </div>
                 <div className="text-sm font-medium">
-                  Trusted by <span className="text-foreground font-bold">500+</span> teams globally
+                  Trusted by{" "}
+                  <span className="text-foreground font-bold">500+</span> teams
+                  globally
                 </div>
               </div>
             </motion.div>
@@ -667,7 +690,7 @@ export default function AlphaHecta() {
               <div className="relative z-10 GlassCard rounded-[2.5rem] p-1 shadow-[0_40px_100px_rgba(0,0,0,0.8)] border-white/5 overflow-hidden group">
                 <div className="bg-[#080809] rounded-[2.4rem] p-12 relative overflow-hidden">
                   <NeuralFlow />
-                  
+
                   {/* Central Core Element */}
                   <div className="relative z-20 flex flex-col items-center justify-center py-20">
                     <div className="relative group/core">
@@ -676,9 +699,11 @@ export default function AlphaHecta() {
                         <Zap className="h-12 w-12 text-primary-start -rotate-45 group-hover/core:-rotate-90 transition-transform duration-700" />
                       </div>
                     </div>
-                    
+
                     <div className="mt-12 text-center">
-                      <div className="text-technical mb-2">Neural Synchronization</div>
+                      <div className="text-technical mb-2">
+                        Neural Synchronization
+                      </div>
                       <div className="text-2xl font-black tabular-nums tracking-tighter">
                         <Counter value={99.982} />
                       </div>
@@ -686,13 +711,17 @@ export default function AlphaHecta() {
                   </div>
 
                   {/* Corner technical markers */}
-                  <div className="absolute top-8 left-8 text-[8px] font-mono opacity-20">LATENCY_STABLE</div>
-                  <div className="absolute bottom-8 right-8 text-[8px] font-mono opacity-20">SHIELD_PROTOCOL_v4</div>
+                  <div className="absolute top-8 left-8 text-[8px] font-mono opacity-20">
+                    LATENCY_STABLE
+                  </div>
+                  <div className="absolute bottom-8 right-8 text-[8px] font-mono opacity-20">
+                    SHIELD_PROTOCOL_v4
+                  </div>
                 </div>
               </div>
-              
+
               {/* Floating ambient data nodes */}
-              <motion.div 
+              <motion.div
                 animate={{ y: [0, -40, 0] }}
                 transition={{ duration: 8, repeat: Infinity }}
                 className="absolute -top-10 -right-10 h-32 w-32 GlassCard rounded-2xl border-white/5 flex items-center justify-center backdrop-blur-3xl"
@@ -713,7 +742,13 @@ export default function AlphaHecta() {
             {[
               { label: "Uptime", value: 99.99, suffix: "%", icon: Zap },
               { label: "Global Clients", value: 10, suffix: "K+", icon: Globe },
-              { label: "Venture Funding", value: 100, prefix: "$", suffix: "M+", icon: Shield },
+              {
+                label: "Venture Funding",
+                value: 100,
+                prefix: "$",
+                suffix: "M+",
+                icon: Shield,
+              },
               { label: "Daily Predictions", value: 1, suffix: "B+", icon: Bot },
             ].map((stat, i) => (
               <motion.div
@@ -749,18 +784,19 @@ export default function AlphaHecta() {
         <div className="container mx-auto relative z-10">
           <div className="text-center mb-20">
             <h2 className="text-section-headline mb-6">
-              Production AI in <span className="text-gradient-premium">3 Simple Steps</span>
+              Production AI in{" "}
+              <span className="text-gradient-premium">3 Simple Steps</span>
             </h2>
             <p className="text-subheadline max-w-2xl mx-auto">
-              We've abstracted the complexity of enterprise AI so you can 
-              focus on results, not infrastructure.
+              We've abstracted the complexity of enterprise AI so you can focus
+              on results, not infrastructure.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12 relative">
             {/* Connecting lines for desktop */}
             <div className="hidden md:block absolute top-1/2 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent -translate-y-1/2 pointer-events-none" />
-            
+
             {[
               {
                 step: "01",
@@ -792,8 +828,12 @@ export default function AlphaHecta() {
                 viewport={{ once: true }}
                 className="relative z-10 p-8 rounded-2xl bg-white/5 border border-white/5 hover:border-primary/20 transition-all duration-300 group"
               >
-                <div className="text-overline text-primary/40 mb-4">{item.step}</div>
-                <div className={`h-12 w-12 rounded-xl bg-white/5 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                <div className="text-overline text-primary/40 mb-4">
+                  {item.step}
+                </div>
+                <div
+                  className={`h-12 w-12 rounded-xl bg-white/5 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}
+                >
                   <item.icon className={`h-6 w-6 ${item.color}`} />
                 </div>
                 <h3 className="text-card-title mb-4">{item.title}</h3>
@@ -811,18 +851,50 @@ export default function AlphaHecta() {
       {/* Social Proof - Logo Marquee */}
       <section className="py-20 bg-background/50 border-y border-white/5 overflow-hidden">
         <div className="container mx-auto mb-10 text-center">
-          <p className="text-caption-premium opacity-40 uppercase tracking-[0.3em]">Trusted by Industry Leaders</p>
+          <p className="text-caption-premium opacity-40 uppercase tracking-[0.3em]">
+            Trusted by Industry Leaders
+          </p>
         </div>
         <div className="flex items-center gap-24 whitespace-nowrap animate-marquee px-4 opacity-20 grayscale hover:grayscale-0 transition-all duration-700">
-          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-            <div key={i} className="flex items-center gap-4 text-3xl font-black tracking-tighter uppercase italic opacity-50">
-              <Zap className="h-8 w-8 text-primary-start" /> {["Spotify", "Apple", "Mastercard", "Google", "HP", "IBM", "WorldBank", "Nvidia"][i-1]}
+          {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+            <div
+              key={i}
+              className="flex items-center gap-4 text-3xl font-black tracking-tighter uppercase italic opacity-50"
+            >
+              <Zap className="h-8 w-8 text-primary-start" />{" "}
+              {
+                [
+                  "Spotify",
+                  "Apple",
+                  "Mastercard",
+                  "Google",
+                  "HP",
+                  "IBM",
+                  "WorldBank",
+                  "Nvidia",
+                ][i - 1]
+              }
             </div>
           ))}
           {/* Duplicate for seamless effect */}
-          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-            <div key={i+8} className="flex items-center gap-4 text-3xl font-black tracking-tighter uppercase italic opacity-50">
-              <Zap className="h-8 w-8 text-primary-start" /> {["Spotify", "Apple", "Mastercard", "Google", "HP", "IBM", "WorldBank", "Nvidia"][i-1]}
+          {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+            <div
+              key={i + 8}
+              className="flex items-center gap-4 text-3xl font-black tracking-tighter uppercase italic opacity-50"
+            >
+              <Zap className="h-8 w-8 text-primary-start" />{" "}
+              {
+                [
+                  "Spotify",
+                  "Apple",
+                  "Mastercard",
+                  "Google",
+                  "HP",
+                  "IBM",
+                  "WorldBank",
+                  "Nvidia",
+                ][i - 1]
+              }
             </div>
           ))}
         </div>
@@ -851,7 +923,7 @@ export default function AlphaHecta() {
               transition={{ duration: 0.5, delay: 0.1 }}
               className="text-subheadline max-w-2xl mx-auto"
             >
-              Autonomous companies and specialized AI solutions built to 
+              Autonomous companies and specialized AI solutions built to
               orchestrate the future of enterprise operations.
             </motion.p>
           </div>
@@ -874,14 +946,20 @@ export default function AlphaHecta() {
                     <CardHeader className="p-0 mb-8">
                       <div className="flex items-center justify-between mb-8">
                         <div className="p-5 rounded-3xl bg-white/5 border border-white/5 group-hover:scale-110 transition-transform duration-500">
-                          <product.icon className={`h-8 w-8 ${product.color.replace("bg-", "text-")}`} />
+                          <product.icon
+                            className={`h-8 w-8 ${product.color.replace("bg-", "text-")}`}
+                          />
                         </div>
-                        <div className="text-technical opacity-40">Active_Link</div>
+                        <div className="text-technical opacity-40">
+                          Active_Link
+                        </div>
                       </div>
                       <CardTitle className="text-3xl font-black tracking-tight mb-2">
                         {product.name}
                       </CardTitle>
-                      <div className="text-technical text-primary-start">{product.tagline}</div>
+                      <div className="text-technical text-primary-start">
+                        {product.tagline}
+                      </div>
                     </CardHeader>
 
                     <CardContent className="p-0 flex-grow">
@@ -892,7 +970,9 @@ export default function AlphaHecta() {
                         {product.features.map((feature, fIdx) => (
                           <div key={fIdx} className="flex items-center gap-3">
                             <div className="h-1 w-1 rounded-full bg-primary-start" />
-                            <span className="text-technical text-[9px] opacity-60">{feature}</span>
+                            <span className="text-technical text-[9px] opacity-60">
+                              {feature}
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -904,7 +984,9 @@ export default function AlphaHecta() {
                           variant="outline"
                           className="w-full h-14 rounded-2xl border-white/5 bg-white/5 hover:bg-primary-start hover:text-black font-black uppercase tracking-[0.2em] text-xs transition-all duration-500"
                         >
-                          {hasProductAccess(product.id) ? "Access Protocol" : "Authorize"}
+                          {hasProductAccess(product.id)
+                            ? "Access Protocol"
+                            : "Authorize"}
                         </Button>
                       </Link>
                     </CardFooter>
@@ -1012,9 +1094,9 @@ export default function AlphaHecta() {
                 Coming <span className="text-primary">Soon</span>
               </h2>
               <p className="text-body">
-                Our R&D department is working on the next generation of AlphaHecta
-                ventures. Join the waitlist to get early access to these
-                cutting-edge solutions.
+                Our R&D department is working on the next generation of
+                AlphaHecta ventures. Join the waitlist to get early access to
+                these cutting-edge solutions.
               </p>
             </div>
             <div className="hidden md:block">
@@ -1036,14 +1118,22 @@ export default function AlphaHecta() {
               >
                 <div className="GlassCard p-1 rounded-[2.5rem] group border-white/5 overflow-hidden">
                   <div className="bg-[#080809] rounded-[2.4rem] p-10 h-full relative">
-                    <div className="absolute top-8 right-8 text-technical text-[8px] opacity-20">DEFERRED_DEPLOYMENT</div>
+                    <div className="absolute top-8 right-8 text-technical text-[8px] opacity-20">
+                      DEFERRED_DEPLOYMENT
+                    </div>
                     <div className="flex flex-col md:flex-row gap-8">
                       <div className="p-6 rounded-3xl bg-white/5 border border-white/5 h-fit">
-                        <product.icon className={`h-8 w-8 ${product.color.replace("bg-", "text-")}`} />
+                        <product.icon
+                          className={`h-8 w-8 ${product.color.replace("bg-", "text-")}`}
+                        />
                       </div>
                       <div className="flex-grow">
-                        <h3 className="text-2xl font-black mb-1">{product.name}</h3>
-                        <div className="text-technical text-primary-start mb-6">{product.tagline}</div>
+                        <h3 className="text-2xl font-black mb-1">
+                          {product.name}
+                        </h3>
+                        <div className="text-technical text-primary-start mb-6">
+                          {product.tagline}
+                        </div>
                         <p className="text-white/40 text-sm leading-relaxed mb-8">
                           {product.description}
                         </p>
@@ -1227,19 +1317,23 @@ export default function AlphaHecta() {
           >
             {/* Background glow */}
             <div className="absolute -top-1/2 -left-1/2 w-full h-full bg-primary/10 blur-[120px] pointer-events-none" />
-            
+
             <Zap className="h-16 w-16 text-primary mx-auto mb-8 animate-pulse" />
             <h2 className="text-display-hero mb-6 text-white">
-              The Future is <span className="text-gradient-premium">Autonomous</span>
+              The Future is{" "}
+              <span className="text-gradient-premium">Autonomous</span>
             </h2>
             <p className="text-subheadline mb-12 max-w-2xl mx-auto text-white/70">
-              Join 500+ global enterprises that have accelerated their AI 
+              Join 500+ global enterprises that have accelerated their AI
               roadmap by 10x. Production-ready, compliant, and secure.
             </p>
-            
+
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
               <Link href="/signup">
-                <Button size="lg" className="px-12 py-8 text-xl btn-primary-premium">
+                <Button
+                  size="lg"
+                  className="px-12 py-8 text-xl btn-primary-premium"
+                >
                   Claim Your Instance <ArrowRight className="h-5 w-5 ml-2" />
                 </Button>
               </Link>
@@ -1260,15 +1354,21 @@ export default function AlphaHecta() {
             <div className="mt-16 grid grid-cols-3 gap-8 pt-12 border-t border-white/5 opacity-40">
               <div>
                 <div className="text-2xl font-bold text-white">24/7</div>
-                <div className="text-[10px] uppercase tracking-widest mt-1">Uptime SLA</div>
+                <div className="text-[10px] uppercase tracking-widest mt-1">
+                  Uptime SLA
+                </div>
               </div>
               <div>
                 <div className="text-2xl font-bold text-white">ISO</div>
-                <div className="text-[10px] uppercase tracking-widest mt-1">Certified</div>
+                <div className="text-[10px] uppercase tracking-widest mt-1">
+                  Certified
+                </div>
               </div>
               <div>
                 <div className="text-2xl font-bold text-white">Global</div>
-                <div className="text-[10px] uppercase tracking-widest mt-1">Footprint</div>
+                <div className="text-[10px] uppercase tracking-widest mt-1">
+                  Footprint
+                </div>
               </div>
             </div>
           </motion.div>
@@ -1278,11 +1378,15 @@ export default function AlphaHecta() {
       <div className="section-divider" />
 
       {/* Pricing Section */}
-      <section id="pricing" className="py-32 px-4 bg-muted/5 relative overflow-hidden">
+      <section
+        id="pricing"
+        className="py-32 px-4 bg-muted/5 relative overflow-hidden"
+      >
         <div className="container mx-auto relative z-10">
           <div className="text-center mb-20">
             <h2 className="text-section-headline mb-4">
-              Scale with <span className="text-gradient-premium">Confidence</span>
+              Scale with{" "}
+              <span className="text-gradient-premium">Confidence</span>
             </h2>
             <p className="text-subheadline max-w-2xl mx-auto">
               Transparent, enterprise-grade pricing for teams of all sizes.
@@ -1294,46 +1398,69 @@ export default function AlphaHecta() {
                 name: "Developer",
                 price: "$0",
                 period: "/free",
-                features: ["Solo builders & hackers", "Community support", "1M free tokens/mo"],
+                features: [
+                  "Solo builders & hackers",
+                  "Community support",
+                  "1M free tokens/mo",
+                ],
                 cta: "Start Building",
-                variant: "outline"
+                variant: "outline",
               },
               {
                 name: "Starter",
                 price: "$499",
                 period: "/month",
-                features: ["Up to 5 agents", "100K tokens/day", "Priority email"],
+                features: [
+                  "Up to 5 agents",
+                  "100K tokens/day",
+                  "Priority email",
+                ],
                 cta: "Get Started",
-                variant: "outline"
+                variant: "outline",
               },
               {
                 name: "Professional",
                 price: "$1,499",
                 period: "/month",
-                features: ["Up to 25 agents", "1M tokens/day", "Advanced analytics"],
+                features: [
+                  "Up to 25 agents",
+                  "1M tokens/day",
+                  "Advanced analytics",
+                ],
                 cta: "Go Professional",
                 variant: "default",
                 highlight: "border-emerald-500 bg-emerald-500/5",
-                text: "text-emerald-500"
+                text: "text-emerald-500",
               },
               {
                 name: "Enterprise",
                 price: "$2,500+",
                 period: "/month",
-                features: ["Unlimited agents", "VPC deployment", "24/7 dedicated lead"],
+                features: [
+                  "Unlimited agents",
+                  "VPC deployment",
+                  "24/7 dedicated lead",
+                ],
                 cta: "Contact Sales",
                 variant: "default",
                 highlight: "border-blue-500 bg-blue-500/5",
                 text: "text-blue-500",
-                dialog: true
-              }
+                dialog: true,
+              },
             ].map((plan, idx) => (
-              <Card key={idx} className={`group relative overflow-hidden border-white/5 bg-card/40 backdrop-blur-sm transition-all duration-300 hover:border-primary/40 ${plan.highlight || ""}`}>
+              <Card
+                key={idx}
+                className={`group relative overflow-hidden border-white/5 bg-card/40 backdrop-blur-sm transition-all duration-300 hover:border-primary/40 ${plan.highlight || ""}`}
+              >
                 <CardHeader>
-                  <CardTitle className={`text-card-title ${plan.text || ""}`}>{plan.name}</CardTitle>
+                  <CardTitle className={`text-card-title ${plan.text || ""}`}>
+                    {plan.name}
+                  </CardTitle>
                   <div className="mt-4">
                     <span className="text-price">{plan.price}</span>
-                    <span className="text-body-sm text-muted-foreground ml-1">{plan.period}</span>
+                    <span className="text-body-sm text-muted-foreground ml-1">
+                      {plan.period}
+                    </span>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -1346,11 +1473,20 @@ export default function AlphaHecta() {
                     {plan.dialog ? (
                       <LeadGenDialog
                         title="Enterprise Inquiry"
-                        trigger={<Button className="w-full bg-blue-600 hover:bg-blue-700">{plan.cta}</Button>}
+                        trigger={
+                          <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                            {plan.cta}
+                          </Button>
+                        }
                       />
                     ) : (
                       <Link href="/signup">
-                        <Button className="w-full" variant={plan.variant as any}>{plan.cta}</Button>
+                        <Button
+                          className="w-full"
+                          variant={plan.variant as "default" | "outline" | "secondary" | "ghost" | "link" | "destructive" | null | undefined}
+                        >
+                          {plan.cta}
+                        </Button>
                       </Link>
                     )}
                   </div>
@@ -1369,11 +1505,14 @@ export default function AlphaHecta() {
           <div className="max-w-5xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
               <div>
-                <h2 className="text-section-headline mb-8">Forging the <span className="text-gradient-premium">AI Frontier</span></h2>
+                <h2 className="text-section-headline mb-8">
+                  Forging the{" "}
+                  <span className="text-gradient-premium">AI Frontier</span>
+                </h2>
                 <p className="text-body-lg mb-8 leading-relaxed text-foreground/80">
-                  AlphaHecta is more than a platform—it's the operating system 
-                  for the autonomous enterprise. Trusted by global leaders, 
-                  we bridge the gap between experimental AI and production-grade 
+                  AlphaHecta is more than a platform—it's the operating system
+                  for the autonomous enterprise. Trusted by global leaders, we
+                  bridge the gap between experimental AI and production-grade
                   certainty.
                 </p>
                 <div className="grid grid-cols-2 gap-8">

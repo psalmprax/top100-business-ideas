@@ -3,17 +3,19 @@
 ## 🎯 Feature Prioritization Framework
 
 ### RICE Scoring Example
-| Feature | Reach | Impact | Confidence | Effort (Wks) | Score |
-|--------|--------|-------------|-----------|-------|-------|
-| Loop Breaker Proxy | 100% | 3.0 | 90% | 4 | **67.5** |
-| Slack Pausing Integration | 60%| 2.5 | 80% | 2 | **60.0** |
-| Semantic Caching | 40% | 2.0 | 70% | 4 | **14.0** |
+
+| Feature                   | Reach | Impact | Confidence | Effort (Wks) | Score    |
+| ------------------------- | ----- | ------ | ---------- | ------------ | -------- |
+| Loop Breaker Proxy        | 100%  | 3.0    | 90%        | 4            | **67.5** |
+| Slack Pausing Integration | 60%   | 2.5    | 80%        | 2            | **60.0** |
+| Semantic Caching          | 40%   | 2.0    | 70%        | 4            | **14.0** |
 
 ---
 
 ## 📅 Feature Roadmap
 
 ### Q1: MVP (The "Loop Breaker")
+
 **Focus**: Proving we can stop runaway costs without breaking the app.
 | Feature | Status | Owner | Description |
 |---------|--------|-------|-------------|
@@ -23,6 +25,7 @@
 | **Basic Dashboard** | ⚪ Planned | Frontend | Next.js dashboard showing token burn per agent. |
 
 ### Q2: Growth (The "Human in the Loop")
+
 **Focus**: Graceful degradation and developer experience.
 | Feature | Status | Owner | Description |
 |---------|--------|-------|-------------|
@@ -32,6 +35,7 @@
 | **Semantic Caching** | ⚪ Backlog | Backend | Redis vector cache for identical intent queries. |
 
 ### Q3: Scale (Enterprise Compliance)
+
 **Focus**: The "Decision Ledger" for mid-market compliance.
 | Feature | Status | Owner | Description |
 |---------|--------|-------|-------------|
@@ -40,6 +44,7 @@
 | **PII Edge Masking** | ⚪ Backlog | Eng | Regex/NER anonymization before payload hits OpenAI. |
 
 ### Q4: Enterprise Operations
+
 **Focus**: Deployment flexibility for massive clients.
 | Feature | Status | Owner | Description |
 |---------|--------|-------|-------------|
@@ -51,8 +56,8 @@
 
 ## 📦 MVP Feature List (Must Haves - P0)
 
-| Feature | Description | Why |
-|---------|-------------|-----|
-| Reverse Proxy | Accepts standard OpenAI formatted HTTP requests. | Lowest friction onboarding for developers. |
-| Token Counter | Accurately calculates tiktoken numbers. | Core billing requirement. |
-| Dashboard Graph | Visualizes "Tokens Blocked/Saved". | Proves ROI instantly to the user. |
+| Feature         | Description                                      | Why                                        |
+| --------------- | ------------------------------------------------ | ------------------------------------------ |
+| Reverse Proxy   | Accepts standard OpenAI formatted HTTP requests. | Lowest friction onboarding for developers. |
+| Token Counter   | Accurately calculates tiktoken numbers.          | Core billing requirement.                  |
+| Dashboard Graph | Visualizes "Tokens Blocked/Saved".               | Proves ROI instantly to the user.          |

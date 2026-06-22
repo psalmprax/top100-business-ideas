@@ -755,15 +755,15 @@ def seed_business_ideas():
             return
 
         ideas = [
-            # AI & Technology
             {
                 "rank": 1,
                 "title": "Autonomous AI Legal Auditor",
                 "category": "AI & Technology",
                 "market": "US/EU",
                 "description": "Cross-border AI compliance auditing for enterprise LLM deployments.",
-                "earning_potential": "$2M - $5M ARR",
-                "rollout_speed": "4-6 months",
+                "earning_potential": 5000000.0,
+                "earning_label": "USD",
+                "rollout_speed": 0.8,
                 "trend": "Explosive",
             },
             {
@@ -772,8 +772,9 @@ def seed_business_ideas():
                 "category": "AI & Technology",
                 "market": "Global",
                 "description": "High-fidelity privacy-preserving dataset generation for medical AI training.",
-                "earning_potential": "$1.5M - $4M ARR",
-                "rollout_speed": "3-5 months",
+                "earning_potential": 4000000.0,
+                "earning_label": "USD",
+                "rollout_speed": 0.9,
                 "trend": "Explosive",
             },
             {
@@ -782,8 +783,9 @@ def seed_business_ideas():
                 "category": "Cybersecurity",
                 "market": "US/Global",
                 "description": "Distributed AI agents that physically verify hardware identity before cloud sync.",
-                "earning_potential": "$3M - $8M ARR",
-                "rollout_speed": "6-8 months",
+                "earning_potential": 8000000.0,
+                "earning_label": "USD",
+                "rollout_speed": 0.6,
                 "trend": "Explosive",
             },
             # HealthTech
@@ -793,8 +795,9 @@ def seed_business_ideas():
                 "category": "HealthTech",
                 "market": "US",
                 "description": "Real-time biometric liveness verification for critical infrastructure access.",
-                "earning_potential": "$1M - $3M ARR",
-                "rollout_speed": "4-5 months",
+                "earning_potential": 3000000.0,
+                "earning_label": "USD",
+                "rollout_speed": 0.7,
                 "trend": "High Growth",
             },
             {
@@ -803,8 +806,9 @@ def seed_business_ideas():
                 "category": "HealthTech",
                 "market": "Global",
                 "description": "AI-driven biological age tracking and personalized intervention protocols.",
-                "earning_potential": "$5M - $12M ARR",
-                "rollout_speed": "6-9 months",
+                "earning_potential": 12000000.0,
+                "earning_label": "USD",
+                "rollout_speed": 0.5,
                 "trend": "High Growth",
             },
             # FinTech
@@ -814,8 +818,9 @@ def seed_business_ideas():
                 "category": "FinTech",
                 "market": "Global",
                 "description": "Self-healing automated recovery for compromised DeFi wallets.",
-                "earning_potential": "$500K - $2M ARR",
-                "rollout_speed": "2-3 months",
+                "earning_potential": 2000000.0,
+                "earning_label": "USD",
+                "rollout_speed": 0.9,
                 "trend": "Steady",
             },
             {
@@ -824,8 +829,9 @@ def seed_business_ideas():
                 "category": "FinTech",
                 "market": "EU",
                 "description": "Automated VAT calculation and filing for cross-border e-commerce.",
-                "earning_potential": "$2M - $6M ARR",
-                "rollout_speed": "4-6 months",
+                "earning_potential": 6000000.0,
+                "earning_label": "USD",
+                "rollout_speed": 0.7,
                 "trend": "High Growth",
             },
         ]
@@ -857,8 +863,9 @@ def seed_business_ideas():
                     "category": cat,
                     "market": market,
                     "description": f"Next-generation {cat} solution focused on {market} market efficiencies.",
-                    "earning_potential": f"${100 * i}K - ${300 * i}K ARR",
-                    "rollout_speed": f"{i % 12 + 1} months",
+                    "earning_potential": float(100000 * i),
+                    "earning_label": "USD",
+                    "rollout_speed": 0.5,
                     "trend": trend,
                 }
             )

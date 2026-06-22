@@ -20,43 +20,40 @@ class CashClawService(BaseWorkforceService):
     """Service for forensic revenue recovery (CashClaw)"""
 
     async def run_recovery_cycle(self, criteria: str, session: Session) -> Dict[str, Any]:
-        """Trigger a revenue recovery cycle"""
+        """Trigger a revenue recovery cycle.
+        
+        In production, this would scan payment logs, contract terms, and dispute APIs.
+        Currently returns empty results until real integrations are implemented.
+        """
         logger.info(f"Starting CashClaw recovery cycle for criteria: {criteria}")
         
-        # In a real implementation, this would trigger background agents
-        # to scan payment logs, contract terms, and dispute APIs.
-        
-        # Simulate detection of uncollected revenue
-        mock_findings = [
-            {"amount": 1250.0, "source": "Unclaimed Affiliate Payout", "status": "recovered"},
-            {"amount": 450.0, "source": "Abandoned Cart Follow-up", "status": "recovered"},
-            {"amount": 3200.0, "source": "Contract Overdue / Late Fee", "status": "pending"}
-        ]
-        
-        recovered_total = 0.0
-        findings_count = 0
-        
-        for finding in mock_findings:
-            recovery = RevenueRecovery(
-                amount=finding["amount"],
-                source=finding["source"],
-                status=finding["status"],
-                metadata_json={"criteria": criteria, "cycle_id": str(uuid.uuid4())},
-                created_at=datetime.utcnow()
+        existing = session.exec(
+            select(RevenueRecovery).where(
+                RevenueRecovery.metadata_json["criteria"].as_string() == criteria
             )
-            session.add(recovery)
-            if finding["status"] == "recovered":
-                recovered_total += finding["amount"]
-            findings_count += 1
-            
-        session.commit()
+        ).all()
+        
+        if existing:
+            recovered_total = sum(r.amount for r in existing if r.status == "recovered")
+            return {
+                "status": "completed",
+                "recovered_total": recovered_total,
+                "findings_count": len(existing),
+                "timestamp": datetime.utcnow().isoformat(),
+                "message": f"Found {len(existing)} existing recovery records.",
+            }
+        
+        logger.warning(
+            f"CashClaw recovery cycle for '{criteria}' found no new findings. "
+            f"Implement payment log scanning and contract analysis for real data."
+        )
         
         return {
             "status": "completed",
-            "recovered_total": recovered_total,
-            "findings_count": findings_count,
+            "recovered_total": 0.0,
+            "findings_count": 0,
             "timestamp": datetime.utcnow().isoformat(),
-            "message": f"Successfully processed {findings_count} recovery vectors."
+            "message": "No recovery vectors found. Implement real integrations for production.",
         }
 
     async def get_recovery_history(self, session: Session) -> List[RevenueRecovery]:

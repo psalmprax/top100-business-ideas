@@ -12,12 +12,14 @@
 ## TypeScript / Frontend (React 19)
 
 **Naming:**
+
 - **Components**: PascalCase (e.g., `AlphaDeepfakeDefense.tsx`).
 - **Hooks**: camelCase with `use` prefix (e.g., `useAuth.ts`).
 - **Types/Interfaces**: PascalCase (e.g., `interface UserData {}`).
 - **Variables/Constants**: camelCase for variables, SCREAMING_SNAKE_CASE for constants.
 
 **Patterns:**
+
 - **Component Structure**: Functional components with Type definitions at the top.
 - **Styling**: Tailwind CSS 4 utility classes (avoid ad-hoc CSS).
 - **State**: TanStack Query for server state, React Context for global UI state.
@@ -26,11 +28,13 @@
 ## Go Backend
 
 **Naming:**
+
 - **Packages**: lowercase, single word.
 - **Functions/Structs**: PascalCase for exported (public), camelCase for unexported (private).
 - **Receivers**: Short (1-3 letters) related to the type (e.g., `(h *AuthHandler)`).
 
 **Patterns:**
+
 - **Errors**: Return errors as the last value; never ignore them.
 - **Handlers**: Structured as `Handler -> Service -> Repository`.
 - **Concurrency**: Use Goroutines for non-blocking tasks (like background billing audits).
@@ -38,11 +42,13 @@
 ## Python Backend (FastAPI)
 
 **Naming:**
+
 - **Modules/Files**: snake_case (e.g., `deepfake_detector.py`).
 - **Functions/Variables**: snake_case.
 - **Classes**: PascalCase (e.g., `class DeepfakeResult(SQLModel):`).
 
 **Patterns:**
+
 - **Validation**: Use Pydantic/SQLModel for all request/response schemas.
 - **Dependency Injection**: Use FastAPI `Depends()` for DB sessions and auth verification.
 - **Type Hinting**: Mandatory for all function signatures and complex variables.

@@ -11,7 +11,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Button } from "./ui/button";
 import {
   LogOut,
-  User as UserIcon,
   Settings,
   CreditCard,
   LayoutDashboard,
@@ -20,7 +19,7 @@ import { useLocation } from "wouter";
 
 export function UserMenu() {
   const { user, logout, isAuthenticated } = useAuth();
-  const [location, setLocation] = useLocation();
+  const [, setLocation] = useLocation();
 
   if (!isAuthenticated || !user) return null;
 

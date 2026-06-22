@@ -43,6 +43,7 @@ The Top100 Business Ideas platform is a multi-venture portfolio with a full-stac
 ## Technology Stack
 
 ### Frontend
+
 - **React 19** - UI Framework
 - **TypeScript** - Type safety
 - **Vite** - Build tool
@@ -52,6 +53,7 @@ The Top100 Business Ideas platform is a multi-venture portfolio with a full-stac
 - **React Query** - Data fetching
 
 ### API Gateway (Go)
+
 - **Gin** - HTTP web framework
 - **JWT** - Authentication
 - **Gorilla WebSocket** - Real-time updates
@@ -59,6 +61,7 @@ The Top100 Business Ideas platform is a multi-venture portfolio with a full-stac
 - **BCrypt** - Password hashing
 
 ### AI/ML Backend (Python)
+
 - **FastAPI** - REST API framework
 - **SQLModel** - ORM (Agnostic Bridge)
 - **Alembic** - Database Migrations
@@ -107,24 +110,28 @@ top100-business-ideas/
 ## Core Features
 
 ### 1. Alpha Agent Operations
+
 - Real-time agent monitoring
 - Agent lifecycle management (create, start, stop, restart)
 - Performance metrics tracking
 - Log aggregation
 
 ### 2. Alpha AI Act Compliance
+
 - EU AI Act compliance checking
 - Risk category classification
 - Compliance report generation
 - Finding recommendations
 
 ### 3. Alpha Deepfake Defense
+
 - Image deepfake detection
 - Video deepfake detection
 - Audio deepfake detection
 - Confidence scoring
 
 ### 4. Agent Skill Marketplace
+
 - Hybrid Gated Discovery (Public/Internal)
 - "Proprietary Shield" intellectual property protection
 - Direct skill-to-venture mapping (v001 - v100)
@@ -204,6 +211,7 @@ docker-compose up -d
 ### Environment Variables
 
 #### Go API Gateway
+
 ```bash
 export HOST=0.0.0.0
 export PORT=8080
@@ -215,6 +223,7 @@ export REDIS_URL=redis://localhost:6379
 ```
 
 #### Python Backend
+
 ```bash
 export HOST=0.0.0.0
 export PORT=8000
@@ -227,44 +236,50 @@ export OPENAI_API_KEY=your-api-key
 ## API Documentation
 
 Once running, visit:
+
 - **Go API Gateway**: `http://localhost:8080` (health check)
 - **Python Backend**: `http://localhost:8000/docs` (Swagger UI)
 
 ### Key Endpoints
 
 #### Authentication
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | /api/v1/auth/login | User login |
-| POST | /api/v1/auth/register | User registration |
-| POST | /api/v1/auth/refresh | Refresh token |
+
+| Method | Endpoint              | Description       |
+| ------ | --------------------- | ----------------- |
+| POST   | /api/v1/auth/login    | User login        |
+| POST   | /api/v1/auth/register | User registration |
+| POST   | /api/v1/auth/refresh  | Refresh token     |
 
 #### Agents
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | /api/v1/agents | List all agents |
-| POST | /api/v1/agents | Create agent |
-| GET | /api/v1/agents/:id | Get agent |
-| PUT | /api/v1/agents/:id | Update agent |
-| DELETE | /api/v1/agents/:id | Delete agent |
+
+| Method | Endpoint           | Description     |
+| ------ | ------------------ | --------------- |
+| GET    | /api/v1/agents     | List all agents |
+| POST   | /api/v1/agents     | Create agent    |
+| GET    | /api/v1/agents/:id | Get agent       |
+| PUT    | /api/v1/agents/:id | Update agent    |
+| DELETE | /api/v1/agents/:id | Delete agent    |
 
 #### Compliance
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | /api/v1/compliance | List checks |
-| POST | /api/v1/compliance/check | Run check |
-| GET | /api/v1/compliance/categories | Get categories |
+
+| Method | Endpoint                      | Description    |
+| ------ | ----------------------------- | -------------- |
+| GET    | /api/v1/compliance            | List checks    |
+| POST   | /api/v1/compliance/check      | Run check      |
+| GET    | /api/v1/compliance/categories | Get categories |
 
 #### Deepfake
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | /api/v1/deepfake/analyze | Analyze media |
-| GET | /api/v1/deepfake/analyses | List analyses |
-| GET | /api/v1/deepfake/stats | Get statistics |
+
+| Method | Endpoint                  | Description    |
+| ------ | ------------------------- | -------------- |
+| POST   | /api/v1/deepfake/analyze  | Analyze media  |
+| GET    | /api/v1/deepfake/analyses | List analyses  |
+| GET    | /api/v1/deepfake/stats    | Get statistics |
 
 #### WebSocket
-| Endpoint | Description |
-|----------|-------------|
+
+| Endpoint                      | Description       |
+| ----------------------------- | ----------------- |
 | ws://localhost:8080/api/v1/ws | Real-time updates |
 
 ## Development
@@ -309,23 +324,25 @@ pip install -r requirements.txt
 ### Common Issues
 
 1. **Port already in use**
+
    ```bash
    # Find process using port
    lsof -i :8080  # Linux/Mac
    netstat -ano | findstr :8080  # Windows
-   
+
    # Kill process
    kill -9 <PID>
    ```
 
 2. **Dependencies not found**
+
    ```bash
    # Go
    go mod tidy
-   
+
    # Python
    pip install -r requirements.txt --upgrade
-   
+
    # Frontend
    npm install --legacy-peer-deps
    ```

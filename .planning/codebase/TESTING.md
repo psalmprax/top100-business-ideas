@@ -9,12 +9,14 @@ The `top100-business-ideas` project employs a multi-tiered testing strategy enco
 ## Frontend Testing (TypeScript)
 
 **Unit & Integration:**
+
 - **Framework**: Vitest.
 - **Location**: Co-located with code or in `client/src/tests/`.
 - **Command**: `pnpm test`.
 - **Scope**: Utility functions, React hooks, and isolated component logic.
 
 **End-to-End (E2E):**
+
 - **Framework**: Playwright.
 - **Location**: `client/src/tests/`.
 - **Config**: `playwright.config.ts`.
