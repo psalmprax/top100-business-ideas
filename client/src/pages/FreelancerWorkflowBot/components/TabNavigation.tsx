@@ -1,7 +1,7 @@
 import { type LucideIcon } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { type CategoryType } from "../FreelancerWorkflowBot";
+import { type CategoryType } from "../../FreelancerWorkflowBot";
 
 export function TabNavigation({
   activeTab,

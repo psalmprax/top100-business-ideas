@@ -67,7 +67,7 @@ import {
 // Types & Components
 // ============================================================================
 
-type CategoryType = "ops" | "fin" | "log" | "strat";
+export type CategoryType = "ops" | "fin" | "log" | "strat";
 
 function MetricCard({
   title,

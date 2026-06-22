@@ -1,5 +1,5 @@
 import { type LucideIcon } from "lucide-react";
-import { type CategoryType, type categoryTabs } from "../FreelancerWorkflowBot";
+import { type CategoryType } from "../../FreelancerWorkflowBot";
 
 export function CategoryPills({
   categories,
