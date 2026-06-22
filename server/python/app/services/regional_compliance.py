@@ -3,7 +3,7 @@ from typing import List, Dict, Any
 class RegionalComplianceService:
     """
     Service for multi-jurisdictional compliance mapping for ReguLens.
-    Supports China (MLPS), Canada (AIDA), and UK AI Safety rulesets.
+    Supports China (MLPS), Canada (AIDA), and UK AI Safety (post-Brexit) rulesets.
     """
 
     def get_compliance_rules(self, jurisdiction: str) -> List[Dict[str, str]]:
@@ -20,9 +20,11 @@ class RegionalComplianceService:
                 {"id": "AIDA-3", "rule": "Public Disclosure", "description": "Publication of system descriptions and risk management strategies."}
             ],
             "UK": [
-                {"id": "UK-SAFETY-1", "rule": "Science-Led Safety", "description": "Alignment with UK AI Safety Institute's red-teaming standards."},
-                {"id": "UK-SAFETY-2", "rule": "Pre-deployment Assessment", "description": "Mandatory safety evaluations for frontier models before public release."},
-                {"id": "UK-SAFETY-3", "rule": "Transparency to Regulators", "description": "Sharing of safety testing results with relevant UK sectoral regulators."}
+                {"id": "UK-SAFETY-1", "rule": "Safety, security, and robustness", "description": "Alignment with UK AI Safety Institute (AISI) red-teaming standards (post-Brexit pro-innovation principle 1)."},
+                {"id": "UK-SAFETY-2", "rule": "Appropriate transparency and explainability", "description": "Sharing of safety testing results with relevant UK sectoral regulators (post-Brexit pro-innovation principle 2)."},
+                {"id": "UK-SAFETY-3", "rule": "Fairness", "description": "Sector-led requirements to prevent discriminatory AI outcomes (post-Brexit pro-innovation principle 3)."},
+                {"id": "UK-SAFETY-4", "rule": "Accountability and governance", "description": "Clear life-cycle accountability for frontier AI models (post-Brexit pro-innovation principle 4)."},
+                {"id": "UK-SAFETY-5", "rule": "Contestability and redress", "description": "Mechanisms for users to challenge AI-driven outcomes (post-Brexit pro-innovation principle 5)."}
             ]
         }
         return rules.get(jurisdiction.upper(), [])

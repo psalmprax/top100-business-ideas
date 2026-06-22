@@ -147,7 +147,7 @@
 | Shadow AI Detection             | ✅ COVERED     | UC15                           |
 | China AI Law (MLPS)             | ❌ NOT COVERED | Only EU/NIST covered           |
 | Canada AI Act (AIDA)            | ❌ NOT COVERED | Not mentioned                  |
-| UK AI Safety Alignment          | ❌ NOT COVERED | Post-Brexit regime not covered |
+| UK AI Safety Alignment          | ✅ COVERED | Post-Brexit regime covered (5 pro-innovation principles) |
 | Real-time Production Monitoring | ❌ NOT COVERED | Documentation only             |
 | Automated Remediation           | ❌ NOT COVERED | Detection only                 |
 | API Usage Rights Management     | ❌ NOT COVERED | Not mentioned                  |
@@ -161,7 +161,7 @@
 | ---------- | ----------------------------- | --------------------------- |
 | **HIGH**   | China MLPS Compliance         | Add China AI Law module     |
 | **HIGH**   | Canada AIDA Support           | Add Canadian AI Act         |
-| **HIGH**   | UK AI Safety Institute        | Add UK post-Brexit regime   |
+| **HIGH**   | UK AI Safety Institute        | ✅ COVERED (UK post-Brexit regime + AISI alignment) |
 | **MEDIUM** | Production Runtime Monitoring | Real-time model behavior    |
 | **MEDIUM** | Automated Remediation         | Auto-fix workflows          |
 | **MEDIUM** | Model Versioning              | Git-like version control    |
@@ -380,7 +380,7 @@
 | 2   | Agent Ops     | HIPAA/SOX         | Add healthcare/finance compliance modules   |
 | 3   | AI Compliance | China MLPS        | Add China AI Law compliance                 |
 | 4   | AI Compliance | Canada AIDA       | Add Canadian AI Act support                 |
-| 5   | AI Compliance | UK AI Safety      | Add UK post-Brexit regime                   |
+| 5   | AI Compliance | UK AI Safety      | ✅ COVERED (UK post-Brexit regime + AISI alignment) |
 | 6   | Deepfake      | 3D Mask           | Add silicone/latex mask detection           |
 | 7   | Deepfake      | Injection Attacks | Add presentation attack prevention          |
 | 8   | Deepfake      | Audio Deepfake    | Enhance audio forensics                     |

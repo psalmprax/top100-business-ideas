@@ -145,7 +145,7 @@ This report provides a comprehensive gap analysis of UI elements (buttons, click
 | UC19     | Automated Webhooks                | Webhook config         | ✅ Covered     |
 | UC20     | China MLPS Compliance             | China module           | ❌ Not Covered |
 | UC21     | Canadian AIDA Alignment           | Canada module          | ❌ Not Covered |
-| UC22     | UK AI Safety Alignment            | UK module              | ❌ Not Covered |
+| UC22     | UK AI Safety Alignment            | UK module              | ✅ Covered     |
 
 **Coverage: 11/22 (50%)**
 

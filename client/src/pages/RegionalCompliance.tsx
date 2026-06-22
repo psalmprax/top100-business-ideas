@@ -143,6 +143,23 @@ const REGIONAL_DATA: Record<string, RegionalRule[]> = {
       ],
     },
   ],
+  uk: [
+    {
+      region: "United Kingdom",
+      regulation: "UK AI Safety (post-Brexit)",
+      description:
+        "Alignment with the UK 5 pro-innovation principles and the UK AI Safety Institute (AISI).",
+      status: "compliant",
+      requirements: [
+        "Safety, security, and robustness (AISI alignment)",
+        "Appropriate transparency and explainability",
+        "Fairness",
+        "Accountability and governance",
+        "Contestability and redress",
+        "Sectoral mapping (FCA / ICO / PRA)",
+      ],
+    },
+  ],
 };
 
 export default function RegionalCompliance() {
@@ -175,6 +192,7 @@ export default function RegionalCompliance() {
       eu: ["European Union"],
       us: ["United States"],
       asia: ["Asia Pacific", "Singapore", "Japan", "China"],
+      uk: ["United Kingdom"],
     };
     return regionMap[regionKey]?.some(name => r.region.includes(name));
   });
@@ -254,6 +272,10 @@ export default function RegionalCompliance() {
             <TabsTrigger value="asia">
               <Globe className="w-4 h-4 mr-2" />
               Asia Pacific
+            </TabsTrigger>
+            <TabsTrigger value="uk">
+              <Globe className="w-4 h-4 mr-2" />
+              United Kingdom
             </TabsTrigger>
           </TabsList>
 

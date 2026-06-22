@@ -136,6 +136,18 @@
 **Scenario**: A global bank operating in London needs to align with the UK's "Pro-Innovation" AI framework and the safety benchmarks issued by the UK AI Safety Institute.
 **Solution**: ReguLens offers a "UK Governance Module." It translates "High-Risk" EU mandates into the UK's sector-led principles (e.g., FCA/PRA guidance for finance). It integrates the latest safety test suites from the UK AI Safety Institute, allowing the bank to demonstrate "Safety-by-Design" in the UK's flexible regulatory environment.
 
+**Concrete Mapping Table (5 UK pro-innovation principles → codebase controls):**
+
+| # | UK Principle | ReguLens Codebase Control |
+|---|---|---|
+| 1 | Safety, security, and robustness | `services/regional_compliance.py` → `UK-SAFETY-1` (AISI red-teaming alignment) |
+| 2 | Appropriate transparency and explainability | Pre-deployment assessment API → `UK-SAFETY-2` |
+| 3 | Fairness | Data bias scan + `UK-SAFETY-3` sectoral tests |
+| 4 | Accountability and governance | Compliance ledgers + `UK-SAFETY-4` SMCR-friendly trail |
+| 5 | Contestability and redress | Human-in-the-loop incident trigger → `UK-SAFETY-5` |
+
+**Status**: ✅ COVERED (UC22 — UK post-Brexit regime).
+
 ---
 
 ## Technical Coverage Matrix
