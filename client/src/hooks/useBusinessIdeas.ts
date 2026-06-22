@@ -1,15 +1,13 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  ventureApi,
-  type BusinessIdea,
-} from "@/lib/api";
+import { ventureApi, type BusinessIdea } from "@/lib/api";
 import { useShortlist } from "@/hooks/useShortlist";
 
-import { usePerspective, type LayoutPerspective } from "@/contexts/PerspectiveContext";
+import { usePerspective } from "@/contexts/PerspectiveContext";
 
 export function useBusinessIdeas() {
-  const { perspective: layoutMode, setPerspective: setLayoutMode } = usePerspective();
+  const { perspective: layoutMode, setPerspective: setLayoutMode } =
+    usePerspective();
   const [selectedIdea, setSelectedIdea] = useState<BusinessIdea | null>(null);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedMarket, setSelectedMarket] = useState("all");
@@ -29,8 +27,6 @@ export function useBusinessIdeas() {
 
   const businessIdeas = remoteIdeas || [];
   const {
-    shortlist,
-    isLoaded,
     toggle: toggleShortlist,
     isInShortlist,
   } = useShortlist();
@@ -64,14 +60,23 @@ export function useBusinessIdeas() {
       if (sortBy === "market_size") return b.market_size_bn - a.market_size_bn;
       return 0;
     });
-  }, [businessIdeas, search, selectedCategory, selectedMarket, selectedTrend, sortBy, showShortlistOnly, isInShortlist]);
+  }, [
+    businessIdeas,
+    search,
+    selectedCategory,
+    selectedMarket,
+    selectedTrend,
+    sortBy,
+    showShortlistOnly,
+    isInShortlist,
+  ]);
 
   const hasFilters = Boolean(
     search ||
-    selectedCategory !== "all" ||
-    selectedMarket !== "all" ||
-    selectedTrend !== "all" ||
-    showShortlistOnly
+      selectedCategory !== "all" ||
+      selectedMarket !== "all" ||
+      selectedTrend !== "all" ||
+      showShortlistOnly
   );
 
   const clearFilters = () => {
@@ -101,9 +106,13 @@ export function useBusinessIdeas() {
   const explosiveCount = businessIdeas.filter(
     i => i.trend === "Explosive"
   ).length;
-  const avgMargin = businessIdeas.length > 0 
-    ? Math.round(businessIdeas.reduce((s, i) => s + i.profit_margin, 0) / businessIdeas.length)
-    : 0;
+  const avgMargin =
+    businessIdeas.length > 0
+      ? Math.round(
+          businessIdeas.reduce((s, i) => s + i.profit_margin, 0) /
+            businessIdeas.length
+        )
+      : 0;
   const fastRollout = businessIdeas.filter(i => i.rollout_speed >= 9).length;
 
   return {
@@ -128,7 +137,7 @@ export function useBusinessIdeas() {
     setComparisonIdeas,
     showShortlistOnly,
     setShowShortlistOnly,
-    
+
     // Data
     isLoading,
     businessIdeas,
@@ -136,20 +145,20 @@ export function useBusinessIdeas() {
     visibleIdeas,
     shortlistedIdeas,
     hasFilters: !!hasFilters,
-    
+
     // Actions
     clearFilters,
     addToComparison,
     isInComparison,
     toggleShortlist,
     isInShortlist,
-    
+
     // Stats
     stats: {
       explosiveCount,
       avgMargin,
       fastRollout,
-      totalCount: businessIdeas.length
-    }
+      totalCount: businessIdeas.length,
+    },
   };
 }

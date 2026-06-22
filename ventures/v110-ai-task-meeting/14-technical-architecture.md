@@ -3,6 +3,7 @@
 ## 🏗️ System Overview
 
 ### High-Level Architecture
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                      INPUT SOURCES                          │
@@ -30,24 +31,27 @@
 ## 🔧 Tech Stack
 
 ### Inference Layer (The "Brain")
-| Component | Technology | Rationale |
-|-----------|------------|-----------|
-| Transcription | OpenAI Whisper-v3 | Industry standard for high-accuracy multi-speaker audio. |
-| Task Extraction | GPT-4o-mini | Optimized for structured JSON extraction from long contexts. |
+
+| Component         | Technology          | Rationale                                                    |
+| ----------------- | ------------------- | ------------------------------------------------------------ |
+| Transcription     | OpenAI Whisper-v3   | Industry standard for high-accuracy multi-speaker audio.     |
+| Task Extraction   | GPT-4o-mini         | Optimized for structured JSON extraction from long contexts. |
 | OCR (Whiteboards) | Google Cloud Vision | Best-in-class for messy handwritten whiteboard text capture. |
 
 ### Backend & Real-time
-| Component | Technology | Rationale |
-|-----------|------------|-----------|
-| API Framework | Go (Gin) | High-concurrency required for simultaneous audio stream processing. |
-| Streaming | WebSockets | Real-time "Task Pop-ups" while the meeting is still happening. |
-| Queue | Redis (BullMQ) | Offloading heavy transcription jobs to async workers. |
+
+| Component     | Technology     | Rationale                                                           |
+| ------------- | -------------- | ------------------------------------------------------------------- |
+| API Framework | Go (Gin)       | High-concurrency required for simultaneous audio stream processing. |
+| Streaming     | WebSockets     | Real-time "Task Pop-ups" while the meeting is still happening.      |
+| Queue         | Redis (BullMQ) | Offloading heavy transcription jobs to async workers.               |
 
 ---
 
 ## 📐 Data Schema (Task Modeling)
 
 ### Commitment Object
+
 ```json
 {
   "id": "commit_923J",
@@ -66,6 +70,7 @@
 ## 🔐 Security Architecture
 
 ### "Privileged Audio" Handling
+
 - **Non-Retention Policy**: Audio files are deleted immediately after transcription and task extraction (SLA < 5 mins).
 - **On-Prem Processing**: For Enterprise clients, we offer a "Private Cloud" deployment where audio never leaves their VPC.
 
@@ -74,7 +79,8 @@
 ## 📈 Scaling Strategy
 
 ### Handling 100k+ Concurrent Meetings
-| Target | Strategy |
-|--------|----------|
+
+| Target             | Strategy                                                                                                 |
+| ------------------ | -------------------------------------------------------------------------------------------------------- |
 | Transcription Load | Running dedicated GPU clusters on RunPod/Lambda for local Whisper inference to avoid OpenAI rate limits. |
-| Memory management | Using structured stream-parsing to avoid loading 2-hour meeting transcripts into RAM at once. |
+| Memory management  | Using structured stream-parsing to avoid loading 2-hour meeting transcripts into RAM at once.            |

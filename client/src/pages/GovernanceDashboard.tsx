@@ -9,7 +9,6 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -41,18 +40,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Scale,
-  FileCheck,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  RefreshCw,
-  Users,
-  Shield,
-} from "lucide-react";
+import { FileCheck, CheckCircle2, XCircle, RefreshCw } from "lucide-react";
 import { extendedApi } from "@/lib/api";
 import { toast } from "sonner";
+import { MetricCard } from "@/components/dashboard/MetricCard";
 
 interface ApprovalRequest {
   id: string;
@@ -105,10 +96,10 @@ export default function GovernanceDashboard() {
         extendedApi.governance.getAuditLogs(),
         extendedApi.governance.getGovernanceStats(),
       ]);
-      setRequests(requestsData.requests || []);
-      setAuditLogs(logsData || []);
-      setStats(statsData);
-    } catch (err) {
+      setRequests((requestsData as unknown as { requests?: ApprovalRequest[] }).requests || []);
+      setAuditLogs((logsData || []) as AuditLog[]);
+      setStats(statsData as GovernanceStats);
+    } catch {
       toast.error("Failed to load governance data");
     } finally {
       setIsLoading(false);
@@ -122,7 +113,7 @@ export default function GovernanceDashboard() {
       setShowNewRequestDialog(false);
       setNewRequest({ title: "", reasoning: "", quorum: 2 });
       loadData();
-    } catch (err) {
+    } catch {
       toast.error("Failed to create request");
     }
   }
@@ -136,7 +127,7 @@ export default function GovernanceDashboard() {
       );
       toast.success(`Request ${approved ? "approved" : "rejected"}`);
       loadData();
-    } catch (err) {
+    } catch {
       toast.error("Failed to process approval");
     }
   }
@@ -208,7 +199,7 @@ export default function GovernanceDashboard() {
                   <Label>Required Quorum</Label>
                   <Select
                     value={newRequest.quorum.toString()}
-                    onValueChange={v =>
+                    onValueChange={(v: string) =>
                       setNewRequest({ ...newRequest, quorum: parseInt(v) })
                     }
                   >
@@ -238,53 +229,25 @@ export default function GovernanceDashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Audits</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.total_audits}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">
-              Pending Approvals
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-amber-500">
-              {stats?.pending_approvals}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">
-              Compliance Rate
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-500">
+        <MetricCard title="Total Audits" value={stats?.total_audits} />
+        <MetricCard
+          title="Pending Approvals"
+          value={
+            <span className="text-amber-500">{stats?.pending_approvals}</span>
+          }
+        />
+        <MetricCard
+          title="Compliance Rate"
+          value={
+            <span className="text-green-500">
               {stats?.compliance_rate.toFixed(1)}%
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">
-              Quorum Achievement
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {stats?.quorum_achievement.toFixed(1)}%
-            </div>
-          </CardContent>
-        </Card>
+            </span>
+          }
+        />
+        <MetricCard
+          title="Quorum Achievement"
+          value={`${stats?.quorum_achievement.toFixed(1)}%`}
+        />
       </div>
 
       <Tabs defaultValue="approvals">

@@ -55,7 +55,7 @@ E2E test suite with 77 tests covering API endpoints, authentication, and workfor
 | Criterion       | Result     | Evidence                  |
 | --------------- | ---------- | ------------------------- |
 | E2E tests exist | ✅ PASS    | 77 tests defined          |
-| Tests run       | ⚠ PARTIAL  | Tests hang on networkidle |
+| Tests run       | ⚠ PARTIAL | Tests hang on networkidle |
 | All pass        | ⏸️ UNKNOWN | Timeout issue             |
 
 ## Fix Applied

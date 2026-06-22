@@ -23,6 +23,14 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copy source code
 COPY server/python .
 
+# Create non-root user
+RUN groupadd -r appuser && useradd -r -g appuser -m appuser
+
+# Ensure app directory is owned by non-root user
+RUN chown -R appuser:appuser /app
+
+USER appuser
+
 EXPOSE 8000
 
 # Use python -m uvicorn instead of direct uvicorn

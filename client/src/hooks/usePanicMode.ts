@@ -58,22 +58,27 @@ export function usePanicMode(
       detectorRef.current = new PanicWordDetector(config);
 
       // Set up callback for panic detection
-      unsubscribeRef.current = detectorRef.current.onPanicDetected((event: PanicEvent) => {
-        console.log("[usePanicMode] Panic word detected:", event.detectedWord);
+      unsubscribeRef.current = detectorRef.current.onPanicDetected(
+        (event: PanicEvent) => {
+          console.log(
+            "[usePanicMode] Panic word detected:",
+            event.detectedWord
+          );
 
-        // Store the event
-        setLastPanicEvent(event);
+          // Store the event
+          setLastPanicEvent(event);
 
-        // Call external callback if provided
-        if (onPanicDetected) {
-          onPanicDetected(event);
+          // Call external callback if provided
+          if (onPanicDetected) {
+            onPanicDetected(event);
+          }
+
+          // Auto-activate panic mode if enabled
+          if (autoActivate) {
+            activatePanicModeInternal(event);
+          }
         }
-
-        // Auto-activate panic mode if enabled
-        if (autoActivate) {
-          activatePanicModeInternal(event);
-        }
-      });
+      );
     }
 
     // Cleanup on unmount

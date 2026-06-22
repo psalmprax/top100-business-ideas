@@ -47,13 +47,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const userData = await authApi.me();
       setUser(userData);
-    } catch (error: any) {
-      console.error("[Auth] checkAuth failed:", error.message);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("[Auth] checkAuth failed:", message);
       // Only clear if it's a real 401, not a network failure
       if (
-        error.message.includes("401") ||
-        error.message.includes("Unauthorized") ||
-        error.message.includes("not found")
+        message.includes("401") ||
+        message.includes("Unauthorized") ||
+        message.includes("not found")
       ) {
         storage.remove("auth_token");
         setUser(null);
@@ -124,11 +125,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(data.user);
       }
       return {};
-    } catch (error: any) {
-      console.error("[Auth] login failed:", error.message);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("[Auth] login failed:", message);
       if (
-        error.message.includes("401") ||
-        error.message.includes("Unauthorized")
+        message.includes("401") ||
+        message.includes("Unauthorized")
       ) {
         storage.remove("auth_token");
         setUser(null);
@@ -144,8 +146,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         storage.set("auth_token", data.access_token);
         setUser(data.user);
       }
-    } catch (error: any) {
-      throw new Error(error.message || "Registration failed");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Registration failed";
+      throw new Error(message);
     }
   };
 

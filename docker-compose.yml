@@ -30,6 +30,7 @@ services:
       - PAYPAL_SECRET=${PAYPAL_SECRET}
       - PAYPAL_MODE=${PAYPAL_MODE}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ALLOWED_ORIGINS=http://localhost:7000,http://149.104.110.122:7000
     depends_on:
       - python-backend
       - db
@@ -68,11 +69,14 @@ services:
       - OIDC_GOOGLE_CLIENT_SECRET=${OIDC_GOOGLE_CLIENT_SECRET}
       - SESSION_SECRET_KEY=${SESSION_SECRET_KEY:-test_session_secret_321}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - CLOAKBROWSER_URL=http://cloakbrowser:8010
     volumes:
       - ./models:/models
     networks:
       - app-network
       - proxied
+    depends_on:
+      - cloakbrowser
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -103,6 +107,10 @@ services:
   # PostgreSQL Database
   db:
     image: postgres:15-alpine
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /run/postgresql
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
@@ -113,6 +121,8 @@ services:
       - "7003:5432"
     networks:
       - app-network
+    security_opt:
+      - "no-new-privileges:true"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -122,15 +132,47 @@ services:
   # Redis Cache
   redis:
     image: redis:7-alpine
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /data
     ports:
       - "7004:6379"
     networks:
       - app-network
+    security_opt:
+      - "no-new-privileges:true"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # CloakBrowser - Stealth Business Data Scraper
+  cloakbrowser:
+    build:
+      context: ./server/python/app/services/cloakbrowser
+      dockerfile: Dockerfile
+    image: cloakbrowser-business-scraper
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /home/user/.cache
+    ports:
+      - "8010:8010"
+    networks:
+      - app-network
+    security_opt:
+      - "no-new-privileges:true"
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
+    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
 
 networks:
   app-network:

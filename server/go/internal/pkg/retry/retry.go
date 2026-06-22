@@ -2,7 +2,8 @@ package retry
 
 import (
 	"context"
-	"math/rand"
+	"crypto/rand"
+	"math/big"
 	"time"
 )
 
@@ -47,15 +48,15 @@ func (p RetryPolicy) Do(ctx context.Context, fn func() error) error {
 }
 
 func (p RetryPolicy) calculateDelay(attempt int) time.Duration {
-	// Exponential backoff: base * 2^attempt
 	delay := p.BaseDelay * time.Duration(1<<attempt)
 
 	if p.Jitter {
-		// Add some jitter to avoid thundering herd problem
-		// We add a random factor between 0.5 and 1.5 of the calculated delay
 		jitterRange := float64(delay) * 0.5
-		randomJitter := time.Duration(rand.Float64() * jitterRange)
-		if rand.Float64() > 0.5 {
+		n, _ := rand.Int(rand.Reader, big.NewInt(1<<53))
+		randFloat := float64(n.Int64()) / float64(1<<53)
+		randomJitter := time.Duration(randFloat * jitterRange)
+		n2, _ := rand.Int(rand.Reader, big.NewInt(1<<53))
+		if float64(n2.Int64())/float64(1<<53) > 0.5 {
 			delay += randomJitter
 		} else {
 			delay -= randomJitter

@@ -19,7 +19,6 @@ import { Label } from "@/components/ui/label";
 import {
   Loader2,
   Server,
-  Download,
   CheckCircle,
   AlertTriangle,
   Plus,
@@ -29,11 +28,28 @@ import {
 import { toast } from "sonner";
 import { extendedApi } from "@/lib/api";
 
+interface Deployment {
+  id: string;
+  name: string;
+  location: string;
+  status: string;
+  model_version?: string;
+}
+
+interface ManifestResponse {
+  manifest?: string;
+  content?: string;
+}
+
+interface ChecklistResponse {
+  checklist?: string[];
+}
+
 export default function OnPremManager() {
-  const [deployments, setDeployments] = useState<any[]>([]);
+  const [deployments, setDeployments] = useState<Deployment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [manifest, setManifest] = useState<string | null>(null);
-  const [checklist, setChecklist] = useState<any[]>([]);
+  const [checklist, setChecklist] = useState<{ title: string; description: string; met: boolean }[]>([]);
 
   useEffect(() => {
     fetchDeployments();
@@ -41,7 +57,7 @@ export default function OnPremManager() {
 
   const fetchDeployments = async () => {
     try {
-      const data = await extendedApi.edge.deployments();
+      const data = await extendedApi.edge.deployments() as unknown as Deployment[];
       setDeployments(data || []);
     } catch {
       setDeployments([]);
@@ -56,12 +72,13 @@ export default function OnPremManager() {
       const res = await extendedApi.onPrem.deploy({
         name: "alpha-on-prem-" + Date.now().toString().slice(-4),
         type: "kubernetes",
-        nodes: 3
+        nodes: 3,
       });
       toast.success(res.message || "Deployment handshake initiated");
       await fetchDeployments();
-    } catch (err: any) {
-      toast.error(err.message || "Deployment handshake failed");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Deployment handshake failed";
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
@@ -69,25 +86,27 @@ export default function OnPremManager() {
 
   const generateManifest = async () => {
     try {
-      const res = await extendedApi.onPrem.manifest("kubernetes");
+      const res = await extendedApi.onPrem.manifest("kubernetes") as unknown as ManifestResponse;
       setManifest(res?.manifest || res?.content || "");
       toast.success("Manifest generated");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to generate manifest");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to generate manifest";
+      toast.error(message);
     }
   };
 
   const getChecklist = async () => {
     try {
-      const res = await extendedApi.onPrem.checklist();
+      const res = await extendedApi.onPrem.checklist() as unknown as ChecklistResponse;
       const items = (res?.checklist || []).map((item: string, i: number) => ({
         title: item,
         description: `Requirement ${i + 1} for on-prem deployment`,
         met: false,
       }));
       setChecklist(items);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to fetch checklist");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to fetch checklist";
+      toast.error(message);
     }
   };
 

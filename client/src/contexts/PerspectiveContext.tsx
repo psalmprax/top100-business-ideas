@@ -8,9 +8,15 @@ interface PerspectiveContextType {
   setPerspective: (perspective: LayoutPerspective) => void;
 }
 
-const PerspectiveContext = createContext<PerspectiveContextType | undefined>(undefined);
+const PerspectiveContext = createContext<PerspectiveContextType | undefined>(
+  undefined
+);
 
-export function PerspectiveProvider({ children }: { children: React.ReactNode }) {
+export function PerspectiveProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [perspective, setPerspective] = useState<LayoutPerspective>(() => {
     return storage.get<LayoutPerspective>("app_perspective", "alpha");
   });
@@ -18,9 +24,13 @@ export function PerspectiveProvider({ children }: { children: React.ReactNode })
   useEffect(() => {
     // Apply perspective class to document root for global CSS styling
     const root = document.documentElement;
-    root.classList.remove("perspective-alpha", "perspective-sigma", "perspective-omega");
+    root.classList.remove(
+      "perspective-alpha",
+      "perspective-sigma",
+      "perspective-omega"
+    );
     root.classList.add(`perspective-${perspective}`);
-    
+
     // Persist selection
     storage.set("app_perspective", perspective);
   }, [perspective]);

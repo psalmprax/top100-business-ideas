@@ -20,7 +20,6 @@ import {
   Lock,
   Loader2,
   CheckCircle2,
-  AlertCircle,
   ArrowLeft,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -59,8 +58,9 @@ export default function ResetPassword() {
         description: "Check your email for the password reset link.",
       });
       setMode("success");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to send reset link");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to send reset link";
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
@@ -87,8 +87,9 @@ export default function ResetPassword() {
         description: "You can now log in with your new password.",
       });
       setTimeout(() => setLocation("/login"), 2000);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to reset password");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to reset password";
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }

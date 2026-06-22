@@ -3,17 +3,19 @@
 ## 🎯 Feature Prioritization Framework
 
 ### RICE Scoring Example
-| Feature | Reach | Impact | Confidence | Effort (Wks) | Score |
-|--------|--------|-------------|-----------|-------|-------|
-| Epic SMART on FHIR App | 100% | 3.0 | 90% | 8 | **33.7** |
-| Evidence Highlighting UI | 100% | 3.0 | 90% | 4 | **67.5** |
-| Azure OpenAI HIPAA Setup | 100% | 3.0 | 100%| 4 | **75.0** (Must Do) |
+
+| Feature                  | Reach | Impact | Confidence | Effort (Wks) | Score              |
+| ------------------------ | ----- | ------ | ---------- | ------------ | ------------------ |
+| Epic SMART on FHIR App   | 100%  | 3.0    | 90%        | 8            | **33.7**           |
+| Evidence Highlighting UI | 100%  | 3.0    | 90%        | 4            | **67.5**           |
+| Azure OpenAI HIPAA Setup | 100%  | 3.0    | 100%       | 4            | **75.0** (Must Do) |
 
 ---
 
 ## 📅 Feature Roadmap
 
 ### Q1: MVP (Single Specialty Pilot)
+
 **Focus**: Proving the model works on a narrow, high-volume slice of medicine (e.g., Radiology or Emergency Room).
 | Feature | Status | Owner | Description |
 |---------|--------|-------|-------------|
@@ -23,6 +25,7 @@
 | **Radiology Fine-Tuning** | ⚪ Planned | AI Eng | Achieving 95% accuracy on X-Ray/MRI parsing. |
 
 ### Q2: Growth (The "Epic Embed")
+
 **Focus**: Removing the need for double-entry by launching directly inside the hospital's EHR.
 | Feature | Status | Owner | Description |
 |---------|--------|-------|-------------|
@@ -31,13 +34,15 @@
 | **Inpatient/ICU Coding** | ⚪ Backlog | ML Ops | Expanding from simple radiology to complex 50-page hospital stays. |
 
 ### Q3: Scale (The "Denial Prevention" Engine)
-**Focus**: Moving from *speed* to *revenue capture*.
+
+**Focus**: Moving from _speed_ to _revenue capture_.
 | Feature | Status | Owner | Description |
 |---------|--------|-------|-------------|
-| **Clinical Documentation Improvement (CDI)** | ⚪ Backlog | AI Eng | AI flags the *Doctor* before they sign the chart: "You wrote 'Heart Failure', please specify 'Acute' or 'Chronic' so we can bill it." |
+| **Clinical Documentation Improvement (CDI)** | ⚪ Backlog | AI Eng | AI flags the _Doctor_ before they sign the chart: "You wrote 'Heart Failure', please specify 'Acute' or 'Chronic' so we can bill it." |
 | **Pre-Bill Auditor** | ⚪ Backlog | Backend | Simulating an insurance company rejection before the claim is sent. |
 
 ### Q4: Enterprise Operations
+
 **Focus**: Multi-hospital rollouts and advanced analytics for the CRO.
 | Feature | Status | Owner | Description |
 |---------|--------|-------|-------------|
@@ -48,8 +53,8 @@
 
 ## 📦 MVP Feature List (Must Haves - P0)
 
-| Feature | Description | Why |
-|---------|-------------|-----|
-| Quote Citation | The AI must highlight the exact text in the chart that triggered the code. | Trust. A human coder will not accept an AI's advice unless they can verify the source in 2 seconds. |
-| De-Identification | Stripping PII before it hits the LLM. | Even with a BAA in place, minimizing the surface area of PHI transmission is critical for InfoSec approval. |
-| "Low Confidence" Flag | If the AI is only 70% sure, it routes the chart to the Senior Human Auditor. | Graceful degradation. We don't guess in healthcare. |
+| Feature               | Description                                                                  | Why                                                                                                         |
+| --------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Quote Citation        | The AI must highlight the exact text in the chart that triggered the code.   | Trust. A human coder will not accept an AI's advice unless they can verify the source in 2 seconds.         |
+| De-Identification     | Stripping PII before it hits the LLM.                                        | Even with a BAA in place, minimizing the surface area of PHI transmission is critical for InfoSec approval. |
+| "Low Confidence" Flag | If the AI is only 70% sure, it routes the chart to the Senior Human Auditor. | Graceful degradation. We don't guess in healthcare.                                                         |

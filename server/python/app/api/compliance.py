@@ -604,13 +604,58 @@ async def delete_vendor(vendor_id: str, session: AsyncSession = Depends(get_asyn
 
 
 @router.post("/sso/update")
-async def update_sso_config(config: dict):
-    return {"status": "success", "message": "SSO configuration updated."}
+async def update_sso_config(config: dict, session: AsyncSession = Depends(get_async_session)):
+    """Update SSO configuration for the compliance system."""
+    from app.core.models import SystemConnection
+    
+    provider = config.get("provider", "unknown")
+    entity_id = config.get("entity_id", "")
+    metadata_url = config.get("metadata_url", "")
+    
+    existing = await session.execute(
+        select(SystemConnection).where(SystemConnection.connection_type == "sso")
+    )
+    connection = existing.scalars().first()
+    
+    if connection:
+        connection.config_json = {"provider": provider, "entity_id": entity_id, "metadata_url": metadata_url}
+        connection.updated_at = datetime.utcnow()
+    else:
+        connection = SystemConnection(
+            id=f"sso_{provider}_{datetime.utcnow().timestamp()}",
+            name=f"SSO - {provider}",
+            connection_type="sso",
+            status="configured",
+            config_json={"provider": provider, "entity_id": entity_id, "metadata_url": metadata_url},
+        )
+        session.add(connection)
+    
+    await session.commit()
+    return {"status": "success", "message": f"SSO configuration for {provider} updated.", "connection_id": connection.id}
 
 
 @router.post("/proxy/verify")
-async def verify_proxy_config(config: dict):
-    return {"status": "success", "verified": True}
+async def verify_proxy_config(config: dict, session: AsyncSession = Depends(get_async_session)):
+    """Verify proxy configuration by testing connectivity."""
+    from app.core.models import SystemConnection
+    
+    url = config.get("url", "")
+    if not url:
+        return {"status": "error", "verified": False, "message": "URL is required"}
+    
+    import aiohttp
+    try:
+        async with aiohttp.ClientSession() as http_session:
+            async with http_session.get(url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                verified = resp.status < 500
+                return {
+                    "status": "success",
+                    "verified": verified,
+                    "status_code": resp.status,
+                    "message": f"Proxy returned status {resp.status}",
+                }
+    except Exception as e:
+        return {"status": "error", "verified": False, "message": f"Connection failed: {str(e)}"}
 
 
 @router.get("/connections")
@@ -621,9 +666,30 @@ async def get_connections():
 
 
 @router.post("/connect")
-async def connect_system(request: dict):
-    # Implementation placeholder
-    return {"status": "success", "message": "System connected successfully."}
+async def connect_system(request: dict, session: AsyncSession = Depends(get_async_session)):
+    """Connect an external system to the compliance platform."""
+    from app.core.models import SystemConnection
+    
+    system_type = request.get("system_type", "unknown")
+    name = request.get("name", f"Connected System - {system_type}")
+    config = request.get("config", {})
+    
+    connection = SystemConnection(
+        id=f"conn_{system_type}_{datetime.utcnow().timestamp()}",
+        name=name,
+        connection_type=system_type,
+        status="connected",
+        config_json=config,
+    )
+    session.add(connection)
+    await session.commit()
+    await session.refresh(connection)
+    
+    return {
+        "status": "success",
+        "message": f"System '{name}' connected successfully.",
+        "connection_id": connection.id,
+    }
 
 
 @router.post("/scan")

@@ -1,10 +1,10 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 
 const BASE_URL = "http://149.104.110.122:7000";
 const API_URL = "http://149.104.110.122:7002";
 
 async function loginAndNavigate(
-  page: any,
+  page: Page,
   menuButton: string | undefined,
   tabName: string | undefined
 ) {

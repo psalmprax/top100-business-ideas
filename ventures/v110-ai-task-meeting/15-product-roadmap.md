@@ -3,6 +3,7 @@
 ## 📅 Roadmap Lifecycle
 
 ### Q1: The "Capture" Phase
+
 **Focus**: Achieving 99% accuracy in task identity and deadline extraction.
 | Feature | Status | Priority | Description |
 |---------|--------|----------|-------------|
@@ -11,14 +12,16 @@
 | **Calendar Sync v1** | ⚪ Planned | P1 | Auto-pushing extracted deadlines into Google/Outlook calendars. |
 
 ### Q2: The "Hybrid" Phase
+
 **Focus**: Expanding beyond "Virtual Calls" into the physical office.
 | Feature | Status | Priority | Description |
 |---------|--------|----------|-------------|
 | **Whiteboard OCR** | ⚪ Backlog | P1 | Snap a photo of a whiteboard to extract tasks and diagrams. |
 | **Voice Signature ID** | ⚪ Backlog | P2 | Assigning tasks based on speaker's known voice profile in a physical room. |
-| **Real-time Suggestions**| ⚪ Backlog | P1 | During a call, pop-up a notification: *"You just promised X. Should I add it to Jira?"* |
+| **Real-time Suggestions**| ⚪ Backlog | P1 | During a call, pop-up a notification: _"You just promised X. Should I add it to Jira?"_ |
 
 ### Q3: The "Closed-Loop" Phase
+
 **Focus**: Ensuring the tasks actually get done.
 | Feature | Status | Priority | Description |
 |---------|--------|----------|-------------|
@@ -30,8 +33,8 @@
 
 ## 📦 MVP Feature List (Must Haves)
 
-| Feature | Why |
-|---------|-----|
-| Diarization | You must know **who** said they would do it. |
-| Deadline Parsing | A task without a date is just a wish. |
+| Feature              | Why                                                 |
+| -------------------- | --------------------------------------------------- |
+| Diarization          | You must know **who** said they would do it.        |
+| Deadline Parsing     | A task without a date is just a wish.               |
 | "Add to Integration" | One-click export to the user's existing work tools. |

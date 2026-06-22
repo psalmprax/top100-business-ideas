@@ -8,7 +8,7 @@ import { nanoid } from "nanoid";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 
-export interface LLMMetrics {
+interface LLMMetrics {
   p95_latency_ms: number;
   avg_latency_ms: number;
   throughput: number; // tokens/sec
@@ -17,7 +17,7 @@ export interface LLMMetrics {
   uptime: number;
 }
 
-export interface LLMProviderConfig {
+interface LLMProviderConfig {
   id: string;
   name: string;
   provider: "deepseek" | "google" | "openai" | "anthropic" | "meta" | "local";
@@ -36,7 +36,7 @@ export interface LLMProviderConfig {
   metrics: LLMMetrics;
 }
 
-export interface Vendor {
+interface Vendor {
   id: string;
   name: string;
   type: string;
@@ -49,7 +49,7 @@ export interface Vendor {
   contact_email?: string;
 }
 
-export interface Incident {
+interface Incident {
   id: string;
   title: string;
   description: string;
@@ -61,7 +61,7 @@ export interface Incident {
 }
 
 // Compliance API types
-export interface ComplianceConnection {
+interface ComplianceConnection {
   id: string;
   article_id: string;
   connection_type: string;
@@ -71,30 +71,30 @@ export interface ComplianceConnection {
   updated_at?: string;
 }
 
-export interface ComplianceSectionMetrics {
+interface ComplianceSectionMetrics {
   label: string;
   value: number;
   status: "stable" | "compliant" | "active" | "degraded";
 }
 
-export interface ComplianceEvent {
+interface ComplianceEvent {
   title: string;
   description: string;
   severity: "low" | "medium" | "high";
   timestamp: string;
 }
 
-export interface ComplianceLiveMetrics {
+interface ComplianceLiveMetrics {
   sections: ComplianceSectionMetrics[];
   events: ComplianceEvent[];
 }
 
-export interface ComplianceArticle {
+interface ComplianceArticle {
   article: string;
   title: string;
   description: string;
   risk: "unacceptable" | "high" | "limited" | "minimal";
-  status: "compliant" | "in_progress" | "not_started";
+  status: "compliant" | "non_compliant" | "not_applicable" | "pending";
   evidence: string;
   remediation: string;
   integration_type: string;
@@ -147,9 +147,9 @@ function getAuthToken(): string | null {
   return localStorage.getItem("auth_token");
 }
 
-export interface ApiOptions extends RequestInit {
+interface ApiOptions extends RequestInit {
   strict?: boolean;
-  fallback?: any;
+  fallback?: unknown;
 }
 
 // Global flag/callback for simulation monitoring
@@ -159,24 +159,6 @@ export const setSimulationListener = (cb: (endpoint: string) => void) => {
   onSimulationTriggered = cb;
 };
 
-/**
- * Higher-order function for resilient data fetching.
- * Wraps an API call and returns fallback data if the call fails.
- */
-export async function withFallback<T>(
-  apiCall: () => Promise<T>,
-  fallbackData: T
-): Promise<T> {
-  try {
-    return await apiCall();
-  } catch (err: any) {
-    console.warn(
-      `[API_FALLBACK] Service unavailable, using shadow data. Error: ${err.message}`
-    );
-    return fallbackData;
-  }
-}
-
 // Helper for API requests
 async function apiRequest<T>(
   endpoint: string,
@@ -184,12 +166,11 @@ async function apiRequest<T>(
 ): Promise<T> {
   const token = getAuthToken();
   const method = options.method || "GET";
-  const isMutation = ["POST", "PUT", "DELETE", "PATCH"].includes(method);
+  const isMutation = ["POST", "PUT", "DELETE", "PATCH"].includes(method);    // REAL-FIRST: Mutations are always strict unless explicitly opt-out
+    const strict = options.strict !== undefined ? options.strict : isMutation;
 
-  // REAL-FIRST: Mutations are always strict unless explicitly opt-out
-  const strict = options.strict !== undefined ? options.strict : isMutation;
-
-  console.log(`[API_DEBUG] ${method} ${endpoint}, strict: ${strict}`);
+    // SECURITY: %s substitution avoids unsafe-formatstring detections on log args.
+    console.log("[API_DEBUG] %s %s, strict: %s", method, endpoint, strict);
 
   const headers: Record<string, string> = {
     ...((options.headers as Record<string, string>) || {}),
@@ -253,11 +234,12 @@ async function apiRequest<T>(
   }
   if (!finalUrl.startsWith("http") && !finalUrl.startsWith("/")) {
     finalUrl = "/" + finalUrl;
-  }
-
-  console.log(
-    `[API Proxy] FINAL_URL: "${finalUrl}" (Base: "${API_URL}", Endpoint: "${endpoint}")`
-  );
+  }    console.log(
+      `[API Proxy] FINAL_URL: "%s" (Base: "%s", Endpoint: "%s")`,
+      finalUrl,
+      API_URL,
+      endpoint
+    );
 
   try {
     const response = await fetch(finalUrl, {
@@ -267,18 +249,22 @@ async function apiRequest<T>(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      const errorMessage = errorData.details 
+      const errorMessage = errorData.details
         ? `${errorData.error}: ${errorData.details}`
-        : (errorData.error || `HTTP Error ${response.status}: ${response.statusText}`);
+        : errorData.error ||
+          `HTTP Error ${response.status}: ${response.statusText}`;
 
       // If we have a fallback, use it even for 4xx errors if strict is not enforced manually
       // but usually we want to distinguish between "Service Down" and "Bad Request"
       if (options.fallback && response.status >= 500) {
+        // SECURITY: %s substitution avoids unsafe-formatstring detections on log args.
         console.warn(
-          `[Resilience] Server alert ${response.status} on ${endpoint}. Activating shadow data mode.`
+          "[Resilience] Server alert %s on %s. Activating shadow data mode.",
+          response.status,
+          endpoint
         );
         onSimulationTriggered?.(endpoint);
-        return options.fallback;
+        return options.fallback as T;
       }
 
       // Handle 401 Unauthorized globally for protected routes
@@ -307,20 +293,25 @@ async function apiRequest<T>(
     }
 
     return await response.json();
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : String(e);
     // REAL-FIRST FAILURE HANDLING
+    // SECURITY: formatted with %s to keep request-derived data unambiguously
+    // as arguments; satisfies safe-formatting pattern used by static analyzers.
     if (options.fallback) {
       console.warn(
-        `[Resilience] Service Latency on ${normalizedEndpoint}. Activating shadow fallback mode.`,
-        e.message
+        "[Resilience] Service Latency on %s. Activating shadow fallback mode. %s",
+        normalizedEndpoint,
+        message
       );
       onSimulationTriggered?.(endpoint);
-      return options.fallback;
+      return options.fallback as T;
     }
 
     console.error(
-      `[API Error] REAL-FIRST HARD-FAILURE on ${normalizedEndpoint}:`,
-      e.message
+      "[API Error] REAL-FIRST HARD-FAILURE on %s: %s",
+      normalizedEndpoint,
+      message
     );
     throw e;
   }
@@ -357,7 +348,7 @@ async function apiBlobRequest(
 // Auth API
 // ============================================================================
 
-export interface AuthResponse {
+interface AuthResponse {
   access_token: string;
   refresh_token?: string;
   expires_in?: number;
@@ -417,7 +408,7 @@ export interface Agent {
     | "openai"
     | "metagpt"
     | "pydanticai";
-  status: "running" | "stopped" | "error" | "paused";
+  status: "running" | "stopped" | "error" | "paused" | "active";
   budget: number;
   daily_spend: number;
   tier: "strategic" | "tactical" | "industrial";
@@ -426,7 +417,7 @@ export interface Agent {
     model: string;
     max_tokens: number;
     temperature: number;
-    rules?: any[];
+    rules?: Record<string, unknown>[];
   };
   environment?: string;
   provider?: string;
@@ -488,14 +479,33 @@ export const agentsApi = {
 
   logs: (id: string) => apiRequest<AgentLog[]>(`/agents/${id}/logs`),
 
+  injectHint: (agentId: string, hint: string) =>
+    apiRequest<unknown>(`/agents/${agentId}/hint`, {
+      method: "PATCH",
+      body: JSON.stringify({ hint }),
+      strict: true,
+    }),
+
   installSkill: (skill_id: string) =>
-    apiRequest<{ message: string }>("/api/v1/agent-ops/skills/install", {
+    apiRequest<{ message: string }>("/api/v1/agents/skills/install", {
       method: "POST",
       body: JSON.stringify({ skill_id }),
     }),
+
+  intelligence: {
+    research: (topic: string) =>
+      apiRequest<unknown>(
+        `/api/v1/intelligence/research?topic=${encodeURIComponent(topic)}`
+      ),
+    strategy: (name: string) =>
+      apiRequest<unknown>("/api/v1/intelligence/strategy", {
+        method: "POST",
+        body: JSON.stringify({ name }),
+      }),
+  },
 };
 
-export interface AgentLog {
+interface AgentLog {
   id: string;
   agent_id: string;
   level: "info" | "warn" | "error";
@@ -504,52 +514,10 @@ export interface AgentLog {
 }
 
 // ============================================================================
-// Rules API
-// ============================================================================
-
-export interface Rule {
-  id: string;
-  name: string;
-  type: string;
-  enabled: boolean;
-  config?: any;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export const rulesApi = {
-  list: () => apiRequest<Rule[]>("/api/v1/rules"),
-
-  create: (rule: Partial<Rule>) =>
-    apiRequest<Rule>("/api/v1/rules", {
-      method: "POST",
-      body: JSON.stringify(rule),
-    }),
-
-  update: (id: string, rule: Partial<Rule>) =>
-    apiRequest<Rule>(`/api/v1/rules/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(rule),
-    }),
-
-  delete: (id: string) =>
-    apiRequest<{ message: string }>(`/api/v1/rules/${id}`, {
-      method: "DELETE",
-    }),
-
-  toggle: (id: string, enabled: boolean) =>
-    apiRequest<Rule>(`/api/v1/rules/${id}/toggle`, {
-      method: "POST",
-      body: JSON.stringify({ enabled }),
-      strict: true,
-    }),
-};
-
-// ============================================================================
 // Metrics API
 // ============================================================================
 
-export interface Metrics {
+interface Metrics {
   bias_score: number;
   fairness_index: number;
   anomalies_detected: number;
@@ -583,7 +551,7 @@ export const metricsApi = {
 // Compliance API
 // ============================================================================
 
-export interface ComplianceCheck {
+interface ComplianceCheck {
   id: string;
   article: string;
   title: string;
@@ -598,7 +566,7 @@ export interface ComplianceCheck {
   last_checked?: string;
 }
 
-export interface ComplianceReport {
+interface ComplianceReport {
   id: string;
   name: string;
   overall_score: number;
@@ -606,7 +574,7 @@ export interface ComplianceReport {
   created_at: string;
 }
 
-export const complianceApi = {
+const complianceApi = {
   list: () => apiRequest<ComplianceReport[]>("/api/v1/compliance/reports"),
 
   get: (id: string) =>
@@ -634,11 +602,11 @@ export const complianceApi = {
     if (category) params.append("category", category);
     if (section) params.append("section", section);
     if (params.toString()) url += `?${params.toString()}`;
-    return apiRequest<any[]>(url);
+    return apiRequest<unknown[]>(url);
   },
 
-  updateChecklistItem: (id: string, assessment: any) =>
-    apiRequest<any>(`/api/v1/compliance/checklists/${id}`, {
+  updateChecklistItem: (id: string, assessment: Record<string, unknown>) =>
+    apiRequest<unknown>(`/api/v1/compliance/checklists/${id}`, {
       method: "POST",
       body: JSON.stringify(assessment),
     }),
@@ -652,84 +620,16 @@ export const complianceApi = {
     }),
 
   auditVendors: () =>
-    apiRequest<any>("/api/v1/compliance/vendors/audit", {
+    apiRequest<unknown>("/api/v1/compliance/vendors/audit", {
       method: "POST",
     }),
 
-  getVendorStats: () => apiRequest<any>("/api/v1/compliance/vendors/stats"),
+  getVendorStats: () => apiRequest<unknown>("/api/v1/compliance/vendors/stats"),
 };
 
 // ============================================================================
 // Deepfake API
 // ============================================================================
-
-export interface DeepfakeResult {
-  is_fake: boolean;
-  confidence: number;
-  analysis: {
-    media_type: string;
-    suspicious_elements: string[];
-    artifacts_detected: number;
-  };
-}
-
-export const deepfakeApi = {
-  upload: (file: File) => {
-    const formData = new FormData();
-    formData.append("file", file);
-    return apiRequest<{ url: string }>("/api/v1/deepfake/upload", {
-      method: "POST",
-      body: formData,
-      headers: {
-        // Fetch will set the correct boundary for FormData
-        "Content-Type": "multipart/form-data",
-      } as any,
-    });
-  },
-
-  detect: (mediaUrl: string, mediaType: string) =>
-    apiRequest<DeepfakeResult>("/ml/deepfake/detect", {
-      method: "POST",
-      body: JSON.stringify({ media_url: mediaUrl, media_type: mediaType }),
-    }),
-
-  analyze: (mediaUrl: string, mediaType: string = "image") =>
-    apiRequest<DeepfakeResult>("/api/v1/deepfake/analyze", {
-      method: "POST",
-      body: JSON.stringify({ media_url: mediaUrl, media_type: mediaType }),
-    }),
-
-  updateConfig: (config: any) =>
-    apiRequest<any>("/api/v1/deepfake/config", {
-      method: "POST",
-      body: JSON.stringify(config),
-    }),
-
-  history: () => apiRequest<DeepfakeResult[]>("/api/v1/deepfake/history"),
-
-  getStats: () => apiRequest<any>("/api/v1/deepfake/stats"),
-
-  challenge: (userId: string) =>
-    apiRequest<any>(`/api/v1/deepfake/challenge?user_id=${userId}`, {
-      method: "POST",
-    }),
-
-  verify: (challengeId: string, signature: string, hardwareId: string) =>
-    apiRequest<any>(
-      `/api/v1/deepfake/verify?challenge_id=${challengeId}&signature=${signature}&hardware_id=${hardwareId}`,
-      { method: "POST" }
-    ),
-
-  train: (datasetName: string) =>
-    apiRequest<any>(`/api/v1/deepfake/train?dataset_name=${datasetName}`, {
-      method: "POST",
-    }),
-
-  test: (modelId: string) =>
-    apiRequest<any>(`/api/v1/deepfake/test?model_id=${modelId}`, {
-      method: "POST",
-    }),
-};
 
 // ============================================================================
 // Billing API
@@ -838,18 +738,6 @@ export interface User {
   };
 }
 
-export interface BiasReport {
-  id: string;
-  model_id: string;
-  bias_category: string;
-  disparate_impact: number;
-  statistical_significance: number;
-  severity: "low" | "medium" | "high" | "critical";
-  status: string;
-  details: string;
-  created_at: string;
-}
-
 export const userApi = {
   update: (updates: Partial<User>) =>
     apiRequest<User>("/api/v1/user", {
@@ -916,7 +804,7 @@ export interface WebhookExecution {
 }
 
 // Multi-cloud types
-export interface MultiCloudStatus {
+interface MultiCloudStatus {
   provider: string;
   region: string;
   status: string;
@@ -926,7 +814,7 @@ export interface MultiCloudStatus {
 }
 
 // Self-healing types
-export interface SelfHealingEvent {
+interface SelfHealingEvent {
   id?: string;
   agent_id: string;
   event_type: string;
@@ -939,7 +827,7 @@ export interface SelfHealingEvent {
 }
 
 // Training types
-export interface TrainingModule {
+interface TrainingModule {
   id?: string;
   title: string;
   description: string;
@@ -957,7 +845,7 @@ export interface TrainingModule {
   progress?: number;
 }
 
-export interface TrainingProgress {
+interface TrainingProgress {
   id?: string;
   user_id: string;
   module_id: string;
@@ -967,7 +855,7 @@ export interface TrainingProgress {
 }
 
 // White-label types
-export interface WhiteLabelConfig {
+interface WhiteLabelConfig {
   tenant_id?: string;
   name: string;
   tier?: string;
@@ -983,7 +871,7 @@ export interface WhiteLabelConfig {
   updated_at?: string;
 }
 
-export interface AuditEntry {
+interface AuditEntry {
   id: string;
   agent_id: string;
   actor?: string; // Display name, optional
@@ -993,24 +881,8 @@ export interface AuditEntry {
   timestamp: string;
 }
 
-// Red Team / Penetration Scan types
-export interface ComplianceScan {
-  id: string;
-  article_id: string;
-  scan_type: string;
-  status: string;
-  results?: {
-    metrics?: {
-      anomalies_detected?: number;
-      threat_level?: string;
-      compliance_rate?: number;
-    };
-  };
-  created_at?: string;
-}
-
 // Edge deployment types
-export interface EdgeDeployment {
+interface EdgeDeployment {
   device_id: string;
   location: string;
   device_type: string;
@@ -1034,7 +906,7 @@ export interface SLATierInfo {
   active: boolean;
 }
 
-export interface SLAMetric {
+interface SLAMetric {
   period: string;
   uptime: number;
   latency: number;
@@ -1053,7 +925,7 @@ export interface ShadowAIDetection {
   status: "detected" | "investigating" | "remediated" | "approved";
 }
 
-export interface ShadowAIStats {
+interface ShadowAIStats {
   total_detections: number;
   high_risk: number;
   medium_risk: number;
@@ -1065,7 +937,7 @@ export interface ShadowAIStats {
   by_risk_level: Record<string, number>;
 }
 
-export interface ShadowAIReportTool {
+interface ShadowAIReportTool {
   tool_name: string;
   vendor: string;
   department: string;
@@ -1073,7 +945,7 @@ export interface ShadowAIReportTool {
   risk_level: string;
 }
 
-export interface ShadowAIReport {
+interface ShadowAIReport {
   summary: {
     total_detections: number;
     high_risk: number;
@@ -1087,7 +959,7 @@ export interface ShadowAIReport {
 // Duplicate removed
 
 // Mobile SDK types
-export interface MobileSDKConfig {
+interface MobileSDKConfig {
   id?: string;
   app_name: string;
   platform: string;
@@ -1111,7 +983,7 @@ export interface MobileSDKStatus {
 }
 
 // Workforce Chat types
-export interface WorkforceMessage {
+interface WorkforceMessage {
   id: string;
   sender: string;
   recipient: string;
@@ -1119,14 +991,6 @@ export interface WorkforceMessage {
   created_at: string;
   is_group_chat: boolean;
   reasoning_path?: string;
-}
-
-export interface WorkforceInteraction {
-  id: string;
-  agent_role: string;
-  status: string;
-  notes?: string;
-  created_at: string;
 }
 
 export interface TravelKioskStatus {
@@ -1150,7 +1014,7 @@ export interface WearableDevice {
 }
 
 // Travel kiosk types
-export interface TravelKiosk {
+interface TravelKiosk {
   id?: string;
   location: string;
   country: string;
@@ -1169,7 +1033,7 @@ export interface CryptoWallet {
 }
 
 // Duress types
-export interface DuressConfig {
+interface DuressConfig {
   id?: string;
   user_id: string;
   panic_phrase: string;
@@ -1178,7 +1042,7 @@ export interface DuressConfig {
   enabled: boolean;
 }
 
-export interface DuressAlert {
+interface DuressAlert {
   id?: string;
   user_id: string;
   alert_type: string;
@@ -1197,7 +1061,7 @@ export interface BiometricTemplate {
 }
 
 // Alert Config types (Agent Ops UC 4)
-export interface AlertConfig {
+interface AlertConfig {
   id?: string;
   name: string;
   type: string;
@@ -1218,7 +1082,7 @@ export interface AlertConfig {
 }
 
 // Workforce types
-export interface FiscalRequest {
+interface FiscalRequest {
   id: string;
   purpose: string;
   amount: string;
@@ -1227,7 +1091,7 @@ export interface FiscalRequest {
   created_at: string;
 }
 
-export interface WorkforceGoal {
+interface WorkforceGoal {
   id: string;
   name: string;
   current_value: number;
@@ -1236,7 +1100,7 @@ export interface WorkforceGoal {
   category: string;
 }
 
-export interface WorkforceVenture {
+interface WorkforceVenture {
   id: string;
   name: string;
   sector: string;
@@ -1245,7 +1109,7 @@ export interface WorkforceVenture {
   trend: "up" | "down";
 }
 
-export interface WorkforceOutreach {
+interface WorkforceOutreach {
   id: string;
   recipient_name: string;
   recipient_company: string;
@@ -1312,39 +1176,11 @@ export interface Integration {
   endpoint?: string;
   enabled?: boolean;
   is_active?: boolean;
-  config: Record<string, any>;
+  config: Record<string, unknown>;
   status: string;
   connected?: boolean;
   created_at?: string;
   updated_at?: string;
-}
-
-export interface WorkforceStatus {
-  total_agents: number;
-  active_agents: number;
-  total_roi: number;
-  monthly_burn: number;
-  autonomy_level: string;
-  health_score: number;
-  conflict_resolution_rate: number;
-  actions: Array<{
-    id: string;
-    role: string;
-    action: string;
-    details: string;
-    confidence: number;
-    time: string;
-    framework: string;
-  }>;
-  strategy_refinements: Array<{
-    id: string;
-    topic: string;
-    content: string;
-    impact: string;
-    time: string;
-  }>;
-  sovereign_stages: any[];
-  last_sync: string;
 }
 
 export interface BotSetting {
@@ -1362,19 +1198,19 @@ export interface BotSetting {
 export const extendedApi = {
   get: <T>(url: string, options: ApiOptions = {}) =>
     apiRequest<T>(url, options),
-  post: <T>(url: string, body?: any, options: ApiOptions = {}) =>
+  post: <T>(url: string, body?: unknown, options: ApiOptions = {}) =>
     apiRequest<T>(url, {
       ...options,
       method: "POST",
       body: body ? JSON.stringify(body) : undefined,
     }),
-  patch: <T>(url: string, body?: any, options: ApiOptions = {}) =>
+  patch: <T>(url: string, body?: unknown, options: ApiOptions = {}) =>
     apiRequest<T>(url, {
       ...options,
       method: "PATCH",
       body: body ? JSON.stringify(body) : undefined,
     }),
-  put: <T>(url: string, body?: any, options: ApiOptions = {}) =>
+  put: <T>(url: string, body?: unknown, options: ApiOptions = {}) =>
     apiRequest<T>(url, {
       ...options,
       method: "PUT",
@@ -1481,19 +1317,19 @@ export const extendedApi = {
         pending_events: number;
         resolution_rate: number;
       }>("/agent-ops/self-healing/stats"),
-    updateHealingConfig: (config: any) =>
-      apiRequest<any>("/agent-ops/self-healing/config", {
+    updateHealingConfig: (config: Record<string, unknown>) =>
+      apiRequest<unknown>("/agent-ops/self-healing/config", {
         method: "POST",
         body: JSON.stringify(config),
       }),
     injectHint: (agent_id: string, hint: string) =>
-      apiRequest<any>("/agent-ops/self-healing/hint", {
+      apiRequest<unknown>("/agent-ops/self-healing/hint", {
         method: "POST",
         body: JSON.stringify({ agent_id, hint }),
       }),
-    getHealingStatus: () => apiRequest<any>("/agent-ops/self-healing/status"),
+    getHealingStatus: () => apiRequest<unknown>("/agent-ops/self-healing/status"),
     getStreamingMetrics: () =>
-      apiRequest<any>("/agent-ops/self-healing/metrics/streaming"),
+      apiRequest<unknown>("/agent-ops/self-healing/metrics/streaming"),
   },
 
   // GraphQL Proxy (UC 14, 16, 13)
@@ -1507,68 +1343,68 @@ export const extendedApi = {
   compliance: {
     getChecklists: complianceApi.getChecklists,
     updateChecklistItem: complianceApi.updateChecklistItem,
-    getStats: () => apiRequest<any>("/api/v1/compliance/stats"),
-    listModels: () => apiRequest<any[]>("/api/v1/compliance/models"),
-    registerModel: (modelData: any) =>
-      apiRequest<any>("/api/v1/compliance/models", {
+    getStats: () => apiRequest<unknown>("/api/v1/compliance/stats"),
+    listModels: () => apiRequest<unknown[]>("/api/v1/compliance/models"),
+    registerModel: (modelData: Record<string, unknown>) =>
+      apiRequest<unknown>("/api/v1/compliance/models", {
         method: "POST",
         body: JSON.stringify(modelData),
         strict: true,
       }),
     getBiasReports: (scope: string = "global") =>
-      apiRequest<any[]>(`/api/v1/compliance/bias/reports?scope=${scope}`),
+      apiRequest<unknown[]>(`/api/v1/compliance/bias/reports?scope=${scope}`),
     triggerBiasScan: (model_id: string = "global") =>
-      apiRequest<any>("/api/v1/compliance/bias/scan", {
+      apiRequest<unknown>("/api/v1/compliance/bias/scan", {
         method: "POST",
         body: JSON.stringify({ model_id }),
         strict: true,
       }),
     getEnterpriseAudits: () =>
-      apiRequest<any[]>("/api/v1/compliance/enterprise/audits"),
+      apiRequest<unknown[]>("/api/v1/compliance/enterprise/audits"),
     getLiveMetrics: () =>
       apiRequest<ComplianceLiveMetrics>("/api/v1/compliance/metrics/live"),
-    getPolicy: () => apiRequest<any>("/api/v1/compliance/policy"),
-    updatePolicy: (policyData: any) =>
-      apiRequest<any>("/api/v1/compliance/policy/update", {
+    getPolicy: () => apiRequest<unknown>("/api/v1/compliance/policy"),
+    updatePolicy: (policyData: Record<string, unknown>) =>
+      apiRequest<unknown>("/api/v1/compliance/policy/update", {
         method: "POST",
         body: JSON.stringify(policyData),
         strict: true,
       }),
     deleteVendor: (vendorId: string) =>
-      apiRequest<any>(`/api/v1/compliance/vendors/${vendorId}`, {
+      apiRequest<unknown>(`/api/v1/compliance/vendors/${vendorId}`, {
         method: "DELETE",
         strict: true,
       }),
     updateIncidentStatus: (incidentId: string, status: string) =>
-      apiRequest<any>(`/api/v1/compliance/incidents/${incidentId}`, {
+      apiRequest<unknown>(`/api/v1/compliance/incidents/${incidentId}`, {
         method: "PATCH",
         body: JSON.stringify({ status }),
         strict: true,
       }),
     generateDocumentation: (modelId: string, options: ApiOptions = {}) =>
-      apiRequest<any>(`/api/v1/compliance/documentation/${modelId}`, {
+      apiRequest<unknown>(`/api/v1/compliance/documentation/${modelId}`, {
         ...options,
         method: "POST",
         strict: true,
       }),
     eURegister: (modelId: string) =>
-      apiRequest<any>("/api/v1/compliance/eu-register", {
+      apiRequest<unknown>("/api/v1/compliance/eu-register", {
         method: "POST",
         body: JSON.stringify({ model_id: modelId }),
         strict: true,
       }),
     remediateDrift: (target_id: string) =>
-      apiRequest<any>("/api/v1/compliance/remediate", {
+      apiRequest<unknown>("/api/v1/compliance/remediate", {
         method: "POST",
         body: JSON.stringify({ target_id }),
         strict: true,
       }),
     testNotification: (channel: string = "slack") =>
-      apiRequest<any>(`/api/v1/notifications/test?channel=${channel}`, {
+      apiRequest<unknown>(`/api/v1/notifications/test?channel=${channel}`, {
         method: "POST",
       }),
-    updateSsoConfig: (config: any) =>
-      apiRequest<any>("/api/v1/compliance/sso/update", {
+    updateSsoConfig: (config: Record<string, unknown>) =>
+      apiRequest<unknown>("/api/v1/compliance/sso/update", {
         method: "POST",
         body: JSON.stringify(config),
         strict: true,
@@ -1578,8 +1414,8 @@ export const extendedApi = {
         method: "POST",
         body: JSON.stringify({ url }),
       }),
-    updateGuardrails: (modelId: string, guardrails: any) =>
-      apiRequest<any>(`/api/v1/compliance/models/${modelId}/guardrails`, {
+    updateGuardrails: (modelId: string, guardrails: Record<string, unknown>) =>
+      apiRequest<unknown>(`/api/v1/compliance/models/${modelId}/guardrails`, {
         method: "PATCH",
         body: JSON.stringify(guardrails),
         strict: true,
@@ -1594,20 +1430,20 @@ export const extendedApi = {
       if (agentId) url += `&agent_id=${agentId}`;
       if (search) url += `&search=${encodeURIComponent(search)}`;
       if (outcome) url += `&outcome=${outcome}`;
-      return apiRequest<any[]>(url);
+      return apiRequest<unknown[]>(url);
     },
     connectSystem: (
       article_id: string,
       connection_type: string,
-      config: any = {}
+      config: Record<string, unknown> = {}
     ) =>
-      apiRequest<any>("/api/v1/compliance/connect", {
+      apiRequest<unknown>("/api/v1/compliance/connect", {
         method: "POST",
         body: JSON.stringify({ article_id, connection_type, config }),
         strict: true,
       }),
     runScan: (articleId: string, scanType: string) =>
-      apiRequest<any>("/api/v1/compliance/scan", {
+      apiRequest<unknown>("/api/v1/compliance/scan", {
         method: "POST",
         body: JSON.stringify({ article_id: articleId, scan_type: scanType }),
         strict: true,
@@ -1620,47 +1456,47 @@ export const extendedApi = {
       const url = article_id
         ? `/api/v1/compliance/scans/${article_id}`
         : "/api/v1/compliance/scans";
-      return apiRequest<any[]>(url);
+      return apiRequest<unknown[]>(url);
     },
     redTeamAudit: (target_id: string) =>
-      apiRequest<any>("/api/v1/compliance/red-team", {
+      apiRequest<unknown>("/api/v1/compliance/red-team", {
         method: "POST",
         body: JSON.stringify({ target_id }),
         strict: true,
       }),
     euRegister: (modelId: string) =>
-      apiRequest<any>("/api/v1/compliance/eu-register", {
+      apiRequest<unknown>("/api/v1/compliance/eu-register", {
         method: "POST",
         body: JSON.stringify({ model_id: modelId }),
         strict: true,
       }),
-    reportIncident: (incidentData: any) =>
+    reportIncident: (incidentData: Record<string, unknown>) =>
       apiRequest<Incident>("/api/v1/compliance/incidents", {
         method: "POST",
         body: JSON.stringify(incidentData),
         strict: true,
       }),
-    listArticles: () => apiRequest<any[]>("/api/v1/compliance/articles"),
+    listArticles: () => apiRequest<unknown[]>("/api/v1/compliance/articles"),
     uploadArtifact: (formData: FormData) =>
-      apiRequest<any>("/api/v1/compliance/upload", {
+      apiRequest<unknown>("/api/v1/compliance/upload", {
         method: "POST",
         body: formData,
         strict: true,
       }),
-    listArtifacts: () => apiRequest<any[]>("/api/v1/compliance/artifacts"),
-    getROIMetrics: () => apiRequest<any>("/api/v1/compliance/roi"),
-    getVelocityTrends: () => apiRequest<any[]>("/api/v1/compliance/velocity"),
-    getDeadlines: () => apiRequest<any[]>("/api/v1/compliance/deadlines"),
+    listArtifacts: () => apiRequest<unknown[]>("/api/v1/compliance/artifacts"),
+    getROIMetrics: () => apiRequest<unknown>("/api/v1/compliance/roi"),
+    getVelocityTrends: () => apiRequest<unknown[]>("/api/v1/compliance/velocity"),
+    getDeadlines: () => apiRequest<unknown[]>("/api/v1/compliance/deadlines"),
     getModelBreakdown: (id: string) =>
-      apiRequest<any>(`/api/v1/compliance/models/${id}/breakdown`),
+      apiRequest<unknown>(`/api/v1/compliance/models/${id}/breakdown`),
     getModelAudits: (id: string) =>
-      apiRequest<any[]>(`/api/v1/compliance/models/${id}/audits`),
+      apiRequest<unknown[]>(`/api/v1/compliance/models/${id}/audits`),
     getModelHandshakes: (id: string) =>
-      apiRequest<any[]>(`/api/v1/compliance/models/${id}/handshakes`),
+      apiRequest<unknown[]>(`/api/v1/compliance/models/${id}/handshakes`),
     getRegionalReports: () =>
-      apiRequest<any[]>("/api/v1/compliance/regional-reports"),
+      apiRequest<unknown[]>("/api/v1/compliance/regional-reports"),
     getFinancialMetrics: () =>
-      apiRequest<any>("/api/v1/compliance/financial-metrics"),
+      apiRequest<unknown>("/api/v1/compliance/financial-metrics"),
     deleteModel: (id: string) =>
       apiRequest<{ message: string }>(`/api/v1/compliance/models/${id}`, {
         method: "DELETE",
@@ -1694,20 +1530,20 @@ export const extendedApi = {
 
       const queryString = params.toString();
       if (queryString) url += `?${queryString}`;
-      return apiRequest<any>(url, options);
+      return apiRequest<unknown>(url, options);
     },
     listIncidents: () => apiRequest<Incident[]>("/api/v1/compliance/incidents"),
   },
   training: {
-    listModules: () => apiRequest<any[]>("/api/v1/training/modules"),
+    listModules: () => apiRequest<unknown[]>("/api/v1/training/modules"),
     getModule: (id: string) =>
-      apiRequest<any>(`/api/v1/training/modules/${id}`),
-    updateProgress: (data: any) =>
-      apiRequest<any>("/api/v1/training/progress", {
+      apiRequest<unknown>(`/api/v1/training/modules/${id}`),
+    updateProgress: (data: Record<string, unknown>) =>
+      apiRequest<unknown>("/api/v1/training/progress", {
         method: "POST",
         body: JSON.stringify(data),
       }),
-    getStats: () => apiRequest<any>("/api/v1/training/stats"),
+    getStats: () => apiRequest<unknown>("/api/v1/training/stats"),
     downloadCertificate: (id: string) =>
       apiBlobRequest(`/api/v1/training/modules/${id}/certificate`),
     modules: (category?: string) => {
@@ -1765,7 +1601,7 @@ export const extendedApi = {
         }
       ),
     logs: (id: string) =>
-      apiRequest<any[]>(`/api/v1/edge/deployments/${id}/logs`),
+      apiRequest<unknown[]>(`/api/v1/edge/deployments/${id}/logs`),
     stats: () =>
       apiRequest<{
         total_deployments: number;
@@ -1791,11 +1627,11 @@ export const extendedApi = {
         body: JSON.stringify(detection),
       }),
     blockTool: (toolId: string) =>
-      apiRequest<any>(`/api/v1/shadow-ai/block/${toolId}`, {
+      apiRequest<unknown>(`/api/v1/shadow-ai/block/${toolId}`, {
         method: "POST",
       }),
     allowTool: (toolId: string) =>
-      apiRequest<any>(`/api/v1/shadow-ai/allow/${toolId}`, {
+      apiRequest<unknown>(`/api/v1/shadow-ai/allow/${toolId}`, {
         method: "POST",
       }),
     remediate: (detectionId: string) =>
@@ -1819,7 +1655,7 @@ export const extendedApi = {
         }
       ),
     scanLogs: (logs: string[]) =>
-      apiRequest<{ detected: any[]; count: number }>(
+      apiRequest<{ detected: unknown[]; count: number }>(
         "/api/v1/shadow-ai/scan-logs",
         {
           method: "POST",
@@ -1981,13 +1817,13 @@ export const extendedApi = {
   // Gap Remediation (Phase 13/14)
   onPrem: {
     manifest: (type: string = "docker-compose") =>
-      apiRequest<any>("/api/v1/on-prem/manifest", {
+      apiRequest<unknown>("/api/v1/on-prem/manifest", {
         method: "POST",
         body: JSON.stringify({ type }),
       }),
     checklist: () =>
       apiRequest<{ checklist: string[] }>("/api/v1/on-prem/checklist"),
-    deploy: (config: any) =>
+    deploy: (config: Record<string, unknown>) =>
       apiRequest<{ message: string; deployment_id: string }>(
         "/api/v1/on-prem/deploy",
         {
@@ -2000,7 +1836,7 @@ export const extendedApi = {
 
   // Deepfake Verification (Deepfake UC 1, 4, 6)
   verify: {
-    document: (docUrl: string | any) =>
+    document: (docUrl: string | Record<string, unknown>) =>
       apiRequest<{
         document_type: string;
         verified: boolean;
@@ -2011,7 +1847,7 @@ export const extendedApi = {
           typeof docUrl === "string" ? { url: docUrl } : docUrl
         ),
       }),
-    voice: (userId: string | any, audioUrl?: string) =>
+    voice: (userId: string | Record<string, unknown>, audioUrl?: string) =>
       apiRequest<{ status: string; confidence: number; timestamp: string }>(
         "/api/v1/verify/voice",
         {
@@ -2053,20 +1889,20 @@ export const extendedApi = {
         body: JSON.stringify({ url: mediaUrl, media_type: mediaType }),
       }),
     detectors: {
-      list: () => apiRequest<any[]>("/api/v1/deepfake/detectors"),
-      create: (detector: any) =>
-        apiRequest<any>("/api/v1/deepfake/detectors", {
+      list: () => apiRequest<unknown[]>("/api/v1/deepfake/detectors"),
+      create: (detector: Record<string, unknown>) =>
+        apiRequest<unknown>("/api/v1/deepfake/detectors", {
           method: "POST",
           body: JSON.stringify(detector),
         }),
     },
-    runTest: (config: any) =>
-      apiRequest<any>("/api/v1/deepfake/test", {
+    runTest: (config: Record<string, unknown>) =>
+      apiRequest<unknown>("/api/v1/deepfake/test", {
         method: "POST",
         body: JSON.stringify(config),
       }),
-    reportIncident: (incident: any) =>
-      apiRequest<any>("/api/v1/deepfake/incidents", {
+    reportIncident: (incident: Record<string, unknown>) =>
+      apiRequest<unknown>("/api/v1/deepfake/incidents", {
         method: "POST",
         body: JSON.stringify(incident),
       }),
@@ -2099,7 +1935,7 @@ export const extendedApi = {
           body: JSON.stringify({ model_id: modelId }),
         }
       ),
-    reportIncident: (incidentData: any) =>
+    reportIncident: (incidentData: Record<string, unknown>) =>
       apiRequest<Incident>("/api/v1/compliance/incidents", {
         method: "POST",
         body: JSON.stringify(incidentData),
@@ -2107,12 +1943,12 @@ export const extendedApi = {
       }),
     listIncidents: () => apiRequest<Incident[]>("/api/v1/compliance/incidents"),
     runBiasScan: (model_id: string) =>
-      apiRequest<any>("/api/v1/compliance/bias-scan", {
+      apiRequest<unknown>("/api/v1/compliance/bias-scan", {
         method: "POST",
         body: JSON.stringify({ model_id }),
       }),
     exportAuditTrail: (format: string = "csv") =>
-      apiRequest<any>(`/api/v1/compliance/audit/export?format=${format}`, {
+      apiRequest<unknown>(`/api/v1/compliance/audit/export?format=${format}`, {
         method: "GET",
       }),
   },
@@ -2137,7 +1973,7 @@ export const extendedApi = {
     getMemory: (agentId: string) =>
       apiRequest<{
         agent_id: string;
-        memory_fragments: any[];
+        memory_fragments: unknown[];
         summary: string;
       }>(`/api/v1/agents/${agentId}/memory`),
     getForecast: (agentId?: string) =>
@@ -2159,12 +1995,12 @@ export const extendedApi = {
       return apiRequest<AuditEntry[]>(url);
     },
     runHipaaAudit: (system?: string) =>
-      apiRequest<any>("/api/v1/agent-ops/compliance/hipaa", {
+      apiRequest<unknown>("/api/v1/agent-ops/compliance/hipaa", {
         method: "POST",
         body: JSON.stringify({ system }),
       }),
     runSoxAudit: (system?: string) =>
-      apiRequest<any>("/api/v1/agent-ops/compliance/sox", {
+      apiRequest<unknown>("/api/v1/agent-ops/compliance/sox", {
         method: "POST",
         body: JSON.stringify({ system }),
       }),
@@ -2172,117 +2008,117 @@ export const extendedApi = {
       apiRequest<{ temperature: number; maxTokens: number; budget: number }>(
         "/api/v1/agent-ops/architecture/defaults"
       ),
-    listRules: () => apiRequest<any[]>("/api/v1/agent-ops/rules/budget"),
-    createRule: (rule: any) =>
-      apiRequest<any>("/api/v1/agent-ops/rules/budget", {
+    listRules: () => apiRequest<unknown[]>("/api/v1/agent-ops/rules/budget"),
+    createRule: (rule: Record<string, unknown>) =>
+      apiRequest<unknown>("/api/v1/agent-ops/rules/budget", {
         method: "POST",
         body: JSON.stringify(rule),
         strict: true,
       }),
-    listWebhooks: () => apiRequest<any>("/api/v1/agent-ops/webhooks"),
-    registerWebhook: (webhook: any) =>
-      apiRequest<any>("/api/v1/agent-ops/webhooks", {
+    listWebhooks: () => apiRequest<unknown>("/api/v1/agent-ops/webhooks"),
+    registerWebhook: (webhook: Record<string, unknown>) =>
+      apiRequest<unknown>("/api/v1/agent-ops/webhooks", {
         method: "POST",
         body: JSON.stringify(webhook),
       }),
     deleteWebhook: (webhookId: string) =>
-      apiRequest<any>(`/api/v1/agent-ops/webhooks/${webhookId}`, {
+      apiRequest<unknown>(`/api/v1/agent-ops/webhooks/${webhookId}`, {
         method: "DELETE",
       }),
     testWebhook: (webhookId: string) =>
-      apiRequest<any>(`/api/v1/agent-ops/webhooks/${webhookId}/test`, {
+      apiRequest<unknown>(`/api/v1/agent-ops/webhooks/${webhookId}/test`, {
         method: "POST",
       }),
     resolveAlert: (alertId: string) =>
-      apiRequest<any>(`/api/v1/agent-ops/alerts/${alertId}/resolve`, {
+      apiRequest<unknown>(`/api/v1/agent-ops/alerts/${alertId}/resolve`, {
         method: "POST",
       }),
     ignoreAlert: (alertId: string) =>
-      apiRequest<any>(`/api/v1/agent-ops/alerts/${alertId}/ignore`, {
+      apiRequest<unknown>(`/api/v1/agent-ops/alerts/${alertId}/ignore`, {
         method: "POST",
       }),
     optimizeMemory: (agentId: string) =>
-      apiRequest<any>(`/api/v1/agents/${agentId}/optimize`, {
+      apiRequest<unknown>(`/api/v1/agents/${agentId}/optimize`, {
         method: "POST",
         strict: true,
       }),
     clone: (agentId: string) =>
-      apiRequest<any>(`/api/v1/agents/${agentId}/clone`, {
+      apiRequest<unknown>(`/api/v1/agents/${agentId}/clone`, {
         method: "POST",
         strict: true,
       }),
-    getCloudHealth: (system?: string) =>
-      apiRequest<any>("/api/v1/agent-ops/cloud/health"),
+    getCloudHealth: (_system?: string) =>
+      apiRequest<unknown>("/api/v1/agent-ops/cloud/health"),
     triggerFailover: (region_id: string) =>
-      apiRequest<any>("/api/v1/agent-ops/cloud/failover", {
+      apiRequest<unknown>("/api/v1/agent-ops/cloud/failover", {
         method: "POST",
         body: JSON.stringify({ region_id }),
       }),
     configureProxy: (rule_id: string, target: string) =>
-      apiRequest<any>("/api/v1/agent-ops/cloud/proxy", {
+      apiRequest<unknown>("/api/v1/agent-ops/cloud/proxy", {
         method: "POST",
         body: JSON.stringify({ rule_id, target }),
       }),
     runForensics: (agentId?: string, options: ApiOptions = {}) =>
-      apiRequest<any>(`/api/v1/agent-ops/forensics?agent_id=${agentId || ""}`, {
+      apiRequest<unknown>(`/api/v1/agent-ops/forensics?agent_id=${agentId || ""}`, {
         ...options,
         method: "POST",
       }),
-    provisionClient: (data: any, options: ApiOptions = {}) =>
-      apiRequest<any>("/api/v1/agent-ops/whitelabel/provision", {
+    provisionClient: (data: Record<string, unknown>, options: ApiOptions = {}) =>
+      apiRequest<unknown>("/api/v1/agent-ops/whitelabel/provision", {
         ...options,
         method: "POST",
         body: JSON.stringify(data),
       }),
-    updateRetention: (system: any, days?: number, options: ApiOptions = {}) =>
-      apiRequest<any>("/api/v1/agent-ops/config/retention", {
+    updateRetention: (system: string, days?: number, options: ApiOptions = {}) =>
+      apiRequest<unknown>("/api/v1/agent-ops/config/retention", {
         ...options,
         method: "POST",
         body: JSON.stringify({ system, days }),
       }),
-    saveRetentionPolicy: (policy: any, options: ApiOptions = {}) =>
-      apiRequest<any>("/api/v1/agent-ops/retention", {
+    saveRetentionPolicy: (policy: Record<string, unknown>, _options: ApiOptions = {}) =>
+      apiRequest<unknown>("/api/v1/agent-ops/retention", {
         method: "POST",
         body: JSON.stringify(policy),
       }),
     setGqlProxyConfig: (enabled: boolean) =>
-      apiRequest<any>("/api/v1/agent-ops/gateway/gql", {
+      apiRequest<unknown>("/api/v1/agent-ops/gateway/gql", {
         method: "POST",
         body: JSON.stringify({ enabled }),
       }),
     listLLMConfigs: () =>
       apiRequest<LLMProviderConfig[]>("/api/v1/agent-ops/models/config"),
     updateLLMConfig: (config: Partial<LLMProviderConfig>) =>
-      apiRequest<any>("/api/v1/agent-ops/models/config", {
+      apiRequest<unknown>("/api/v1/agent-ops/models/config", {
         method: "POST",
         body: JSON.stringify(config),
       }),
     deployLanguage: (locale: string) =>
-      apiRequest<any>("/api/v1/agent-ops/sync-locale", {
+      apiRequest<unknown>("/api/v1/agent-ops/sync-locale", {
         method: "POST",
         body: JSON.stringify({ locale }),
         strict: true,
       }),
     deployRecoveryDaemon: (node_id: string) =>
-      apiRequest<any>("/api/v1/agent-ops/self-healing/deploy", {
+      apiRequest<unknown>("/api/v1/agent-ops/self-healing/deploy", {
         method: "POST",
         body: JSON.stringify({ node_id }),
       }),
     getSnapshots: (nodeId?: string) =>
-      apiRequest<any[]>(
+      apiRequest<unknown[]>(
         `/api/v1/agent-ops/governance/healing/snapshots${nodeId ? `?node_id=${nodeId}` : ""}`
       ),
     updateOptimization: (policy: string) =>
-      apiRequest<any>("/api/v1/agent-ops/optimize/policy", {
+      apiRequest<unknown>("/api/v1/agent-ops/optimize/policy", {
         method: "POST",
         body: JSON.stringify({ policy }),
       }),
     captureSnapshot: () =>
-      apiRequest<any>("/api/v1/agent-ops/governance/healing/snapshots", {
+      apiRequest<unknown>("/api/v1/agent-ops/governance/healing/snapshots", {
         method: "POST",
       }),
     rollbackSnapshot: (id: string) =>
-      apiRequest<any>(
+      apiRequest<unknown>(
         "/api/v1/agent-ops/governance/healing/snapshots/rollback",
         {
           method: "POST",
@@ -2290,47 +2126,47 @@ export const extendedApi = {
         }
       ),
     bulkAction: (action: string, agentIds: string[]) =>
-      apiRequest<any>(`/api/v1/agent-ops/bulk/${action}`, {
+      apiRequest<unknown>(`/api/v1/agent-ops/bulk/${action}`, {
         method: "POST",
         body: JSON.stringify(agentIds),
         strict: true,
       }),
     getVigilanceAlerts: (agentId?: string, options?: ApiOptions) =>
-      apiRequest<any[]>(
+      apiRequest<unknown[]>(
         `/api/v1/agent-ops/vigilance/alerts${agentId ? `?agent_id=${agentId}` : ""}`,
         options
       ),
     resolveVigilanceAlert: (alertId: string) =>
-      apiRequest<any>(`/api/v1/agent-ops/vigilance/alerts/${alertId}/resolve`, {
+      apiRequest<unknown>(`/api/v1/agent-ops/vigilance/alerts/${alertId}/resolve`, {
         method: "POST",
       }),
-    getSettings: () => apiRequest<any>("/api/v1/agent-ops/governance/settings"),
-    updateSetting: (key: string, value: any) =>
-      apiRequest<any>("/api/v1/agent-ops/governance/settings", {
+    getSettings: () => apiRequest<unknown>("/api/v1/agent-ops/governance/settings"),
+    updateSetting: (key: string, value: unknown) =>
+      apiRequest<unknown>("/api/v1/agent-ops/governance/settings", {
         method: "POST",
         body: JSON.stringify({ key, value }),
       }),
     getROI: (options?: ApiOptions) =>
-      apiRequest<any>("/api/v1/agent-ops/governance/roi", options),
+      apiRequest<unknown>("/api/v1/agent-ops/governance/roi", options),
     rotateKey: (name: string) =>
-      apiRequest<any>("/api/v1/agent-ops/security/rotate-key", {
+      apiRequest<unknown>("/api/v1/agent-ops/security/rotate-key", {
         method: "POST",
         body: JSON.stringify({ name }),
       }),
     getForensicTrace: (traceId: string) =>
-      apiRequest<any>(`/api/v1/agent-ops/forensic/trace/${traceId}`),
+      apiRequest<unknown>(`/api/v1/agent-ops/forensic/trace/${traceId}`),
   },
 
   enterprise: {
     getSlaTier: () => apiRequest<SLATierInfo>("/api/v1/enterprise/sla"),
     updateSlaTier: (tier: string) =>
-      apiRequest<any>("/api/v1/enterprise/sla", {
+      apiRequest<unknown>("/api/v1/enterprise/sla", {
         method: "PUT",
         body: JSON.stringify({ tier }),
       }),
-    getPartnerConfig: () => apiRequest<any>("/api/v1/enterprise/partner"),
-    updatePartnerTheme: (theme: any) =>
-      apiRequest<any>("/api/v1/enterprise/partner/theme", {
+    getPartnerConfig: () => apiRequest<unknown>("/api/v1/enterprise/partner"),
+    updatePartnerTheme: (theme: Record<string, unknown>) =>
+      apiRequest<unknown>("/api/v1/enterprise/partner/theme", {
         method: "POST",
         body: JSON.stringify({ theme }),
       }),
@@ -2338,28 +2174,28 @@ export const extendedApi = {
 
   sso: {
     handshake: (app_id: string) =>
-      apiRequest<any>("/api/v1/sso/handshake", {
+      apiRequest<unknown>("/api/v1/sso/handshake", {
         method: "POST",
         body: JSON.stringify({ app_id }),
       }),
-    config: (app_id: string) => apiRequest<any>(`/api/v1/sso/config/${app_id}`),
-    saveConfig: (app_id: string, config: any) =>
-      apiRequest<any>(`/api/v1/sso/config/${app_id}`, {
+    config: (app_id: string) => apiRequest<unknown>(`/api/v1/sso/config/${app_id}`),
+    saveConfig: (app_id: string, config: Record<string, unknown>) =>
+      apiRequest<unknown>(`/api/v1/sso/config/${app_id}`, {
         method: "POST",
         body: JSON.stringify(config),
       }),
-    connectProvider: (app_id: string, provider: string, metadata: any = {}) =>
-      apiRequest<any>(`/api/v1/sso/connect/${provider}`, {
+    connectProvider: (app_id: string, provider: string, metadata: Record<string, unknown> = {}) =>
+      apiRequest<unknown>(`/api/v1/sso/connect/${provider}`, {
         method: "POST",
         body: JSON.stringify({ app_id, metadata }),
       }),
     listProviders: (app_id: string) =>
-      apiRequest<Record<string, any>>(`/api/v1/sso/providers/${app_id}`),
+      apiRequest<Record<string, unknown>>(`/api/v1/sso/providers/${app_id}`),
   },
 
   workforce: {
     toggleAutonomy: (level: "partial" | "full") =>
-      apiRequest<any>("/api/v1/workforce/autonomy", {
+      apiRequest<unknown>("/api/v1/workforce/autonomy", {
         method: "POST",
         body: JSON.stringify({ level }),
       }),
@@ -2371,54 +2207,54 @@ export const extendedApi = {
         body: JSON.stringify({ purpose, amount, priority }),
       }),
     approveFiscalRequest: (id: string, status: string) =>
-      apiRequest<any>(`/api/v1/workforce/fiscal-requests/${id}/approve`, {
+      apiRequest<unknown>(`/api/v1/workforce/fiscal-requests/${id}/approve`, {
         method: "PUT",
         body: JSON.stringify({ status }),
       }),
     getGoals: () => apiRequest<WorkforceGoal[]>("/api/v1/workforce/goals"),
     updateGoalValue: (id: string, current_value: number) =>
-      apiRequest<any>(`/api/v1/workforce/goals/${id}/value`, {
+      apiRequest<unknown>(`/api/v1/workforce/goals/${id}/value`, {
         method: "PUT",
         body: JSON.stringify({ current_value }),
       }),
-    getJobs: () => apiRequest<any>("/api/v1/workforce/jobs"),
-    getAcquisitions: () => apiRequest<any>("/api/v1/workforce/acquisitions"),
-    getContentDrafts: () => apiRequest<any>("/api/v1/workforce/content"),
+    getJobs: () => apiRequest<unknown>("/api/v1/workforce/jobs"),
+    getAcquisitions: () => apiRequest<unknown>("/api/v1/workforce/acquisitions"),
+    getContentDrafts: () => apiRequest<unknown>("/api/v1/workforce/content"),
     getGovernanceDecisions: () =>
-      apiRequest<any[]>("/api/v1/workforce/decisions"),
-    getExecutionHistory: () => apiRequest<any[]>("/api/v1/workforce/traces"),
+      apiRequest<unknown[]>("/api/v1/workforce/decisions"),
+    getExecutionHistory: () => apiRequest<unknown[]>("/api/v1/workforce/traces"),
     getVentures: () =>
       apiRequest<WorkforceVenture[]>("/api/v1/workforce/ventures"),
     deployCheck: () =>
-      apiRequest<any>("/api/v1/workforce/deploy/check", { method: "GET" }),
+      apiRequest<unknown>("/api/v1/workforce/deploy/check", { method: "GET" }),
 
     runCampaign: (topic: string, audience: string) =>
-      apiRequest<any>("/api/v1/workforce/campaigns/run", {
+      apiRequest<unknown>("/api/v1/workforce/campaigns/run", {
         method: "POST",
         body: JSON.stringify({ topic, audience }),
       }),
     sourceLeads: (criteria: string) =>
-      apiRequest<any>(
+      apiRequest<unknown>(
         `/api/v1/workforce/leads/source?criteria=${encodeURIComponent(criteria)}`
       ),
     runAutosearch: (niche: string, profile: string = "enterprise") =>
-      apiRequest<any>("/api/v1/workforce/autosearch/run", {
+      apiRequest<unknown>("/api/v1/workforce/autosearch/run", {
         method: "POST",
         body: JSON.stringify({ niche, profile }),
       }),
     getOutreachDrafts: () =>
       apiRequest<WorkforceOutreach[]>("/api/v1/workforce/outreach/drafts"),
     approveOutreach: (id: string) =>
-      apiRequest<any>(`/api/v1/workforce/outreach/${id}/approve`, {
+      apiRequest<unknown>(`/api/v1/workforce/outreach/${id}/approve`, {
         method: "POST",
       }),
     analyzeInsights: (feedback: string) =>
-      apiRequest<any>("/api/v1/workforce/insights/analyze", {
+      apiRequest<unknown>("/api/v1/workforce/insights/analyze", {
         method: "POST",
         body: JSON.stringify({ feedback }),
       }),
     handleInbound: (query: string) =>
-      apiRequest<any>("/api/v1/workforce/inbound/handle", {
+      apiRequest<unknown>("/api/v1/workforce/inbound/handle", {
         method: "POST",
         body: JSON.stringify({ query }),
       }),
@@ -2427,13 +2263,13 @@ export const extendedApi = {
       status: string,
       notes: string = ""
     ) =>
-      apiRequest<any>("/api/v1/workforce/feedback", {
+      apiRequest<unknown>("/api/v1/workforce/feedback", {
         method: "POST",
         body: JSON.stringify({ interaction_id, status, notes }),
       }),
     cashclaw: {
       recover: (criteria: string) =>
-        apiRequest<any>("/api/v1/workforce/cashclaw/recover", {
+        apiRequest<unknown>("/api/v1/workforce/cashclaw/recover", {
           method: "POST",
           body: JSON.stringify({ criteria }),
         }),
@@ -2447,8 +2283,8 @@ export const extendedApi = {
       }),
     getChatHistory: () =>
       apiRequest<WorkforceMessage[]>("/api/v1/workforce/chat/history"),
-    getAgents: () => apiRequest<any[]>("/api/v1/workforce/agents"),
-    getInboxMessages: () => apiRequest<any[]>("/api/v1/workforce/inbox"),
+    getAgents: () => apiRequest<unknown[]>("/api/v1/workforce/agents"),
+    getInboxMessages: () => apiRequest<unknown[]>("/api/v1/workforce/inbox"),
 
     // Task Management
     getTasks: () => apiRequest<Task[]>("/api/v1/workforce/tasks"),
@@ -2463,7 +2299,7 @@ export const extendedApi = {
         body: JSON.stringify(task),
       }),
     deleteTask: (taskId: string) =>
-      apiRequest<any>(`/api/v1/workforce/tasks/${taskId}`, {
+      apiRequest<unknown>(`/api/v1/workforce/tasks/${taskId}`, {
         method: "DELETE",
       }),
     completeTask: (taskId: string) =>
@@ -2484,7 +2320,7 @@ export const extendedApi = {
         body: JSON.stringify(client),
       }),
     deleteClient: (clientId: string) =>
-      apiRequest<any>(`/api/v1/workforce/clients/${clientId}`, {
+      apiRequest<unknown>(`/api/v1/workforce/clients/${clientId}`, {
         method: "DELETE",
       }),
 
@@ -2502,7 +2338,7 @@ export const extendedApi = {
         body: JSON.stringify(event),
       }),
     deleteScheduleEvent: (eventId: string) =>
-      apiRequest<any>(`/api/v1/workforce/schedule/${eventId}`, {
+      apiRequest<unknown>(`/api/v1/workforce/schedule/${eventId}`, {
         method: "DELETE",
       }),
 
@@ -2526,12 +2362,12 @@ export const extendedApi = {
         }
       ),
     deleteIntegration: (integrationId: string) =>
-      apiRequest<any>(`/api/v1/workforce/integrations/${integrationId}`, {
+      apiRequest<unknown>(`/api/v1/workforce/integrations/${integrationId}`, {
         method: "DELETE",
       }),
 
     // Billing & Invoices
-    getInvoices: () => apiRequest<any[]>("/api/v1/workforce/invoices"),
+    getInvoices: () => apiRequest<unknown[]>("/api/v1/workforce/invoices"),
     billing: {
       createCheckout: (tier: string, provider: string) =>
         apiRequest<{ url: string }>("/api/v1/workforce/billing/checkout", {
@@ -2554,43 +2390,43 @@ export const extendedApi = {
         body: JSON.stringify(setting),
       }),
     deleteBotSetting: (settingId: string) =>
-      apiRequest<any>(`/api/v1/workforce/bot-settings/${settingId}`, {
+      apiRequest<unknown>(`/api/v1/workforce/bot-settings/${settingId}`, {
         method: "DELETE",
       }),
 
     // Financial Data
-    getInsights: () => apiRequest<any>("/api/v1/workforce/insights"),
-    getEarningsData: () => apiRequest<any>("/api/v1/workforce/earnings"),
-    getTaxEstimate: () => apiRequest<any>("/api/v1/workforce/tax-estimate"),
+    getInsights: () => apiRequest<unknown>("/api/v1/workforce/insights"),
+    getEarningsData: () => apiRequest<unknown>("/api/v1/workforce/earnings"),
+    getTaxEstimate: () => apiRequest<unknown>("/api/v1/workforce/tax-estimate"),
 
     // Referral Program
     activateReferral: (userId?: string) =>
-      apiRequest<any>("/api/v1/workforce/referral/activate", {
+      apiRequest<unknown>("/api/v1/workforce/referral/activate", {
         method: "POST",
         body: JSON.stringify({ user_id: userId }),
       }),
-    getReferralStats: () => apiRequest<any>("/api/v1/workforce/referral/stats"),
+    getReferralStats: () => apiRequest<unknown>("/api/v1/workforce/referral/stats"),
     exportData: (format: string = "csv") =>
-      apiRequest<any>(`/api/v1/workforce/export?format=${format}`, {
+      apiRequest<unknown>(`/api/v1/workforce/export?format=${format}`, {
         method: "GET",
       }),
-    getSkills: () => apiRequest<any[]>("/api/v1/workforce/skills"),
+    getSkills: () => apiRequest<unknown[]>("/api/v1/workforce/skills"),
   },
 
   sentinel: {
     getHealingStatus: () =>
-      apiRequest<any>("/api/v1/agent-ops/self-healing/status"),
+      apiRequest<unknown>("/api/v1/agent-ops/self-healing/status"),
     updateHealingConfig: (config: {
       auto_refine?: boolean;
       safety_rollback?: boolean;
       max_retries?: number;
     }) =>
-      apiRequest<any>("/api/v1/sentinel/healing/config", {
+      apiRequest<unknown>("/api/v1/sentinel/healing/config", {
         method: "POST",
         body: JSON.stringify(config),
       }),
     getStreamingMetrics: () =>
-      apiRequest<any>("/api/v1/sentinel/metrics/stream"),
+      apiRequest<unknown>("/api/v1/sentinel/metrics/stream"),
   },
 
   vendors: {
@@ -2601,80 +2437,21 @@ export const extendedApi = {
         body: JSON.stringify(vendor),
       }),
     delete: (id: string) =>
-      apiRequest<any>(`/api/v1/compliance/vendors/${id}`, {
+      apiRequest<unknown>(`/api/v1/compliance/vendors/${id}`, {
         method: "DELETE",
       }),
     audit: () =>
-      apiRequest<any>("/api/v1/compliance/vendors/audit", {
+      apiRequest<unknown>("/api/v1/compliance/vendors/audit", {
         method: "POST",
       }),
-    getRiskReport: () => apiRequest<any>("/api/v1/compliance/vendors/stats"),
+    getRiskReport: () => apiRequest<unknown>("/api/v1/compliance/vendors/stats"),
   },
-  agents: {
-    list: () => apiRequest<any[]>("/agents"),
-    get: (id: string) => apiRequest<any>(`/agents/${id}`),
-    create: (data: any) =>
-      apiRequest<any>("/agents", {
-        method: "POST",
-        body: JSON.stringify(data),
-        strict: true,
-      }),
-    update: (id: string, data: any) =>
-      apiRequest<any>(`/agents/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-        strict: true,
-      }),
-    delete: (id: string) =>
-      apiRequest<any>(`/agents/${id}`, {
-        method: "DELETE",
-        strict: true,
-      }),
-    injectHint: (agentId: string, hint: string) =>
-      apiRequest<any>(`/agents/${agentId}/hint`, {
-        method: "PATCH",
-        body: JSON.stringify({ hint }),
-        strict: true,
-      }),
-    start: (id: string) =>
-      apiRequest<any>(`/agents/${id}/start`, {
-        method: "POST",
-        strict: true,
-      }),
-    stop: (id: string) =>
-      apiRequest<any>(`/agents/${id}/stop`, {
-        method: "POST",
-        strict: true,
-      }),
-    installSkill: (id: string, skillId: string) =>
-      apiRequest<any>(`/agents/${id}/skills/${skillId}`, {
-        method: "POST",
-        strict: true,
-      }),
-    uninstallSkill: (id: string, skillId: string) =>
-      apiRequest<any>(`/agents/${id}/skills/${skillId}`, {
-        method: "DELETE",
-        strict: true,
-      }),
-    intelligence: {
-      research: (topic: string) =>
-        apiRequest<any>(
-          `/api/v1/agent-ops/intelligence/research?topic=${encodeURIComponent(
-            topic
-          )}`
-        ),
-      strategy: (name: string) =>
-        apiRequest<any>("/api/v1/agent-ops/intelligence/strategy", {
-          method: "POST",
-          body: JSON.stringify({ name }),
-        }),
-    },
-  },
+  agents: agentsApi,
   deepfake: {
-    listAnalyses: () => apiRequest<any[]>("/api/v1/deepfake/analyses"),
-    getStats: () => apiRequest<any>("/api/v1/deepfake/stats"),
-    listThreats: () => apiRequest<any[]>("/api/v1/deepfake/threats"),
-    listModels: () => apiRequest<any[]>("/api/v1/deepfake/models"),
+    listAnalyses: () => apiRequest<unknown[]>("/api/v1/deepfake/analyses"),
+    getStats: () => apiRequest<unknown>("/api/v1/deepfake/stats"),
+    listThreats: () => apiRequest<unknown[]>("/api/v1/deepfake/threats"),
+    listModels: () => apiRequest<unknown[]>("/api/v1/deepfake/models"),
     getSdkDownload: (platform: string) =>
       apiRequest<{
         platform: string;
@@ -2684,67 +2461,67 @@ export const extendedApi = {
         api_reference: string;
       }>(`/api/v1/deepfake/sdk/download/${platform}`),
     analyze: (media_url: string, media_type: string) =>
-      apiRequest<any>("/api/v1/deepfake/analyze", {
+      apiRequest<unknown>("/api/v1/deepfake/analyze", {
         method: "POST",
         body: JSON.stringify({ media_url, media_type }),
         strict: true,
       }),
-    analyzeEnterprise: (data: any) =>
-      apiRequest<any>("/api/v1/deepfake/analyze/enterprise", {
+    analyzeEnterprise: (data: Record<string, unknown>) =>
+      apiRequest<unknown>("/api/v1/deepfake/analyze/enterprise", {
         method: "POST",
         body: JSON.stringify(data),
         strict: true,
       }),
     challenge: (user_id: string) =>
-      apiRequest<any>(`/api/v1/deepfake/challenge?user_id=${user_id}`, {
+      apiRequest<unknown>(`/api/v1/deepfake/challenge?user_id=${user_id}`, {
         method: "POST",
         strict: true,
       }),
     verify: (challenge_id: string, signature: string, hardware_id: string) =>
-      apiRequest<any>(
+      apiRequest<unknown>(
         `/api/v1/deepfake/verify?challenge_id=${challenge_id}&signature=${signature}&hardware_id=${hardware_id}`,
         {
           method: "POST",
           strict: true,
         }
       ),
-    updateConfig: (config: any) =>
-      apiRequest<any>("/api/v1/deepfake/config", {
+    updateConfig: (config: Record<string, unknown>) =>
+      apiRequest<unknown>("/api/v1/deepfake/config", {
         method: "POST",
         body: JSON.stringify(config),
         strict: true,
       }),
     getDuressConfig: (user_id: string) =>
-      apiRequest<any>(`/api/v1/deepfake/duress/config/${user_id}`, {
+      apiRequest<unknown>(`/api/v1/deepfake/duress/config/${user_id}`, {
         strict: true,
       }),
-    updateDuressConfig: (config: any) =>
-      apiRequest<any>("/api/v1/deepfake/duress/config", {
+    updateDuressConfig: (config: Record<string, unknown>) =>
+      apiRequest<unknown>("/api/v1/deepfake/duress/config", {
         method: "POST",
         body: JSON.stringify(config),
         strict: true,
       }),
     runAudit: (type: "hipaa" | "sox") =>
-      apiRequest<any>(`/api/v1/compliance/audit/${type}`, {
+      apiRequest<unknown>(`/api/v1/compliance/audit/${type}`, {
         method: "POST",
         strict: true,
       }),
     train: (dataset_name: string) =>
-      apiRequest<any>(`/api/v1/deepfake/train?dataset_name=${dataset_name}`, {
+      apiRequest<unknown>(`/api/v1/deepfake/train?dataset_name=${dataset_name}`, {
         method: "POST",
         strict: true,
       }),
     upload: (file: File) => {
       const formData = new FormData();
       formData.append("file", file);
-      return apiRequest<any>("/api/v1/deepfake/upload", {
+      return apiRequest<unknown>("/api/v1/deepfake/upload", {
         method: "POST",
         body: formData,
         strict: true,
       });
     },
-    deployModel: (model: any) =>
-      apiRequest<any>("/api/v1/deepfake/models", {
+    deployModel: (model: Record<string, unknown>) =>
+      apiRequest<unknown>("/api/v1/deepfake/models", {
         method: "POST",
         body: JSON.stringify(model),
         strict: true,
@@ -2759,23 +2536,23 @@ export const extendedApi = {
           strict: true,
         }
       ),
-    enrollBiometric: (data: any) =>
+    enrollBiometric: (data: Record<string, unknown>) =>
       apiRequest<BiometricTemplate>("/api/v1/deepfake/biometrics", {
         method: "POST",
         body: JSON.stringify(data),
         strict: true,
       }),
     deleteModel: (model_id: string) =>
-      apiRequest<any>(`/api/v1/deepfake/models/${model_id}`, {
+      apiRequest<unknown>(`/api/v1/deepfake/models/${model_id}`, {
         method: "DELETE",
         strict: true,
       }),
   },
   governance: {
     budget: {
-      listRules: () => apiRequest<any[]>("/agent-ops/rules/budget"),
-      createRule: (rule: any) =>
-        apiRequest<any>("/agent-ops/rules/budget", {
+      listRules: () => apiRequest<unknown[]>("/agent-ops/rules/budget"),
+      createRule: (rule: Record<string, unknown>) =>
+        apiRequest<unknown>("/agent-ops/rules/budget", {
           method: "POST",
           body: JSON.stringify(rule),
           strict: true,
@@ -2783,16 +2560,16 @@ export const extendedApi = {
     },
     compliance: {
       getDashboard: () =>
-        apiRequest<any>("/agent-ops/governance/compliance/dashboard"),
-      getStatus: () => apiRequest<any>("/api/v1/compliance/stats"),
+        apiRequest<unknown>("/agent-ops/governance/compliance/dashboard"),
+      getStatus: () => apiRequest<unknown>("/api/v1/compliance/stats"),
       runHipaaAudit: () =>
-        apiRequest<any>("/compliance/audit/hipaa", { method: "POST" }),
+        apiRequest<unknown>("/compliance/audit/hipaa", { method: "POST" }),
       runSoxAudit: () =>
-        apiRequest<any>("/compliance/audit/sox", { method: "POST" }),
+        apiRequest<unknown>("/compliance/audit/sox", { method: "POST" }),
       getArticles: () =>
-        apiRequest<any[]>("/agent-ops/governance/compliance/articles"),
-      assessArticle: (articleId: string, assessment: any) =>
-        apiRequest<any>(
+        apiRequest<unknown[]>("/agent-ops/governance/compliance/articles"),
+      assessArticle: (articleId: string, assessment: Record<string, unknown>) =>
+        apiRequest<unknown>(
           `/agent-ops/governance/compliance/assess/${articleId}`,
           {
             method: "POST",
@@ -2801,7 +2578,7 @@ export const extendedApi = {
         ),
       alerts: {
         update: (alertId: string, data: Partial<AlertConfig>) =>
-          apiRequest<any>(
+          apiRequest<unknown>(
             `/agent-ops/governance/compliance/alerts/${alertId}`,
             {
               method: "POST",
@@ -2813,66 +2590,66 @@ export const extendedApi = {
     },
     sla: {
       getDashboard: () =>
-        apiRequest<any>("/agent-ops/governance/sla/dashboard"),
+        apiRequest<unknown>("/agent-ops/governance/sla/dashboard"),
       getMetrics: () =>
         apiRequest<SLAMetric[]>("/agent-ops/governance/sla/metrics"),
     },
     partners: {
-      list: () => apiRequest<any[]>("/agent-ops/governance/partners"),
+      list: () => apiRequest<unknown[]>("/agent-ops/governance/partners"),
       sync: (partnerId: string) =>
-        apiRequest<any>(`/agent-ops/governance/partners/${partnerId}/sync`, {
+        apiRequest<unknown>(`/agent-ops/governance/partners/${partnerId}/sync`, {
           method: "POST",
         }),
     },
     forecast: {
       getUsage: (options?: ApiOptions) =>
-        apiRequest<any[]>("/agent-ops/governance/forecast/usage", options),
+        apiRequest<unknown[]>("/agent-ops/governance/forecast/usage", options),
     },
     analytics: {
-      getROI: () => apiRequest<any[]>("/agent-ops/governance/analytics/roi"),
+      getROI: () => apiRequest<unknown[]>("/agent-ops/governance/analytics/roi"),
       realizeImpact: (insight_id: string) =>
-        apiRequest<any>("/agent-ops/governance/analytics/realize", {
+        apiRequest<unknown>("/agent-ops/governance/analytics/realize", {
           method: "POST",
           body: JSON.stringify({ insight_id }),
         }),
     },
     localization: {
       getConfigs: () =>
-        apiRequest<any[]>("/agent-ops/governance/localization/configs"),
+        apiRequest<unknown[]>("/agent-ops/governance/localization/configs"),
     },
     healing: {
       getConfigs: () =>
-        apiRequest<any[]>("/agent-ops/governance/healing/configs"),
+        apiRequest<unknown[]>("/agent-ops/governance/healing/configs"),
     },
     insights: {
       getStrategic: () =>
-        apiRequest<any[]>("/agent-ops/governance/insights/strategic"),
+        apiRequest<unknown[]>("/agent-ops/governance/insights/strategic"),
     },
     settings: {
-      list: () => apiRequest<any[]>("/agent-ops/governance/settings"),
-      update: (settings: Record<string, any>) =>
-        apiRequest<any>("/agent-ops/governance/settings", {
+      list: () => apiRequest<unknown[]>("/agent-ops/governance/settings"),
+      update: (settings: Record<string, unknown>) =>
+        apiRequest<unknown>("/agent-ops/governance/settings", {
           method: "POST",
           body: JSON.stringify(settings),
         }),
-      batchUpdate: (settings: Record<string, any>) =>
-        apiRequest<any>("/api/v1/agent-ops/governance/settings/batch", {
+      batchUpdate: (settings: Record<string, unknown>) =>
+        apiRequest<unknown>("/api/v1/agent-ops/governance/settings/batch", {
           method: "POST",
           body: JSON.stringify(settings),
         }),
     },
     assets: {
-      update: (data: Record<string, any>) =>
-        apiRequest<any>("/api/v1/agent-ops/governance/assets/update", {
+      update: (data: Record<string, unknown>) =>
+        apiRequest<unknown>("/api/v1/agent-ops/governance/assets/update", {
           method: "POST",
           body: JSON.stringify(data),
         }),
     },
     onPrem: {
       listDeployments: () =>
-        apiRequest<any[]>("/agent-ops/governance/on-prem/deployments"),
+        apiRequest<unknown[]>("/agent-ops/governance/on-prem/deployments"),
       triggerAction: (deploymentId: string, action: string) =>
-        apiRequest<any>(
+        apiRequest<unknown>(
           `/agent-ops/governance/on-prem/deploy/${deploymentId}?action=${action}`,
           {
             method: "POST",
@@ -2880,46 +2657,34 @@ export const extendedApi = {
         ),
     },
     getAuditQuorum: () =>
-      apiRequest<any>("/api/v1/agent-ops/governance/audit-quorum"),
-    getAuditLogs: () => apiRequest<any[]>("/api/v1/agent-ops/audit"),
+      apiRequest<unknown>("/api/v1/agent-ops/governance/audit-quorum"),
+    getAuditLogs: () => apiRequest<unknown[]>("/api/v1/agent-ops/audit"),
     getGovernanceStats: () =>
-      apiRequest<any>("/api/v1/agent-ops/governance/stats"),
-    createApprovalRequest: (request: any) =>
-      apiRequest<any>("/api/v1/agent-ops/governance/approvals", {
+      apiRequest<unknown>("/api/v1/agent-ops/governance/stats"),
+    createApprovalRequest: (request: Record<string, unknown>) =>
+      apiRequest<unknown>("/api/v1/agent-ops/governance/approvals", {
         method: "POST",
         body: JSON.stringify(request),
       }),
     processApproval: (requestId: string, approved: boolean, details: string) =>
-      apiRequest<any>(`/api/v1/agent-ops/governance/approvals/${requestId}`, {
+      apiRequest<unknown>(`/api/v1/agent-ops/governance/approvals/${requestId}`, {
         method: "POST",
         body: JSON.stringify({ approved, details }),
       }),
   },
   optimization: {
     getWorkforceEfficiency: () =>
-      apiRequest<any>("/api/v1/workforce/efficiency"),
+      apiRequest<unknown>("/api/v1/workforce/efficiency"),
     getLLMPerformance: (agentId: string, days: number) =>
-      apiRequest<any>(
+      apiRequest<unknown>(
         `/api/v1/agent-ops/llm/performance?agent_id=${agentId}&days=${days}`
       ),
     optimizeAgent: (agentId: string) =>
-      apiRequest<any>(`/api/v1/agent-ops/optimize/${agentId}`, {
+      apiRequest<unknown>(`/api/v1/agent-ops/optimize/${agentId}`, {
         method: "POST",
       }),
   },
 };
-
-export async function workforceSync() {
-  try {
-    const status = await apiRequest<WorkforceStatus>(
-      "/api/v1/workforce/status"
-    );
-    return status;
-  } catch (e) {
-    console.error("Workforce sync failed:", e);
-    throw e;
-  }
-}
 
 // ============================================================================
 // Denial Defense API
@@ -2953,16 +2718,15 @@ export const denialDefenseApi = {
 // ============================================================================
 
 export const ventureApi = {
-  getInsights: () =>
-    apiRequest<BusinessIdea[]>("/api/v1/agent-ops/venture/insights"),
+  getInsights: () => apiRequest<BusinessIdea[]>("/api/v1/venture/insights"),
   getIdeaDetail: (id: number) =>
-    apiRequest<BusinessIdea>(`/api/v1/agent-ops/venture/${id}`),
+    apiRequest<BusinessIdea>(`/api/v1/venture/${id}`),
   analyzeScenario: (
     ideaId: number,
     scenario: string,
     options: ApiOptions = {}
   ) =>
-    apiRequest<any>("/api/v1/agent-ops/venture/scenario/analyze", {
+    apiRequest<unknown>("/api/v1/venture/scenario/analyze", {
       ...options,
       method: "POST",
       body: JSON.stringify({ idea_id: ideaId, scenario }),
@@ -3013,73 +2777,4 @@ export const TREND_COLORS: Record<string, string> = {
   Explosive: "#22c55e",
   "High Growth": "#3b82f6",
   Steady: "#f59e0b",
-};
-
-export const ALL_CATEGORIES = [
-  "AI & Technology",
-  "AgeTech",
-  "AgriTech",
-  "Beauty & Wellness",
-  "Cannabis",
-  "CleanTech",
-  "Consulting",
-  "Cybersecurity",
-  "Drone Tech",
-  "E-Commerce",
-  "EdTech",
-  "FinTech",
-  "Food & Beverage",
-  "FoodTech",
-  "HRTech",
-  "HealthTech",
-  "Hospitality",
-  "HospitalityTech",
-  "IndustrialTech",
-  "InsurTech",
-  "LegalTech",
-  "LogisticsTech",
-  "MarTech",
-  "Media",
-  "MobilityTech",
-  "PetTech",
-  "PropTech",
-  "RegTech",
-  "Retail",
-  "Services",
-  "Sustainability",
-  "Travel",
-  "Wellness",
-];
-
-export const ALL_MARKETS = ["US", "UK", "EU", "Canada"];
-export const ALL_TRENDS = ["Explosive", "High Growth", "Steady"];
-
-// ============================================================================
-// Hermes AI Agent Integration
-// ============================================================================
-
-export const hermesApi = {
-  chat: (message: string, systemPrompt?: string) =>
-    apiRequest<{ response: string; source: string }>("/api/v1/hermes/chat", {
-      method: "POST",
-      body: JSON.stringify({ message, system_prompt: systemPrompt }),
-    }),
-
-  analyzeMetrics: (metrics: Record<string, unknown>) =>
-    apiRequest<any>("/api/v1/hermes/analyze", {
-      method: "POST",
-      body: JSON.stringify({ metrics }),
-    }),
-
-  suggestFix: (error: string, context: Record<string, unknown>) =>
-    apiRequest<any>("/api/v1/hermes/suggest-fix", {
-      method: "POST",
-      body: JSON.stringify({ error, context }),
-    }),
-
-  validateStrategy: (strategy: Record<string, unknown>) =>
-    apiRequest<any>("/api/v1/hermes/validate-strategy", {
-      method: "POST",
-      body: JSON.stringify({ strategy }),
-    }),
 };

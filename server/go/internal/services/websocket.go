@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -239,7 +241,20 @@ var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin: func(r *http.Request) bool {
-		return true // Allow all origins in development
+		origin := r.Header.Get("Origin")
+		if origin == "" {
+			return true
+		}
+		allowedOrigins := strings.Split(os.Getenv("ALLOWED_ORIGINS"), ",")
+		if len(allowedOrigins) == 0 || (len(allowedOrigins) == 1 && allowedOrigins[0] == "") {
+			return true
+		}
+		for _, allowed := range allowedOrigins {
+			if strings.TrimSpace(allowed) == origin {
+				return true
+			}
+		}
+		return false
 	},
 }
 

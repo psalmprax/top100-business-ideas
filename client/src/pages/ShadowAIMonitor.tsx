@@ -9,7 +9,6 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,10 +25,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertCircle,
-  Shield,
-  Eye,
   ShieldAlert,
-  ShieldCheck,
   X,
   Check,
   RefreshCw,
@@ -49,7 +45,7 @@ export default function ShadowAIMonitor() {
   const [detections, setDetections] = useState<ShadowDetection[]>([]);
   const [stats, setStats] = useState<ShadowStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [riskFilter, setRiskFilter] = useState<string>("all");
+  const [riskFilter, _setRiskFilter] = useState<string>("all");
   const [autoBlockEnabled, setAutoBlockEnabled] = useState(true);
 
   useEffect(() => {
@@ -65,7 +61,7 @@ export default function ShadowAIMonitor() {
       ]);
       setDetections(detectionsData);
       setStats(statsData);
-    } catch (err) {
+    } catch {
       toast.error("Failed to load shadow AI data");
     } finally {
       setIsLoading(false);
@@ -77,7 +73,7 @@ export default function ShadowAIMonitor() {
       await extendedApi.shadowAI.blockTool(toolId);
       toast.success("Tool blocked successfully");
       loadData();
-    } catch (err) {
+    } catch {
       toast.error("Failed to block tool");
     }
   }
@@ -87,7 +83,7 @@ export default function ShadowAIMonitor() {
       await extendedApi.shadowAI.allowTool(toolId);
       toast.success("Tool allowed successfully");
       loadData();
-    } catch (err) {
+    } catch {
       toast.error("Failed to allow tool");
     }
   }

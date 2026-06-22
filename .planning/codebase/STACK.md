@@ -84,7 +84,7 @@
 - `sqlmodel` 0.0.14
 - `psycopg2-binary` 2.9.9 (sync), `asyncpg` 0.29.0 (async)
 - `torch` 2.2.0 - ML framework
-- `transformers** 4.36.2 - Hugging Face transformers
+- `transformers\*\* 4.36.2 - Hugging Face transformers
 - `librosa` 0.10.0 - Audio analysis
 - `numpy` 1.26.3
 - `opencv-python-headless` 4.9.0.80

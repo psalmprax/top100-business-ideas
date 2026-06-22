@@ -1,6 +1,7 @@
 """
 Multi-Cloud Proxy Service for Agent Ops
 Routes LLM requests to OpenAI, Azure OpenAI, Anthropic, and AWS Bedrock via unified gateway.
+Supports cost-aware routing, governance overrides, and Sentinel Guard integration.
 """
 
 from typing import Dict, Any, Optional, List, Union
@@ -10,9 +11,35 @@ import os
 import logging
 import asyncio
 import time
+from datetime import datetime, timedelta
 from app.core.resilience import ml_breaker
 
 logger = logging.getLogger(__name__)
+
+# Cost per 1K tokens (input, output) by provider+model
+MODEL_COSTS = {
+    "openai": {
+        "gpt-4o": {"input": 0.005, "output": 0.015},
+        "gpt-4o-mini": {"input": 0.00015, "output": 0.0006},
+        "gpt-4-turbo": {"input": 0.01, "output": 0.03},
+    },
+    "anthropic": {
+        "claude-3-5-sonnet-20241022": {"input": 0.003, "output": 0.015},
+        "claude-3-haiku-20240307": {"input": 0.00025, "output": 0.00125},
+        "claude-3-opus-20240229": {"input": 0.015, "output": 0.075},
+    },
+    "azure": {
+        "gpt-4": {"input": 0.03, "output": 0.06},
+        "gpt-4o": {"input": 0.005, "output": 0.015},
+    },
+    "bedrock": {
+        "anthropic.claude-3-sonnet-20240229-v1:0": {"input": 0.003, "output": 0.015},
+        "anthropic.claude-3-haiku-20240307-v1:0": {"input": 0.00025, "output": 0.00125},
+    },
+    "ollama": {
+        "llama3": {"input": 0.0, "output": 0.0},
+    },
+}
 
 
 class CloudProvider(str, Enum):
@@ -204,10 +231,22 @@ class MultiCloudProxy:
                 )
                 result["provider_used"] = provider.value
                 result["failover_count"] = providers.index(provider)
+                if providers.index(provider) > 0:
+                    self.emit_sentinel_event("failover", {
+                        "from_provider": preferred_provider.value,
+                        "to_provider": provider.value,
+                        "model": model,
+                        "attempt": providers.index(provider),
+                    })
                 return result
             except Exception as e:
                 logger.warning(f"Provider {provider.value} failed: {e}")
                 errors.append({"provider": provider.value, "error": str(e)})
+                self.emit_sentinel_event("provider_failure", {
+                    "provider": provider.value,
+                    "error": str(e),
+                    "model": model,
+                })
                 continue
 
         return {
@@ -493,7 +532,6 @@ class MultiCloudProxy:
         self, from_provider: CloudProvider, to_provider: CloudProvider
     ) -> bool:
         """Programmatically switch routing in case of provider outage."""
-        # Reorder fallback list to put to_provider first
         self.fallback_order = [
             to_provider,
             from_provider,
@@ -501,6 +539,94 @@ class MultiCloudProxy:
         ]
         logger.info(f"Switched fallback order: {self.fallback_order}")
         return True
+
+    def estimate_cost(
+        self, provider: CloudProvider, model: str, prompt_tokens: int, completion_tokens: int
+    ) -> float:
+        """Estimate cost in USD for a given provider/model/token combo."""
+        costs = MODEL_COSTS.get(provider.value, {}).get(model, {"input": 0.005, "output": 0.015})
+        return (prompt_tokens * costs["input"] + completion_tokens * costs["output"]) / 1000
+
+    def select_cheapest_provider(
+        self, model: str, max_tokens: int, prefer: Optional[CloudProvider] = None
+    ) -> CloudProvider:
+        """Pick the cheapest available provider for a given model tier."""
+        estimates = []
+        for provider in self.fallback_order:
+            if not self.providers[provider]["api_key"] and provider != CloudProvider.OLLAMA:
+                continue
+            cost = self.estimate_cost(provider, model, 500, max_tokens)
+            estimates.append((provider, cost))
+        if not estimates:
+            return prefer or CloudProvider.OPENAI
+        estimates.sort(key=lambda x: x[1])
+        return estimates[0][0]
+
+    async def complete_cost_aware(
+        self,
+        input_data: Union[str, List[Dict[str, str]]],
+        model: str = "gpt-4o",
+        max_tokens: int = 1000,
+        temperature: float = 0.7,
+        budget_usd: Optional[float] = None,
+        agent_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Route to cheapest provider while respecting budget constraints."""
+        provider = self.select_cheapest_provider(model, max_tokens)
+        estimated = self.estimate_cost(provider, model, 500, max_tokens)
+
+        if budget_usd is not None and estimated > budget_usd:
+            free_provider = CloudProvider.OLLAMA
+            if self.providers[free_provider]["api_key"]:
+                provider = free_provider
+                estimated = 0.0
+            else:
+                return {
+                    "error": f"Estimated cost ${estimated:.4f} exceeds budget ${budget_usd:.4f}",
+                    "status": "budget_exceeded",
+                }
+
+        result = await self.complete(
+            input_data=input_data,
+            provider=provider,
+            model=model,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            fallback=True,
+        )
+        result["estimated_cost_usd"] = round(estimated, 6)
+        result["cost_routing"] = True
+        if agent_id:
+            result["agent_id"] = agent_id
+        return result
+
+    def check_daily_budget(self, agent_id: str, daily_limit_usd: float, current_spend_usd: float) -> Dict[str, Any]:
+        """Governance: check if agent is within daily budget."""
+        if current_spend_usd >= daily_limit_usd:
+            return {
+                "allowed": False,
+                "reason": f"Daily budget ${daily_limit_usd:.2f} exhausted (spent: ${current_spend_usd:.2f})",
+                "action": "BLOCK",
+            }
+        remaining = daily_limit_usd - current_spend_usd
+        if remaining < daily_limit_usd * 0.1:
+            return {
+                "allowed": True,
+                "reason": f"Warning: ${remaining:.2f} remaining of ${daily_limit_usd:.2f} daily budget",
+                "action": "WARN",
+            }
+        return {"allowed": True, "action": "ALLOW"}
+
+    def emit_sentinel_event(self, event_type: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """Emit telemetry event for Sentinel Guard real-time monitoring."""
+        event = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "event_type": event_type,
+            "source": "multi_cloud_proxy",
+            **payload,
+        }
+        logger.info(f"[Sentinel] {event_type}: {payload}")
+        return event
 
 
 # Singleton instance

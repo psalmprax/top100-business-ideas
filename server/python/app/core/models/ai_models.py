@@ -1,11 +1,17 @@
+from __future__ import annotations
 """
 AI Models - Core AI model management and training models
 """
 
 from sqlmodel import SQLModel, Field, Column, JSON, Relationship
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, TYPE_CHECKING
 from datetime import datetime
 import uuid
+
+if TYPE_CHECKING:
+    from .compliance_models import ArticleStatus, BiasReport
+
+
 
 
 class AIModel(SQLModel, table=True):
@@ -93,15 +99,31 @@ class WhiteLabelConfig(SQLModel, table=True):
 class BusinessIdea(SQLModel, table=True):
     """Persistent Business Idea for the Top 100 Report"""
 
-    id: int = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True)
+    rank: int
     title: str
     category: str
-    market: str
     description: str
-    earning_potential: str
-    rollout_speed: str
-    trend: str  # Explosive, High Growth, Steady
-    rank: int
+    gap: str = Field(default="")
+    markets: List[str] = Field(default=[], sa_column=Column(JSON))
+    market: str = Field(default="")
+    earning_potential: float = Field(default=0.0)
+    earning_label: str = Field(default="")
+    rollout_speed: float = Field(default=1.0)
+    rollout_label: str = Field(default="")
+    startup_cost: str = Field(default="")
+    profit_margin: float = Field(default=0.0)
+    market_size_bn: float = Field(default=0.0)
+    trend: str = Field(default="Steady")  # Explosive, High Growth, Steady
+    tags: List[str] = Field(default=[], sa_column=Column(JSON))
+
+    # Enhanced Fields
+    gtm_strategy: Optional[str] = Field(default=None)
+    tech_stack: List[str] = Field(default=[], sa_column=Column(JSON))
+    risk_factors: List[str] = Field(default=[], sa_column=Column(JSON))
+    team_requirements: List[str] = Field(default=[], sa_column=Column(JSON))
+    scalability_score: Optional[float] = Field(default=None)
+
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 

@@ -3,19 +3,13 @@ import { Link, useLocation } from "wouter";
 import {
   Stethoscope,
   ShieldCheck,
-  BarChart3,
-  Clock,
   ArrowRight,
-  AlertCircle,
   CheckCircle2,
   FileText,
   Activity,
   TrendingUp,
   Zap,
   LayoutDashboard,
-  Search,
-  Filter,
-  Download,
   Settings,
   Plus,
 } from "lucide-react";
@@ -43,13 +37,13 @@ import {
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import { storage } from "@/lib/storage";
-import { mlApi, billingApi, denialDefenseApi, type Claim } from "@/lib/api";
+import { mlApi, denialDefenseApi, type Claim } from "@/lib/api";
 import { usePerspective } from "@/contexts/PerspectiveContext";
-import { motion, AnimatePresence } from "framer-motion";
+
 import { PremiumPlaceholder } from "@/components/skeletons/PremiumPlaceholder";
 
 export default function DenialDefense() {
-  const { perspective } = usePerspective();
+  const { perspective: _perspective } = usePerspective();
   const [activeClaims, setActiveClaims] = useState<Claim[]>([]);
   const [newClaim, setNewClaim] = useState({ id: "", payer: "", amount: "" });
   const [isScrubbing, setIsScrubbing] = useState(false);
@@ -81,7 +75,7 @@ export default function DenialDefense() {
       await fetchStats();
     } catch (err) {
       console.error("Failed to fetch claims", err);
-      // Fallback only for visual structure if DB is truly unreachable, 
+      // Fallback only for visual structure if DB is truly unreachable,
       // but real-first means we should show a warning
       toast.error("Could not sync with production records. View only mode.");
     } finally {
@@ -98,7 +92,7 @@ export default function DenialDefense() {
       toast.error("Please fill in Claim ID and Payer");
       return;
     }
-    
+
     try {
       const createdClaim = await denialDefenseApi.createClaim({
         claim_id_string: newClaim.id,
@@ -107,7 +101,7 @@ export default function DenialDefense() {
         status: "New",
         risk: "Calculating...",
       });
-      
+
       setActiveClaims([createdClaim, ...activeClaims]);
       setNewClaim({ id: "", payer: "", amount: "" });
       toast.success("Claim record materialized in ledger.");
@@ -117,7 +111,7 @@ export default function DenialDefense() {
         `Classify claim risk for ${newClaim.payer} amount ${newClaim.amount}`,
         "denial-defense"
       );
-      
+
       const riskLevel =
         result?.confidence && result.confidence > 0.8
           ? "Low"
@@ -132,11 +126,11 @@ export default function DenialDefense() {
         risk: riskLevel,
       });
 
-      setActiveClaims(prev => 
-        prev.map(c => c.id === createdClaim.id ? updatedClaim : c)
+      setActiveClaims(prev =>
+        prev.map(c => (c.id === createdClaim.id ? updatedClaim : c))
       );
       toast.success(`Risk analysis complete. Risk Level: ${riskLevel}`);
-    } catch (e) {
+    } catch {
       toast.error("Communication failure. Claim record not persistent.");
     }
   };
@@ -150,20 +144,20 @@ export default function DenialDefense() {
       ),
       {
         loading: `AI Agent 'Scrubber-1' analyzing claim ${claimStr}...`,
-        success: async (data: any) => {
-          const riskLevel = data?.confidence > 0.8 ? "Low" : "Medium";
+        success: async (data: { confidence?: number; classification?: string }) => {
+          const riskLevel = data?.confidence && data.confidence > 0.8 ? "Low" : "Medium";
           try {
             const updated = await denialDefenseApi.updateClaim({
               id,
               status: "Scrubbed",
               risk: riskLevel,
             });
-            setActiveClaims(prev => prev.map(c => c.id === id ? updated : c));
+            setActiveClaims(prev => prev.map(c => (c.id === id ? updated : c)));
             setIsScrubbing(false);
             setRecoveryRate(prev => Math.min(99.9, prev + 0.1));
             await fetchStats();
             return `Scrubbing complete: ${data?.classification || "No CCI edits found."}`;
-          } catch (e) {
+          } catch {
             setIsScrubbing(false);
             return "Failed to persist scrub state in ledger.";
           }
@@ -186,10 +180,11 @@ export default function DenialDefense() {
       {
         loading:
           "AI Agents scanning historical encounters for under-coded CPTs...",
-        success: (data: any) => {
+        success: (data: { suggestions?: string[] }) => {
           setIsScanning(false);
           setRevenueRecovered(prev => prev + 0.012);
-          return `Global scan complete: ${data?.suggestions?.[0] || "Scan finished. Review claims for potential optimization."}`;        },
+          return `Global scan complete: ${data?.suggestions?.[0] || "Scan finished. Review claims for potential optimization."}`;
+        },
         error: () => {
           setIsScanning(false);
           return "Global scan failed. Service unavailable.";
@@ -328,7 +323,10 @@ export default function DenialDefense() {
               >
                 ${revenueRecovered.toLocaleString()}
               </div>
-              <Progress value={Math.min(100, (revenueRecovered / 1000000) * 100)} className="h-1 mt-3 bg-white/5" />
+              <Progress
+                value={Math.min(100, (revenueRecovered / 1000000) * 100)}
+                className="h-1 mt-3 bg-white/5"
+              />
             </CardContent>
           </Card>
         </div>
@@ -451,15 +449,18 @@ export default function DenialDefense() {
                     <TableBody>
                       {isLoading ? (
                         <TableRow>
-                          <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                          <TableCell
+                            colSpan={5}
+                            className="text-center py-8 text-muted-foreground"
+                          >
                             Synchronizing with production ledger...
                           </TableCell>
                         </TableRow>
                       ) : activeClaims.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={5} className="py-12">
-                            <PremiumPlaceholder 
-                              title="Engine Queue Clear" 
+                            <PremiumPlaceholder
+                              title="Engine Queue Clear"
                               description="No claims currently pending AI denial defense layers. The engine is ready."
                               variant="empty"
                             />
@@ -472,7 +473,8 @@ export default function DenialDefense() {
                             className="border-white/5 hover:bg-white/[0.02]"
                           >
                             <TableCell className="text-body-sm font-mono">
-                              {claim.claim_id_string || claim.id.substring(0, 8)}
+                              {claim.claim_id_string ||
+                                claim.id.substring(0, 8)}
                             </TableCell>
                             <TableCell className="text-body-sm">
                               {claim.payer}
@@ -503,9 +505,13 @@ export default function DenialDefense() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                disabled={isScrubbing || claim.status === "Scrubbed"}
+                                disabled={
+                                  isScrubbing || claim.status === "Scrubbed"
+                                }
                                 className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10"
-                                onClick={() => runScrubber(claim.id, claim.claim_id_string)}
+                                onClick={() =>
+                                  runScrubber(claim.id, claim.claim_id_string)
+                                }
                               >
                                 {claim.status === "Scrubbed" ? (
                                   <CheckCircle2 className="w-4 h-4" />
@@ -546,7 +552,17 @@ export default function DenialDefense() {
                         +${revenueRecovered.toLocaleString()} recovered
                       </span>
                     </div>
-                    <Progress value={Math.min(100, totalProcessed > 0 ? ((totalProcessed - pendingDenials) / totalProcessed) * 100 : 0)} className="h-2 bg-white/5" />
+                    <Progress
+                      value={Math.min(
+                        100,
+                        totalProcessed > 0
+                          ? ((totalProcessed - pendingDenials) /
+                              totalProcessed) *
+                              100
+                          : 0
+                      )}
+                      className="h-2 bg-white/5"
+                    />
                   </div>
                   <Button
                     className="w-full variant-outline border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
@@ -606,12 +622,16 @@ export default function DenialDefense() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge className="bg-red-500/10 text-red-500 border-none">HIGH RISK</Badge>
-                      <Switch 
+                      <Badge className="bg-red-500/10 text-red-500 border-none">
+                        HIGH RISK
+                      </Badge>
+                      <Switch
                         checked={storage.get("dd_aggressive", false)}
-                        onCheckedChange={(checked) => {
+                        onCheckedChange={(checked: boolean) => {
                           storage.set("dd_aggressive", checked);
-                          toast.info(`Aggressive mode ${checked ? "armed" : "disarmed"}`);
+                          toast.info(
+                            `Aggressive mode ${checked ? "armed" : "disarmed"}`
+                          );
                         }}
                       />
                     </div>
@@ -626,12 +646,19 @@ export default function DenialDefense() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="border-cyan-500/30 text-cyan-400">ENABLED</Badge>
-                      <Switch 
+                      <Badge
+                        variant="outline"
+                        className="border-cyan-500/30 text-cyan-400"
+                      >
+                        ENABLED
+                      </Badge>
+                      <Switch
                         checked={storage.get("dd_auto_appeal", true)}
-                        onCheckedChange={(checked) => {
+                        onCheckedChange={(checked: boolean) => {
                           storage.set("dd_auto_appeal", checked);
-                          toast.info(`Auto-appeal ${checked ? "enabled" : "disabled"}`);
+                          toast.info(
+                            `Auto-appeal ${checked ? "enabled" : "disabled"}`
+                          );
                         }}
                       />
                     </div>

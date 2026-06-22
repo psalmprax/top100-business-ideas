@@ -1,16 +1,16 @@
 import React from "react";
-import { 
-  Smartphone, 
-  ShieldCheck, 
-  Cpu, 
-  Zap, 
-  Globe, 
+import {
+  Smartphone,
+  ShieldCheck,
+  Cpu,
+  Zap,
+  Globe,
   ArrowLeft,
   ChevronRight,
   Download,
   Terminal,
   Layers,
-  Activity
+  Activity,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,23 +25,23 @@ const MobileComingSoonPage = () => {
     {
       icon: ShieldCheck,
       title: "Real-time Compliance",
-      desc: "Instant push alerts for EU AI Act drift and governance violations."
+      desc: "Instant push alerts for EU AI Act drift and governance violations.",
     },
     {
       icon: Cpu,
       title: "Agent Control",
-      desc: "Provision, pause, and patch your workforce swarms from anywhere."
+      desc: "Provision, pause, and patch your workforce swarms from anywhere.",
     },
     {
       icon: Zap,
       title: "Deepfake Radar",
-      desc: "Receive immediate notifications of synthesis attacks on core assets."
+      desc: "Receive immediate notifications of synthesis attacks on core assets.",
     },
     {
       icon: Layers,
       title: "Multi-Perspective",
-      desc: "Switch between Alpha, Sigma, and Omega views on the go."
-    }
+      desc: "Switch between Alpha, Sigma, and Omega views on the go.",
+    },
   ];
 
   return (
@@ -54,18 +54,22 @@ const MobileComingSoonPage = () => {
       </div>
 
       <nav className="container mx-auto px-6 py-8 flex items-center justify-between relative z-10">
-        <div 
+        <div
           className="flex items-center gap-2 cursor-pointer group"
           onClick={() => setLocation("/")}
         >
           <div className="bg-white/5 p-2 rounded-lg border border-white/10 group-hover:bg-white/10 transition-colors">
             <ArrowLeft className="w-4 h-4" />
           </div>
-          <span className="text-sm font-medium text-white/60 group-hover:text-white transition-colors">Back to Dashboard</span>
+          <span className="text-sm font-medium text-white/60 group-hover:text-white transition-colors">
+            Back to Dashboard
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <Terminal className="w-5 h-5 text-indigo-500" />
-          <span className="font-bold tracking-tighter text-lg uppercase">AlphaHecta <span className="text-indigo-500">Mobile</span></span>
+          <span className="font-bold tracking-tighter text-lg uppercase">
+            AlphaHecta <span className="text-indigo-500">Mobile</span>
+          </span>
         </div>
       </nav>
 
@@ -80,27 +84,40 @@ const MobileComingSoonPage = () => {
               COMING TO TESTFLIGHT Q3 2026
             </Badge>
             <h1 className="text-5xl md:text-7xl font-black tracking-tight mb-6 leading-tight">
-              Governance <br /> 
+              Governance <br />
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">
                 At Your Fingertips
               </span>
             </h1>
             <p className="text-lg md:text-xl text-white/50 mb-12 max-w-2xl mx-auto leading-relaxed">
-              AlphaHecta Mobile brings the full Real-First autonomous architecture to your iOS and Android devices. Secure, encrypted, and perpetually connected to your corporate cluster.
+              AlphaHecta Mobile brings the full Real-First autonomous
+              architecture to your iOS and Android devices. Secure, encrypted,
+              and perpetually connected to your corporate cluster.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20">
-              <Button size="lg" className="bg-white text-black hover:bg-white/90 px-8 py-7 h-auto rounded-2xl flex items-center gap-3">
+              <Button
+                size="lg"
+                className="bg-white text-black hover:bg-white/90 px-8 py-7 h-auto rounded-2xl flex items-center gap-3"
+              >
                 <Smartphone className="w-6 h-6" />
                 <div className="text-left">
-                  <div className="text-[10px] font-bold uppercase leading-none opacity-60">Coming Soon to</div>
+                  <div className="text-[10px] font-bold uppercase leading-none opacity-60">
+                    Coming Soon to
+                  </div>
                   <div className="text-lg leading-none">App Store</div>
                 </div>
               </Button>
-              <Button variant="outline" size="lg" className="border-white/10 hover:bg-white/5 px-8 py-7 h-auto rounded-2xl flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="lg"
+                className="border-white/10 hover:bg-white/5 px-8 py-7 h-auto rounded-2xl flex items-center gap-3"
+              >
                 <Download className="w-6 h-6" />
                 <div className="text-left">
-                  <div className="text-[10px] font-bold uppercase leading-none opacity-60">Coming Soon to</div>
+                  <div className="text-[10px] font-bold uppercase leading-none opacity-60">
+                    Coming Soon to
+                  </div>
                   <div className="text-lg leading-none">Google Play</div>
                 </div>
               </Button>
@@ -131,7 +148,7 @@ const MobileComingSoonPage = () => {
           </div>
 
           {/* System Integrity Section */}
-          <motion.div 
+          <motion.div
             className="mt-24 p-8 rounded-3xl bg-gradient-to-br from-indigo-900/30 to-black border border-indigo-500/20 text-left overflow-hidden relative"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -142,23 +159,34 @@ const MobileComingSoonPage = () => {
                 <div className="flex items-center gap-2 text-indigo-400 font-mono text-xs uppercase tracking-widest mb-4">
                   <Activity className="w-4 h-4" /> System Health Protected
                 </div>
-                <h2 className="text-3xl font-black mb-6">Zero-Trust Mobile Core</h2>
+                <h2 className="text-3xl font-black mb-6">
+                  Zero-Trust Mobile Core
+                </h2>
                 <div className="space-y-4">
                   <div className="flex items-start gap-4">
                     <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-2" />
-                    <p className="text-sm text-white/50">Military-grade AES-256 encryption for all data-in-transit.</p>
+                    <p className="text-sm text-white/50">
+                      Military-grade AES-256 encryption for all data-in-transit.
+                    </p>
                   </div>
                   <div className="flex items-start gap-4">
                     <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-2" />
-                    <p className="text-sm text-white/50">Biometric multi-factor authentication for critical platform actions.</p>
+                    <p className="text-sm text-white/50">
+                      Biometric multi-factor authentication for critical
+                      platform actions.
+                    </p>
                   </div>
                   <div className="flex items-start gap-4">
                     <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-2" />
-                    <p className="text-sm text-white/50">Deterministic audit trails synced to your primary corporate ledger.</p>
+                    <p className="text-sm text-white/50">
+                      Deterministic audit trails synced to your primary
+                      corporate ledger.
+                    </p>
                   </div>
                 </div>
                 <Button className="mt-8 bg-indigo-600 hover:bg-indigo-700 rounded-xl px-6 group">
-                  Learn about Security <ChevronRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                  Learn about Security{" "}
+                  <ChevronRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </div>
               <div className="flex-1 flex justify-center">
@@ -193,12 +221,20 @@ const MobileComingSoonPage = () => {
           <footer className="mt-24 pt-12 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2">
               <Globe className="w-4 h-4 text-white/40" />
-              <span className="text-xs text-white/40 font-mono tracking-wider uppercase">Global Distribution Layer v4.0</span>
+              <span className="text-xs text-white/40 font-mono tracking-wider uppercase">
+                Global Distribution Layer v4.0
+              </span>
             </div>
             <div className="flex items-center gap-8 text-[10px] font-bold uppercase tracking-widest text-white/30">
-              <a href="#" className="hover:text-white transition-colors">Documentation</a>
-              <a href="#" className="hover:text-white transition-colors">Privacy</a>
-              <a href="#" className="hover:text-white transition-colors">Terms</a>
+              <a href="#" className="hover:text-white transition-colors">
+                Documentation
+              </a>
+              <a href="#" className="hover:text-white transition-colors">
+                Privacy
+              </a>
+              <a href="#" className="hover:text-white transition-colors">
+                Terms
+              </a>
             </div>
           </footer>
         </div>

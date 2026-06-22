@@ -1,5 +1,12 @@
-import React, { useState } from "react";
-import { Bell, Shield, Info, AlertTriangle, X, CheckCircle2 } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import {
+  Bell,
+  Shield,
+  Info,
+  AlertTriangle,
+  X,
+  CheckCircle2,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,7 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
+import { extendedApi } from "@/lib/api";
 
 interface Notification {
   id: string;
@@ -20,51 +27,93 @@ interface Notification {
   read: boolean;
 }
 
-const MOCK_NOTIFICATIONS: Notification[] = [
-  {
-    id: "1",
-    title: "Deepfake Detected",
-    message: "High-fidelity biometric mismatch detected in region EU-WEST.",
-    type: "security",
-    timestamp: "2m ago",
-    read: false,
-  },
-  {
-    id: "2",
-    title: "SLA Breached",
-    message: "Liveness response time exceeded 250ms threshold.",
-    type: "warning",
-    timestamp: "15m ago",
-    read: false,
-  },
-  {
-    id: "3",
-    title: "System Update",
-    message: "AlphaHecta Core v2.4.1 deployment successful.",
-    type: "success",
-    timestamp: "1h ago",
-    read: true,
-  },
-  {
-    id: "4",
-    title: "New Partner Added",
-    message: "Global Logistics Corp provisioned a new tenant portal.",
-    type: "info",
-    timestamp: "3h ago",
-    read: true,
-  },
-];
+interface ComplianceAlert {
+  id: string;
+  name?: string;
+  alert_type: string;
+  threshold?: number;
+  action?: string;
+  created_at?: string;
+  resolved?: boolean;
+}
+
+interface VigilanceAlert {
+  id: string;
+  alert_type?: string;
+  message?: string;
+  agent_id?: string;
+  created_at?: string;
+  resolved?: boolean;
+}
+
+function mapAlertToNotification(alert: ComplianceAlert): Notification {
+  const typeMap: Record<string, Notification["type"]> = {
+    budget: "warning",
+    safety: "security",
+    performance: "info",
+    compliance: "security",
+  };
+  return {
+    id: alert.id,
+    title: alert.name || "System Alert",
+    message: `${alert.alert_type} threshold: ${alert.threshold}% - Action: ${alert.action}`,
+    type: typeMap[alert.alert_type] || "info",
+    timestamp: alert.created_at
+      ? new Date(alert.created_at).toLocaleTimeString()
+      : "Unknown",
+    read: alert.resolved || false,
+  };
+}
 
 export function NotificationCenter() {
-  const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [, setLoading] = useState(true);
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const [alerts, vigilance] = await Promise.all([
+          extendedApi.compliance.getAuditLogs(),
+          fetch("/api/v1/vigilance")
+            .then(r => (r.ok ? r.json() : []))
+            .catch(() => []),
+        ]);
+
+        const alertNotifications = ((alerts || []) as ComplianceAlert[])
+          .slice(0, 5)
+          .map(mapAlertToNotification);
+        const vigilanceNotifications = (vigilance || [])
+          .slice(0, 5)
+          .map((v: VigilanceAlert) => ({
+            id: v.id,
+            title: v.alert_type || "Vigilance Alert",
+            message: v.message || `Agent ${v.agent_id} triggered alert`,
+            type: "security" as const,
+            timestamp: v.created_at
+              ? new Date(v.created_at).toLocaleTimeString()
+              : "Unknown",
+            read: v.resolved || false,
+          }));
+
+        setNotifications(
+          [...alertNotifications, ...vigilanceNotifications].slice(0, 10)
+        );
+      } catch {
+        setNotifications([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchNotifications();
+  }, []);
 
   const markAllAsRead = () => {
-    setNotifications(notifications.map((n) => ({ ...n, read: true })));
+    setNotifications(notifications.map(n => ({ ...n, read: true })));
   };
 
   const removeNotification = (id: string) => {
-    setNotifications(notifications.filter((n) => n.id !== id));
+    setNotifications(notifications.filter(n => n.id !== id));
   };
 
   const getTypeIcon = (type: string) => {
@@ -96,7 +145,11 @@ export function NotificationCenter() {
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-80 mt-2 p-0 bg-slate-950 border-slate-800 shadow-2xl" align="end" forceMount>
+      <DropdownMenuContent
+        className="w-80 mt-2 p-0 bg-slate-950 border-slate-800 shadow-2xl"
+        align="end"
+        forceMount
+      >
         <div className="p-4 flex items-center justify-between border-b border-white/5">
           <DropdownMenuLabel className="p-0 font-bold text-sm tracking-tight text-white uppercase">
             Platform Intelligence Alerts
@@ -117,20 +170,26 @@ export function NotificationCenter() {
                 No active threats detected.
               </div>
             ) : (
-              notifications.map((n) => (
+              notifications.map(n => (
                 <div
                   key={n.id}
                   className={`p-4 flex gap-3 group relative hover:bg-white/[0.02] transition-colors ${
                     !n.read ? "bg-white/[0.03]" : ""
                   }`}
                 >
-                  <div className="mt-1 flex-shrink-0">{getTypeIcon(n.type)}</div>
+                  <div className="mt-1 flex-shrink-0">
+                    {getTypeIcon(n.type)}
+                  </div>
                   <div className="flex-1 space-y-1">
                     <div className="flex items-center justify-between">
-                      <h4 className={`text-xs font-bold leading-none ${!n.read ? "text-white" : "text-slate-400"}`}>
+                      <h4
+                        className={`text-xs font-bold leading-none ${!n.read ? "text-white" : "text-slate-400"}`}
+                      >
                         {n.title}
                       </h4>
-                      <span className="text-[9px] font-medium text-slate-500">{n.timestamp}</span>
+                      <span className="text-[9px] font-medium text-slate-500">
+                        {n.timestamp}
+                      </span>
                     </div>
                     <p className="text-[11px] leading-relaxed text-slate-400 line-clamp-2">
                       {n.message}

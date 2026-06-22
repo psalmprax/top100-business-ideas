@@ -3,6 +3,7 @@
 ## Overview
 
 This guide documents the complete implementation of the first 3 AlphaHecta products:
+
 1. **Agent Ops** - AI-powered agent operations optimization & Sentinel Guard
 2. **AI Compliance** - Regulatory compliance checking for AI systems
 3. **Deepfake Defense** - Detection and prevention of deepfake media
@@ -14,12 +15,14 @@ This guide documents the complete implementation of the first 3 AlphaHecta produ
 ## Architecture
 
 ### Tech Stack
+
 - **Frontend**: React 19, TypeScript, Vite, Tailwind CSS, Radix UI, wouter
 - **Backend (API)**: Go (Gin), PostgreSQL, Redis
 - **ML Backend**: Python (FastAPI), PyTorch/Transformers
 - **Infrastructure**: Docker, Docker Compose
 
 ### Project Structure
+
 ```
 top100-business-ideas/
 ├── client/                    # React frontend
@@ -76,6 +79,7 @@ top100-business-ideas/
 ```
 
 **Setup**:
+
 1. Run PostgreSQL container
 2. Execute schema creation
 3. Configure connection pooling
@@ -95,11 +99,13 @@ top100-business-ideas/
 ### Step 3: Authentication
 
 **Frontend**: `client/src/contexts/AuthContext.tsx`
+
 - Login/logout state management
 - JWT token handling
 - OAuth integration (Google, GitHub, Microsoft)
 
 **Backend**: JWT middleware
+
 - Token generation/validation
 - Role-based access control
 
@@ -108,12 +114,14 @@ top100-business-ideas/
 **File**: `server/go/internal/services/stripe.go`
 
 Features:
+
 - Subscription management
 - Invoice generation
 - Webhook handling
 - Usage-based billing
 
 **Frontend**: `client/src/pages/Billing.tsx`
+
 - Plan selection
 - Payment method management
 - Invoice history
@@ -133,6 +141,7 @@ Features:
 **File**: `server/go/internal/services/upload.go`
 
 Features:
+
 - File validation (size, type)
 - Local and cloud storage
 - Cleanup automation
@@ -142,6 +151,7 @@ Features:
 **File**: `server/go/internal/services/email.go`
 
 Email types:
+
 - Welcome emails
 - Password reset
 - Invoice notifications
@@ -152,6 +162,7 @@ Email types:
 **File**: `server/go/internal/services/logger.go`
 
 Features:
+
 - Structured JSON logging
 - Log levels (DEBUG, INFO, WARN, ERROR, FATAL)
 - Request tracing
@@ -162,6 +173,7 @@ Features:
 **File**: `client/src/components/ui/loading.tsx`
 
 Components:
+
 - LoadingSpinner
 - FullScreenLoading
 - Skeleton components
@@ -173,6 +185,7 @@ Components:
 **File**: `server/python/app/services/ml_inference.py`
 
 Models:
+
 - **Agent Ops**: Task classification, optimization suggestions
 - **AI Compliance**: GDPR/AI Act compliance checking
 - **Deepfake Defense**: Audio/video deepfake detection
@@ -182,10 +195,12 @@ Models:
 ### Step 11: Testing
 
 **Sentinel Functional Tests**: `client/src/test/sentinel-functional.spec.ts`
+
 - Verifies persistence of SLA tiers and Alert rules.
 - Valides the AI Scrubber logic in DenialDefense.
 
 **E2E Tests**: `tests/e2e/alpha-products.spec.ts`
+
 - Landing page tests
 - Authentication tests
 - Billing flow tests
@@ -197,11 +212,13 @@ Models:
 **File**: `client/src/lib/storage.ts`
 
 Features:
+
 - Namespaced storage (`alpha_sentinel_`) to prevent collisions.
 - Session continuity for Alpha products without backend migrations.
 - Automatic JSON serialization/deserialization.
 
 **Unit Tests**:
+
 - `server/go/internal/services/logger_test.go`
 - `server/go/internal/middleware/ratelimit_test.go`
 
@@ -210,6 +227,7 @@ Features:
 ## Running the Application
 
 ### Prerequisites
+
 - Docker and Docker Compose
 - Node.js 18+
 - Go 1.21+
@@ -233,11 +251,13 @@ cd server/python && PYTHONPATH=. python3 -m uvicorn app.main:app --host 0.0.0.0 
 ```
 
 ### Ports
-| Service | URL | Stack |
-|---------|-----|-------|
-| Frontend | http://localhost:7000 | Vite + React + Lucide |
-| API Gateway | http://localhost:7001 | Go (Gin) |
-| AI Backend | http://localhost:7002 | Python (FastAPI) |
+
+| Service     | URL                   | Stack                 |
+| ----------- | --------------------- | --------------------- |
+| Frontend    | http://localhost:7000 | Vite + React + Lucide |
+| API Gateway | http://localhost:7001 | Go (Gin)              |
+| AI Backend  | http://localhost:7002 | Python (FastAPI)      |
+
 - PostgreSQL: localhost:7003
 - Redis: localhost:7004
 
@@ -246,22 +266,26 @@ cd server/python && PYTHONPATH=. python3 -m uvicorn app.main:app --host 0.0.0.0 
 ## API Endpoints
 
 ### Authentication
+
 - `POST /api/v1/auth/login` - User login
 - `POST /api/v1/auth/register` - User registration
 - `POST /api/v1/auth/logout` - User logout
 - `POST /api/v1/auth/refresh` - Refresh token
 
 ### Products
+
 - `GET /api/v1/products` - List products
 - `GET /api/v1/products/:id` - Get product details
 - `POST /api/v1/products/:id/validate` - Validate product
 
 ### Billing
+
 - `GET /api/v1/billing/subscription` - Get subscription
 - `POST /api/v1/billing/checkout` - Create checkout session
 - `POST /api/v1/billing/webhook` - Stripe webhook
 
 ### ML Inference (Direct Gateway Proxy)
+
 - `POST /ml/infer` - Run inference
 - `GET /ml/models` - List models
 - `POST /ml/agent-ops/classify` - Classify agent operation
@@ -269,6 +293,7 @@ cd server/python && PYTHONPATH=. python3 -m uvicorn app.main:app --host 0.0.0.0 
 - `POST /ml/deepfake/detect` - Detect deepfake
 
 #### ML Tech Stack
+
 - **Python 3.10+**: Core language
 - **FastAPI**: Web framework
 - **PyTorch / Transformers**: Deep learning
@@ -281,6 +306,7 @@ cd server/python && PYTHONPATH=. python3 -m uvicorn app.main:app --host 0.0.0.0 
 ## Product Features
 
 ### Agent Ops
+
 - Task classification
 - Workflow optimization
 - Performance suggestions
@@ -288,6 +314,7 @@ cd server/python && PYTHONPATH=. python3 -m uvicorn app.main:app --host 0.0.0.0 
 - Database operation optimization
 
 ### AI Compliance
+
 - GDPR compliance checking
 - AI Act compliance
 - PII detection
@@ -295,17 +322,20 @@ cd server/python && PYTHONPATH=. python3 -m uvicorn app.main:app --host 0.0.0.0 
 - Transparency checks
 
 ### Deepfake Defense
+
 - Video deepfake detection
 - Audio deepfake detection
 - Frame-by-frame analysis
 - Biometric verification
 
 ### Alpha Workforce
+
 - Autonomous Agent Roster Management (Hiring/Firing)
 - Fiscal Governance & AI CFO Approval Workflows
 - Decentralized Strategy Refinement
 
 ### DenialDefense AI
+
 - AI Claims Scrubbing (CCI Edit Detection)
 - Denial Prediction & Risk Profiling
 - Autonomous Appeal Generation
@@ -344,6 +374,7 @@ MODEL_CACHE_DIR=/models
 ## Deployment
 
 ### Production Checklist
+
 - [ ] Set up PostgreSQL with SSL
 - [ ] Configure Redis with persistence
 - [ ] Set up Stripe production keys
@@ -356,6 +387,7 @@ MODEL_CACHE_DIR=/models
 - [ ] Set up CI/CD pipeline
 
 ### Docker Production
+
 ```bash
 docker build -t alphahecta/api server/go
 docker build -t alphahecta/ml server/python
@@ -393,17 +425,20 @@ docker-compose -f docker-compose.prod.yml up -d
 ## Recent Backend Improvements (2026-03-23)
 
 ### Compliance Article API Implementation
+
 - **Model**: Added `ComplianceArticle` SQLModel with fields for EU AI Act articles
 - **Endpoint**: `/api/v1/compliance/articles` GET endpoint for fetching compliance articles
 - **Seeding**: Automatic database seeding with key AI Act articles on startup
 - **Frontend Integration**: Updated client API to fetch articles dynamically instead of using hardcoded data
 
 ### Backend Architecture Enhancements
+
 - **Database Models**: Extended models.py with compliance and workforce interaction tracking
 - **API Services**: Enhanced compliance_service.py and workforce_service.py with functional logic
 - **Real AI Integration**: Services now use CrewAI and real ML inference when available, with graceful fallback to mocks
 
 ### Data Flow Improvements
+
 - **Real Data Persistence**: Articles, interactions, and compliance checks now stored in PostgreSQL
 - **API-First Design**: Frontend components fetch data from REST APIs instead of static mocks
 - **Service Layer**: Clean separation between mock and real implementations

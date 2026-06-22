@@ -1,12 +1,15 @@
+from __future__ import annotations
 """
 Compliance Models - EU AI Act and regulatory compliance models
 """
 
 from sqlmodel import SQLModel, Field, Column, JSON, Relationship
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, TYPE_CHECKING
 from datetime import datetime
 from enum import Enum
 import uuid
+
+from .ai_models import AIModel
 
 
 class ComplianceCheckType(str, Enum):
@@ -360,13 +363,9 @@ class Vendor(SQLModel, table=True):
     category: str = Field(default="software")
     type: str = Field(default="software")  # Matches frontend type field
     risk_level: str = Field(default="low")
-    compliance_status: str = Field(
-        default="vetted", alias="complianceStatus"
-    )  # Matches frontend complianceStatus
+    compliance_status: str = Field(default="vetted")
     status: str = Field(default="vetted")
-    last_assessment: Optional[datetime] = Field(
-        default=None, alias="lastAssessment"
-    )  # Matches frontend lastAssessment
+    last_assessment: Optional[datetime] = Field(default=None)
     contact_email: Optional[str] = None
     website: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)

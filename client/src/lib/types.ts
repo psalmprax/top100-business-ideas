@@ -60,7 +60,7 @@ export interface Agent {
 }
 
 export type AgentType = "langgraph" | "crewai" | "autogen" | "custom";
-export type AgentStatus = "running" | "stopped" | "error" | "paused";
+export type AgentStatus = "running" | "stopped" | "error" | "paused" | "active";
 
 export type ComplianceStatus =
   | "passed"

@@ -4,13 +4,7 @@
  */
 
 import { useState, useEffect } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -162,18 +156,9 @@ export default function RegionalCompliance() {
 
   const fetchRules = async () => {
     try {
-      const res = await extendedApi.compliance.getRegionalReports();
+      const res = await extendedApi.compliance.getRegionalReports() as unknown as RegionalRule[];
       if (res && res.length > 0) {
-        setRules(
-          res.map((r: any) => ({
-            region: r.region || "Unknown",
-            regulation: r.regulation || "Unknown",
-            description: r.description || "",
-            status: r.status || "pending",
-            last_checked: r.last_checked,
-            requirements: r.requirements || [],
-          }))
-        );
+        setRules(res);
       } else {
         setRules(Object.values(REGIONAL_DATA).flat());
       }

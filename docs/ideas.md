@@ -1,6 +1,7 @@
 # Design Ideas for Top 100 Business Ideas Report
 
 ## Approach 1: "Data Intelligence Dashboard"
+
 <response>
 <text>
 **Design Movement:** Bloomberg Terminal meets modern SaaS — authoritative data journalism aesthetic
@@ -16,6 +17,7 @@
 </response>
 
 ## Approach 2: "Executive Intelligence Report"
+
 <response>
 <text>
 **Design Movement:** McKinsey/BCG report aesthetic — premium consulting meets digital interactivity
@@ -31,6 +33,7 @@
 </response>
 
 ## Approach 3: "Venture Capital Intelligence Hub" [SELECTED]
+
 <response>
 <text>
 **Design Movement:** Dark-mode data intelligence — Palantir meets Stripe Dashboard
@@ -46,4 +49,5 @@
 </response>
 
 ## Selected Approach: "Venture Capital Intelligence Hub"
+
 Dark-mode data intelligence aesthetic with electric accent colors, animated counters, interactive filtering, and rich data visualizations.

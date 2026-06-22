@@ -1,3 +1,4 @@
+/* fallow-ignore-file unused-file */
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -100,9 +101,9 @@
 
 /* Perspective: SIGMA (V2) - SaaS Bento Platform */
 :root.perspective-sigma {
-  --primary: #8E2DE2; /* Purple/Amethyst */
+  --primary: #8e2de2; /* Purple/Amethyst */
   --accent: #00e0ff; /* Electric Cyan */
-  --ring: #8E2DE2;
+  --ring: #8e2de2;
   --radius: 1rem;
   --background: #0a0a0f;
 }
@@ -130,10 +131,10 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-    font-feature-settings:
-      "cv02", "cv03", "cv04", "cv11";
-    transition: background-color 0.8s cubic-bezier(0.4, 0, 0.2, 1), 
-                color 0.5s ease;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    transition:
+      background-color 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+      color 0.5s ease;
   }
 
   /* Smooth Perspective Transitions */
@@ -142,10 +143,11 @@
   }
 
   [class*="perspective-"] * {
-    transition: border-radius 0.8s cubic-bezier(0.4, 0, 0.2, 1),
-                border-color 0.8s cubic-bezier(0.4, 0, 0.2, 1),
-                background-color 0.8s cubic-bezier(0.4, 0, 0.2, 1),
-                box-shadow 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    transition:
+      border-radius 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+      border-color 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+      background-color 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 0.8s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   h1,
@@ -538,14 +540,14 @@
   --background-alt: #0a0a0f;
   --primary-start: #00e0ff;
   --primary-end: #00ff7f;
-  --secondary-accent: #8E2DE2;
+  --secondary-accent: #8e2de2;
   --glass-border: rgba(255, 255, 255, 0.1);
   --glass-glow: rgba(0, 224, 255, 0.05);
   --glass-blur: 12px;
-  
+
   --primary: #00e0ff;
   --primary-foreground: #ffffff;
-  
+
   /* Precision Spacing */
   --section-padding: clamp(5rem, 10vw, 10rem);
 }
@@ -558,17 +560,18 @@
   border-radius: 1.5rem;
   position: relative;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 
+  box-shadow:
     0 10px 40px -10px rgba(0, 0, 0, 0.5),
     inset 0 0 0 1px rgba(255, 255, 255, 0.05);
-  transition: transform 0.4s cubic-bezier(0.2, 0, 0.2, 1), 
-              box-shadow 0.4s cubic-bezier(0.2, 0, 0.2, 1),
-              border-color 0.4s ease;
+  transition:
+    transform 0.4s cubic-bezier(0.2, 0, 0.2, 1),
+    box-shadow 0.4s cubic-bezier(0.2, 0, 0.2, 1),
+    border-color 0.4s ease;
 }
 
 .GlassCard:hover {
   border-color: rgba(255, 255, 255, 0.15);
-  box-shadow: 
+  box-shadow:
     0 20px 60px -15px rgba(0, 0, 0, 0.7),
     inset 0 0 0 1px rgba(255, 255, 255, 0.1);
 }
@@ -584,8 +587,12 @@
 }
 
 @keyframes iridescent-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .glass-premium {
@@ -593,7 +600,7 @@
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--glass-border);
-  box-shadow: 
+  box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.03) inset,
     0 20px 50px -10px rgba(0, 0, 0, 0.5);
   position: relative;
@@ -604,14 +611,23 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at top left, rgba(255,255,255,0.05), transparent 40%);
+  background: radial-gradient(
+    circle at top left,
+    rgba(255, 255, 255, 0.05),
+    transparent 40%
+  );
   pointer-events: none;
 }
 
 .iridescent-border-elite {
   position: relative;
   padding: 1px;
-  background: linear-gradient(45deg, var(--primary), var(--accent), var(--primary));
+  background: linear-gradient(
+    45deg,
+    var(--primary),
+    var(--accent),
+    var(--primary)
+  );
   background-size: 200% 200%;
   animation: iridescent-spin 4s linear infinite;
   border-radius: inherit;
@@ -722,7 +738,7 @@
 
 /* Neural Grid Utility */
 .bg-neural-grid {
-  background-image: 
+  background-image:
     linear-gradient(to right, oklch(0.25 0.02 265 / 0.2) 1px, transparent 1px),
     linear-gradient(to bottom, oklch(0.25 0.02 265 / 0.2) 1px, transparent 1px);
   background-size: 40px 40px;
@@ -752,12 +768,22 @@
 /* Section Separators */
 .section-divider {
   @apply h-px w-full;
-  background: linear-gradient(90deg, transparent, oklch(0.22 0.02 265), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    oklch(0.22 0.02 265),
+    transparent
+  );
 }
 
 .section-divider-glow {
   @apply h-px w-full relative;
-  background: linear-gradient(90deg, transparent, oklch(0.65 0.2 250 / 0.3), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    oklch(0.65 0.2 250 / 0.3),
+    transparent
+  );
 }
 
 .section-divider-glow::after {
@@ -767,8 +793,13 @@
 
 /* Animations */
 @keyframes float {
-  0%, 100% { transform: translateY(0) rotate(0); }
-  50% { transform: translateY(-20px) rotate(2deg); }
+  0%,
+  100% {
+    transform: translateY(0) rotate(0);
+  }
+  50% {
+    transform: translateY(-20px) rotate(2deg);
+  }
 }
 
 .animate-float {
@@ -776,8 +807,15 @@
 }
 
 @keyframes pulse-slow {
-  0%, 100% { opacity: 0.3; transform: scale(1); }
-  50% { opacity: 0.6; transform: scale(1.1); }
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.1);
+  }
 }
 
 .animate-pulse-slow {

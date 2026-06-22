@@ -344,11 +344,19 @@ async def enroll_biometric(
 ):
     """Enroll a new biometric template for liveness comparison"""
     import uuid
+    import hashlib
+    
+    raw_template = template.get("template_hash", "")
+    if not raw_template:
+        raw_template = f"{template.get('user_id', '')}{template.get('type', 'face')}{uuid.uuid4()}"
+    
+    template_hash = hashlib.sha256(raw_template.encode()).hexdigest()[:64]
+    
     new_template = BiometricTemplate(
         id=uuid.uuid4(),
         user_id=uuid.UUID(template.get("user_id", str(uuid.uuid4()))),
         type=template.get("type", "face"),
-        template_hash=template.get("template_hash", "hash_placeholder"),
+        template_hash=template_hash,
         cancellable=template.get("cancellable", True)
     )
     session.add(new_template)

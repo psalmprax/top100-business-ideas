@@ -124,3 +124,11 @@ client/src/test-results/
 _agents/
 _agent/
 brain/
+
+# Generated build / audit artifacts (do not commit)
+.planning/intel/
+.planning/security/
+
+# Local Claude tooling (do not commit)
+.claude/
+
